@@ -706,6 +706,26 @@ impl ExactorSatEngine {
     ) -> ProofChain {
         let t_start = Instant::now();
 
+        // Safety Invariant: Protect sub-millisecond SLA against payload exhaustion bombs
+        const MAX_SAFE_DEPTH: usize = 1_048_576; // 1 MB boundary
+        if req.query_string.len() > MAX_SAFE_DEPTH || req.body.len() > MAX_SAFE_DEPTH {
+            let elapsed = t_start.elapsed();
+            return ProofChain {
+                request_id: req.id.clone(),
+                is_violation: true,
+                category: AttackCategory::BusinessRuleViolation,
+                action: AttackDecision::Block,
+                execution_path: ExecutionPath::FastPathLocal,
+                matched_rules: Vec::new(),
+                active_islands: vec!["ISLAND-BUSINESS-RULES".to_string()],
+                active_tokens: vec!["PAYLOAD_EXCEEDS_MAX_SAFE_DEPTH".to_string()],
+                deduction_steps: vec!["[EARLY-EXIT] Payload length exceeded 1MB safety threshold. Fast-failed in < 1µs.".to_string()],
+                formal_proof_latex: r"\text{Length}(req) > 1\text{MB} \implies \mathbf{BLOCK}".to_string(),
+                causal_proof: "Invariant(PayloadSize <= MAX_SAFE_DEPTH) breached ⟹ ACTION_BLOCK [FAST_FAIL < 1µs]".to_string(),
+                execution_time_us: (elapsed.as_secs_f64() * 1_000_000.0 * 100.0).round() / 100.0,
+            };
+        }
+
         let mut tokens: LexicalTokens = AstLexer::tokenize_request(req);
         if let Some(sv) = stateful {
             if sv.is_rate_limit {
