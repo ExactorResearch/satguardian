@@ -78,18 +78,18 @@ static RE_FRAMEWORK_EXPLOIT: OnceLock<Regex> = OnceLock::new();
 
 fn init_regexes() {
     let _ = RE_TAUT_PAIR.get_or_init(|| {
-        Regex::new(r#"(?i)(?:or|and)\s+['"]?([a-zA-Z0-9_-]+)['"]?\s*=\s*['"]?([a-zA-Z0-9_-]+)['"]?"#).unwrap()
+        Regex::new(r#"(?i)(?:or|and)(?:\s+|[(]+)['"]?([a-zA-Z0-9_-]+)['"]?\s*(?:=|\blike\b)\s*['"]?([a-zA-Z0-9_-]+)['"]?[)]*"#).unwrap()
     });
     let _ = RE_TAUT_STATIC.get_or_init(|| {
         vec![
-            Regex::new(r#"(?i)(?:or|and)\s+1\s*=\s*1"#).unwrap(),
-            Regex::new(r#"(?i)(?:or|and)\s+true\b"#).unwrap(),
+            Regex::new(r#"(?i)(?:or|and)(?:\s+|[(]+)1\s*=\s*1[)]*"#).unwrap(),
+            Regex::new(r#"(?i)(?:or|and)(?:\s+|[(]+)true\b"#).unwrap(),
             Regex::new(r#"(?i)admin'--"#).unwrap(),
             Regex::new(r#"(?i)['"]\s*or\s*['"]"#).unwrap(),
         ]
     });
     let _ = RE_UNION_SELECT.get_or_init(|| {
-        Regex::new(r#"(?i)\bunion\s+(?:all\s+)?select\b"#).unwrap()
+        Regex::new(r#"(?i)\bunion(?:\s+|/\*.*?\*/|[(])+(?:all(?:\s+|/\*.*?\*/|[(])+)?select\b"#).unwrap()
     });
     let _ = RE_SQL_SLEEP.get_or_init(|| {
         Regex::new(r#"(?i)\b(?:sleep|waitfor\s+delay|benchmark|pg_sleep)\s*\("#).unwrap()
@@ -110,7 +110,7 @@ fn init_regexes() {
         Regex::new(r#"(?i)<\s*svg[\s/]+onload\s*="#).unwrap()
     });
     let _ = RE_SHELL_CHAIN.get_or_init(|| {
-        Regex::new(r#"(?i)(?:;|\|\||\||&&|`|\$\([^)]+\))\s*(?:cat|bash|curl|wget|nc|whoami|id|sh|powershell|cmd\.exe|type|ls|netstat|uname)\b"#).unwrap()
+        Regex::new(r#"(?i)(?:;|\|\||\||&&|[\r\n]+|`|\$\([^)]+\))\s*(?:cat|bash|curl|wget|nc|whoami|id|sh|powershell|cmd\.exe|type|ls|netstat|uname|python[0-9.]*|perl|php|ruby|node|base64)\b"#).unwrap()
     });
     let _ = RE_SUBSHELL.get_or_init(|| {
         Regex::new(r#"(?i)(?:`[^`]+`|\$\([^)]+\))"#).unwrap()
@@ -128,7 +128,7 @@ fn init_regexes() {
         Regex::new(r#"(?i)(?:\.\./|\.\.\\|%2e%2e%2f|%252e%252e%252f){2,}"#).unwrap()
     });
     let _ = RE_SSRF_METADATA.get_or_init(|| {
-        Regex::new(r#"(?i)(?:https?|gopher|dict|file)://(?:169\.254\.169\.254|127\.0\.0\.1|localhost|0\.0\.0\.0|instance-data|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3})"#).unwrap()
+        Regex::new(r#"(?i)(?:https?|gopher|dict|file)://(?:169\.254\.169\.254|127\.0\.0\.1|localhost|0\.0\.0\.0|instance-data|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|\[::1\]|\[::ffff:127\.0\.0\.1\]|\[::ffff:169\.254\.169\.254\]|2130706433|2852039166|0x7f000001)(?::\d+)?(?:/|$|\?)"#).unwrap()
     });
     let _ = RE_COMMENT_STRIP.get_or_init(|| {
         Regex::new(r#"/\*.*?\*/"#).unwrap()
@@ -181,18 +181,37 @@ impl AstLexer {
             }
         }
 
-        // Pass 5: Decode common JSON/Unicode/Hex escapes (\u0027 -> ', \x27 -> ', \u003c -> <, etc.)
-        let d5 = d4
-            .replace("\\u0027", "'")
-            .replace("\\u0022", "\"")
-            .replace("\\u003c", "<")
-            .replace("\\u003e", ">")
-            .replace("\\u002f", "/")
-            .replace("\\u005c", "\\")
-            .replace("\\x27", "'")
-            .replace("\\x22", "\"")
-            .replace("\\x3c", "<")
-            .replace("\\x3e", ">");
+        // Pass 5: Decode JSON/Unicode/Hex escapes (\uXXXX and \xXX) in any case, including dots, quotes, slashes, brackets
+        let mut d5 = d4.clone();
+        if d5.contains("\\u") || d5.contains("\\U") || d5.contains("\\x") || d5.contains("\\X") {
+            let mut decoded = String::with_capacity(d5.len());
+            let chars: Vec<char> = d5.chars().collect();
+            let mut i = 0;
+            while i < chars.len() {
+                if i + 5 < chars.len() && chars[i] == '\\' && (chars[i + 1] == 'u' || chars[i + 1] == 'U') {
+                    let hex_str: String = chars[i + 2..=i + 5].iter().collect();
+                    if let Ok(code) = u32::from_str_radix(&hex_str, 16) {
+                        if let Some(ch) = char::from_u32(code) {
+                            decoded.push(ch);
+                            i += 6;
+                            continue;
+                        }
+                    }
+                } else if i + 3 < chars.len() && chars[i] == '\\' && (chars[i + 1] == 'x' || chars[i + 1] == 'X') {
+                    let hex_str: String = chars[i + 2..=i + 3].iter().collect();
+                    if let Ok(code) = u32::from_str_radix(&hex_str, 16) {
+                        if let Some(ch) = char::from_u32(code) {
+                            decoded.push(ch);
+                            i += 4;
+                            continue;
+                        }
+                    }
+                }
+                decoded.push(chars[i]);
+                i += 1;
+            }
+            d5 = decoded;
+        }
 
         let combined = format!("{} {} {} {} {} {}", raw, d1, d2, d3, d4, d5);
         (combined, is_obfuscated)
@@ -412,13 +431,15 @@ impl AstLexer {
 
         // B. Strict JSON Schema & Prototype Pollution
         let js = JsonStrictAnalyzer::analyze(&req.body);
-        if js.has_proto_pollution {
+        let js_query = JsonStrictAnalyzer::analyze(&req.query_string);
+        if js.has_proto_pollution || js_query.has_proto_pollution {
             tokens.has_proto_pollution = true;
         }
-        if js.has_deep_nesting {
+        if js.has_deep_nesting || js_query.has_deep_nesting {
             tokens.has_json_deep_nesting = true;
         }
         tokens.active_token_names.extend(js.active_tokens);
+        tokens.active_token_names.extend(js_query.active_tokens);
 
         // C. gRPC / Protobuf Smuggling & Trailer Injection
         let grpc = GrpcProtobufAnalyzer::analyze(&req.headers, req.body.as_bytes());

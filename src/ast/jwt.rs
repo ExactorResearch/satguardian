@@ -1,3 +1,4 @@
+use crate::ast::lexer::AstLexer;
 use std::collections::HashMap;
 
 /// Extracted JWT tokens and tampering violation flags.
@@ -113,12 +114,13 @@ impl JwtTamperingAnalyzer {
                     }
                 }
                 if let Some(kid) = header_json.get("kid").and_then(|k| k.as_str()) {
-                    // Check for Directory Traversal or SQLi in kid
-                    let kid_lower = kid.to_ascii_lowercase();
-                    if kid.contains("../") || kid.contains("..\\") || kid.contains("/dev/null") {
+                    // Check for Directory Traversal or SQLi in kid (normalized)
+                    let (kid_norm, _) = AstLexer::normalize_string(kid);
+                    let kid_lower = kid_norm.to_ascii_lowercase();
+                    if kid_lower.contains("../") || kid_lower.contains("..\\") || kid_lower.contains("/dev/null") {
                         tokens.has_header_injection = true;
                         tokens.active_tokens.push("JWT_KID_PATH_TRAVERSAL_INJECTION".to_string());
-                    } else if kid_lower.contains("union") || kid.contains('\'') || kid.contains('"') || kid.contains('|') {
+                    } else if kid_lower.contains("union") || kid_norm.contains('\'') || kid_norm.contains('"') || kid_norm.contains('|') || kid_lower.contains("waitfor") {
                         tokens.has_header_injection = true;
                         tokens.active_tokens.push("JWT_KID_SQLI_COMMAND_INJECTION".to_string());
                     }

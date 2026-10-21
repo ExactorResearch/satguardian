@@ -30,19 +30,18 @@ fn init_json_regexes() {
 pub struct JsonStrictAnalyzer;
 
 impl JsonStrictAnalyzer {
-    /// Inspects whether the incoming payload contains JSON and performs strict AST verification.
+    /// Inspects whether the incoming payload contains JSON or prototype pollution vectors.
     pub fn analyze(body: &str) -> JsonTokens {
         init_json_regexes();
         let mut tokens = JsonTokens::default();
 
         let trimmed = body.trim();
-        if !(trimmed.starts_with('{') || trimmed.starts_with('[')) {
-            return tokens;
+        let is_json = trimmed.starts_with('{') || trimmed.starts_with('[');
+        if is_json {
+            tokens.is_json = true;
         }
 
-        tokens.is_json = true;
-
-        // 1. Prototype Pollution keyword checks
+        // 1. Prototype Pollution keyword checks (JSON, Query string, or form-data)
         if let Some(re) = RE_PROTO_POLLUTION.get() {
             if re.is_match(body) {
                 tokens.has_proto_pollution = true;
@@ -62,20 +61,25 @@ impl JsonStrictAnalyzer {
             }
         }
 
-        // Direct substring check as ultra-fast fallback
-        if !tokens.active_tokens.iter().any(|s| s == "JSON_PROTOTYPE_POLLUTION_ATTR") {
-            if body.contains("__proto__") || body.to_ascii_lowercase().contains("__proto__") {
+        // Direct substring check as ultra-fast fallback covering query params: __proto__[ or __proto__. or __proto__=
+        if !tokens.has_proto_pollution {
+            let body_lower = body.to_ascii_lowercase();
+            if body_lower.contains("__proto__")
+                || (body_lower.contains("constructor") && body_lower.contains("prototype"))
+            {
                 tokens.has_proto_pollution = true;
                 tokens.active_tokens.push("JSON_PROTOTYPE_POLLUTION_ATTR".to_string());
             }
         }
 
-        // 2. Strict Schema Depth / Nesting Exhaustion Bomb (depth > 20)
-        let max_depth = Self::calculate_json_depth(trimmed);
-        tokens.max_depth = max_depth;
-        if max_depth > 20 {
-            tokens.has_deep_nesting = true;
-            tokens.active_tokens.push("JSON_RECURSIVE_SCHEMA_EXHAUSTION_BOMB".to_string());
+        // 2. Strict Schema Depth / Nesting Exhaustion Bomb (depth > 20) only if JSON structure
+        if is_json {
+            let max_depth = Self::calculate_json_depth(trimmed);
+            tokens.max_depth = max_depth;
+            if max_depth > 20 {
+                tokens.has_deep_nesting = true;
+                tokens.active_tokens.push("JSON_RECURSIVE_SCHEMA_EXHAUSTION_BOMB".to_string());
+            }
         }
 
         tokens
