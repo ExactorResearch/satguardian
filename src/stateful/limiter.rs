@@ -13,6 +13,7 @@ pub struct StatefulConfig {
     pub global_limit_per_window: u32,
     pub auth_limit_per_window: u32,
     pub ban_duration_secs: u64,
+    pub max_tracked_clients: usize,
     pub redis_url: Option<String>,
 }
 
@@ -25,6 +26,7 @@ impl Default for StatefulConfig {
             global_limit_per_window: 300, // 5 req/sec avg
             auth_limit_per_window: 15,    // Credential stuffing limit on /login
             ban_duration_secs: 180,       // 3-minute temporary jail
+            max_tracked_clients: 50_000,  // Bounded memory ceiling (DoS defense)
             redis_url: None,
         }
     }
@@ -74,6 +76,11 @@ impl StatefulRateLimiter {
         }
     }
 
+    /// Returns the current number of tracked IP records in memory.
+    pub fn tracked_clients_count(&self) -> usize {
+        self.clients.read().unwrap().len()
+    }
+
     /// Evaluates an incoming request against temporal sliding windows.
     pub fn check_and_update(&self, req: &HttpRequestPayload) -> StatefulVerdict {
         if !self.config.enabled {
@@ -97,7 +104,7 @@ impl StatefulRateLimiter {
 
         let now_secs = SlidingWindowRingCounter::current_epoch_secs();
 
-        // Retrieve or create client record
+        // Retrieve or create client record with bounded memory guarantee
         let record = {
             let r = self.clients.read().unwrap();
             if let Some(rec) = r.get(&client_ip) {
@@ -105,6 +112,24 @@ impl StatefulRateLimiter {
             } else {
                 drop(r);
                 let mut w = self.clients.write().unwrap();
+                if w.len() >= self.config.max_tracked_clients {
+                    // Prune stale records where last_seen_epoch is older than window_secs + ban_duration_secs
+                    let cutoff = now_secs.saturating_sub(self.config.window_secs + self.config.ban_duration_secs);
+                    w.retain(|_, rec| rec.last_seen_epoch.load(Ordering::Relaxed) > cutoff);
+
+                    // If still at capacity under adversarial IP flooding, evict oldest 10%
+                    if w.len() >= self.config.max_tracked_clients {
+                        let mut entries: Vec<(String, u64)> = w
+                            .iter()
+                            .map(|(k, v)| (k.clone(), v.last_seen_epoch.load(Ordering::Relaxed)))
+                            .collect();
+                        entries.sort_unstable_by_key(|e| e.1);
+                        let evict_count = (self.config.max_tracked_clients / 10).max(1);
+                        for (old_ip, _) in entries.into_iter().take(evict_count) {
+                            w.remove(&old_ip);
+                        }
+                    }
+                }
                 w.entry(client_ip.clone())
                     .or_insert_with(|| Arc::new(ClientRecord::new(self.config.window_secs, self.config.num_buckets)))
                     .clone()

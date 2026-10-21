@@ -334,6 +334,7 @@ fn test_stateful_sliding_window_rate_limiting() {
         global_limit_per_window: 5, // Limit 5 requests
         auth_limit_per_window: 3,
         ban_duration_secs: 60,
+        max_tracked_clients: 50_000,
         redis_url: None,
     });
 
@@ -382,6 +383,7 @@ fn test_stateful_credential_stuffing_detection() {
         global_limit_per_window: 100,
         auth_limit_per_window: 3, // Only 3 auth attempts allowed in 60s
         ban_duration_secs: 60,
+        max_tracked_clients: 50_000,
         redis_url: None,
     });
 

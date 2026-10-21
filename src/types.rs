@@ -123,6 +123,18 @@ impl HttpRequestPayload {
         }
     }
 
+    pub fn with_ip(
+        method: impl Into<String>,
+        path: impl Into<String>,
+        query: impl Into<String>,
+        body: impl Into<String>,
+        client_ip: impl Into<String>,
+    ) -> Self {
+        let mut req = Self::new(method, path, query, body);
+        req.client_ip = Some(client_ip.into());
+        req
+    }
+
     pub fn full_inspectable_string(&self) -> String {
         let mut parts = Vec::with_capacity(6);
         parts.push(self.path.clone());

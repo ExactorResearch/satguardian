@@ -279,6 +279,7 @@ impl WafConfig {
             global_limit_per_window: self.stateful_global_limit,
             auth_limit_per_window: self.stateful_auth_limit,
             ban_duration_secs: self.stateful_ban_secs,
+            max_tracked_clients: 50_000,
             redis_url: self.redis_url.clone(),
         }
     }

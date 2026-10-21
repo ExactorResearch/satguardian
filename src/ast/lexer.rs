@@ -145,11 +145,11 @@ fn init_regexes() {
 }
 
 impl AstLexer {
-    /// Multi-pass recursive URL decode and comment stripper.
+    /// Multi-pass recursive URL decode, comment stripper, and Unicode homoglyph normalizer.
     pub fn normalize_string(raw: &str) -> (String, bool) {
         init_regexes();
         let mut is_obfuscated = false;
-        if raw.contains('%') || raw.contains("/**/") {
+        if raw.contains('%') || raw.contains("/**/") || raw.contains("\\u") || raw.contains("\\x") {
             is_obfuscated = true;
         }
 
@@ -161,7 +161,40 @@ impl AstLexer {
         let re_comment = RE_COMMENT_STRIP.get().unwrap();
         let d3 = re_comment.replace_all(&d2, " ").to_string();
 
-        let combined = format!("{} {} {} {}", raw, d1, d2, d3);
+        // Pass 4: Unicode Homoglyphs & Fullwidth ASCII normalization (U+FF01-U+FF5E -> U+0021-U+007E)
+        let mut d4 = String::with_capacity(d3.len());
+        for c in d3.chars() {
+            match c {
+                '\u{FF01}'..='\u{FF5E}' => {
+                    is_obfuscated = true;
+                    d4.push(char::from_u32((c as u32) - 0xFEE0).unwrap_or(c));
+                }
+                '\u{3000}' => {
+                    is_obfuscated = true;
+                    d4.push(' ');
+                }
+                '\0' => {
+                    is_obfuscated = true;
+                    d4.push(' ');
+                }
+                _ => d4.push(c),
+            }
+        }
+
+        // Pass 5: Decode common JSON/Unicode/Hex escapes (\u0027 -> ', \x27 -> ', \u003c -> <, etc.)
+        let d5 = d4
+            .replace("\\u0027", "'")
+            .replace("\\u0022", "\"")
+            .replace("\\u003c", "<")
+            .replace("\\u003e", ">")
+            .replace("\\u002f", "/")
+            .replace("\\u005c", "\\")
+            .replace("\\x27", "'")
+            .replace("\\x22", "\"")
+            .replace("\\x3c", "<")
+            .replace("\\x3e", ">");
+
+        let combined = format!("{} {} {} {} {} {}", raw, d1, d2, d3, d4, d5);
         (combined, is_obfuscated)
     }
 
