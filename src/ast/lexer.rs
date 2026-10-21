@@ -134,7 +134,7 @@ fn init_regexes() {
         Regex::new(r#"/\*.*?\*/"#).unwrap()
     });
     let _ = RE_WORDPRESS_PROBE.get_or_init(|| {
-        Regex::new(r#"(?i)(?:/wp-(?:admin|login\.php|includes|content|cron\.php|config\.php|json/wp/)|xmlrpc\.php|/(?:index|wp)\.php|\?author=\d+|wlwmanifest\.xml)"#).unwrap()
+        Regex::new(r#"(?i)(?:/wp-(?:admin|login\.php|includes|content|cron\.php|config\.php|json/wp/)|xmlrpc\.php|\?author=\d+|wlwmanifest\.xml|^/?(?:index|wp)\.php(?:$|\?))"#).unwrap()
     });
     let _ = RE_SENSITIVE_EXPOSURE.get_or_init(|| {
         Regex::new(r#"(?i)(?:/\.env(?:\.[a-z0-9_-]+)?|/\.git(?:/|$|\?)|/\.aws/credentials|/(?:phpmyadmin|pma|adminer\.php|actuator(?:/[a-z]+)?|swagger-ui|\.svn|docker-compose\.ya?ml|Dockerfile|dump\.sql|backup\.sql|web\.config))"#).unwrap()
