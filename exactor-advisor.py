@@ -37,24 +37,31 @@ if hasattr(sys.stdout, "reconfigure"):
 
 DEFAULT_API_URL = os.environ.get("EXACTOR_API_URL", "http://127.0.0.1:10000")
 DEFAULT_DB_PATHS = [
-    "waf_ledger.db",
     "/var/lib/exactor/waf_ledger.db",
     "/etc/exactor/waf_ledger.db",
+    "waf_ledger.db",
     "../waf_ledger.db",
     "../../waf_ledger.db",
 ]
 DEFAULT_CONFIG_PATHS = [
-    "waf_config.toml",
     "/etc/exactor/waf_config.toml",
+    "waf_config.toml",
     "../waf_config.toml",
     "../../waf_config.toml",
 ]
 
 def find_file(paths):
-    for p in paths:
-        if p and os.path.exists(p):
-            return p
-    return paths[0]
+    existing = [p for p in paths if p and os.path.exists(p)]
+    if not existing:
+        return paths[0]
+    # If multiple candidates exist, prioritize files with actual audit data (> 10 KB)
+    for p in existing:
+        try:
+            if os.path.getsize(p) > 10000:
+                return p
+        except Exception:
+            pass
+    return existing[0]
 
 
 # =============================================================================
@@ -926,8 +933,24 @@ class ForensicReportAgent:
 # RUN ADVISOR PIPELINE HELPER (Invoked programmatically or via CLI)
 # =============================================================================
 def run_advisor_pipeline(db_path=None, config_path=None, api_url=DEFAULT_API_URL):
-    db = find_file([db_path] if db_path else DEFAULT_DB_PATHS)
     cfg = find_file([config_path] if config_path else DEFAULT_CONFIG_PATHS)
+    
+    if not db_path and tomllib and cfg and os.path.exists(cfg):
+        try:
+            with open(cfg, "rb") as f:
+                cfg_toml = tomllib.load(f)
+                configured_db = cfg_toml.get("database_path")
+                if configured_db:
+                    cfg_dir = os.path.dirname(os.path.abspath(cfg))
+                    rel_to_cfg = os.path.join(cfg_dir, configured_db)
+                    for candidate in [configured_db, rel_to_cfg]:
+                        if os.path.exists(candidate) and os.path.getsize(candidate) > 10000:
+                            db_path = candidate
+                            break
+        except Exception:
+            pass
+
+    db = find_file([db_path] if db_path else DEFAULT_DB_PATHS)
     api_client = WafApiClient(api_url)
 
     pattern_agent = TrafficPatternAgent(db)

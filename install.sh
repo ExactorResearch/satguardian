@@ -97,10 +97,25 @@ else
     fi
 fi
 
-# 2. Install Binary
-echo -e "${YELLOW}[2/5] Installing binary to ${INSTALL_DIR}...${NC}"
+# 2. Install Binary & CLI Suite
+echo -e "${YELLOW}[2/5] Installing binary and management tools to ${INSTALL_DIR}...${NC}"
 install -m 755 "${BINARY_PATH}" "${INSTALL_DIR}/exactor-waf-guardian"
 echo -e "${GREEN}✓ Binary installed at ${INSTALL_DIR}/exactor-waf-guardian${NC}"
+
+if [[ -f "${SCRIPT_DIR}/exactor-top.py" ]]; then
+    install -m 755 "${SCRIPT_DIR}/exactor-top.py" "${INSTALL_DIR}/exactor-top"
+    echo -e "${GREEN}✓ exactor-top installed at ${INSTALL_DIR}/exactor-top${NC}"
+fi
+
+if [[ -f "${SCRIPT_DIR}/exactor-advisor.py" ]]; then
+    install -m 755 "${SCRIPT_DIR}/exactor-advisor.py" "${INSTALL_DIR}/exactor-advisor"
+    echo -e "${GREEN}✓ exactor-advisor installed at ${INSTALL_DIR}/exactor-advisor${NC}"
+fi
+
+if [[ -f "${SCRIPT_DIR}/exactor-rules.py" ]]; then
+    install -m 755 "${SCRIPT_DIR}/exactor-rules.py" "${INSTALL_DIR}/exactor-rules"
+    echo -e "${GREEN}✓ exactor-rules installed at ${INSTALL_DIR}/exactor-rules${NC}"
+fi
 
 # 3. Create Configuration
 echo -e "${YELLOW}[3/5] Setting up configuration directory ${CONFIG_DIR}...${NC}"

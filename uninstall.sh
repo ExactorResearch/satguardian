@@ -44,11 +44,13 @@ if command -v systemctl &> /dev/null; then
     fi
 fi
 
-# 2. Remove Binary
-if [[ -f "/usr/local/bin/exactor-waf-guardian" ]]; then
-    rm -f "/usr/local/bin/exactor-waf-guardian"
-    echo -e "${GREEN}✓ Removed /usr/local/bin/exactor-waf-guardian.${NC}"
-fi
+# 2. Remove Binary & CLI Tools
+for tool in exactor-waf-guardian exactor-top exactor-advisor exactor-rules; do
+    if [[ -f "/usr/local/bin/${tool}" ]]; then
+        rm -f "/usr/local/bin/${tool}"
+        echo -e "${GREEN}✓ Removed /usr/local/bin/${tool}.${NC}"
+    fi
+done
 
 # 3. Handle Configuration and Database
 if [[ "$PURGE_DATA" == "true" ]]; then
