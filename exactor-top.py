@@ -106,8 +106,8 @@ class ExactorTop:
             cur.execute("""
                 SELECT 
                     count(*) as total,
-                    sum(case when action = 'BLOCK' then 1 else 0 end) as blocked,
-                    sum(case when action = 'ALLOW' then 1 else 0 end) as allowed,
+                    sum(case when UPPER(action) = 'BLOCK' then 1 else 0 end) as blocked,
+                    sum(case when UPPER(action) = 'ALLOW' then 1 else 0 end) as allowed,
                     avg(latency_us) as avg_latency,
                     max(latency_us) as max_latency
                 FROM audit_log
@@ -136,7 +136,7 @@ class ExactorTop:
             cur.execute("""
                 SELECT category, count(*) as cnt 
                 FROM audit_log 
-                WHERE action = 'BLOCK'
+                WHERE UPPER(action) = 'BLOCK'
                 GROUP BY category 
                 ORDER BY cnt DESC 
                 LIMIT 5
@@ -187,7 +187,7 @@ class ExactorTop:
                 FROM audit_log
             """
             if self.filter_mode == "BLOCK":
-                query += " WHERE action = 'BLOCK'"
+                query += " WHERE UPPER(action) = 'BLOCK'"
             query += f" ORDER BY id DESC LIMIT {limit}"
             cur.execute(query)
             return cur.fetchall()
@@ -341,7 +341,7 @@ class ExactorTop:
                 is_selected = (actual_idx == self.selected_idx)
                 
                 # Highlight colors based on verdict
-                if act == "BLOCK":
+                if act.upper() == "BLOCK":
                     attr = curses.color_pair(8) if is_selected else curses.color_pair(3) | curses.A_BOLD
                 else:
                     attr = curses.color_pair(9) if is_selected else curses.color_pair(1)
