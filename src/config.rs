@@ -3,9 +3,11 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WafConfig {
     /// Inbound HTTP listen address for the WAF reverse proxy.
+    #[serde(default = "default_listen_addr")]
     pub listen_addr: String,
 
     /// Upstream target application URL (e.g. http://127.0.0.1:3000).
+    #[serde(default = "default_upstream_url")]
     pub upstream_url: String,
 
     /// Operation mode: "block" (default) or "monitor" (dry-run).
@@ -141,6 +143,14 @@ fn default_true() -> bool {
 
 fn default_false() -> bool {
     false
+}
+
+fn default_listen_addr() -> String {
+    "0.0.0.0:10000".to_string()
+}
+
+fn default_upstream_url() -> String {
+    "http://127.0.0.1:3000".to_string()
 }
 
 fn default_mode() -> String {
