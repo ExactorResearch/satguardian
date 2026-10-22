@@ -163,6 +163,7 @@ class ExactorRulesApp:
         self.advisor_suggestions = []
         self.advisor_patterns = None
         self.selected_advisor_idx = 0
+        self.advisor_scroll_offset = 0
 
     def set_status(self, msg):
         self.status_message = msg
@@ -375,17 +376,35 @@ class ExactorRulesApp:
             elif ch == ord('\t'):
                 self.active_tab = (self.active_tab + 1) % 4
                 self.scroll_offset = 0
+                self.advisor_scroll_offset = 0
                 if self.active_tab == 3 and not self.advisor_suggestions:
                     self.load_advisor()
             elif ch in (ord('1'), ord('2'), ord('3'), ord('4')):
                 self.active_tab = ch - ord('1')
                 self.scroll_offset = 0
+                self.advisor_scroll_offset = 0
                 if self.active_tab == 3 and not self.advisor_suggestions:
                     self.load_advisor()
-            elif ch == curses.KEY_UP:
+            elif ch in (curses.KEY_UP, ord('k'), ord('K')):
                 self.handle_up()
-            elif ch == curses.KEY_DOWN:
+            elif ch in (curses.KEY_DOWN, ord('j'), ord('J')):
                 self.handle_down()
+            elif ch in (curses.KEY_PPAGE,):
+                self.handle_page_up()
+            elif ch in (curses.KEY_NPAGE,):
+                self.handle_page_down()
+            elif ch in (curses.KEY_HOME,):
+                if self.active_tab == 0:
+                    self.selected_rule_idx = 0
+                    self.scroll_offset = 0
+                elif self.active_tab == 3:
+                    self.selected_advisor_idx = 0
+                    self.advisor_scroll_offset = 0
+            elif ch in (curses.KEY_END,):
+                if self.active_tab == 0 and self.rules:
+                    self.selected_rule_idx = len(self.rules) - 1
+                elif self.active_tab == 3 and self.advisor_suggestions:
+                    self.selected_advisor_idx = len(self.advisor_suggestions) - 1
             elif ch in (ord(' '), ord('t'), ord('T')):
                 self.handle_toggle()
             elif ch in (ord('y'), ord('Y')):
@@ -441,6 +460,8 @@ class ExactorRulesApp:
         elif self.active_tab == 3:
             if self.selected_advisor_idx > 0:
                 self.selected_advisor_idx -= 1
+                if self.selected_advisor_idx < self.advisor_scroll_offset:
+                    self.advisor_scroll_offset = self.selected_advisor_idx
 
     def handle_down(self):
         if self.active_tab == 0:
@@ -452,6 +473,24 @@ class ExactorRulesApp:
         elif self.active_tab == 3:
             if self.selected_advisor_idx < len(self.advisor_suggestions) - 1:
                 self.selected_advisor_idx += 1
+
+    def handle_page_up(self):
+        step = 5
+        if self.active_tab == 0:
+            self.selected_rule_idx = max(0, self.selected_rule_idx - step)
+            if self.selected_rule_idx < self.scroll_offset:
+                self.scroll_offset = self.selected_rule_idx
+        elif self.active_tab == 3:
+            self.selected_advisor_idx = max(0, self.selected_advisor_idx - step)
+            if self.selected_advisor_idx < self.advisor_scroll_offset:
+                self.advisor_scroll_offset = self.selected_advisor_idx
+
+    def handle_page_down(self):
+        step = 5
+        if self.active_tab == 0 and self.rules:
+            self.selected_rule_idx = min(len(self.rules) - 1, self.selected_rule_idx + step)
+        elif self.active_tab == 3 and self.advisor_suggestions:
+            self.selected_advisor_idx = min(len(self.advisor_suggestions) - 1, self.selected_advisor_idx + step)
 
     def handle_toggle(self):
         if self.active_tab == 0:
@@ -728,15 +767,34 @@ class ExactorRulesApp:
             safe_addstr(stdscr, start_y + 6, 4, "Press 'R' to re-analyze forensic traces from waf_ledger.db.", curses.color_pair(4))
             return
 
-        header = f" {'TYPE':<16s} {'ID / KEY':<28s} {'DIGITAL TWIN VERDICT':<30s} {'ACTION'}"
+        total_sug = len(self.advisor_suggestions)
+        if self.selected_advisor_idx >= total_sug:
+            self.selected_advisor_idx = max(0, total_sug - 1)
+        if self.selected_advisor_idx < 0:
+            self.selected_advisor_idx = 0
+
+        # Calculate visible list height dynamically based on terminal height
+        max_y, _ = stdscr.getmaxyx()
+        visible_rows = 5 if max_y <= 27 else min(8, max_y - 20)
+
+        # Update scroll offset to keep selected item in view
+        if self.selected_advisor_idx >= self.advisor_scroll_offset + visible_rows:
+            self.advisor_scroll_offset = self.selected_advisor_idx - visible_rows + 1
+        if self.selected_advisor_idx < self.advisor_scroll_offset:
+            self.advisor_scroll_offset = self.selected_advisor_idx
+
+        counter_badge = f"[{self.selected_advisor_idx + 1}/{total_sug}]"
+        header = f" {'TYPE':<16s} {'ID / KEY':<28s} {'DIGITAL TWIN VERDICT':<30s} {'ACTION':<24s} {counter_badge}"
         safe_addstr(stdscr, start_y + 3, 0, header.ljust(max_x), curses.color_pair(4) | curses.A_BOLD)
 
-        list_h = min(len(self.advisor_suggestions), 5)
-        for idx in range(list_h):
-            sug = self.advisor_suggestions[idx]
-            y = start_y + 4 + idx
+        for i in range(visible_rows):
+            item_idx = self.advisor_scroll_offset + i
+            if item_idx >= total_sug:
+                break
+            sug = self.advisor_suggestions[item_idx]
+            y = start_y + 4 + i
             stype = sug.get("type", "rule").upper()
-            skey = sug.get("rule_id", sug.get("island_key", "n/a"))
+            skey = sug.get("rule_id", sug.get("island_key", "n/a"))[:27]
             sim = sug.get("simulation")
             if sim and sim.get("certified_zero_false_positives"):
                 verdict = f"[0% FP] {sim.get('attacks_intercepted_at_perimeter', 0)} intercepted"
@@ -744,13 +802,13 @@ class ExactorRulesApp:
                 verdict = "[AUDITED 0% FP]"
             
             row_str = f" {stype:<16s} {skey:<28s} {verdict:<30s} [Y] Approve / [N] Reject"
-            attr = curses.color_pair(7) | curses.A_BOLD if idx == self.selected_advisor_idx else 0
+            attr = curses.color_pair(7) | curses.A_BOLD if item_idx == self.selected_advisor_idx else 0
             safe_addstr(stdscr, y, 0, row_str.ljust(max_x), attr)
 
         # Selected suggestion details card
-        if 0 <= self.selected_advisor_idx < len(self.advisor_suggestions):
+        if 0 <= self.selected_advisor_idx < total_sug:
             sel_sug = self.advisor_suggestions[self.selected_advisor_idx]
-            det_y = start_y + 4 + list_h + 1
+            det_y = start_y + 4 + visible_rows + 1
             safe_addstr(stdscr, det_y, 0, "─" * max_x, curses.color_pair(4))
             safe_addstr(stdscr, det_y + 1, 2, f"SELECTED PROPOSAL DETAILS: {sel_sug.get('action_name')}", curses.color_pair(6) | curses.A_BOLD)
             safe_addstr(stdscr, det_y + 2, 4, f"Forensic Evidence : {sel_sug.get('evidence', '')[:max_x - 26]}", curses.color_pair(3))
@@ -764,7 +822,7 @@ class ExactorRulesApp:
                 if sim.get("saved_latency_ms", 0) > 0:
                     safe_addstr(stdscr, det_y + 6, 4, f"Compute Savings   : ~{sim.get('saved_latency_ms')} ms CPU saved by dropping before SAT evaluation.", curses.color_pair(1))
 
-            safe_addstr(stdscr, det_y + 8, 4, "Actions: Press [Y] to APPROVE & Implement | [N] to REJECT (No-Op) | [R] Re-analyze", curses.color_pair(3) | curses.A_BOLD)
+            safe_addstr(stdscr, det_y + 8, 4, "Actions: Press [Y] to APPROVE & Implement | [N] to REJECT (No-Op) | [R] Re-analyze | [▲/▼/PgUp/PgDn] Scroll", curses.color_pair(3) | curses.A_BOLD)
 
     def show_add_rule_dialog(self, stdscr):
         max_y, max_x = stdscr.getmaxyx()
