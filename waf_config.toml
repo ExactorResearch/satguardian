@@ -15,6 +15,19 @@ upstream_url = "http://127.0.0.1:3000"
 #   "monitor" - Passive / dry-run mode: logs violations but allows traffic upstream
 mode = "block"
 
+# ------------------------------------------------------------------------------
+# MODO SILENCIOSO / STEALTH MODE (Seguridad Antirreconocimiento)
+# ------------------------------------------------------------------------------
+# true  -> Devuelve respuesta estándar y limpia de servidor web (403 Forbidden simple)
+#          sin revelar reglas violadas, categorías ni fórmulas LaTeX al atacante.
+# false -> Devuelve JSON detallado con deducción matemática, causalidad y LaTeX (modo debug).
+stealth_mode = true
+
+# Mensaje HTML o texto personalizado opcional cuando stealth_mode = true
+# (Si se deja comentado o vacío, emite el HTML 403 Forbidden estándar de nginx)
+# stealth_block_body = "<html><head><title>403 Forbidden</title></head><body><center><h1>403 Forbidden</h1></center></body></html>"
+
+
 # EXACTOR Core Cloud API URL for Autonomous Boolean Minimization
 # Cloud Service runs exactor-cloud-service-v128
 exactor_api_url = "https://exactor.tech/api/simplify"
