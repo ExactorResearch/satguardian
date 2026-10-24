@@ -121,6 +121,19 @@ pub async fn proxy_handler(
             "Attack blocked at perimeter"
         );
 
+        // Modo Silencioso / Stealth vs Modo Verbose de Debugging
+        if state.config.stealth_mode {
+            // En modo stealth, no revelamos reglas violadas, categorías ni latencias en headers
+            let custom_body = state.config.stealth_block_body.as_deref().unwrap_or(
+                "<html>\r\n<head><title>403 Forbidden</title></head>\r\n<body>\r\n<center><h1>403 Forbidden</h1></center>\r\n<hr><center>nginx</center>\r\n</body>\r\n</html>\r\n"
+            );
+            return (
+                StatusCode::FORBIDDEN,
+                [(axum::http::header::CONTENT_TYPE, "text/html; charset=utf-8")],
+                custom_body.to_string(),
+            ).into_response();
+        }
+
         let mut resp_headers = HeaderMap::new();
         resp_headers.insert("X-Exactor-Action", HeaderValue::from_static("BLOCK"));
         if let Ok(v) = HeaderValue::from_str(proof.category.as_str()) {

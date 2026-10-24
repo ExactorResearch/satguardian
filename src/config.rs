@@ -14,6 +14,14 @@ pub struct WafConfig {
     #[serde(default = "default_mode")]
     pub mode: String,
 
+    /// Stealth mode: when enabled, blocked responses return a minimal standard 403 Forbidden
+    /// without revealing mathematical causal proofs, violated rule names, or LaTeX formulas to attackers.
+    #[serde(default = "default_false")]
+    pub stealth_mode: bool,
+
+    /// Custom stealth body message (optional, e.g. "Forbidden" or HTML).
+    pub stealth_block_body: Option<String>,
+
     /// EXACTOR Core Cloud API URL (defaults to https://exactor.tech/api/simplify).
     #[serde(default = "default_exactor_api_url")]
     pub exactor_api_url: String,
@@ -199,6 +207,8 @@ impl Default for WafConfig {
             listen_addr: "0.0.0.0:8080".to_string(),
             upstream_url: "http://127.0.0.1:3000".to_string(),
             mode: default_mode(),
+            stealth_mode: false,
+            stealth_block_body: None,
             exactor_api_url: default_exactor_api_url(),
             exactor_api_token: None,
             database_path: default_database_path(),
@@ -254,6 +264,12 @@ impl WafConfig {
         }
         if let Ok(v) = std::env::var("WAF_MODE") {
             cfg.mode = v;
+        }
+        if let Ok(v) = std::env::var("WAF_STEALTH_MODE") {
+            cfg.stealth_mode = v.eq_ignore_ascii_case("true") || v == "1";
+        }
+        if let Ok(v) = std::env::var("WAF_STEALTH_BLOCK_BODY") {
+            cfg.stealth_block_body = Some(v);
         }
         if let Ok(v) = std::env::var("EXACTOR_API_URL") {
             cfg.exactor_api_url = v;

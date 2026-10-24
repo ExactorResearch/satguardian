@@ -52,6 +52,10 @@ enum Commands {
         /// Defense mode: 'block' (active drop) or 'monitor' (dry-run detection)
         #[arg(short, long)]
         mode: Option<String>,
+
+        /// Stealth mode: minimal 403 Forbidden without leaking rules, proof or latex
+        #[arg(short = 's', long)]
+        stealth: bool,
     },
 
     /// Inspect a single HTTP request payload and display formal mathematical proof
@@ -162,6 +166,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             listen,
             upstream,
             mode,
+            stealth,
         }) => {
             if let Some(l) = listen {
                 config.listen_addr = l;
@@ -171,6 +176,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             }
             if let Some(m) = mode {
                 config.mode = m;
+            }
+            if stealth {
+                config.stealth_mode = true;
             }
             run_server(config).await
         }
@@ -209,6 +217,7 @@ async fn run_server(config: WafConfig) -> Result<(), Box<dyn std::error::Error +
     info!(target: "exactor::server", "Listen Address : {}", config.listen_addr);
     info!(target: "exactor::server", "Upstream Target: {}", config.upstream_url);
     info!(target: "exactor::server", "Defense Mode   : {}", config.mode.to_uppercase());
+    info!(target: "exactor::server", "Stealth Mode   : {}", if config.stealth_mode { "ENABLED (Minimal 403 Forbidden)" } else { "DISABLED (Verbose LaTeX/JSON)" });
     info!(target: "exactor::server", "Cloud API URL  : {}", config.exactor_api_url);
     info!(target: "exactor::server", "SQLite Ledger  : {}", config.database_path);
 
