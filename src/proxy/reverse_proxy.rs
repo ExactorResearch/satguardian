@@ -66,6 +66,21 @@ pub async fn proxy_handler(
     };
     let body_str = String::from_utf8_lossy(&body_bytes).to_string();
 
+    // Extract real client IP prioritizing proxy headers (X-Forwarded-For, X-Real-IP, CF-Connecting-IP, True-Client-IP)
+    let client_ip = headers_map
+        .get("cf-connecting-ip")
+        .map(|s| s.as_str())
+        .or_else(|| headers_map.get("true-client-ip").map(|s| s.as_str()))
+        .or_else(|| headers_map.get("x-real-ip").map(|s| s.as_str()))
+        .or_else(|| {
+            headers_map
+                .get("x-forwarded-for")
+                .and_then(|xff| xff.split(',').next())
+        })
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+        .unwrap_or_else(|| addr.ip().to_string());
+
     let payload = HttpRequestPayload {
         id: uuid::Uuid::new_v4().to_string()[..8].to_string(),
         method: method.clone(),
@@ -73,7 +88,7 @@ pub async fn proxy_handler(
         query_string: query_string.clone(),
         headers: headers_map.clone(),
         body: body_str,
-        client_ip: Some(addr.ip().to_string()),
+        client_ip: Some(client_ip),
     };
 
     // 1. Stateful Behavioral & Sliding Window Rate Limiting
