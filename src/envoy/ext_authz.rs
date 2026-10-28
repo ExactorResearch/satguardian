@@ -4,7 +4,7 @@
 
 use crate::ast::features::FeatureBinarizer;
 use crate::ast::lexer::AstLexer;
-use crate::engine::ExactorSatEngine;
+use crate::engine::SatguardianSatEngine;
 use crate::ledger::{AuditRecord, SqliteLedger};
 use crate::stateful::StatefulRateLimiter;
 use crate::types::{AttackDecision, HttpRequestPayload, ProofChain};
@@ -24,7 +24,7 @@ use tracing::{debug, warn};
 /// Shared state for the Envoy ext_authz HTTP service.
 #[derive(Clone)]
 pub struct EnvoyAuthzState {
-    pub sat_engine: Arc<ExactorSatEngine>,
+    pub sat_engine: Arc<SatguardianSatEngine>,
     pub ledger: SqliteLedger,
     pub rate_limiter: Arc<StatefulRateLimiter>,
     pub mode: String, // "block" or "monitor"
@@ -36,7 +36,7 @@ pub struct EnvoyAuthzState {
 
 impl EnvoyAuthzState {
     pub fn new(
-        sat_engine: Arc<ExactorSatEngine>,
+        sat_engine: Arc<SatguardianSatEngine>,
         ledger: SqliteLedger,
         rate_limiter: Arc<StatefulRateLimiter>,
         mode: String,

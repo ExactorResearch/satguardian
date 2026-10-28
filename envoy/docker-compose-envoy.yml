@@ -1,0 +1,61 @@
+# ==============================================================================
+# SATGUARDIAN EDGE WAF + ENVOY PROXY: INSTANT EVALUATION ENVIRONMENT
+# Quickstart: docker compose -f envoy/docker-compose-envoy.yml up -d
+# Test: curl -i "http://localhost:10000/api/items?id=1'%20OR%201=1--" (Blocked 403)
+# ==============================================================================
+version: '3.8'
+
+services:
+  # The Cloud-Native Aircraft Carrier: Envoy Proxy 1.30+
+  envoy:
+    image: envoyproxy/envoy:v1.30-latest
+    container_name: satguardian-envoy-ingress
+    restart: always
+    ports:
+      - "10000:10000"   # Protected Public HTTP Ingress
+      - "9901:9901"     # Envoy Administration Console
+    volumes:
+      - ./envoy-tcp.yaml:/etc/envoy/envoy.yaml:ro
+    depends_on:
+      satguardian-waf:
+        condition: service_healthy
+      backend:
+        condition: service_started
+
+  # SATGuardian Edge WAF: Sub-Millisecond Boolean SAT Filter Daemon
+  satguardian-waf:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: satguardian/satguardian-waf:v0.3.0
+    container_name: satguardian-edge-waf
+    restart: always
+    entrypoint: ["/usr/local/bin/satguardian-waf"]
+    command: ["envoy-authz", "--listen", "0.0.0.0:9002"]
+    environment:
+      - WAF_MODE=block
+      - SATGUARDIAN_API_URL=https://satguardian.tech/api/simplify
+      - WAF_DATABASE_PATH=/var/lib/satguardian/waf_ledger.db
+    ports:
+      - "9002:9002"
+    volumes:
+      - satguardian_data:/var/lib/satguardian
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9002/ext_authz"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+  # Sample Protected Upstream Backend Application
+  backend:
+    image: hashicorp/http-echo:latest
+    container_name: sample-app-backend
+    restart: always
+    command: ["-text=Hello from Protected Application Backend behind SATGuardian Edge WAF!"]
+    ports:
+      - "3000:5678"
+
+volumes:
+  satguardian_data:
+    driver: local

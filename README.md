@@ -2,16 +2,20 @@
 
 [![License: MIT/Apache-2.0](https://img.shields.io/badge/License-MIT%2FApache--2.0-blue.svg)](#license)
 [![Powered by](https://img.shields.io/badge/Engine-SATGuardian%20(Rust)-orange.svg)](https://satguardian.tech)
+[![Envoy Aircraft Carrier](https://img.shields.io/badge/Envoy%20Proxy-ext__authz%20UDS%20(<15µs)-purple.svg)](ENVOY_INTEGRATION_GUIDE.md)
 [![Latency](https://img.shields.io/badge/Latency-0.02ms-brightgreen.svg)](#benchmarks)
-[![Throughput](https://img.shields.io/badge/Throughput-80k%2B%20req%2Fs-blue.svg)](#benchmarks)
+[![Throughput](https://img.shields.io/badge/Throughput-52k%2B%20req%2Fs-blue.svg)](#benchmarks)
 [![Cloud Optimization](https://img.shields.io/badge/Optimization-Security%20Units%20(SU)-purple.svg)](https://satguardian.tech)
 [![Proof of Concept](https://img.shields.io/badge/PoC-Interactive%20Duel-success.svg)](PROOF_OF_CONCEPT.md)
 [![Epistemology](https://img.shields.io/badge/Theory-Axiomatic%20Supervision-blueviolet.svg)](AXIOMATIC_SUPERVISION_AND_SYNTHESIS.md)
 
-**Unlimited protected requests (100% free Edge WAF)** is free, open source, and available for download with instructions below. It replaces fragile regular expressions with a deterministic local Boolean SAT engine in `< 0.05ms` (`0.02ms` typical) across 10 formal certainty islands. You only pay for the optional cloud service for rule matrix simplification and minterm compression.
+Unlimited protected requests (100% free Edge WAF) is free, open source, and available for download with instructions below. It replaces fragile regular expressions with a deterministic local Boolean SAT engine in < 0.05ms (0.02ms typical) across 10 formal certainty islands. You only pay for the optional cloud service for rule matrix simplification and minterm compression.
 
 > 🛡️ **Zero Traffic Intermediation (100% Sovereign):**  
 > SATGuardian never requires CNAME DNS redirection or cloud proxies. Customer traffic stays 100% inside your infrastructure. You only spend **Security Units (SU)** when synthesizing and compressing Boolean rule matrices in the cloud.
+
+> ✈️ **The Envoy Proxy Alliance (The Modern Aircraft Carrier):**  
+> Pair the global scalability of Envoy Proxy with the sub-millisecond precision of SATGuardian Edge WAF. Communicating over zero-copy in-kernel Unix Domain Sockets (`unix:///run/satguardian/waf.sock`) via `ext_authz`, SATGuardian verifies traffic in **`< 15 µs`** without touching customer data or slowing down Envoy's C++ event loop. For complete production Kubernetes manifests and configurations, see the [Envoy Proxy Integration Guide](ENVOY_INTEGRATION_GUIDE.md).
 
 > 📘 **Foundational Theoretical Documentation:**  
 > To understand how the WAF classifies without manual human labeling, and how rules are synthesized and generalized by consuming Security Units (SU), see [Axiomatic Supervision and Inductive Synthesis in SATGuardian](AXIOMATIC_SUPERVISION_AND_SYNTHESIS.md).
@@ -22,17 +26,19 @@
 
 Deploy SATGuardian Edge WAF directly into your architecture using any of the 3 canonical deployment models:
 
-### Method 1: Standalone (Autonomous Mode)
-The lowest friction path for early adopters, homelabs, and quick POCs. The client downloads the self-contained Rust binary, specifies the public listen port and internal target, and the WAF begins protecting immediately with zero compilers or external runtime dependencies:
+### Method 1: Native Kubernetes & Envoy Proxy Integration (Sidecar Model)
+**The definitive cloud-native architecture for microservices and service meshes.** Envoy acts as the high-throughput aircraft carrier, while SATGuardian operates as the local sidecar interceptor via `ext_authz` over a shared Unix Domain Socket (`unix:///run/satguardian/waf.sock`), delivering near-zero latency (`< 15 µs`):
+
 ```bash
-# Windows
-.\satguardian-waf.exe proxy --listen 0.0.0.0:443 --upstream http://127.0.0.1:8080 --mode block
+# 1. Run Envoy + SATGuardian instant evaluation environment
+docker compose -f envoy/docker-compose-envoy.yml up -d
 
-# Linux
-./satguardian-waf proxy --listen 0.0.0.0:443 --upstream http://127.0.0.1:8080 --mode block
+# 2. Deploy into production Kubernetes cluster (Pods with in-mesh UDS)
+kubectl apply -f envoy/kubernetes-sidecar.yaml
 ```
+*(For complete details, see [ENVOY_INTEGRATION_GUIDE.md](ENVOY_INTEGRATION_GUIDE.md)).*
 
-### Method 2: Reverse Proxy over Existing Servers
+### Method 2: Reverse Proxy over Existing Servers (Nginx / IIS / Apache)
 Direct frontline positioned ahead of existing Nginx, Apache, or Microsoft IIS servers. Intercepts incoming internet traffic in microseconds, mathematically blocks threats, and transfers only legitimate requests to internal web server instances:
 
 - **Linux (Ubuntu / Debian / RHEL / CentOS / Rocky / Alpine):**
@@ -48,13 +54,15 @@ Direct frontline positioned ahead of existing Nginx, Apache, or Microsoft IIS se
   docker compose up -d
   ```
 
-### Method 3: Native Kubernetes / Envoy Proxy Integration (Sidecar Model)
-The definitive architecture for microservices and large-scale service meshes. SATGuardian runs as a local daemon sidecar next to each Envoy container via `ext_authz` over a local Unix Domain Socket (`unix:///run/satguardian/waf.sock`), delivering near-zero latency (`< 15 µs`):
+### Method 3: Standalone (Autonomous Mode)
+The lowest friction path for early adopters, homelabs, and quick POCs. The client downloads the self-contained Rust binary, specifies the public listen port and internal target, and the WAF begins protecting immediately with zero compilers or external runtime dependencies:
 ```bash
-# Run Envoy ext_authz verification daemon over Unix Domain Socket
-satguardian-waf envoy-authz --socket /run/satguardian/waf.sock
+# Windows
+.\satguardian-waf.exe proxy --listen 0.0.0.0:443 --upstream http://127.0.0.1:8080 --mode block
+
+# Linux
+./satguardian-waf proxy --listen 0.0.0.0:443 --upstream http://127.0.0.1:8080 --mode block
 ```
-When novel threats emerge, nodes query the cloud to download minimized Boolean rules and hot-compile them into RAM in 1 microsecond.
 
 ---
 
