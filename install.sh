@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Guardian WAF - Automated Server Installation Script
+# SATGuardian Edge WAF - Automated Server Installation Script
 # Operating Systems: Ubuntu, Debian, RHEL, CentOS, Rocky Linux, Alpine
 # ==============================================================================
 
@@ -13,9 +13,9 @@ YELLOW='\033[1;33m'
 NC='\033[0m'
 
 echo -e "${BLUE}============================================================${NC}"
-echo -e "${BLUE}🛡️  Installing Guardian WAF Server Component${NC}"
-echo -e "${BLUE}   Deterministic SAT Cyber-Defense & Reverse Proxy${NC}"
-echo -e "${BLUE}   Engine: EXACTOR Core & https://exactor.tech${NC}"
+echo -e "${BLUE}🛡️  Installing SATGuardian Edge WAF Server Component${NC}"
+echo -e "${BLUE}   Deterministic SAT Cyber-Defense & Reverse Proxy (100% Free Edge)${NC}"
+echo -e "${BLUE}   Cloud Boolean Optimization: https://satguardian.tech${NC}"
 echo -e "${BLUE}============================================================${NC}"
 
 if [[ $EUID -ne 0 ]]; then
@@ -24,8 +24,8 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 INSTALL_DIR="/usr/local/bin"
-CONFIG_DIR="/etc/exactor"
-SERVICE_FILE="/etc/systemd/system/exactor-waf.service"
+CONFIG_DIR="/etc/satguardian"
+SERVICE_FILE="/etc/systemd/system/satguardian-waf.service"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # 1. Locate Bundled Binary or Download Standalone Release
@@ -40,12 +40,21 @@ for arg in "$@"; do
     fi
 done
 
-if [[ -f "${SCRIPT_DIR}/exactor-waf-guardian" ]]; then
-    BINARY_PATH="${SCRIPT_DIR}/exactor-waf-guardian"
+if [[ -f "${SCRIPT_DIR}/satguardian-waf" ]]; then
+    BINARY_PATH="${SCRIPT_DIR}/satguardian-waf"
     echo -e "${GREEN}✓ Found bundled standalone binary in package.${NC}"
+elif [[ -f "${SCRIPT_DIR}/exactor-waf-guardian" ]]; then
+    BINARY_PATH="${SCRIPT_DIR}/exactor-waf-guardian"
+    echo -e "${GREEN}✓ Found bundled binary in package.${NC}"
+elif [[ -f "${SCRIPT_DIR}/bin/satguardian-waf" ]]; then
+    BINARY_PATH="${SCRIPT_DIR}/bin/satguardian-waf"
+    echo -e "${GREEN}✓ Found bundled binary in bin/ directory.${NC}"
 elif [[ -f "${SCRIPT_DIR}/bin/exactor-waf-guardian" ]]; then
     BINARY_PATH="${SCRIPT_DIR}/bin/exactor-waf-guardian"
     echo -e "${GREEN}✓ Found bundled binary in bin/ directory.${NC}"
+elif [[ -f "${SCRIPT_DIR}/target/release/satguardian-waf" ]]; then
+    BINARY_PATH="${SCRIPT_DIR}/target/release/satguardian-waf"
+    echo -e "${GREEN}✓ Found local release target binary.${NC}"
 elif [[ -f "${SCRIPT_DIR}/target/release/exactor-waf-guardian" ]]; then
     BINARY_PATH="${SCRIPT_DIR}/target/release/exactor-waf-guardian"
     echo -e "${GREEN}✓ Found local release target binary.${NC}"
@@ -53,7 +62,7 @@ elif [[ "$BUILD_SOURCE" == "true" ]]; then
     echo -e "Compiling release binary from source using cargo..."
     if command -v cargo &> /dev/null; then
         (cd "${SCRIPT_DIR}" && cargo build --release)
-        BINARY_PATH="${SCRIPT_DIR}/target/release/exactor-waf-guardian"
+        BINARY_PATH="${SCRIPT_DIR}/target/release/satguardian-waf"
     else
         echo -e "${RED}Error: Cargo not found for source build.${NC}"
         exit 1
@@ -67,10 +76,8 @@ else
         *) echo -e "${RED}Unsupported CPU architecture: ${ARCH}${NC}"; exit 1 ;;
     esac
 
-    DOWNLOAD_URL="https://github.com/ExactorResearch/exactor-waf-guardian/releases/download/${RELEASE_TAG}/exactor-waf-guardian-${TARGET_ARCH}"
-    echo $DOWNLOAD_URL
-    DOWNLOAD_URL="https://github.com/ExactorResearch/exactor-waf-guardian/blob/main/releases/download/v0.2.0/exactor-waf-guardian-x86_64-unknown-linux-musl"
-    TEMP_BIN="/tmp/exactor-waf-guardian"
+    DOWNLOAD_URL="https://github.com/SATGuardian/satguardian-waf/releases/download/${RELEASE_TAG}/satguardian-waf-${TARGET_ARCH}"
+    TEMP_BIN="/tmp/satguardian-waf"
     echo -e "Downloading pre-compiled standalone binary (${TARGET_ARCH})..."
     
     if command -v curl &> /dev/null; then
@@ -88,10 +95,10 @@ else
         if command -v cargo &> /dev/null; then
             echo -e "${YELLOW}Download unavailable. Building from source via cargo...${NC}"
             (cd "${SCRIPT_DIR}" && cargo build --release)
-            BINARY_PATH="${SCRIPT_DIR}/target/release/exactor-waf-guardian"
+            BINARY_PATH="${SCRIPT_DIR}/target/release/satguardian-waf"
         else
             echo -e "${RED}Error: Could not retrieve precompiled binary and Cargo is not installed.${NC}"
-            echo -e "Provide the precompiled 'exactor-waf-guardian' binary in the installer folder."
+            echo -e "Provide the precompiled 'satguardian-waf' binary in the installer folder."
             exit 1
         fi
     fi
@@ -99,23 +106,20 @@ fi
 
 # 2. Install Binary & CLI Suite
 echo -e "${YELLOW}[2/5] Installing binary and management tools to ${INSTALL_DIR}...${NC}"
-install -m 755 "${BINARY_PATH}" "${INSTALL_DIR}/exactor-waf-guardian"
-echo -e "${GREEN}✓ Binary installed at ${INSTALL_DIR}/exactor-waf-guardian${NC}"
+install -m 755 "${BINARY_PATH}" "${INSTALL_DIR}/satguardian-waf"
+ln -sf "${INSTALL_DIR}/satguardian-waf" "${INSTALL_DIR}/exactor-waf-guardian"
+echo -e "${GREEN}✓ Binary installed at ${INSTALL_DIR}/satguardian-waf (alias: exactor-waf-guardian)${NC}"
 
-if [[ -f "${SCRIPT_DIR}/exactor-top.py" ]]; then
-    install -m 755 "${SCRIPT_DIR}/exactor-top.py" "${INSTALL_DIR}/exactor-top"
-    echo -e "${GREEN}✓ exactor-top installed at ${INSTALL_DIR}/exactor-top${NC}"
-fi
-
-if [[ -f "${SCRIPT_DIR}/exactor-advisor.py" ]]; then
-    install -m 755 "${SCRIPT_DIR}/exactor-advisor.py" "${INSTALL_DIR}/exactor-advisor"
-    echo -e "${GREEN}✓ exactor-advisor installed at ${INSTALL_DIR}/exactor-advisor${NC}"
-fi
-
-if [[ -f "${SCRIPT_DIR}/exactor-rules.py" ]]; then
-    install -m 755 "${SCRIPT_DIR}/exactor-rules.py" "${INSTALL_DIR}/exactor-rules"
-    echo -e "${GREEN}✓ exactor-rules installed at ${INSTALL_DIR}/exactor-rules${NC}"
-fi
+for tool in satguardian-top satguardian-advisor satguardian-rules; do
+    if [[ -f "${SCRIPT_DIR}/${tool}.py" ]]; then
+        install -m 755 "${SCRIPT_DIR}/${tool}.py" "${INSTALL_DIR}/${tool}"
+        echo -e "${GREEN}✓ ${tool} installed at ${INSTALL_DIR}/${tool}${NC}"
+    fi
+done
+# Legacy compatibility links
+[[ -f "${INSTALL_DIR}/satguardian-top" ]] && ln -sf "${INSTALL_DIR}/satguardian-top" "${INSTALL_DIR}/exactor-top"
+[[ -f "${INSTALL_DIR}/satguardian-advisor" ]] && ln -sf "${INSTALL_DIR}/satguardian-advisor" "${INSTALL_DIR}/exactor-advisor"
+[[ -f "${INSTALL_DIR}/satguardian-rules" ]] && ln -sf "${INSTALL_DIR}/satguardian-rules" "${INSTALL_DIR}/exactor-rules"
 
 # 3. Create Configuration
 echo -e "${YELLOW}[3/5] Setting up configuration directory ${CONFIG_DIR}...${NC}"
@@ -129,8 +133,8 @@ if [[ ! -f "${CONFIG_DIR}/waf_config.toml" ]]; then
 listen_addr = "0.0.0.0:8080"
 upstream_url = "http://127.0.0.1:3000"
 mode = "block"
-exactor_api_url = "https://exactor.tech/api/simplify"
-database_path = "/etc/exactor/waf_ledger.db"
+satguardian_api_url = "https://satguardian.tech/api/simplify"
+database_path = "/etc/satguardian/waf_ledger.db"
 autonomous_sync_interval_secs = 300
 auto_sync_enabled = true
 EOF
@@ -144,13 +148,10 @@ fi
 # 4. Install Systemd Service
 echo -e "${YELLOW}[4/5] Installing systemd service...${NC}"
 if [[ -d "/etc/systemd/system" ]]; then
-    if [[ -f "${SCRIPT_DIR}/exactor-waf.service" ]]; then
-        cp "${SCRIPT_DIR}/exactor-waf.service" "${SERVICE_FILE}"
-    else
-        cat << 'EOF' > "${SERVICE_FILE}"
+    cat << 'EOF' > "${SERVICE_FILE}"
 [Unit]
-Description=Guardian WAF - Deterministic SAT Cyber-Defense Proxy
-Documentation=https://github.com/ExactorResearch/exactor-waf-guardian
+Description=SATGuardian Edge WAF - Deterministic SAT Cyber-Defense Proxy
+Documentation=https://satguardian.tech
 After=network.target network-online.target
 Wants=network-online.target
 
@@ -158,8 +159,8 @@ Wants=network-online.target
 Type=simple
 User=root
 Group=root
-WorkingDirectory=/etc/exactor
-ExecStart=/usr/local/bin/exactor-waf-guardian proxy --config /etc/exactor/waf_config.toml
+WorkingDirectory=/etc/satguardian
+ExecStart=/usr/local/bin/satguardian-waf proxy --config /etc/satguardian/waf_config.toml
 Restart=always
 RestartSec=3s
 
@@ -177,38 +178,38 @@ NoNewPrivileges=true
 # Logging
 StandardOutput=journal
 StandardError=journal
-SyslogIdentifier=exactor-waf
+SyslogIdentifier=satguardian-waf
 
 [Install]
 WantedBy=multi-user.target
 EOF
-    fi
     chmod 644 "${SERVICE_FILE}"
     systemctl daemon-reload
-    systemctl enable exactor-waf.service
+    systemctl enable satguardian-waf.service
     echo -e "${GREEN}✓ Systemd service registered and enabled.${NC}"
 else
     echo -e "${YELLOW}Warning: systemd not detected. You can run the server with:${NC}"
-    echo -e "${GREEN}exactor-waf-guardian proxy --config ${CONFIG_DIR}/waf_config.toml${NC}"
+    echo -e "${GREEN}satguardian-waf proxy --config ${CONFIG_DIR}/waf_config.toml${NC}"
 fi
 
 # 5. Start Service
 echo -e "${YELLOW}[5/5] Starting service...${NC}"
 if command -v systemctl &> /dev/null && systemctl is-system-running &> /dev/null; then
-    systemctl restart exactor-waf.service
+    systemctl restart satguardian-waf.service
     sleep 1
-    if systemctl is-active --quiet exactor-waf.service; then
-        echo -e "${GREEN}✅ Guardian WAF is ACTIVE and protecting your server!${NC}"
+    if systemctl is-active --quiet satguardian-waf.service; then
+        echo -e "${GREEN}✅ SATGuardian Edge WAF is ACTIVE and protecting your server!${NC}"
     else
-        echo -e "${RED}⚠️  Service failed to start. Check logs with: journalctl -u exactor-waf -e${NC}"
+        echo -e "${RED}⚠️  Service failed to start. Check logs with: journalctl -u satguardian-waf -e${NC}"
     fi
 fi
 
 echo -e "\n${GREEN}============================================================${NC}"
 echo -e "${GREEN}🎉 Installation successfully completed!${NC}"
-echo -e "   Status command   : systemctl status exactor-waf"
-echo -e "   Logs command     : journalctl -u exactor-waf -f"
-echo -e "   Config file      : /etc/exactor/waf_config.toml"
-echo -e "   CLI inspection   : exactor-waf-guardian inspect --query \"id=1' OR 1=1--\""
-echo -e "   Benchmark        : exactor-waf-guardian benchmark"
+echo -e "   Status command   : systemctl status satguardian-waf"
+echo -e "   Logs command     : journalctl -u satguardian-waf -f"
+echo -e "   Config file      : /etc/satguardian/waf_config.toml"
+echo -e "   Entitlement check: satguardian-waf entitlement"
+echo -e "   CLI inspection   : satguardian-waf inspect --query \"id=1' OR 1=1--\""
+echo -e "   Benchmark        : satguardian-waf benchmark"
 echo -e "${GREEN}============================================================${NC}"

@@ -1,8 +1,8 @@
-use exactor_waf_guardian::config::WafConfig;
-use exactor_waf_guardian::engine::ExactorSatEngine;
-use exactor_waf_guardian::envoy::{create_envoy_authz_router, EnvoyAuthzState};
-use exactor_waf_guardian::ledger::SqliteLedger;
-use exactor_waf_guardian::stateful::StatefulRateLimiter;
+use satguardian_waf::config::WafConfig;
+use satguardian_waf::engine::SatguardianSatEngine;
+use satguardian_waf::envoy::{create_envoy_authz_router, EnvoyAuthzState};
+use satguardian_waf::ledger::SqliteLedger;
+use satguardian_waf::stateful::StatefulRateLimiter;
 use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use std::sync::Arc;
@@ -12,7 +12,7 @@ async fn setup_test_router(db_path: &str) -> axum::Router {
     let ledger = SqliteLedger::init(db_path).await.expect("Failed to init test db");
     let config = WafConfig::default();
     let stateful_limiter = Arc::new(StatefulRateLimiter::new(config.to_stateful_config()));
-    let engine = Arc::new(ExactorSatEngine::new());
+    let engine = Arc::new(SatguardianSatEngine::new());
 
     let state = EnvoyAuthzState::new(
         engine,
@@ -46,10 +46,15 @@ async fn test_envoy_ext_authz_benign_request_allowed() {
         "true"
     );
     assert_eq!(
+        response.headers().get("x-satguardian-verified").unwrap(),
+        "true"
+    );
+    assert_eq!(
         response.headers().get("x-exactor-verified").unwrap(),
         "true"
     );
     assert!(response.headers().contains_key("x-envoy-waf-latency-us"));
+    assert!(response.headers().contains_key("x-satguardian-latency-us"));
     assert!(response.headers().contains_key("x-exactor-latency-us"));
 }
 
@@ -75,11 +80,19 @@ async fn test_envoy_ext_authz_sqli_blocked_with_proof() {
         "true"
     );
     assert_eq!(
+        response.headers().get("x-satguardian-blocked").unwrap(),
+        "true"
+    );
+    assert_eq!(
         response.headers().get("x-exactor-blocked").unwrap(),
         "true"
     );
     assert_eq!(
         response.headers().get("x-envoy-waf-category").unwrap(),
+        "sql_injection"
+    );
+    assert_eq!(
+        response.headers().get("x-satguardian-category").unwrap(),
         "sql_injection"
     );
     assert_eq!(
@@ -113,11 +126,19 @@ async fn test_envoy_ext_authz_post_body_xss_blocked() {
         "true"
     );
     assert_eq!(
+        response.headers().get("x-satguardian-blocked").unwrap(),
+        "true"
+    );
+    assert_eq!(
         response.headers().get("x-exactor-blocked").unwrap(),
         "true"
     );
     assert_eq!(
         response.headers().get("x-envoy-waf-category").unwrap(),
+        "xss"
+    );
+    assert_eq!(
+        response.headers().get("x-satguardian-category").unwrap(),
         "xss"
     );
     assert_eq!(

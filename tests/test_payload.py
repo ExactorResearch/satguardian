@@ -1,7 +1,7 @@
 """Tests for HTTPRequestPayload data structure."""
 
 import pytest
-from exactor_waf.core.payload import HTTPRequestPayload, AttackCategory, AttackDecision
+from satguardian_waf.core.payload import HTTPRequestPayload, AttackCategory, AttackDecision
 
 
 def test_payload_normalization():

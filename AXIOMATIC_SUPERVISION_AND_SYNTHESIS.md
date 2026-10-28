@@ -1,18 +1,18 @@
-# 📘 Axiomatic Supervision and Inductive Synthesis in EXACTOR
+# 📘 Axiomatic Supervision and Inductive Synthesis in SATGUARDIAN
 ## Epistemic Foundation: How the WAF Learns, Classifies, and Generalizes Without Human Labeling
 
 ---
 
 ### Executive Summary
 
-One of the most critical and disruptive questions regarding the **Guardian WAF** paradigm is:  
-> *“If EXACTOR training is not supervised by humans labeling datasets by hand... how does the system know what constitutes an attack and what is benign? And if formal invariants already detect attacks... why is training needed at all?”*
+One of the most critical and disruptive questions regarding the **SATGuardian Edge WAF** paradigm is:  
+> *“If SATGUARDIAN training is not supervised by humans labeling datasets by hand... how does the system know what constitutes an attack and what is benign? And if formal invariants already detect attacks... why is training needed at all?”*
 
 The answer lies in the transition from **Probabilistic Artificial Intelligence** (neural networks based on statistical curve fitting) to **Neuro-Symbolic Computing and Exact Boolean Algebra**:
 
 1. **The Label is a Mathematical Theorem:** The WAF neither guesses nor computes statistical probabilities; the classification label $F(\mathbf{x}) = 1$ (*Confirmed Attack*) originates from **Axiomatic Supervision** enforced by formal protocol grammars.
-2. **Training is Inductive Synthesis:** Cloud training ([`https://exactor.tech/api/simplify`](https://exactor.tech/api/simplify)) does not tune weight matrices; it **strips obfuscation camouflage** (*Don't Cares*), extracts the **Minimal Prime Implicant**, and generalizes protection against trillions of future variants into a single microprocessor instruction.
-3. **Commercial Model:** This high-density logic synthesis computation is the engine through which **Silicon Units (SU)** are consumed and monetized.
+2. **Training is Inductive Synthesis:** Cloud training ([`https://satguardian.tech/api/simplify`](https://satguardian.tech/api/simplify)) does not tune weight matrices; it **strips obfuscation camouflage** (*Don't Cares*), extracts the **Minimal Prime Implicant**, and generalizes protection against trillions of future variants into a single microprocessor instruction.
+3. **Commercial Model:** This high-density logic synthesis computation is the engine through which **Security Units (SU)** are consumed and monetized.
 
 ---
 
@@ -26,7 +26,7 @@ In high-frequency banking and edge perimeter cybersecurity, this approach is **f
 - It introduces human subjectivity and statistical dataset bias.
 - It produces **catastrophic false positives** when legitimate application traffic carries complex syntax not represented in the training distribution.
 
-### The EXACTOR Approach: Formal Grammars as Axioms
+### The SATGUARDIAN Approach: Formal Grammars as Axioms
 Computer vulnerabilities obey **mathematical laws and rigid grammatical constraints** defined across formal standards (RFCs, BNF SQL grammars, W3C DOM specifications, JSON RFC 8259, GraphQL AST, and JWT RFC 7519):
 
 ```text
@@ -52,7 +52,7 @@ Computer vulnerabilities obey **mathematical laws and rigid grammatical constrai
 └───────────────────────────────────┴────────────────────────────────────┘
 ```
 
-When an HTTP request enters **Guardian WAF**, the **AST Lexer** normalizes it and extracts structural tokens. If the request violates any of the **10 Certainty Islands**, the engine assigns:
+When an HTTP request enters **SATGuardian Edge WAF**, the **AST Lexer** normalizes it and extracts structural tokens. If the request violates any of the **10 Certainty Islands**, the engine assigns:
 $$\mathbf{F(\mathbf{x}) = 1 \quad \implies \quad \text{FORMAL LABEL: CONFIRMED ATTACK}}$$
 
 > **Epistemic Conclusion:**  
@@ -83,12 +83,12 @@ The local WAF will block all 1,000 requests in real time using its base invarian
 
 ---
 
-### What Does "Training" Do at `exactor.tech`? (Inductive Synthesis)
+### What Does "Training" Do at `satguardian.tech`? (Inductive Synthesis)
 
 The local WAF batches the 1,000 minterms stored in its local SQLite WAL (`waf_ledger.db`), all formally labeled with $F=1$ (confirmed attacks), and dispatches them asynchronously to the synthesis service:
 
 ```text
-POST https://exactor.tech/api/simplify
+POST https://satguardian.tech/api/simplify
 {
   "variables": ["v0_quote", "v1_tautology", "v16_obfuscated", "v20_large_body", ...],
   "minterms": [34359738368, 34359738369, 549755813888, ...] // 1,000 minterms
@@ -105,7 +105,7 @@ graph TD
 
     SQLite -.->|POST /api/simplify| Cloud
 
-    subgraph Cloud [Central Cloud: exactor.tech]
+    subgraph Cloud [Central Cloud: satguardian.tech]
         CloudCore[Exact Synthesis Engine Quine-McCluskey / SAT]
         CloudCore --> StripNoise[Eliminates Camouflage Variables: Don't Cares]
         StripNoise --> ExtractRoot[Extracts Minimal Prime Implicant: v0 ∧ v1]
@@ -145,43 +145,45 @@ In this scenario, **External Supervision (Human Analyst or Autonomous Oracle)** 
 sequenceDiagram
     autonumber
     actor Analyst as 🕵️ SOC Analyst / JEV Oracle
-    participant WAF as 🛡️ Local Exactor WAF
-    participant Cloud as ☁️ exactor.tech (API)
+    participant WAF as 🛡️ Local SATGuardian WAF
+    participant Cloud as ☁️ satguardian.tech (API)
 
     Analyst->>WAF: 1. Discovers novel attack vector in audit logs
     Analyst->>Cloud: 2. Registers vector and assigns label F(x) = 1 (Attack)
-    Note over Cloud: 3. Boolean Synthesis & Minimization<br/>Consumes Silicon Units (SU)
+    Analyst->>WAF: 1. Discovers novel attack vector in audit logs
+    Analyst->>Cloud: 2. Registers vector and assigns label F(x) = 1 (Attack)
+    Note over Cloud: 3. Boolean Synthesis & Minimization<br/>Consumes Security Units (SU)
     Cloud-->>WAF: 4. Deploys optimized, compact Boolean clause
     Note over WAF: 5. Immediate hot-compilation in RAM<br/>Zero restart, zero backend modifications
     Note over WAF: 6. Deterministic 0.02ms blocking in perpetuity
 ```
 
-1. **Identification:** The customer security team (or an offline cognitive agent such as JEV) discovers the anomalous vector.
+1. **Identification:** The customer security team (or an offline cognitive agent) discovers the anomalous vector.
 2. **Label Assignment:** The signature is formally assigned $F(\mathbf{x}) = 1$.
-3. **Cloud Synthesis:** The job is dispatched to `https://exactor.tech/api/simplify`.
+3. **Cloud Synthesis:** The job is dispatched to `https://satguardian.tech/api/simplify`.
 4. **Real-Time Hot-Patching:** The local WAF ingests the minimized rule into its active clauses in microseconds.
 5. **Outcome:** The perimeter is patched at hardware speed **without waiting weeks for development cycles or maintenance windows**.
 
 ---
 
-## 4. Silicon Units (SU) Licensing Model
+## 4. Security Units (SU) Licensing Model
 
 This architectural separation underpins the commercial efficiency of the product:
 
-* **Production Traffic Incurs Zero Marginal Cost:**  
-  Millions of legitimate daily customer requests are inspected in local RAM at **$0.00 marginal inference cost**.
-* **Billing Applies Exclusively to Synthesis (The Brain):**  
-  Silicon Units are consumed only when the local daemon batches hypercube minterms for inductive generalization, or when new custom API rules are synthesized.
-* **Silicon Unit (SU) Calculation:**  
+* **Production Traffic Incurs Zero Marginal Cost (100% Free Edge WAF):**  
+  Unlimited legitimate customer requests are inspected in local RAM at **$0.00 marginal cost** with no per-request metering.
+* **Billing Applies Exclusively to Cloud Synthesis (The Brain):**  
+  Security Units are consumed only when the local daemon batches hypercube minterms for inductive generalization, or when new custom API rules are synthesized.
+* **Security Unit (SU) Calculation:**  
   $$\text{SU Consumption} = \text{Minterms} \times \phi(\text{Variables})$$
-  - Customers subscribe to monthly plans with bundled Silicon Units (e.g., STARTUP Plan: 50,000 SU for $499 USD/month).
-  - High-volume attack surges or extensive API expansions draw from overage pools (**$8 USD per 1,000 additional SU**).
+  - Customers subscribe to monthly cloud optimization tiers with bundled Security Units (e.g., SCOUT: 1,000 SU/mo; PRO: 5,000 SU/mo; STARTUP: 50,000 SU/mo; ESCALA: 500,000 SU/mo).
+  - When the SU balance is exhausted in non-overage plans, cloud synthesis is paused while the Edge WAF continues actively defending with the current ruleset. High-volume tiers draw from negotiated overage pools ($10-$5 USD per 1,000 extra SU).
 
 ---
 
 ## 5. Architectural Comparison: Detection Paradigms
 
-| Feature | Classic Machine Learning (Deep Learning) | Regular Expressions (ModSecurity / CRS) | EXACTOR (Axiomatic Supervision + SAT) |
+| Feature | Classic Machine Learning (Deep Learning) | Regular Expressions (ModSecurity / CRS) | SATGUARDIAN (Axiomatic Supervision + SAT) |
 | :--- | :---: | :---: | :---: |
 | **Label Provenance** | Subjective (Manual human annotators) | Manual (Static signatures written by analysts) | **Axiomatic (Theorems on formal grammars)** |
 | **Decision Nature** | Probabilistic (Score between $0.0 - 1.0$) | Syntactic string match | **Deterministic SAT ($\text{TRUE} \lor \text{FALSE}$)** |
@@ -189,12 +191,12 @@ This architectural separation underpins the commercial efficiency of the product
 | **Evaluation Latency** | Unacceptable ($350 - 650\text{ ms}$) | Slow and variable ($2 - 10\text{ ms}$) | **Ultra-Fast ($< 0.05\text{ ms}$ / $< 20\text{ µs}$)** |
 | **Explainability** | Opaque (Black-box weight activations) | Generic rule ID | **Formal ($\LaTeX$ Proofs & Causal Graphs)** |
 | **Marginal Cost per Query** | High (GPU compute / Token metering) | Medium (CPU overhead due to ReDoS) | **Zero ($0.00$ marginal cost on local CPU)** |
-| **Monetization Structure** | Metered per inference token | Static subscription fees | **Base Platform + Silicon Units (SU)** |
+| **Monetization Structure** | Metered per inference token | Static subscription fees | **Free Edge WAF + Cloud Security Units (SU)** |
 
 ---
 
 ### Related Documentation & Technical References
-- [Deterministic SAT Cyber-Defense Methodology](file:///d:/proyectos/rush/exactor-waf-guardian/EXACTOR_METHODOLOGY.md)
-- [Proof of Concept & Multi-Agent Duel Benchmark](file:///d:/proyectos/rush/exactor-waf-guardian/PROOF_OF_CONCEPT.md)
-- [Silicon Unit Pricing & Licensing Rules](file:///d:/proyectos/rush/.agent/rules/pricing_and_licensing.md)
-- [Guardian WAF Master README](file:///d:/proyectos/rush/exactor-waf-guardian/README.md)
+- [Deterministic SAT Cyber-Defense Methodology](file:///d:/proyectos/rush/satguardian-waf-guardian/SATGUARDIAN_METHODOLOGY.md)
+- [Proof of Concept & Multi-Agent Duel Benchmark](file:///d:/proyectos/rush/satguardian-waf-guardian/PROOF_OF_CONCEPT.md)
+- [Security Unit Pricing & Licensing Rules](file:///d:/proyectos/rush/.agent/rules/pricing_and_licensing.md)
+- [SATGuardian Edge WAF Master README](file:///d:/proyectos/rush/satguardian-waf-guardian/README.md)

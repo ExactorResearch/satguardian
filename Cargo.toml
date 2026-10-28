@@ -1,10 +1,18 @@
 [package]
-name = "exactor-waf-guardian"
+name = "satguardian-waf"
 version = "0.3.0"
 edition = "2021"
-authors = ["Exactor Team"]
+authors = ["Satguardian Research"]
 license = "MIT OR Apache-2.0"
-description = "Guardian WAF: Production-grade, sub-millisecond SAT Web Application Firewall (WAF) reverse-proxy and agent with autonomous exact Boolean simplification via exactor.tech"
+description = "SATGuardian Edge WAF: Production-grade, sub-millisecond SAT Web Application Firewall with autonomous Boolean logic minimization via satguardian.tech"
+
+[lib]
+name = "satguardian_waf"
+path = "src/lib.rs"
+
+[[bin]]
+name = "satguardian-waf"
+path = "src/main.rs"
 
 [dependencies]
 # Async Runtime & Networking
@@ -16,7 +24,7 @@ http-body-util = "0.1"
 hyper = { version = "1.4", features = ["full"] }
 hyper-util = { version = "0.1", features = ["tokio", "server-auto"] }
 
-# HTTP Client for Upstream Proxying & Exactor Cloud API
+# HTTP Client for Upstream Proxying & SATGuardian Cloud API
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
 
 # Serialization & Config

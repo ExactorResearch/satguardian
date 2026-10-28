@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Launch Exactor WAF Guardian Web Dashboard Server."""
+"""Launch SATGuardian Edge WAF Web Dashboard Server."""
 
 import sys
 import uvicorn
@@ -19,8 +19,8 @@ if __name__ == "__main__":
             pass
 
     print("\n" + "=" * 60)
-    print(" [WEB] EXACTOR WAF GUARDIAN - Web Server")
+    print(" [WEB] SATGUARDIAN EDGE WAF - Web Server")
     print(f" [URL] Dashboard: http://localhost:{port}")
     print("=" * 60 + "\n")
 
-    uvicorn.run("exactor_waf.web.server:app", host="0.0.0.0", port=port, reload=False)
+    uvicorn.run("satguardian_waf.web.server:app", host="0.0.0.0", port=port, reload=False)

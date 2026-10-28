@@ -184,7 +184,7 @@ async fn handle_envoy_authz_check(
             "formal_proof_latex": proof.formal_proof_latex,
             "active_tokens": proof.active_tokens,
             "latency_us": eval_us,
-            "engine": "Envoy SAT Security Module (Powered by EXACTOR Core)"
+            "engine": "Envoy SAT Security Module (Powered by SATGuardian Core)"
         });
 
         let mut res = (StatusCode::FORBIDDEN, error_body.to_string()).into_response();
@@ -213,7 +213,27 @@ async fn handle_envoy_authz_check(
                 .unwrap_or(HeaderValue::from_static("0.0")),
         );
 
-        // Exactor provider headers (aliased for multi-ecosystem interoperability)
+        // SATGuardian provider headers
+        headers.insert("x-satguardian-blocked", HeaderValue::from_static("true"));
+        headers.insert(
+            "x-satguardian-category",
+            HeaderValue::from_str(proof.category.as_str()).unwrap_or(HeaderValue::from_static("unknown")),
+        );
+        headers.insert(
+            "x-satguardian-rule",
+            HeaderValue::from_str(rule_id).unwrap_or(HeaderValue::from_static("sat")),
+        );
+        headers.insert(
+            "x-satguardian-event-id",
+            HeaderValue::from_str(&payload.id).unwrap_or(HeaderValue::from_static("event")),
+        );
+        headers.insert(
+            "x-satguardian-latency-us",
+            HeaderValue::from_str(&format!("{:.1}", eval_us))
+                .unwrap_or(HeaderValue::from_static("0.0")),
+        );
+
+        // Legacy compatibility headers
         headers.insert("x-exactor-blocked", HeaderValue::from_static("true"));
         headers.insert(
             "x-exactor-category",
@@ -243,9 +263,15 @@ async fn handle_envoy_authz_check(
         let mut res = (StatusCode::OK, "").into_response();
         let headers = res.headers_mut();
         headers.insert("x-envoy-waf-verified", HeaderValue::from_static("true"));
+        headers.insert("x-satguardian-verified", HeaderValue::from_static("true"));
         headers.insert("x-exactor-verified", HeaderValue::from_static("true"));
         headers.insert(
             "x-envoy-waf-latency-us",
+            HeaderValue::from_str(&format!("{:.1}", eval_us))
+                .unwrap_or(HeaderValue::from_static("0.0")),
+        );
+        headers.insert(
+            "x-satguardian-latency-us",
             HeaderValue::from_str(&format!("{:.1}", eval_us))
                 .unwrap_or(HeaderValue::from_static("0.0")),
         );
@@ -272,7 +298,7 @@ pub async fn serve_uds(
 
     let _ = std::fs::remove_file(socket_path);
     let listener = UnixListener::bind(socket_path)?;
-    tracing::info!(target: "exactor::envoy", "Envoy ext_authz UDS service ready on unix://{}", socket_path);
+    tracing::info!(target: "satguardian::envoy", "Envoy ext_authz UDS service ready on unix://{}", socket_path);
 
     loop {
         let (stream, _) = listener.accept().await?;
@@ -289,7 +315,7 @@ pub async fn serve_uds(
                 .serve_connection(io, service)
                 .await
             {
-                tracing::debug!(target: "exactor::envoy", "UDS connection closed: {:?}", err);
+                tracing::debug!(target: "satguardian::envoy", "UDS connection closed: {:?}", err);
             }
         });
     }

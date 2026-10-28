@@ -1,17 +1,17 @@
 use clap::{Parser, Subcommand};
-use exactor_waf_guardian::api::create_api_router;
-use exactor_waf_guardian::ast::features::FeatureBinarizer;
-use exactor_waf_guardian::benchmark::BenchmarkSuite;
-use exactor_waf_guardian::cloud::{ExactorCloudClient, SimplifyRequest};
-use exactor_waf_guardian::config::WafConfig;
-use exactor_waf_guardian::engine::ExactorSatEngine;
-use exactor_waf_guardian::envoy::{create_envoy_authz_router, EnvoyAuthzState};
-use exactor_waf_guardian::ledger::SqliteLedger;
-use exactor_waf_guardian::proxy::{proxy_handler, ProxyState};
-use exactor_waf_guardian::reporter::SafeLinePgReporter;
-use exactor_waf_guardian::stateful::StatefulRateLimiter;
-use exactor_waf_guardian::t1k::{run_t1k_server, T1kServerState};
-use exactor_waf_guardian::types::HttpRequestPayload;
+use satguardian_waf::api::create_api_router;
+use satguardian_waf::ast::features::FeatureBinarizer;
+use satguardian_waf::benchmark::BenchmarkSuite;
+use satguardian_waf::cloud::{SatguardianCloudClient, SimplifyRequest};
+use satguardian_waf::config::WafConfig;
+use satguardian_waf::engine::SatguardianSatEngine;
+use satguardian_waf::envoy::{create_envoy_authz_router, EnvoyAuthzState};
+use satguardian_waf::ledger::SqliteLedger;
+use satguardian_waf::proxy::{proxy_handler, ProxyState};
+use satguardian_waf::reporter::SafeLinePgReporter;
+use satguardian_waf::stateful::StatefulRateLimiter;
+use satguardian_waf::t1k::{run_t1k_server, T1kServerState};
+use satguardian_waf::types::HttpRequestPayload;
 use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::atomic::AtomicU64;
@@ -23,10 +23,10 @@ use tracing_subscriber::EnvFilter;
 
 #[derive(Parser, Debug)]
 #[command(
-    name = "exactor-waf-guardian",
-    author = "Exactor Team",
+    name = "satguardian-waf",
+    author = "Satguardian Research",
     version = env!("CARGO_PKG_VERSION"),
-    about = "Guardian WAF: Production-grade, sub-millisecond SAT Web Application Firewall & Reverse Proxy powered by EXACTOR Core and exactor.tech"
+    about = "SATGuardian Edge WAF: Production-grade, sub-millisecond SAT Web Application Firewall & Reverse Proxy (100% Free Edge traffic) powered by satguardian.tech Boolean Logic Optimization"
 )]
 struct Cli {
     #[command(subcommand)]
@@ -77,7 +77,7 @@ enum Commands {
         body: String,
     },
 
-    /// Force immediate exact Boolean simplification with https://exactor.tech
+    /// Force immediate exact Boolean simplification with https://satguardian.tech
     SyncSimplify {
         /// Number of pending anomaly minterms to batch-simplify
         #[arg(short, long, default_value_t = 100)]
@@ -116,6 +116,10 @@ enum Commands {
         #[arg(long)]
         safeline_pg: Option<String>,
     },
+
+    /// Check Cloud Security Units (SU) balance and Edge entitlement from satguardian.tech
+    #[command(alias = "status", alias = "check-license")]
+    Entitlement,
 }
 
 #[tokio::main]
@@ -142,6 +146,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         Some(Commands::Benchmark { requests }) => {
             BenchmarkSuite::run_benchmark(requests);
             Ok(())
+        }
+        Some(Commands::Entitlement) => {
+            run_check_entitlement(&config).await
         }
         Some(Commands::SyncSimplify { limit }) => {
             run_sync_simplify(&config, limit).await
@@ -202,33 +209,34 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 async fn run_server(config: WafConfig) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     println!(
         r#"
-  ███████╗██╗  ██╗ █████╗  ██████╗████████╗ ██████╗ ██████╗ 
-  ██╔════╝╚██╗██╔╝██╔══██╗██╔════╝╚══██╔══╝██╔═══██╗██╔══██╗
-  █████╗   ╚███╔╝ ███████║██║        ██║   ██║   ██║██████╔╝
-  ██╔══╝   ██╔██╗ ██╔══██║██║        ██║   ██║   ██║██╔══██╗
-  ███████╗██╔╝ ██╗██║  ██║╚██████╗   ██║   ╚██████╔╝██║  ██║
-  ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝
-            GUARDIAN WAF - SERVER COMPONENT
-      Powered by EXACTOR Core & https://exactor.tech
+   ███████╗ █████╗ ████████╗ ██████╗ ██╗   ██╗ █████╗ ██████╗ ██████╗ ██╗ █████╗ ███╗   ██╗
+   ██╔════╝██╔══██╗╚══██╔══╝██╔════╝ ██║   ██║██╔══██╗██╔══██╗██╔══██╗██║██╔══██╗████╗  ██║
+   ███████╗███████║   ██║   ██║  ███╗██║   ██║███████║██████╔╝██║  ██║██║███████║██╔██╗ ██║
+   ╚════██║██╔══██║   ██║   ██║   ██║██║   ██║██╔══██║██╔══██╗██║  ██║██║██╔══██║██║╚██╗██║
+   ███████║██║  ██║   ██║   ╚██████╔╝╚██████╔╝██║  ██║██║  ██║██████╔╝██║██║  ██║██║ ╚████║
+   ╚══════╝╚═╝  ╚═╝   ╚═╝    ╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝
+             SATGUARDIAN EDGE WAF - 100% FREE LOCAL DEFENSE
+        Cloud Boolean Optimization Powered by Security Units (SU)
+                         https://satguardian.tech
     "#
     );
 
-    info!(target: "exactor::server", "Starting Guardian WAF Server v{}", env!("CARGO_PKG_VERSION"));
-    info!(target: "exactor::server", "Listen Address : {}", config.listen_addr);
-    info!(target: "exactor::server", "Upstream Target: {}", config.upstream_url);
-    info!(target: "exactor::server", "Defense Mode   : {}", config.mode.to_uppercase());
-    info!(target: "exactor::server", "Stealth Mode   : {}", if config.stealth_mode { "ENABLED (Minimal 403 Forbidden)" } else { "DISABLED (Verbose LaTeX/JSON)" });
-    info!(target: "exactor::server", "Cloud API URL  : {}", config.exactor_api_url);
-    info!(target: "exactor::server", "SQLite Ledger  : {}", config.database_path);
+    info!(target: "satguardian::server", "Starting SATGuardian Edge WAF Server v{}", env!("CARGO_PKG_VERSION"));
+    info!(target: "satguardian::server", "Listen Address : {}", config.listen_addr);
+    info!(target: "satguardian::server", "Upstream Target: {}", config.upstream_url);
+    info!(target: "satguardian::server", "Defense Mode   : {}", config.mode.to_uppercase());
+    info!(target: "satguardian::server", "Stealth Mode   : {}", if config.stealth_mode { "ENABLED (Minimal 403 Forbidden)" } else { "DISABLED (Verbose LaTeX/JSON)" });
+    info!(target: "satguardian::server", "Cloud API URL  : {}", config.satguardian_api_url);
+    info!(target: "satguardian::server", "SQLite Ledger  : {}", config.database_path);
 
-    let engine = Arc::new(ExactorSatEngine::with_config(
+    let engine = Arc::new(SatguardianSatEngine::with_config(
         config.islands.clone(),
         config.business_rules.clone(),
     ));
     let ledger = SqliteLedger::init(&config.database_path).await?;
-    let cloud_client = ExactorCloudClient::new(
-        config.exactor_api_url.clone(),
-        config.exactor_api_token.clone(),
+    let cloud_client = SatguardianCloudClient::new(
+        config.satguardian_api_url.clone(),
+        config.satguardian_api_token.clone(),
     );
 
     let stateful_limiter = Arc::new(StatefulRateLimiter::new(config.to_stateful_config()));
@@ -263,9 +271,9 @@ async fn run_server(config: WafConfig) -> Result<(), Box<dyn std::error::Error +
                 if let Ok(pending) = bg_ledger.get_pending_anomalies(50).await {
                     if !pending.is_empty() {
                         info!(
-                            target: "exactor::sync",
+                            target: "satguardian::sync",
                             count = pending.len(),
-                            "Autonomous worker: Syncing novel anomaly minterms with https://exactor.tech"
+                            "Autonomous worker: Syncing novel anomaly minterms with https://satguardian.tech"
                         );
                         let vars = FeatureBinarizer::get_variable_catalog(24);
                         let req = SimplifyRequest {
@@ -283,13 +291,13 @@ async fn run_server(config: WafConfig) -> Result<(), Box<dyn std::error::Error +
                                 let _ = bg_ledger.record_simplification(&resp, vars.len(), pending.len()).await;
                                 let _ = bg_ledger.mark_anomalies_simplified(&pending).await;
                                 info!(
-                                    target: "exactor::sync",
+                                    target: "satguardian::sync",
                                     reduction = %format!("{:.1}%", resp.reduction_percent),
                                     "Autonomous worker: Hot Boolean Minimization complete. Invariants updated."
                                 );
                             }
                             Err(e) => {
-                                warn!(target: "exactor::sync", "Autonomous sync skipped or failed: {}", e);
+                                warn!(target: "satguardian::sync", "Autonomous sync skipped or failed: {}", e);
                             }
                         }
                     }
@@ -309,7 +317,7 @@ async fn run_server(config: WafConfig) -> Result<(), Box<dyn std::error::Error +
         let envoy_app = create_envoy_authz_router(envoy_state);
         let envoy_addr: SocketAddr = envoy_addr_str.parse()?;
         let envoy_listener = tokio::net::TcpListener::bind(envoy_addr).await?;
-        info!(target: "exactor::envoy", "Envoy ext_authz HTTP verification listener ready on http://{}", envoy_addr);
+        info!(target: "satguardian::envoy", "Envoy ext_authz HTTP verification listener ready on http://{}", envoy_addr);
 
         tokio::spawn(async move {
             if let Err(e) = axum::serve(
@@ -318,7 +326,7 @@ async fn run_server(config: WafConfig) -> Result<(), Box<dyn std::error::Error +
             )
             .await
             {
-                tracing::error!(target: "exactor::envoy", "Envoy ext_authz service error: {}", e);
+                tracing::error!(target: "satguardian::envoy", "Envoy ext_authz service error: {}", e);
             }
         });
     }
@@ -329,7 +337,7 @@ async fn run_server(config: WafConfig) -> Result<(), Box<dyn std::error::Error +
             match SafeLinePgReporter::connect(pg_url).await {
                 Ok(rep) => Some(Arc::new(rep)),
                 Err(e) => {
-                    warn!(target: "exactor::server", "Could not connect to SafeLine PostgreSQL at {}: {}", pg_url, e);
+                    warn!(target: "satguardian::server", "Could not connect to SafeLine PostgreSQL at {}: {}", pg_url, e);
                     None
                 }
             }
@@ -348,7 +356,7 @@ async fn run_server(config: WafConfig) -> Result<(), Box<dyn std::error::Error +
         let addr_clone = t1k_addr.clone();
         tokio::spawn(async move {
             if let Err(e) = run_t1k_server(&addr_clone, t1k_state).await {
-                error!(target: "exactor::t1k", "T1K server background error: {}", e);
+                error!(target: "satguardian::t1k", "T1K server background error: {}", e);
             }
         });
     }
@@ -361,7 +369,7 @@ async fn run_server(config: WafConfig) -> Result<(), Box<dyn std::error::Error +
 
     let addr: SocketAddr = config.listen_addr.parse()?;
     let listener = tokio::net::TcpListener::bind(addr).await?;
-    info!(target: "exactor::server", "Guardian WAF Server ready and listening on http://{}", addr);
+    info!(target: "satguardian::server", "SATGuardian Edge WAF Server ready and listening on http://{}", addr);
 
     axum::serve(
         listener,
@@ -376,14 +384,15 @@ async fn run_server(config: WafConfig) -> Result<(), Box<dyn std::error::Error +
 async fn run_t1k_standalone(config: WafConfig) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     println!(
         r#"
-  ███████╗██╗  ██╗ █████╗  ██████╗████████╗ ██████╗ ██████╗ 
-  ██╔════╝╚██╗██╔╝██╔══██╗██╔════╝╚══██╔══╝██╔═══██╗██╔══██╗
-  █████╗   ╚███╔╝ ███████║██║        ██║   ██║   ██║██████╔╝
-  ██╔══╝   ██╔██╗ ██╔══██║██║        ██║   ██║   ██║██╔══██╗
-  ███████╗██╔╝ ██╗██║  ██║╚██████╗   ██║   ╚██████╔╝██║  ██║
-  ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝
-         T1K ACCELERATION CO-PROCESSOR FOR SAFELINE WAF
-      Powered by EXACTOR Core & https://exactor.tech
+   ███████╗ █████╗ ████████╗ ██████╗ ██╗   ██╗ █████╗ ██████╗ ██████╗ ██╗ █████╗ ███╗   ██╗
+   ██╔════╝██╔══██╗╚══██╔══╝██╔════╝ ██║   ██║██╔══██╗██╔══██╗██╔══██╗██║██╔══██╗████╗  ██║
+   ███████╗███████║   ██║   ██║  ███╗██║   ██║███████║██████╔╝██║  ██║██║███████║██╔██╗ ██║
+   ╚════██║██╔══██║   ██║   ██║   ██║██║   ██║██╔══██║██╔══██╗██║  ██║██║██╔══██║██║╚██╗██║
+   ███████║██║  ██║   ██║   ╚██████╔╝╚██████╔╝██║  ██║██║  ██║██████╔╝██║██║  ██║██║ ╚████║
+   ╚══════╝╚═╝  ╚═╝   ╚═╝    ╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝
+             T1K ACCELERATION CO-PROCESSOR FOR SAFELINE WAF
+        Cloud Boolean Optimization Powered by Security Units (SU)
+                         https://satguardian.tech
     "#
     );
 
@@ -392,17 +401,17 @@ async fn run_t1k_standalone(config: WafConfig) -> Result<(), Box<dyn std::error:
         .clone()
         .unwrap_or_else(|| "0.0.0.0:8000".to_string());
 
-    info!(target: "exactor::t1k", "Starting Guardian WAF T1K Acceleration Co-Processor v{}", env!("CARGO_PKG_VERSION"));
-    info!(target: "exactor::t1k", "T1K Listen Address : {}", t1k_addr);
-    info!(target: "exactor::t1k", "Defense Mode       : {}", config.mode.to_uppercase());
+    info!(target: "satguardian::t1k", "Starting SATGuardian Edge WAF T1K Acceleration Co-Processor v{}", env!("CARGO_PKG_VERSION"));
+    info!(target: "satguardian::t1k", "T1K Listen Address : {}", t1k_addr);
+    info!(target: "satguardian::t1k", "Defense Mode       : {}", config.mode.to_uppercase());
     if let Some(ref ds) = config.t1k_downstream_addr {
-        info!(target: "exactor::t1k", "Downstream snserver: {}", ds);
+        info!(target: "satguardian::t1k", "Downstream snserver: {}", ds);
     }
     if let Some(ref pg) = config.safeline_pg_url {
-        info!(target: "exactor::t1k", "SafeLine PostgreSQL: {}", pg);
+        info!(target: "satguardian::t1k", "SafeLine PostgreSQL: {}", pg);
     }
 
-    let engine = Arc::new(ExactorSatEngine::with_config(
+    let engine = Arc::new(SatguardianSatEngine::with_config(
         config.islands.clone(),
         config.business_rules.clone(),
     ));
@@ -412,11 +421,11 @@ async fn run_t1k_standalone(config: WafConfig) -> Result<(), Box<dyn std::error:
     let safeline_reporter = if let Some(ref pg_url) = config.safeline_pg_url {
         match SafeLinePgReporter::connect(pg_url).await {
             Ok(rep) => {
-                info!(target: "exactor::t1k", "SafeLine PostgreSQL reporting enabled at {}", pg_url);
+                info!(target: "satguardian::t1k", "SafeLine PostgreSQL reporting enabled at {}", pg_url);
                 Some(Arc::new(rep))
             }
             Err(e) => {
-                warn!(target: "exactor::t1k", "Failed to connect to SafeLine PostgreSQL at {}: {}. Continuing without PG sync.", pg_url, e);
+                warn!(target: "satguardian::t1k", "Failed to connect to SafeLine PostgreSQL at {}: {}. Continuing without PG sync.", pg_url, e);
                 None
             }
         }
@@ -448,10 +457,10 @@ fn run_cli_inspect(config: &WafConfig, method: &str, path: &str, query: &str, bo
         client_ip: None,
     };
 
-    let engine = ExactorSatEngine::with_config(config.islands.clone(), config.business_rules.clone());
+    let engine = SatguardianSatEngine::with_config(config.islands.clone(), config.business_rules.clone());
     let proof = engine.evaluate_payload(&payload);
 
-    println!("\n🔍 Guardian WAF: Payload Inspection Report");
+    println!("\n🔍 SATGuardian Edge WAF: Payload Inspection Report");
     println!("============================================================");
     println!("Request ID       : {}", proof.request_id);
     println!("Target Path      : {}", payload.path);
@@ -468,13 +477,59 @@ fn run_cli_inspect(config: &WafConfig, method: &str, path: &str, query: &str, bo
     println!("============================================================\n");
 }
 
-/// CLI command to trigger cloud simplification with https://exactor.tech.
+/// CLI command to check entitlement and Security Units (SU) balance from https://satguardian.tech.
+async fn run_check_entitlement(
+    config: &WafConfig,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    println!("🔐 SATGuardian Edge WAF: Checking Cloud Entitlement & Security Units");
+    println!("   Target API: {}", config.satguardian_api_url);
+
+    let cloud = SatguardianCloudClient::new(
+        config.satguardian_api_url.clone(),
+        config.satguardian_api_token.clone(),
+    );
+
+    match cloud.get_entitlement().await {
+        Ok(ent) => {
+            println!("\n✅ Entitlement verified successfully!");
+            println!("   Edge Traffic Inspection : {}", if ent.edge_traffic_unlimited { "100% UNLIMITED & FREE (Open Source Edge)" } else { "Restricted" });
+            println!("   Cloud Synthesis Service : {}", if ent.cloud_synthesis_enabled { "ACTIVE" } else { "PAUSED (Quota reached - edge keeps protecting)" });
+            println!("   Subscription Tier       : {}", ent.subscription_tier);
+            println!("   Security Units (SU)     : {} SU available", ent.su_available);
+            println!("   Included Monthly SU     : {} SU/month", ent.included_su_month);
+            if let Some(rate) = ent.overage_usd_per_1k_su {
+                println!("   Overage Rate            : ${:.2} USD per 1,000 SU", rate);
+            } else {
+                println!("   Overage Policy          : Hard cap (Optimization pauses; Edge inspection never stops)");
+            }
+            println!("   Max Synthesis Variables : {} variables", ent.max_variables);
+            if let Some(m) = ent.max_minterms {
+                println!("   Max Synthesis Minterms  : {} minterms", m);
+            }
+            if let Some(exp) = ent.su_expires_at {
+                println!("   SU Expiration           : {}", exp);
+            }
+            if let Some(expl) = ent.explanation {
+                println!("   Details                 : {}", expl);
+            }
+        }
+        Err(e) => {
+            eprintln!("\n⚠️ Entitlement check query returned: {}", e);
+            eprintln!("   Note: Local Edge WAF continues operating locally with unlimited requests.");
+            eprintln!("   Ensure SATGUARDIAN_API_KEY is configured to enable Cloud Boolean Synthesis.");
+        }
+    }
+
+    Ok(())
+}
+
+/// CLI command to trigger cloud simplification with https://satguardian.tech.
 async fn run_sync_simplify(
     config: &WafConfig,
     limit: i64,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    println!("⚡ Guardian WAF: Initiating Exact Boolean Simplification");
-    println!("   Target: {}", config.exactor_api_url);
+    println!("⚡ SATGuardian Edge WAF: Initiating Exact Boolean Simplification");
+    println!("   Target: {}", config.satguardian_api_url);
 
     let ledger = SqliteLedger::init(&config.database_path).await?;
     let pending = ledger.get_pending_anomalies(limit).await?;
@@ -485,9 +540,9 @@ async fn run_sync_simplify(
     }
 
     println!("📥 Found {} anomaly minterms to simplify.", pending.len());
-    let cloud = ExactorCloudClient::new(
-        config.exactor_api_url.clone(),
-        config.exactor_api_token.clone(),
+    let cloud = SatguardianCloudClient::new(
+        config.satguardian_api_url.clone(),
+        config.satguardian_api_token.clone(),
     );
 
     let vars = FeatureBinarizer::get_variable_catalog(24);
@@ -519,14 +574,15 @@ async fn run_sync_simplify(
 async fn run_envoy_authz_standalone(config: WafConfig) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     println!(
         r#"
-  ███████╗██╗  ██╗ █████╗  ██████╗████████╗ ██████╗ ██████╗ 
-  ██╔════╝╚██╗██╔╝██╔══██╗██╔════╝╚══██╔══╝██╔═══██╗██╔══██╗
-  █████╗   ╚███╔╝ ███████║██║        ██║   ██║   ██║██████╔╝
-  ██╔══╝   ██╔██╗ ██╔══██║██║        ██║   ██║   ██║██╔══██╗
-  ███████╗██╔╝ ██╗██║  ██║╚██████╗   ██║   ╚██████╔╝██║  ██║
-  ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝
-            GUARDIAN WAF - ENVOY EXT_AUTHZ SERVICE
-      Powered by EXACTOR Core & https://exactor.tech
+   ███████╗ █████╗ ████████╗ ██████╗ ██╗   ██╗ █████╗ ██████╗ ██████╗ ██╗ █████╗ ███╗   ██╗
+   ██╔════╝██╔══██╗╚══██╔══╝██╔════╝ ██║   ██║██╔══██╗██╔══██╗██╔══██╗██║██╔══██╗████╗  ██║
+   ███████╗███████║   ██║   ██║  ███╗██║   ██║███████║██████╔╝██║  ██║██║███████║██╔██╗ ██║
+   ╚════██║██╔══██║   ██║   ██║   ██║██║   ██║██╔══██║██╔══██╗██║  ██║██║██╔══██║██║╚██╗██║
+   ███████║██║  ██║   ██║   ╚██████╔╝╚██████╔╝██║  ██║██║  ██║██████╔╝██║██║  ██║██║ ╚████║
+   ╚══════╝╚═╝  ╚═╝   ╚═╝    ╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝
+             SATGUARDIAN EDGE WAF - ENVOY EXT_AUTHZ SERVICE
+        Cloud Boolean Optimization Powered by Security Units (SU)
+                         https://satguardian.tech
     "#
     );
 
@@ -535,13 +591,13 @@ async fn run_envoy_authz_standalone(config: WafConfig) -> Result<(), Box<dyn std
         .clone()
         .unwrap_or_else(|| "0.0.0.0:9002".to_string());
 
-    info!(target: "exactor::envoy", "Starting Guardian WAF Envoy ext_authz Service v{}", env!("CARGO_PKG_VERSION"));
-    info!(target: "exactor::envoy", "ext_authz Listen Address: {}", listen_addr);
-    info!(target: "exactor::envoy", "Defense Mode            : {}", config.mode.to_uppercase());
-    info!(target: "exactor::envoy", "Cloud API URL           : {}", config.exactor_api_url);
-    info!(target: "exactor::envoy", "SQLite Ledger           : {}", config.database_path);
+    info!(target: "satguardian::envoy", "Starting SATGuardian Edge WAF Envoy ext_authz Service v{}", env!("CARGO_PKG_VERSION"));
+    info!(target: "satguardian::envoy", "ext_authz Listen Address: {}", listen_addr);
+    info!(target: "satguardian::envoy", "Defense Mode            : {}", config.mode.to_uppercase());
+    info!(target: "satguardian::envoy", "Cloud API URL           : {}", config.satguardian_api_url);
+    info!(target: "satguardian::envoy", "SQLite Ledger           : {}", config.database_path);
 
-    let engine = Arc::new(ExactorSatEngine::with_config(
+    let engine = Arc::new(SatguardianSatEngine::with_config(
         config.islands.clone(),
         config.business_rules.clone(),
     ));
@@ -560,18 +616,18 @@ async fn run_envoy_authz_standalone(config: WafConfig) -> Result<(), Box<dyn std
     if let Some(_socket_path) = config.envoy_ext_authz_socket {
         #[cfg(unix)]
         {
-            info!(target: "exactor::envoy", "Envoy ext_authz starting in Unix Domain Socket mode: {}", _socket_path);
-            return exactor_waf_guardian::envoy::serve_uds(app, &_socket_path).await;
+            info!(target: "satguardian::envoy", "Envoy ext_authz starting in Unix Domain Socket mode: {}", _socket_path);
+            return satguardian_waf::envoy::serve_uds(app, &_socket_path).await;
         }
         #[cfg(not(unix))]
         {
-            warn!(target: "exactor::envoy", "Unix Domain Sockets (UDS) are only supported natively on Unix/Linux systems. Falling back to TCP address: {}", listen_addr);
+            warn!(target: "satguardian::envoy", "Unix Domain Sockets (UDS) are only supported natively on Unix/Linux systems. Falling back to TCP address: {}", listen_addr);
         }
     }
 
     let addr: SocketAddr = listen_addr.parse()?;
     let listener = tokio::net::TcpListener::bind(addr).await?;
-    info!(target: "exactor::envoy", "Guardian WAF Envoy ext_authz listening on http://{}", addr);
+    info!(target: "satguardian::envoy", "SATGuardian Edge WAF Envoy ext_authz listening on http://{}", addr);
 
     axum::serve(
         listener,

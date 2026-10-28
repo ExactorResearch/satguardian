@@ -1,20 +1,20 @@
 <#
 .SYNOPSIS
-    Guardian WAF - Windows Server Automated Uninstaller
+    SATGuardian Edge WAF - Windows Server Automated Uninstaller
     Stops and removes the Windows Service, deletes installed binaries, and cleans PATH.
 #>
 
 [CmdletBinding()]
 param(
-    [string]$InstallDir = "C:\Program Files\Exactor\WAF",
-    [string]$ConfigDir = "C:\ProgramData\Exactor\WAF",
+    [string]$InstallDir = "C:\Program Files\SATGuardian\WAF",
+    [string]$ConfigDir = "C:\ProgramData\SATGuardian\WAF",
     [switch]$PurgeData = $false
 )
 
 $ErrorActionPreference = "Continue"
 
 Write-Host "============================================================" -ForegroundColor Red
-Write-Host "Uninstalling Guardian WAF from Windows" -ForegroundColor Red
+Write-Host "Uninstalling SATGuardian Edge WAF from Windows" -ForegroundColor Red
 Write-Host "============================================================" -ForegroundColor Red
 
 # Elevation check
@@ -26,36 +26,43 @@ if (-not $isAdmin) {
 }
 
 # 1. Stop and Delete Windows Service
-$ServiceName = "ExactorWAF"
-$svc = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
-if ($svc) {
-    Write-Host "Stopping service '$ServiceName'..." -ForegroundColor Yellow
-    Stop-Service -Name $ServiceName -Force -ErrorAction SilentlyContinue
-    Start-Sleep -Seconds 1
-    Write-Host "Removing service '$ServiceName'..." -ForegroundColor Yellow
-    & sc.exe delete $ServiceName | Out-Null
-    Write-Host "Removed Windows Service." -ForegroundColor Green
+foreach ($ServiceName in @("SATGuardianWAF", "ExactorWAF")) {
+    $svc = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+    if ($svc) {
+        Write-Host "Stopping service '$ServiceName'..." -ForegroundColor Yellow
+        Stop-Service -Name $ServiceName -Force -ErrorAction SilentlyContinue
+        Start-Sleep -Seconds 1
+        Write-Host "Removing service '$ServiceName'..." -ForegroundColor Yellow
+        & sc.exe delete $ServiceName | Out-Null
+        Write-Host "Removed Windows Service: $ServiceName." -ForegroundColor Green
+    }
 }
 
 # 2. Remove from PATH
 $CurrentPath = [Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::Machine)
-if ($CurrentPath -like "*$InstallDir*") {
-    $NewPath = ($CurrentPath.Split(';') | Where-Object { $_ -ne $InstallDir -and $_ -ne "" }) -join ';'
-    [Environment]::SetEnvironmentVariable("Path", $NewPath, [EnvironmentVariableTarget]::Machine)
-    Write-Host "Removed $InstallDir from System PATH." -ForegroundColor Green
+foreach ($dir in @($InstallDir, "C:\Program Files\Exactor\WAF")) {
+    if ($CurrentPath -like "*$dir*") {
+        $NewPath = ($CurrentPath.Split(';') | Where-Object { $_ -ne $dir -and $_ -ne "" }) -join ';'
+        [Environment]::SetEnvironmentVariable("Path", $NewPath, [EnvironmentVariableTarget]::Machine)
+        Write-Host "Removed $dir from System PATH." -ForegroundColor Green
+    }
 }
 
 # 3. Remove Program Files
-if (Test-Path $InstallDir) {
-    Remove-Item -Recurse -Force $InstallDir -ErrorAction SilentlyContinue
-    Write-Host "Removed installation directory: $InstallDir" -ForegroundColor Green
+foreach ($dir in @($InstallDir, "C:\Program Files\Exactor\WAF")) {
+    if (Test-Path $dir) {
+        Remove-Item -Recurse -Force $dir -ErrorAction SilentlyContinue
+        Write-Host "Removed installation directory: $dir" -ForegroundColor Green
+    }
 }
 
 # 4. Config & Data Directory
 if ($PurgeData) {
-    if (Test-Path $ConfigDir) {
-        Remove-Item -Recurse -Force $ConfigDir -ErrorAction SilentlyContinue
-        Write-Host "Purged configuration and database: $ConfigDir" -ForegroundColor Green
+    foreach ($cfg in @($ConfigDir, "C:\ProgramData\Exactor\WAF")) {
+        if (Test-Path $cfg) {
+            Remove-Item -Recurse -Force $cfg -ErrorAction SilentlyContinue
+            Write-Host "Purged configuration and database: $cfg" -ForegroundColor Green
+        }
     }
 } else {
     Write-Host "Configuration and ledger database preserved at: $ConfigDir" -ForegroundColor Cyan
@@ -63,4 +70,4 @@ if ($PurgeData) {
 }
 
 Write-Host ""
-Write-Host "Guardian WAF uninstallation complete." -ForegroundColor Green
+Write-Host "SATGuardian Edge WAF uninstallation complete." -ForegroundColor Green

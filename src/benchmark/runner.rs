@@ -1,4 +1,4 @@
-use crate::engine::ExactorSatEngine;
+use crate::engine::SatguardianSatEngine;
 use crate::types::{AttackDecision, HttpRequestPayload};
 use std::time::Instant;
 
@@ -160,12 +160,12 @@ impl BenchmarkSuite {
     /// Runs high-throughput in-memory SAT evaluation benchmark.
     pub fn run_benchmark(num_requests: usize) {
         println!("============================================================");
-        println!("🚀 Exactor WAF Guardian: Multi-Vector Performance Benchmark");
+        println!("🚀 SATGuardian Edge WAF: Multi-Vector Performance Benchmark");
         println!("   Engine: Deterministic SAT & Certainty Islands (Rust)");
         println!("   Evaluating: {} requests across OWASP & Benign streams", num_requests);
         println!("============================================================");
 
-        let engine = ExactorSatEngine::new();
+        let engine = SatguardianSatEngine::new();
         let dataset = Self::get_sample_dataset();
         let dataset_len = dataset.len();
 

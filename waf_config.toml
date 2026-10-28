@@ -1,11 +1,12 @@
 # ==============================================================================
-# GUARDIAN WAF - PRODUCTION CONFIGURATION
+# SATGUARDIAN EDGE WAF - PRODUCTION CONFIGURATION
 # Sub-Millisecond Deterministic SAT Cyber-Defense & Reverse Proxy
-# Powered by EXACTOR Core & exactor.tech Cloud Synthesis
+# 100% Free & Unlimited Edge Traffic (Open Source Edge WAF)
+# Cloud Boolean Minimization Powered by Security Units (SU) via satguardian.tech
 # ==============================================================================
 
-# Network listener for inbound HTTP traffic to be protected
-listen_addr = "0.0.0.0:10000"
+# Inbound network listener for HTTP traffic to be protected
+listen_addr = "0.0.0.0:8080"
 
 # Target upstream backend application (Nginx, Node, Python, Go, Java, PHP, etc.)
 upstream_url = "http://127.0.0.1:3000"
@@ -16,24 +17,27 @@ upstream_url = "http://127.0.0.1:3000"
 mode = "block"
 
 # ------------------------------------------------------------------------------
-# MODO SILENCIOSO / STEALTH MODE (Seguridad Antirreconocimiento)
+# STEALTH MODE (Anti-Reconnaissance Protection)
 # ------------------------------------------------------------------------------
-# true  -> Devuelve respuesta estándar y limpia de servidor web (403 Forbidden simple)
-#          sin revelar reglas violadas, categorías ni fórmulas LaTeX al atacante.
-# false -> Devuelve JSON detallado con deducción matemática, causalidad y LaTeX (modo debug).
+# true  -> Emits clean web-standard 403 Forbidden without leaking rules, proof or LaTeX.
+# false -> Emits verbose diagnostic JSON containing formal causal & LaTeX proof (debug mode).
 stealth_mode = true
 
-# Mensaje HTML o texto personalizado opcional cuando stealth_mode = true
-# (Si se deja comentado o vacío, emite el HTML 403 Forbidden estándar de nginx)
+# Optional custom HTML or text response when stealth_mode = true
 # stealth_block_body = "<html><head><title>403 Forbidden</title></head><body><center><h1>403 Forbidden</h1></center></body></html>"
 
+# ------------------------------------------------------------------------------
+# CLOUD OPTIMIZATION SERVICE (Security Units - SU)
+# ------------------------------------------------------------------------------
+# SATGuardian Cloud Optimization API URL for Autonomous Boolean Minimization.
+# Traffic inspection is 100% local and free (zero customer traffic touches our cloud).
+# Cloud synthesis consumes Security Units (SU) per Boolean minimization job.
+# When your SU balance is exhausted, cloud optimization pauses but the Edge WAF
+# continues protecting actively with your latest compiled rule matrix.
+satguardian_api_url = "https://satguardian.tech/api/simplify"
 
-# EXACTOR Core Cloud API URL for Autonomous Boolean Minimization
-# Cloud Service runs exactor-cloud-service-v128
-exactor_api_url = "https://exactor.tech/api/simplify"
-
-# EXACTOR Cloud API Token or Bearer Token (optional for public demo or set via EXACTOR_API_TOKEN)
-# exactor_api_token = "ek_xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+# Cloud API Key (or set via SATGUARDIAN_API_KEY environment variable)
+# satguardian_api_key = "ek_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
 # SQLite WAL Ledger database location for audit logging and novel anomaly clustering
 database_path = "waf_ledger.db"
@@ -41,7 +45,7 @@ database_path = "waf_ledger.db"
 # Autonomous background minimization sync interval in seconds (default: 300s / 5 mins)
 autonomous_sync_interval_secs = 300
 
-# Enable automatic hot minimization sync with https://exactor.tech
+# Enable automatic hot minimization sync with https://satguardian.tech
 auto_sync_enabled = true
 
 # ==============================================================================
@@ -69,7 +73,7 @@ stateful_ban_secs = 180
 # ENVOY PROXY EXT_AUTHZ INTEGRATION
 # ==============================================================================
 # Inbound HTTP listener for Envoy's envoy.filters.http.ext_authz filter
-# When enabled, Envoy offloads SAT security checks to Exactor at sub-millisecond speeds.
+# When enabled, Envoy offloads SAT security checks to SATGuardian at sub-millisecond speeds.
 envoy_ext_authz_addr = "0.0.0.0:9002"
 
 # ==============================================================================

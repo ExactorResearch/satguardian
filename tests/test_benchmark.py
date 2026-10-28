@@ -1,8 +1,8 @@
 """Tests for WAF Benchmark Runner."""
 
 import pytest
-from exactor_waf.benchmark.runner import WAFBenchmarkRunner
-from exactor_waf.benchmark.reporter import generate_ascii_table, generate_markdown_report
+from satguardian_waf.benchmark.runner import WAFBenchmarkRunner
+from satguardian_waf.benchmark.reporter import generate_ascii_table, generate_markdown_report
 
 
 def test_benchmark_runner_execution():
@@ -12,13 +12,13 @@ def test_benchmark_runner_execution():
     assert result.dataset_size == 20
     assert len(result.agent_metrics) == 3
     
-    exactor_metrics = next(m for k, m in result.agent_metrics.items() if "Exactor" in k)
-    assert exactor_metrics.total_requests == 20
-    assert exactor_metrics.accuracy >= 0.90
-    assert exactor_metrics.total_cost_usd == 0.0
+    sat_metrics = next(m for k, m in result.agent_metrics.items() if "SATGuardian" in k or "Exactor" in k)
+    assert sat_metrics.total_requests == 20
+    assert sat_metrics.accuracy >= 0.90
+    assert sat_metrics.total_cost_usd == 0.0
 
     ascii_table = generate_ascii_table(result)
-    assert "EXACTOR-WAF-GUARDIAN" in ascii_table
+    assert "SATGUARDIAN" in ascii_table
 
     md_report = generate_markdown_report(result)
-    assert "Exactor WAF Guardian" in md_report
+    assert "SATGuardian" in md_report

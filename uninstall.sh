@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Guardian WAF - Linux Server Uninstaller
+# SATGuardian Edge WAF - Linux Server Uninstaller
 # ==============================================================================
 
 set -euo pipefail
@@ -12,7 +12,7 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 echo -e "${RED}============================================================${NC}"
-echo -e "${RED}🛡️  Uninstalling Guardian WAF${NC}"
+echo -e "${RED}🛡️  Uninstalling SATGuardian Edge WAF${NC}"
 echo -e "${RED}============================================================${NC}"
 
 if [[ $EUID -ne 0 ]]; then
@@ -29,23 +29,25 @@ done
 
 # 1. Stop and disable systemd service
 if command -v systemctl &> /dev/null; then
-    if systemctl is-active --quiet exactor-waf.service 2>/dev/null; then
-        echo -e "${YELLOW}Stopping exactor-waf.service...${NC}"
-        systemctl stop exactor-waf.service || true
-    fi
-    if systemctl is-enabled --quiet exactor-waf.service 2>/dev/null; then
-        echo -e "${YELLOW}Disabling exactor-waf.service...${NC}"
-        systemctl disable exactor-waf.service || true
-    fi
-    if [[ -f "/etc/systemd/system/exactor-waf.service" ]]; then
-        rm -f "/etc/systemd/system/exactor-waf.service"
-        systemctl daemon-reload || true
-        echo -e "${GREEN}✓ Removed systemd service definition.${NC}"
-    fi
+    for svc in satguardian-waf.service exactor-waf.service; do
+        if systemctl is-active --quiet "$svc" 2>/dev/null; then
+            echo -e "${YELLOW}Stopping ${svc}...${NC}"
+            systemctl stop "$svc" || true
+        fi
+        if systemctl is-enabled --quiet "$svc" 2>/dev/null; then
+            echo -e "${YELLOW}Disabling ${svc}...${NC}"
+            systemctl disable "$svc" || true
+        fi
+        if [[ -f "/etc/systemd/system/${svc}" ]]; then
+            rm -f "/etc/systemd/system/${svc}"
+            systemctl daemon-reload || true
+            echo -e "${GREEN}✓ Removed /etc/systemd/system/${svc}.${NC}"
+        fi
+    done
 fi
 
 # 2. Remove Binary & CLI Tools
-for tool in exactor-waf-guardian exactor-top exactor-advisor exactor-rules; do
+for tool in satguardian-waf exactor-waf-guardian satguardian-top exactor-top satguardian-advisor exactor-advisor satguardian-rules exactor-rules; do
     if [[ -f "/usr/local/bin/${tool}" ]]; then
         rm -f "/usr/local/bin/${tool}"
         echo -e "${GREEN}✓ Removed /usr/local/bin/${tool}.${NC}"
@@ -54,13 +56,15 @@ done
 
 # 3. Handle Configuration and Database
 if [[ "$PURGE_DATA" == "true" ]]; then
-    if [[ -d "/etc/exactor" ]]; then
-        rm -rf "/etc/exactor"
-        echo -e "${GREEN}✓ Purged configuration and SQLite ledger at /etc/exactor.${NC}"
-    fi
+    for dir in "/etc/satguardian" "/etc/exactor"; do
+        if [[ -d "$dir" ]]; then
+            rm -rf "$dir"
+            echo -e "${GREEN}✓ Purged configuration and SQLite ledger at ${dir}.${NC}"
+        fi
+    done
 else
-    echo -e "${BLUE}ℹ️  Preserved configuration and ledger database at /etc/exactor.${NC}"
-    echo -e "   (To remove completely, delete /etc/exactor or run ./uninstall.sh --purge)"
+    echo -e "${BLUE}ℹ️  Preserved configuration and ledger database at /etc/satguardian.${NC}"
+    echo -e "   (To remove completely, delete /etc/satguardian or run ./uninstall.sh --purge)"
 fi
 
-echo -e "\n${GREEN}✅ Guardian WAF uninstalled successfully.${NC}"
+echo -e "\n${GREEN}✅ SATGuardian Edge WAF uninstalled successfully.${NC}"

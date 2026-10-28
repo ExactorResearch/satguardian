@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Run Exactor WAF Guardian CLI."""
+"""Run SATGuardian Edge WAF CLI."""
 
-from exactor_waf.cli import main
+from satguardian_waf.cli import main
 
 if __name__ == "__main__":
     main()

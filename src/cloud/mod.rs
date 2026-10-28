@@ -1,3 +1,6 @@
-pub mod exactor_client;
+pub mod satguardian_client;
 
-pub use exactor_client::{ExactorCloudClient, SimplifyRequest, SimplifyResponse};
+pub use satguardian_client::{
+    EdgeEntitlementResponse, ExactorCloudClient, SatguardianCloudClient, SimplifyRequest,
+    SimplifyResponse,
+};

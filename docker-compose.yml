@@ -1,12 +1,12 @@
 version: '3.8'
 
 services:
-  exactor-waf:
+  satguardian-waf:
     build:
       context: .
       dockerfile: Dockerfile
-    image: exactor-waf-guardian:latest
-    container_name: exactor-waf-guardian
+    image: satguardian-waf:latest
+    container_name: satguardian-waf
     restart: always
     ports:
       - "8080:8080"
@@ -14,11 +14,11 @@ services:
       - WAF_LISTEN_ADDR=0.0.0.0:8080
       - WAF_UPSTREAM_URL=http://backend:3000
       - WAF_MODE=block
-      - EXACTOR_API_URL=https://exactor.tech/api/simplify
-      - WAF_DATABASE_PATH=/etc/exactor/waf_ledger.db
+      - SATGUARDIAN_API_URL=https://satguardian.tech/api/simplify
+      - WAF_DATABASE_PATH=/etc/satguardian/waf_ledger.db
     volumes:
-      - ./waf_config.toml:/etc/exactor/waf_config.toml:ro
-      - waf_data:/etc/exactor
+      - ./waf_config.toml:/etc/satguardian/waf_config.toml:ro
+      - waf_data:/etc/satguardian
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 15s

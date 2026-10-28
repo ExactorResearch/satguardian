@@ -1,4 +1,4 @@
-//! Exactor to SafeLine PostgreSQL Exporter & Live Telemetry Synchronizer.
+//! SATGuardian to SafeLine PostgreSQL Exporter & Live Telemetry Synchronizer.
 //! Automatically streams SAT evaluation events, LaTeX proofs, and metrics
 //! directly into SafeLine's reporting database (detect_log_basic, detect_log_detail, system_statistics).
 
@@ -29,7 +29,7 @@ impl SafeLinePgReporter {
         Ok(Self { pool })
     }
 
-    /// Maps Exactor's formal AttackCategory to SafeLine's native integer AttackType.
+    /// Maps SATGuardian's formal AttackCategory to SafeLine's native integer AttackType.
     pub fn map_attack_category(category: &AttackCategory) -> i32 {
         match category {
             AttackCategory::SqlInjection => 0,       // SQL 注入
@@ -155,9 +155,9 @@ impl SafeLinePgReporter {
             .bind(&req_headers_formatted)
             .bind(&payload.body)
             .bind("HTTP/1.1 403 Forbidden\r\nContent-Type: application/json\r\n")
-            .bind("{\"code\":403,\"success\":false,\"message\":\"Blocked by Exactor WAF Guardian\"}")
+            .bind("{\"code\":403,\"success\":false,\"message\":\"Blocked by SATGuardian Edge WAF\"}")
             .bind(&rich_payload_report)
-            .bind("exactor_sat_solver")
+            .bind("satguardian_sat_solver")
             .bind("")
             .execute(&pool)
             .await;

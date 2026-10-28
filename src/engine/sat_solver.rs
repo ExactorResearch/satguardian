@@ -10,7 +10,7 @@ use std::collections::HashMap;
 use std::sync::RwLock;
 use std::time::Instant;
 
-/// Dynamic clause resulting from EXACTOR Cloud Minimization (`https://exactor.tech/api/simplify`).
+/// Dynamic clause resulting from SATGuardian Cloud Minimization (`https://satguardian.tech/api/simplify`).
 #[derive(Debug, Clone)]
 pub struct DynamicCompiledClause {
     pub clause_id: String,
@@ -21,7 +21,7 @@ pub struct DynamicCompiledClause {
 }
 
 /// Deterministic Neuro-Symbolic & SAT Constraint Engine with Certainty Islands.
-pub struct ExactorSatEngine {
+pub struct SatguardianSatEngine {
     islands: HashMap<String, CertaintyIsland>,
     rules: HashMap<String, DeductionRule>,
     dynamic_clauses: RwLock<Vec<DynamicCompiledClause>>,
@@ -29,13 +29,16 @@ pub struct ExactorSatEngine {
     pub business_rules_config: RwLock<BusinessRulesConfig>,
 }
 
-impl Default for ExactorSatEngine {
+/// Backward compatibility alias for Exactor SAT Engine.
+pub type ExactorSatEngine = SatguardianSatEngine;
+
+impl Default for SatguardianSatEngine {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl ExactorSatEngine {
+impl SatguardianSatEngine {
     pub fn new() -> Self {
         Self::with_config(IslandsConfig::default(), BusinessRulesConfig::default())
     }
@@ -1099,7 +1102,7 @@ impl ExactorSatEngine {
                         rule_id: clause.clause_id.clone(),
                         island_id: "ISLAND-DYNAMIC-SIMPLIFIED".to_string(),
                         category: clause.category,
-                        name: "Exactor Cloud Minimized Invariant".to_string(),
+                        name: "SATGuardian Cloud Minimized Invariant".to_string(),
                         description: clause.description.clone(),
                         invariant_formula: format!("Mask({:#x}) == {:#x}", clause.required_mask, clause.expected_bits),
                         confidence: 1.0,

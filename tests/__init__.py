@@ -1,1 +1,1 @@
-"""Test suite for Exactor WAF Guardian."""
+"""Test suite for SATGuardian Edge WAF."""

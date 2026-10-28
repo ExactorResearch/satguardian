@@ -1,11 +1,11 @@
-# 🧪 Guardian WAF: Proof of Concept (PoC)
+# 🧪 SATGuardian Edge WAF: Proof of Concept (PoC)
 
 ## Executive Summary
 
-Before transitioning to the production-grade Rust reverse proxy daemon, the **Guardian WAF Proof of Concept (PoC)** was developed in Python to empirically demonstrate, benchmark, and visualize the neuro-symbolic SAT cyber-defense architecture against industry standards.
+Before transitioning to the production-grade Rust reverse proxy daemon, the **SATGuardian Edge WAF Proof of Concept (PoC)** was developed in Python to empirically demonstrate, benchmark, and visualize the neuro-symbolic SAT cyber-defense architecture against industry standards.
 
 The PoC implements a **Multi-Agent Duel Simulator** that pits three distinct security paradigms against an identical, standardized stream of OWASP attack vectors and benign enterprise traffic:
-1. **Exactor SAT Agent (Neuro-Symbolic SAT & Certainty Islands):** Sub-millisecond deterministic evaluation, zero inference cost, and mathematically verifiable causal proof chains.
+1. **SATGuardian SAT Agent (Neuro-Symbolic SAT & Certainty Islands):** Sub-millisecond deterministic evaluation, zero inference cost, and mathematically verifiable causal proof chains.
 2. **Regex Baseline Agent (OWASP CRS / ModSecurity Paradigm):** High-speed pattern matching prone to evasion through obfuscation and high false-positive rates on complex technical payloads.
 3. **Pure LLM Agent (JEV Solo / Cloud AI WAFs):** Heavyweight transformer-based reasoning capable of contextual triage but penalized by unbearable network latency ($> 400\text{ ms}$), steep API token costs ($>\$2,000 / \text{1M reqs}$), and non-deterministic hallucination drift.
 
@@ -14,17 +14,17 @@ The PoC implements a **Multi-Agent Duel Simulator** that pits three distinct sec
 ## 🏗️ PoC Directory & Module Architecture
 
 ```text
-exactor-waf-guardian/
+satguardian-waf-guardian/
 ├── run_web.py               # Launcher: Interactive Web Dashboard Server (Port 8002)
 ├── run_cli.py               # Launcher: Command-Line Single Payload Inspection
 ├── run_benchmark.py         # Launcher: Multi-Agent Comparative Benchmark Runner
-├── exactor_waf/             # Core Proof of Concept Package
+├── satguardian_waf/             # Core Proof of Concept Package
 │   ├── core/
 │   │   ├── dataset.py       # Curated OWASP benchmark dataset (SQLi, XSS, RCE, LFI, SSRF, Benign)
 │   │   ├── payload.py       # HTTPRequestPayload, AttackDecision, and ProofChain structures
 │   │   └── solver_sat.py    # Python reference implementation of Certainty Islands & AST Lexer
 │   ├── agents/
-│   │   ├── exactor_agent.py        # Exactor SAT Agent implementation
+│   │   ├── satguardian_agent.py        # SATGuardian SAT Agent implementation
 │   │   ├── regex_baseline_agent.py # Traditional Regex / ModSecurity Agent
 │   │   └── jev_pure_agent.py       # Simulated LLM contextual agent
 │   ├── benchmark/
@@ -62,7 +62,7 @@ Open your browser at **`http://localhost:8002`**.
 
 #### Features:
 * **Interactive Live Inspector:** Type or select attack vectors (SQLi tautologies, XSS event handlers, RCE subshells, LFI path escapes, SSRF metadata endpoints) or benign API payloads.
-* **Multi-Agent Duel Mode:** Watch **Exactor SAT**, **ModSecurity Regex**, and **Pure LLM** evaluate the exact same request side-by-side in real time.
+* **Multi-Agent Duel Mode:** Watch **SATGuardian SAT**, **ModSecurity Regex**, and **Pure LLM** evaluate the exact same request side-by-side in real time.
 * **Live KaTeX Mathematical Proofs:** Renders the formal SAT invariant proofs dynamically in $\LaTeX$ math mode (e.g. $\mathcal{I}_{\text{SQLi}} \equiv \neg (\text{QUOTE} \land \text{TAUTOLOGY})$) verifying why the payload was blocked with zero hallucination.
 * **Telemetry & Cost Counters:** Real-time latency tracking, accuracy meters, and monetary cost savings calculator.
 
@@ -90,7 +90,7 @@ python run_cli.py --path "/api/v1/users" --method "POST" --body '{"username": "a
  Request: GET /api/users?id=1' OR '1'='1
 --------------------------------------------------------------------------------
 
-[Exactor SAT Agent]
+[SATGuardian SAT Agent]
   Decision   : [BLOCKED] (sql_injection)
   Latency    : 0.021 ms
   Cost (USD) : $0.0000
@@ -129,7 +129,7 @@ python run_benchmark.py 100
 +------------------------+----------+----------+----------+-------------+---------------+
 | Agent / Architecture   | Accuracy | FNR (%)  | FPR (%)  | Latency     | Cost / 1M Req |
 +------------------------+----------+----------+----------+-------------+---------------+
-| Exactor SAT (Ours)     | 100.00%  |   0.00%  |   0.00%  |    0.021 ms |         $0.00 |
+| SATGuardian SAT (Ours)     | 100.00%  |   0.00%  |   0.00%  |    0.021 ms |         $0.00 |
 | Regex Baseline (CRS)   |  42.00%  |  58.00%  |  12.00%  |    1.520 ms |         $0.00 |
 | Pure LLM (JEV Solo)    |  96.00%  |   4.00%  |   0.00%  |  491.300 ms |     $2,000.00 |
 +------------------------+----------+----------+----------+-------------+---------------+
@@ -139,7 +139,7 @@ python run_benchmark.py 100
 
 ## 📊 Strategic Blue Ocean Analysis (PoC Results)
 
-| Competitive Factor | Traditional Regex WAF (ModSecurity) | Cloud LLM WAF (Cloudflare AI / AWS) | Guardian WAF |
+| Competitive Factor | Traditional Regex WAF (ModSecurity) | Cloud LLM WAF (Cloudflare AI / AWS) | SATGuardian Edge WAF |
 | :--- | :---: | :---: | :---: |
 | **Inference Cost** | Low ($0.00) | Prohibitive ($2,000+ / 1M reqs) | **Zero ($0.00)** |
 | **Network SLA Compliance** | Fast (1 - 5 ms) | Unacceptable (350 - 650 ms) | **Ultra-Fast (< 0.05 ms)** |
@@ -154,6 +154,6 @@ python run_benchmark.py 100
 
 The PoC validated the mathematical viability of Certainty Islands. The production component in the root directory was then engineered in **100% native Rust**:
 * **Language:** Migrated from Python to Rust for sub-millisecond execution (< 20 µs) and zero runtime garbage collection.
-* **Architecture:** Implemented as a standalone, production-ready Axum HTTP/1.1 & HTTP/2 Reverse Proxy with SQLite WAL ledger and live integration with `https://exactor.tech/api/simplify`.
+* **Architecture:** Implemented as a standalone, production-ready Axum HTTP/1.1 & HTTP/2 Reverse Proxy with SQLite WAL ledger and live integration with `https://satguardian.tech/api/simplify`.
 * **Enterprise Grammars:** Expanded to cover GraphQL AST, strict JSON schema / prototype pollution, gRPC HTTP/2 framing, and JWT tampering.
 * **Temporal State:** Added lock-free atomic ring counters for Layer-7 DDoS and Credential Stuffing defense.

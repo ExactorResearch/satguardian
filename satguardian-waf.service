@@ -1,0 +1,33 @@
+[Unit]
+Description=SATGuardian Edge WAF - Sub-Millisecond Deterministic SAT Proxy
+Documentation=https://satguardian.tech
+After=network.target network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/etc/satguardian
+ExecStart=/usr/local/bin/satguardian-waf proxy --config /etc/satguardian/waf_config.toml
+Restart=always
+RestartSec=3s
+
+# Performance and File Descriptor Limits
+LimitNOFILE=1048576
+LimitNPROC=512000
+
+# Security Hardening
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+ProtectSystem=full
+ProtectHome=true
+NoNewPrivileges=true
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=satguardian-waf
+
+[Install]
+WantedBy=multi-user.target

@@ -22,12 +22,13 @@ pub struct WafConfig {
     /// Custom stealth body message (optional, e.g. "Forbidden" or HTML).
     pub stealth_block_body: Option<String>,
 
-    /// EXACTOR Core Cloud API URL (defaults to https://exactor.tech/api/simplify).
-    #[serde(default = "default_exactor_api_url")]
-    pub exactor_api_url: String,
+    /// SATGuardian Cloud Optimization API URL (defaults to https://satguardian.tech/api/simplify).
+    #[serde(default = "default_satguardian_api_url", alias = "exactor_api_url")]
+    pub satguardian_api_url: String,
 
-    /// EXACTOR Cloud API Token or Bearer Token.
-    pub exactor_api_token: Option<String>,
+    /// SATGuardian Cloud API Token or Bearer Token.
+    #[serde(alias = "satguardian_api_key", alias = "api_key", alias = "exactor_api_token", alias = "exactor_api_key")]
+    pub satguardian_api_token: Option<String>,
 
     /// Local SQLite WAL Ledger database file path.
     #[serde(default = "default_database_path")]
@@ -37,7 +38,7 @@ pub struct WafConfig {
     #[serde(default = "default_sync_interval")]
     pub autonomous_sync_interval_secs: u64,
 
-    /// Enable automatic hot minimization sync with https://exactor.tech.
+    /// Enable automatic hot minimization sync with https://satguardian.tech.
     #[serde(default = "default_auto_sync")]
     pub auto_sync_enabled: bool,
 
@@ -165,8 +166,8 @@ fn default_mode() -> String {
     "block".to_string()
 }
 
-fn default_exactor_api_url() -> String {
-    "https://exactor.tech/api/simplify".to_string()
+fn default_satguardian_api_url() -> String {
+    "https://satguardian.tech/api/simplify".to_string()
 }
 
 fn default_database_path() -> String {
@@ -209,8 +210,8 @@ impl Default for WafConfig {
             mode: default_mode(),
             stealth_mode: false,
             stealth_block_body: None,
-            exactor_api_url: default_exactor_api_url(),
-            exactor_api_token: None,
+            satguardian_api_url: default_satguardian_api_url(),
+            satguardian_api_token: None,
             database_path: default_database_path(),
             autonomous_sync_interval_secs: default_sync_interval(),
             auto_sync_enabled: default_auto_sync(),
@@ -271,11 +272,15 @@ impl WafConfig {
         if let Ok(v) = std::env::var("WAF_STEALTH_BLOCK_BODY") {
             cfg.stealth_block_body = Some(v);
         }
-        if let Ok(v) = std::env::var("EXACTOR_API_URL") {
-            cfg.exactor_api_url = v;
+        if let Ok(v) = std::env::var("SATGUARDIAN_API_URL").or_else(|_| std::env::var("EXACTOR_API_URL")) {
+            cfg.satguardian_api_url = v;
         }
-        if let Ok(v) = std::env::var("EXACTOR_API_TOKEN") {
-            cfg.exactor_api_token = Some(v);
+        if let Ok(v) = std::env::var("SATGUARDIAN_API_KEY")
+            .or_else(|_| std::env::var("SATGUARDIAN_API_TOKEN"))
+            .or_else(|_| std::env::var("EXACTOR_API_TOKEN"))
+            .or_else(|_| std::env::var("EXACTOR_API_KEY"))
+        {
+            cfg.satguardian_api_token = Some(v);
         }
         if let Ok(v) = std::env::var("WAF_DATABASE_PATH") {
             cfg.database_path = v;

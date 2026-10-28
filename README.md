@@ -1,74 +1,64 @@
-# Guardian WAF
+# SATGuardian Edge WAF
 
 [![License: MIT/Apache-2.0](https://img.shields.io/badge/License-MIT%2FApache--2.0-blue.svg)](#license)
-[![Powered by](https://img.shields.io/badge/Engine-Exactor%20Core%20(Rust)-orange.svg)](https://github.com/ExactorResearch/exactor-accelerator)
+[![Powered by](https://img.shields.io/badge/Engine-SATGuardian%20(Rust)-orange.svg)](https://satguardian.tech)
 [![Latency](https://img.shields.io/badge/Latency-0.02ms-brightgreen.svg)](#benchmarks)
 [![Throughput](https://img.shields.io/badge/Throughput-80k%2B%20req%2Fs-blue.svg)](#benchmarks)
-[![Synthesis](https://img.shields.io/badge/Synthesis-exactor.tech%20(v128)-purple.svg)](https://exactor.tech)
+[![Cloud Optimization](https://img.shields.io/badge/Optimization-Security%20Units%20(SU)-purple.svg)](https://satguardian.tech)
 [![Proof of Concept](https://img.shields.io/badge/PoC-Interactive%20Duel-success.svg)](PROOF_OF_CONCEPT.md)
 [![Epistemology](https://img.shields.io/badge/Theory-Axiomatic%20Supervision-blueviolet.svg)](AXIOMATIC_SUPERVISION_AND_SYNTHESIS.md)
 
-**Guardian WAF** is a production-grade Web Application Firewall (WAF) reverse-proxy and server daemon engineered in **Rust**, accompanied by an empirical **Interactive Proof of Concept (PoC)** suite in Python.
+**Unlimited protected requests (100% free Edge WAF)** is free, open source, and available for download with instructions below. It replaces fragile regular expressions with a deterministic local Boolean SAT engine in `< 0.05ms` (`0.02ms` typical) across 10 formal certainty islands. You only pay for the optional cloud service for rule matrix simplification and minterm compression.
 
-It implements deterministic Neuro-Symbolic SAT verification and formal **Certainty Islands** for real-time edge cybersecurity, resolving the fundamental trilemma of modern application security: **combining deep cognitive reasoning with sub-millisecond network SLAs (< 0.05 ms), 100% mathematically verifiable causal proofs, zero marginal inference cost, and autonomous Boolean logic minimization via [https://exactor.tech](https://exactor.tech).**
+> 🛡️ **Zero Traffic Intermediation (100% Sovereign):**  
+> SATGuardian never requires CNAME DNS redirection or cloud proxies. Customer traffic stays 100% inside your infrastructure. You only spend **Security Units (SU)** when synthesizing and compressing Boolean rule matrices in the cloud.
 
 > 📘 **Foundational Theoretical Documentation:**  
-> To understand how the WAF classifies without manual human labeling, and how rules are synthesized and generalized by consuming Silicon Units (SU), see [Axiomatic Supervision and Inductive Synthesis in EXACTOR](AXIOMATIC_SUPERVISION_AND_SYNTHESIS.md).
+> To understand how the WAF classifies without manual human labeling, and how rules are synthesized and generalized by consuming Security Units (SU), see [Axiomatic Supervision and Inductive Synthesis in SATGuardian](AXIOMATIC_SUPERVISION_AND_SYNTHESIS.md).
 
 ---
 
-## 🚀 Get Started (60-Second Quickstart)
+## 🚀 Three Canonical Deployment Methods (100% On-Premise & Sovereign)
 
-Protect any web application, microservice, or API in under a minute without installing compilers or external runtime dependencies.
+Deploy SATGuardian Edge WAF directly into your architecture using any of the 3 canonical deployment models:
 
-### 1. Choose Your Preferred Deployment Method
-
-#### A. Linux (Ubuntu / Debian / RHEL / CentOS / Rocky / Alpine)
-```bash
-curl -sSL https://raw.githubusercontent.com/ExactorResearch/exactor-waf-guardian/master/install.sh | sudo bash
-```
-
-#### B. Windows Server (PowerShell as Administrator)
-```powershell
-irm https://raw.githubusercontent.com/ExactorResearch/exactor-waf-guardian/master/install.ps1 | iex
-```
-
-#### C. Docker Compose (Zero-Host Install)
-```bash
-docker compose up -d
-```
-
-#### D. Portable Mode / Standalone Binary (Zero System Service Changes)
-Download the precompiled bundle from [`dist/`](dist/) or GitHub Releases and run directly:
+### Method 1: Standalone (Autonomous Mode)
+The lowest friction path for early adopters, homelabs, and quick POCs. The client downloads the self-contained Rust binary, specifies the public listen port and internal target, and the WAF begins protecting immediately with zero compilers or external runtime dependencies:
 ```bash
 # Windows
-.\exactor-waf-guardian.exe proxy --listen 0.0.0.0:8080 --upstream http://127.0.0.1:3000
+.\satguardian-waf.exe proxy --listen 0.0.0.0:443 --upstream http://127.0.0.1:8080 --mode block
 
 # Linux
-./exactor-waf-guardian proxy --listen 0.0.0.0:8080 --upstream http://127.0.0.1:3000
+./satguardian-waf proxy --listen 0.0.0.0:443 --upstream http://127.0.0.1:8080 --mode block
 ```
+
+### Method 2: Reverse Proxy over Existing Servers
+Direct frontline positioned ahead of existing Nginx, Apache, or Microsoft IIS servers. Intercepts incoming internet traffic in microseconds, mathematically blocks threats, and transfers only legitimate requests to internal web server instances:
+
+- **Linux (Ubuntu / Debian / RHEL / CentOS / Rocky / Alpine):**
+  ```bash
+  curl -sSL https://raw.githubusercontent.com/satguardian/satguardian-waf/main/install.sh | sudo bash
+  ```
+- **Windows Server (Microsoft IIS Frontline via PowerShell as Administrator):**
+  ```powershell
+  irm https://raw.githubusercontent.com/satguardian/satguardian-waf/main/install.ps1 | iex
+  ```
+- **Docker Compose (Containerized Frontline):**
+  ```bash
+  docker compose up -d
+  ```
+
+### Method 3: Native Kubernetes / Envoy Proxy Integration (Sidecar Model)
+The definitive architecture for microservices and large-scale service meshes. SATGuardian runs as a local daemon sidecar next to each Envoy container via `ext_authz` over a local Unix Domain Socket (`unix:///run/satguardian/waf.sock`), delivering near-zero latency (`< 15 µs`):
+```bash
+# Run Envoy ext_authz verification daemon over Unix Domain Socket
+satguardian-waf envoy-authz --socket /run/satguardian/waf.sock
+```
+When novel threats emerge, nodes query the cloud to download minimized Boolean rules and hot-compile them into RAM in 1 microsecond.
 
 ---
 
-### 2. Configure Your Upstream Backend Application
-
-By default, the WAF listens on public port `8080` and reverse-proxies verified traffic to your internal backend application running on port `3000`.  
-Modify it in `waf_config.toml` or pass CLI flags:
-
-```toml
-# Public ingress port receiving internet traffic
-listen_addr = "0.0.0.0:8080"
-
-# Target backend upstream server (Node.js, Python, Java, Go, Rust, PHP, etc.)
-upstream_url = "http://127.0.0.1:3000"
-
-# Defense mode: "block" (active perimeter drop) or "monitor" (dry-run detection)
-mode = "block"
-```
-
----
-
-### 3. Verify Your First Block with Formal Mathematical Proof
+## ⚡ Quick Verification
 
 Once the WAF daemon is active, execute these tests from any terminal or browser:
 
@@ -76,7 +66,7 @@ Once the WAF daemon is active, execute these tests from any terminal or browser:
 ```bash
 curl -i http://localhost:8080/
 ```
-> **Result:** HTTP `200 OK`, returning header `X-Exactor-Protected: true` with inspection latency below $0.02\text{ ms}$.
+> **Result:** HTTP `200 OK`, returning header `X-SATGuardian-Protected: true` with inspection latency below $0.02\text{ ms}$.
 
 #### 🛑 SQL Injection Attack Attempt (Instantly Blocked)
 ```bash
@@ -96,15 +86,24 @@ curl -i "http://localhost:8080/?id=1'%20OR%201=1--"
 
 ---
 
-### 4. Real-Time Telemetry & Observability Endpoints
+## 💳 Cloud Optimization Plans (Security Units - SU)
 
-The server exposes built-in ultra-low latency observability routes without external software dependencies:
-- **Health Check:** [`http://localhost:8080/health`](http://localhost:8080/health)
-- **Performance Telemetry:** [`http://localhost:8080/api/waf/metrics`](http://localhost:8080/api/waf/metrics) (throughput, blocked counts, p50/p99 latency in microseconds).
-- **Fast CLI Single-Payload Inspection (No server required):**
-  ```bash
-  exactor-waf-guardian inspect --query "id=1' OR 1=1--"
-  ```
+Local Edge inspection is **100% free with unlimited requests**. You only subscribe to Security Units (SU) if you want cloud inductive simplification and minterm compression:
+
+| Plan | Price | Seats | Optimization Limits | Included SU / Mo | Overage Policy | Edge Traffic |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **SCOUT** | $20/mo | 1 | Up to 20 vars / 2.5K minterms | 1,000 SU/mo | Hard cap (synthesis pauses; edge keeps protecting) | **Unlimited (Free)** |
+| **PRO / DEV** | $49/mo | 1 | Up to 64 vars / 10K minterms | 5,000 SU/mo | $10 per 1,000 extra SU | **Unlimited (Free)** |
+| **STARTUP** | $499/mo | 5 | Up to 128 vars / 100K minterms | 50,000 SU/mo | $8 per 1,000 extra SU | **Unlimited (Free)** |
+| **ESCALA** | $2,499/mo | 15 | Up to 128 vars / 1M minterms | 500,000 SU/mo | $5 per 1,000 extra SU | **Unlimited (Free)** |
+| **ENTERPRISE** | Custom (Quote) | Unlimited | Up to 128 vars / Unlimited | Negotiated annual pool | Negotiated pool | **Unlimited (Free)** |
+
+*Note: For setups requiring 256+ variables, engagement is offered exclusively as an Engineering Expansion Project (dedicated HPC / bare metal).*
+
+### Check Cloud Entitlement & SU Balance
+```bash
+satguardian-waf entitlement
+```
 
 ---
 
@@ -117,7 +116,7 @@ In real-world production environments, adversaries **continuously mutate and dis
 - Injecting SQLi via inline comments `/*...*/`, hexadecimal encodings, deeply nested JSON, or spoofed headers.
 - Each mutation spawns a **novel minterm** within the Boolean hypercube $\{0, 1\}^{128}$, which the local WAF blocks and logs into its SQLite WAL database (`waf_ledger.db`).
 - **Without Training:** The WAF would need to retain thousands of isolated minterm cases in RAM, causing CPU cache thrashing and degraded throughput.
-- **With EXACTOR CORE Cloud Training:** The cloud algorithm executes **Exact Inductive Synthesis**:
+- **With SATGuardian Cloud Optimization:** The cloud algorithm executes **Exact Inductive Synthesis**:
   1. Strips all camouflage variables (*Don't Cares*).
   2. Extracts the **Minimal Prime Implicant** (the irreducible algebraic root formula).
   3. **Generalizes protection to 100%:** Immunizes the server not only against previously observed variants, but against **trillions of future permutations** sharing that core, collapsing thousands of rules into a single CPU register instruction (`AND & CMP`).
@@ -131,37 +130,34 @@ The WAF provides two training modes:
 2. **Manual CLI Sync:**  
    Trigger immediate synchronization and cloud synthesis on demand:
    ```bash
-   exactor-waf-guardian sync-simplify --config /etc/exactor/waf_config.toml
+   satguardian-waf sync-simplify --config /etc/satguardian/waf_config.toml
    ```
 
 ---
 
-### 3. How to Obtain an EXACTOR CORE License Token?
-To connect your WAF with the cloud mathematical synthesis engine and enable continuous learning, obtain a **License Token**:
+### 3. How to Obtain a SATGuardian License Token?
+To connect your WAF with the cloud mathematical synthesis engine and enable continuous learning:
 
-1. **Create an EXACTOR Account:**  
-   Register at [https://exactor.tech/register.html](https://exactor.tech/register.html).
-2. **Select a Silicon Unit (SU) Plan:**  
-   - **Free Plan:** Includes **100 SU / month** for testing and lab validation.
-   - **Scout Plan ($20 USD/mo):** 1,000 SU / month (up to 20 variables / 2.5K minterms).
-   - **Pro / Dev Plan ($49 USD/mo):** 5,000 SU / month (up to 64 variables / 10K minterms).
-   - **Startup Plan ($499 USD/mo):** 50,000 SU / month (up to 128 variables / 100K minterms).
-3. **Copy Your API Token:**  
-   In your EXACTOR dashboard ([https://exactor.tech/token-manager.html](https://exactor.tech/token-manager.html)), copy your **API Token** (`ek_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxx`).
+1. **Create an Account:**  
+   Register at [https://satguardian.tech](https://satguardian.tech).
+2. **Select a Security Unit (SU) Plan:**  
+   Choose Scout ($20/mo), Pro ($49/mo), Startup ($499/mo), Escala ($2,499/mo), or Enterprise.
+3. **Copy Your API Key:**  
+   In your SATGuardian dashboard, copy your **API Key** (`ek_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxx`).
 
 ---
 
 ### 4. How to Configure the License in the WAF?
 
 #### Option A: Inside `waf_config.toml` (Recommended)
-Edit `/etc/exactor/waf_config.toml` (Linux) or `C:\ProgramData\Exactor\WAF\waf_config.toml` (Windows):
+Edit `waf_config.toml`:
 
 ```toml
-# Official EXACTOR CORE Boolean synthesis API endpoint
-exactor_api_url = "https://exactor.tech/api/simplify"
+# Official SATGuardian Boolean synthesis API endpoint
+satguardian_api_url = "https://satguardian.tech/api/simplify"
 
-# Your EXACTOR CORE License / API Token
-exactor_api_token = "ek_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+# Your SATGuardian API Key
+satguardian_api_key = "ek_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
 # Enable continuous autonomous learning and synthesis
 auto_sync_enabled = true
@@ -172,38 +168,21 @@ autonomous_sync_interval_secs = 300
 
 #### Option B: Via Environment Variables (Docker / Kubernetes)
 ```bash
-export EXACTOR_API_TOKEN="ek_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-export EXACTOR_API_URL="https://exactor.tech/api/simplify"
+export SATGUARDIAN_API_KEY="ek_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+export SATGUARDIAN_API_URL="https://satguardian.tech/api/simplify"
 ```
 In `docker-compose.yml`:
 ```yaml
 environment:
-  - EXACTOR_API_URL=https://exactor.tech/api/simplify
-  - EXACTOR_API_TOKEN=ek_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+  - SATGUARDIAN_API_URL=https://satguardian.tech/api/simplify
+  - SATGUARDIAN_API_KEY=ek_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
 #### Option C: Verify Your License Connection
 To test communication with the cloud synthesis engine:
 ```bash
-exactor-waf-guardian sync-simplify --config waf_config.toml
+satguardian-waf entitlement
 ```
-Expected terminal output:
-```text
-⚡ Exactor WAF: Initiating Exact Boolean Simplification
-   Target: https://exactor.tech/api/simplify
-📥 Found 15 pending anomaly minterms to simplify.
-✅ Cloud Simplification Succeeded!
-   Reduction Percentage : 93.33%
-   Original Gates       : 45
-   New Gates            : 3
-```
-
----   Reduction Percentage : 93.33%
-   Original Gates       : 45
-   New Gates            : 3
-```
-
----
 
 ## 🏛️ System Architecture
 
@@ -239,14 +218,14 @@ Expected terminal output:
 │  3. Perimeter Decision:                                                │
 │     ├─ [ VIOLATION DETECTED ]                                          │
 │     │   └─ Immediate HTTP 403 Forbidden Response (< 0.05 ms)           │
-│     │      • X-Exactor-Action: BLOCK                                   │
-│     │      • X-Exactor-Proof: [Causal Proof Chain]                     │
+│     │      • X-SATGuardian-Action: BLOCK                                   │
+│     │      • X-SATGuardian-Proof: [Causal Proof Chain]                     │
 │     │      • JSON Body: LaTeX Formal Proof + Active Predicate Tokens   │
 │     │                                                                  │
 │     └─ [ CLEAN TRAFFIC (ALLOW) ]                                       │
 │         └─ High-Throughput Proxy Streaming to Upstream Backend         │
 │            • http://127.0.0.1:3000                                     │
-│            • X-Exactor-Protected: true                                 │
+│            • X-SATGuardian-Protected: true                                 │
 └───────────────────────────────────┬────────────────────────────────────┘
                                     │ (Non-blocking asynchronous queue)
                                     ▼
@@ -257,8 +236,8 @@ Expected terminal output:
                                     ▼ (Background Worker / Sync Trigger)
 ┌────────────────────────────────────────────────────────────────────────┐
 │   Autonomous Exact Boolean Minimization                                │
-│   Target: https://exactor.tech/api/simplify                            │
-│   (Powered by exactor-cloud-service-v128)                              │
+│   Target: https://satguardian.tech/api/simplify                        │
+│   (Consumes Security Units - SU)                                       │
 │                                                                        │
 │   - Binarizes novel anomaly minterms into prime implicants in O(n)     │
 │   - Synthesizes exact minimal Boolean equations                        │
@@ -288,7 +267,7 @@ Expected terminal output:
 
 ## 🧪 Proof of Concept (PoC) & Multi-Agent Duel
 
-The repository includes a comprehensive Python Proof of Concept in [`exactor_waf/`](file:///d:/proyectos/rush/exactor-waf-guardian/exactor_waf) to visualize and compare the technology before production deployment.
+The repository includes a comprehensive Python Proof of Concept in [`satguardian_waf/`](file:///d:/proyectos/rush/satguardian-waf-guardian/satguardian_waf) to visualize and compare the technology before production deployment.
 
 ### 1. Interactive Web Dashboard (`run_web.py`)
 Launch the visual duel simulator:
@@ -296,7 +275,7 @@ Launch the visual duel simulator:
 python run_web.py 8002
 ```
 * **URL:** Navigate to **`http://localhost:8002`**
-* **Live Multi-Agent Duel:** Watch **Exactor SAT**, **ModSecurity (Regex)**, and **Pure LLM (JEV Solo)** process the same payloads side-by-side.
+* **Live Multi-Agent Duel:** Watch **SATGuardian SAT**, **ModSecurity (Regex)**, and **Pure LLM (JEV Solo)** process the same payloads side-by-side.
 * **KaTeX $\LaTeX$ Math Mode:** Renders mathematically verifiable proofs in real time explaining why attacks are dropped with zero hallucination.
 
 ### 2. Single Payload CLI Inspection (`run_cli.py`)
@@ -310,13 +289,13 @@ python run_benchmark.py 100
 ```
 Compares Accuracy, False Negatives, False Positives, Latency, and Cost across all 3 agent architectures.
 
-*(For in-depth details, see [PROOF_OF_CONCEPT.md](PROOF_OF_CONCEPT.md) and [EXACTOR_METHODOLOGY.md](EXACTOR_METHODOLOGY.md)).*
+*(For in-depth details, see [PROOF_OF_CONCEPT.md](PROOF_OF_CONCEPT.md) and [SATGUARDIAN_METHODOLOGY.md](SATGUARDIAN_METHODOLOGY.md)).*
 
 ---
 
 ## 🌊 Blue Ocean Strategy Comparison
 
-| Competitive Factor | Traditional Regex WAF (ModSecurity / CRS) | Cloud LLM WAF (Cloudflare AI / AWS) | Guardian WAF (Rust) |
+| Competitive Factor | Traditional Regex WAF (ModSecurity / CRS) | Cloud LLM WAF (Cloudflare AI / AWS) | SATGuardian Edge WAF (Rust) |
 | :--- | :---: | :---: | :---: |
 | **Inference Cost** | Low | High ($2,000+ / 1M reqs) | **$0.00 (Local Deterministic)** |
 | **Network SLA Compliance** | Fast ($1 - 5\text{ ms}$) | Unacceptable ($350 - 650\text{ ms}$) | **Ultra-Fast (< 0.05 ms / < 20 µs)** |
@@ -327,7 +306,7 @@ Compares Accuracy, False Negatives, False Positives, Latency, and Cost across al
 | **Behavioral Defense** | Rudimentary iptables | Slow batch heuristics | **Sliding Window Ring Counters** |
 | **Autonomous Evolution** | Slow manual CRS releases | Costly model fine-tuning | **Real-Time Boolean Minimization** |
 
-> 📖 **In-Depth Comparative Analysis:** See the technical report [COMPARATIVE_ANALYSIS_PRE_VS_EXACTOR.md](COMPARATIVE_ANALYSIS_PRE_VS_EXACTOR.md) for the complete breakdown of the four structural failures of the pre-EXACTOR era (RegEx and Cloud AI) alongside empirical benchmark findings.
+> 📖 **In-Depth Comparative Analysis:** See the technical report [COMPARATIVE_ANALYSIS_PRE_VS_SATGUARDIAN.md](COMPARATIVE_ANALYSIS_PRE_VS_SATGUARDIAN.md) for the complete breakdown of the four structural failures of the pre-SATGUARDIAN era (RegEx and Cloud AI) alongside empirical benchmark findings.
 
 ---
 
@@ -340,24 +319,24 @@ Clients **do not need to install runtime dependencies** on their servers (no Rus
 #### On Linux (Ubuntu / Debian / RHEL / CentOS / Rocky / Alpine)
 Run directly in your terminal as root:
 ```bash
-curl -sSL https://raw.githubusercontent.com/ExactorResearch/exactor-waf-guardian/master/install.sh | sudo bash
+curl -sSL https://raw.githubusercontent.com/satguardian/satguardian-waf/main/install.sh | sudo bash
 ```
 > **What does it do automatically?**
 > 1. Detects system architecture (`x86_64` or `aarch64/ARM64`).
-> 2. Installs the static binary to `/usr/local/bin/exactor-waf-guardian`.
-> 3. Deploys default configuration to `/etc/exactor/waf_config.toml`.
-> 4. Registers and starts the `systemd` system daemon (`exactor-waf.service`).
+> 2. Installs the static binary to `/usr/local/bin/satguardian-waf` (with `/usr/local/bin/satguardian-waf-guardian` alias).
+> 3. Deploys default configuration to `/etc/satguardian/waf_config.toml`.
+> 4. Registers and starts the `systemd` system daemon (`satguardian-waf.service`).
 
 #### On Windows Server
 Run in PowerShell as Administrator:
 ```powershell
-irm https://raw.githubusercontent.com/ExactorResearch/exactor-waf-guardian/master/install.ps1 | iex
+irm https://raw.githubusercontent.com/satguardian/satguardian-waf/main/install.ps1 | iex
 ```
 > **What does it do automatically?**
-> 1. Installs the executable to `C:\Program Files\Exactor\WAF\exactor-waf-guardian.exe`.
-> 2. Deploys default configuration to `C:\ProgramData\Exactor\WAF\waf_config.toml`.
+> 1. Installs the executable to `C:\Program Files\Satguardian\WAF\satguardian-waf.exe`.
+> 2. Deploys default configuration to `C:\ProgramData\Satguardian\WAF\waf_config.toml`.
 > 3. Appends the directory to `System PATH` (accessible globally from any prompt).
-> 4. Registers and launches the `ExactorWAF` Windows Service configured for automatic startup.
+> 4. Registers and launches the `SATGuardianWAF` Windows Service configured for automatic startup.
 
 ---
 
@@ -366,8 +345,8 @@ irm https://raw.githubusercontent.com/ExactorResearch/exactor-waf-guardian/maste
 For air-gapped servers, restricted network perimeters, or environments where piped script execution is restricted:
 
 1. **Download the precompiled bundle:**
-   - **Windows:** `exactor-waf-guardian-v0.2.0-windows-x86_64.zip`
-   - **Linux:** `exactor-waf-guardian-v0.2.0-linux-x86_64.tar.gz`
+   - **Windows:** `satguardian-waf-v0.3.0-windows-x86_64.zip`
+   - **Linux:** `satguardian-waf-v0.3.0-linux-x86_64.tar.gz`
 2. **Extract and install with a single command:**
    - On Windows:
      ```powershell
@@ -381,10 +360,10 @@ For air-gapped servers, restricted network perimeters, or environments where pip
    If you prefer not to register system services, execute the binary directly:
    ```bash
    # Windows
-   .\exactor-waf-guardian.exe proxy --config .\waf_config.toml
+   .\satguardian-waf.exe proxy --config .\waf_config.toml
 
    # Linux
-   ./exactor-waf-guardian proxy --config ./waf_config.toml
+   ./satguardian-waf proxy --config ./waf_config.toml
    ```
 
 To generate standalone distribution packages locally:
@@ -407,7 +386,7 @@ For container-native environments without host modifications:
 docker compose up -d
 
 # Stream real-time inspection telemetry and logs
-docker compose logs -f exactor-waf
+docker compose logs -f satguardian-waf
 ```
 
 ---
@@ -432,11 +411,11 @@ upstream_url = "http://127.0.0.1:3000"
 # Defense mode: "block" (perimeter defense) or "monitor" (dry-run detection)
 mode = "block"
 
-# EXACTOR Core Cloud API URL (exactor-cloud-service-v128)
-exactor_api_url = "https://exactor.tech/api/simplify"
+# SATGuardian Cloud Optimization API URL
+satguardian_api_url = "https://satguardian.tech/api/simplify"
 
-# EXACTOR Cloud API Token (optional for public demo or set via EXACTOR_API_TOKEN)
-# exactor_api_token = "ek_xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+# SATGuardian Cloud API Key (or set via SATGUARDIAN_API_KEY environment variable)
+# satguardian_api_key = "ek_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
 # SQLite WAL Ledger database path
 database_path = "waf_ledger.db"
@@ -444,7 +423,7 @@ database_path = "waf_ledger.db"
 # Autonomous background minimization sync interval in seconds (default: 300s)
 autonomous_sync_interval_secs = 300
 
-# Enable automatic hot minimization sync with https://exactor.tech
+# Enable automatic hot minimization sync with https://satguardian.tech
 auto_sync_enabled = true
 
 # ==============================================================================
@@ -475,16 +454,16 @@ stateful_ban_secs = 180
 
 ### 1. Launch Reverse Proxy Daemon
 ```bash
-exactor-waf-guardian proxy --listen 0.0.0.0:8080 --upstream http://127.0.0.1:3000 --config waf_config.toml
+satguardian-waf proxy --listen 0.0.0.0:8080 --upstream http://127.0.0.1:3000 --config waf_config.toml
 ```
 
 ### 2. Inspect Single Request Payload
 ```bash
-exactor-waf-guardian inspect --method GET --path "/api/users" --query "id=1' OR '1'='1"
+satguardian-waf inspect --method GET --path "/api/users" --query "id=1' OR '1'='1"
 ```
 **Example Terminal Output:**
 ```text
-🔍 Guardian WAF: Payload Inspection Report
+🔍 SATGuardian Edge WAF: Payload Inspection Report
 ============================================================
 Request ID       : req_84920481
 Target Path      : /api/users
@@ -508,14 +487,19 @@ LaTeX Formal SAT Proof:
 ============================================================
 ```
 
-### 3. Run Built-In Multi-Vector Benchmark
+### 3. Check Cloud Entitlement & SU Balance
 ```bash
-exactor-waf-guardian benchmark --requests 10000
+satguardian-waf entitlement
 ```
 
-### 4. Trigger Cloud Simplification & Hot-Compilation
+### 4. Run Built-In Multi-Vector Benchmark
 ```bash
-exactor-waf-guardian sync-simplify --limit 50
+satguardian-waf benchmark --requests 10000
+```
+
+### 5. Trigger Cloud Simplification & Hot-Compilation
+```bash
+satguardian-waf sync-simplify --limit 50
 ```
 
 ---
@@ -528,7 +512,7 @@ The server exposes built-in management & telemetry routes alongside the reverse 
 * **`GET /api/waf/metrics`**: Live telemetry (total requests, blocked count, average latency, p99, pending anomalies).
 * **`GET /api/waf/rules`**: Complete catalog of active Certainty Island invariant rules.
 * **`GET /api/waf/islands`**: Catalog of Certainty Islands.
-* **`POST /api/waf/sync-simplify`**: Manually trigger Boolean minimization with `https://exactor.tech/api/simplify` and hot-reload rules.
+* **`POST /api/waf/sync-simplify`**: Manually trigger Boolean minimization with `https://satguardian.tech/api/simplify` and hot-reload rules.
 * **`GET /health`** or **`GET /livez`**: Service health & liveness check.
 
 ---
@@ -537,7 +521,7 @@ The server exposes built-in management & telemetry routes alongside the reverse 
 
 Run the full Rust test suite covering all 10 Certainty Islands, enterprise grammars, and stateful sliding window ring counters:
 ```bash
-cargo test -p exactor-waf-guardian
+cargo test -p satguardian-waf-guardian
 ```
 *18 unit and integration tests passing with 0 false positives.*
 

@@ -1,11 +1,11 @@
 //! SafeLine T1K Acceleration Co-Processor Server in Rust.
 //! Listens for T1K protocol connections from SafeLine Tengine, evaluates requests
-//! in sub-millisecond execution time via Exactor SAT Engine, and optionally forwards
+//! in sub-millisecond execution time via SATGuardian SAT Engine, and optionally forwards
 //! ambiguous/benign traffic to the downstream SafeLine detector (snserver).
 
 use crate::ast::features::FeatureBinarizer;
 use crate::ast::lexer::AstLexer;
-use crate::engine::ExactorSatEngine;
+use crate::engine::SatguardianSatEngine;
 use crate::ledger::{AuditRecord, SqliteLedger};
 use crate::reporter::SafeLinePgReporter;
 use crate::stateful::StatefulRateLimiter;
@@ -24,7 +24,7 @@ use tracing::{debug, error, info, warn};
 
 /// Shared state for the T1K co-processor daemon.
 pub struct T1kServerState {
-    pub sat_engine: Arc<ExactorSatEngine>,
+    pub sat_engine: Arc<SatguardianSatEngine>,
     pub ledger: Option<Arc<SqliteLedger>>,
     pub safeline_reporter: Option<Arc<SafeLinePgReporter>>,
     pub rate_limiter: Option<Arc<StatefulRateLimiter>>,
@@ -39,7 +39,7 @@ pub struct T1kServerState {
 
 impl T1kServerState {
     pub fn new(
-        sat_engine: Arc<ExactorSatEngine>,
+        sat_engine: Arc<SatguardianSatEngine>,
         ledger: Option<Arc<SqliteLedger>>,
         safeline_reporter: Option<Arc<SafeLinePgReporter>>,
         rate_limiter: Option<Arc<StatefulRateLimiter>>,
@@ -87,7 +87,7 @@ pub async fn run_t1k_server(
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let listener = TcpListener::bind(listen_addr).await?;
     info!(
-        "🛡️  Exactor T1K Acceleration Co-Processor listening on {}",
+        "🛡️  SATGuardian T1K Acceleration Co-Processor listening on {}",
         listen_addr
     );
     if let Some(ref ds) = state.downstream_addr {

@@ -124,7 +124,7 @@ pub async fn send_blocked_verdict<W: AsyncWriteExt + Unpin>(
     let body_json = serde_json::json!({
         "code": status_code,
         "success": false,
-        "message": "Blocked by Exactor WAF Guardian (SafeLine Acceleration Tier)",
+        "message": "Blocked by SATGuardian Edge WAF (SafeLine Acceleration Tier)",
         "event_id": event_id,
         "reason": reason,
     });

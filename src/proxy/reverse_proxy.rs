@@ -60,7 +60,7 @@ pub async fn proxy_handler(
     let body_bytes = match body.collect().await {
         Ok(collected) => collected.to_bytes(),
         Err(e) => {
-            error!(target: "exactor::proxy", "Failed to read request body: {}", e);
+            error!(target: "satguardian::proxy", "Failed to read request body: {}", e);
             return (StatusCode::BAD_REQUEST, "Failed to read request body").into_response();
         }
     };
@@ -127,7 +127,7 @@ pub async fn proxy_handler(
     if proof.action == AttackDecision::Block && state.config.mode != "monitor" {
         state.counter_blocked.fetch_add(1, Ordering::Relaxed);
         warn!(
-            target: "exactor::proxy",
+            target: "satguardian::proxy",
             req_id = %payload.id,
             action = "BLOCK",
             category = %proof.category,
@@ -150,19 +150,19 @@ pub async fn proxy_handler(
         }
 
         let mut resp_headers = HeaderMap::new();
-        resp_headers.insert("X-Exactor-Action", HeaderValue::from_static("BLOCK"));
+        resp_headers.insert("X-SATGuardian-Action", HeaderValue::from_static("BLOCK"));
         if let Ok(v) = HeaderValue::from_str(proof.category.as_str()) {
-            resp_headers.insert("X-Exactor-Category", v);
+            resp_headers.insert("X-SATGuardian-Category", v);
         }
         if let Ok(v) = HeaderValue::from_str(&format!("{:.2}", proof.execution_time_us)) {
-            resp_headers.insert("X-Exactor-Latency-Us", v);
+            resp_headers.insert("X-SATGuardian-Latency-Us", v);
         }
         if let Ok(v) = HeaderValue::from_str(&proof.causal_proof) {
-            resp_headers.insert("X-Exactor-Proof", v);
+            resp_headers.insert("X-SATGuardian-Proof", v);
         }
 
         let body_json = serde_json::json!({
-            "error": "Request blocked by Exactor WAF Guardian",
+            "error": "Request blocked by SATGuardian Edge WAF",
             "request_id": payload.id,
             "action": "BLOCK",
             "category": proof.category.as_str(),
@@ -177,7 +177,7 @@ pub async fn proxy_handler(
 
     state.counter_allowed.fetch_add(1, Ordering::Relaxed);
     debug!(
-        target: "exactor::proxy",
+        target: "satguardian::proxy",
         req_id = %payload.id,
         action = "ALLOW",
         latency_us = proof.execution_time_us,
@@ -205,11 +205,11 @@ pub async fn proxy_handler(
         }
     }
 
-    // Add Exactor security verification headers
+    // Add SATGuardian security verification headers
     client_req = client_req
-        .header("X-Exactor-WAF", "ALLOW")
-        .header("X-Exactor-Latency-Us", format!("{:.2}", proof.execution_time_us))
-        .header("X-Exactor-Request-Id", &payload.id);
+        .header("X-SATGuardian-WAF", "ALLOW")
+        .header("X-SATGuardian-Latency-Us", format!("{:.2}", proof.execution_time_us))
+        .header("X-SATGuardian-Request-Id", &payload.id);
 
     match client_req.send().await {
         Ok(upstream_resp) => {
@@ -221,8 +221,8 @@ pub async fn proxy_handler(
             }
 
             res_builder = res_builder
-                .header("X-Exactor-Protected", "true")
-                .header("X-Exactor-Latency-Us", format!("{:.2}", proof.execution_time_us));
+                .header("X-SATGuardian-Protected", "true")
+                .header("X-SATGuardian-Latency-Us", format!("{:.2}", proof.execution_time_us));
 
             let bytes = upstream_resp.bytes().await.unwrap_or_default();
             res_builder
@@ -231,7 +231,7 @@ pub async fn proxy_handler(
         }
         Err(err) => {
             error!(
-                target: "exactor::proxy",
+                target: "satguardian::proxy",
                 target_url = %target_url,
                 error = %err,
                 "Failed to reach upstream server"

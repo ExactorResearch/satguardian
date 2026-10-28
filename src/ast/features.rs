@@ -68,7 +68,7 @@ impl FeatureVector {
         }
     }
 
-    /// Returns the integer minterm representation for EXACTOR core minimization.
+    /// Returns the integer minterm representation for SATGuardian core minimization.
     pub fn as_minterm(&self) -> u128 {
         self.bits
     }
@@ -158,7 +158,7 @@ impl FeatureBinarizer {
         fv
     }
 
-    /// Returns standard variable list formatted for the Exactor Cloud Simplification API.
+    /// Returns standard variable list formatted for the SATGuardian Cloud Simplification API.
     pub fn get_variable_catalog(var_count: usize) -> Vec<String> {
         let count = var_count.min(FEATURE_NAMES.len());
         FEATURE_NAMES[..count].iter().map(|&s| s.to_string()).collect()

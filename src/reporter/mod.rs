@@ -1,4 +1,4 @@
-//! Exactor Telemetry and Reporting integration modules.
+//! SATGuardian Telemetry and Reporting integration modules.
 
 pub mod safeline_pg;
 

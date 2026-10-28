@@ -122,7 +122,7 @@ impl SqliteLedger {
             }
         });
 
-        info!(target: "exactor::ledger", "Initialized SQLite WAL Ledger at {}", database_path);
+        info!(target: "satguardian::ledger", "Initialized SQLite WAL Ledger at {}", database_path);
 
         Ok(Self {
             pool,
@@ -138,7 +138,7 @@ impl SqliteLedger {
         let mut tx = match pool.begin().await {
             Ok(t) => t,
             Err(e) => {
-                tracing::error!(target: "exactor::ledger", "Failed to begin batch audit transaction: {}", e);
+                tracing::error!(target: "satguardian::ledger", "Failed to begin batch audit transaction: {}", e);
                 batch.clear();
                 return;
             }
@@ -199,7 +199,7 @@ impl SqliteLedger {
         }
 
         if let Err(e) = tx.commit().await {
-            tracing::error!(target: "exactor::ledger", "Failed to commit batch audit transaction: {}", e);
+            tracing::error!(target: "satguardian::ledger", "Failed to commit batch audit transaction: {}", e);
         }
     }
 

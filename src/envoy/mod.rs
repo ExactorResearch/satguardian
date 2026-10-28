@@ -1,4 +1,4 @@
-//! Envoy Proxy integration suite for Exactor WAF Guardian.
+//! Envoy Proxy integration suite for SATGuardian Edge WAF.
 //! Provides native ext_authz HTTP/gRPC filter services and configuration helpers.
 
 pub mod ext_authz;

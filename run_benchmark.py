@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run Exactor WAF Guardian Benchmark Suite."""
+"""Run SATGuardian Edge WAF Benchmark Suite."""
 
 import sys
 
@@ -9,8 +9,8 @@ if hasattr(sys.stdout, "reconfigure"):
     except Exception:
         pass
 
-from exactor_waf.benchmark.runner import WAFBenchmarkRunner
-from exactor_waf.benchmark.reporter import generate_ascii_table, generate_markdown_report
+from satguardian_waf.benchmark.runner import WAFBenchmarkRunner
+from satguardian_waf.benchmark.reporter import generate_ascii_table, generate_markdown_report
 
 
 def main():
@@ -22,7 +22,7 @@ def main():
             pass
 
     print("\n" + "=" * 80)
-    print(f" [BENCHMARK] Starting EXACTOR WAF GUARDIAN Evaluation ({samples} reqs)...")
+    print(f" [BENCHMARK] Starting SATGUARDIAN EDGE WAF Evaluation ({samples} reqs)...")
     print("=" * 80 + "\n")
 
     runner = WAFBenchmarkRunner()

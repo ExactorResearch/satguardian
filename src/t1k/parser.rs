@@ -1,4 +1,4 @@
-//! Parses raw T1K request chunks into normalized HttpRequestPayload for the Exactor SAT solver.
+//! Parses raw T1K request chunks into normalized HttpRequestPayload for the SATGuardian SAT solver.
 
 use crate::types::HttpRequestPayload;
 use std::collections::HashMap;

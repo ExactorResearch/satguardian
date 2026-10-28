@@ -1,13 +1,13 @@
-"""Tests for Exactor WAF SAT Engine."""
+"""Tests for SATGuardian Edge WAF SAT Engine."""
 
 import pytest
-from exactor_waf.core.payload import HTTPRequestPayload, AttackCategory
-from exactor_waf.core.solver_sat import ExactorWAFSATEngine
+from satguardian_waf.core.payload import HTTPRequestPayload, AttackCategory
+from satguardian_waf.core.solver_sat import SatguardianWAFSATEngine, ExactorWAFSATEngine
 
 
 @pytest.fixture
 def sat_engine():
-    return ExactorWAFSATEngine()
+    return SatguardianWAFSATEngine()
 
 
 def test_sqli_detection(sat_engine):
@@ -22,7 +22,6 @@ def test_sqli_detection(sat_engine):
     assert proof.category == AttackCategory.SQL_INJECTION
     assert len(proof.matched_rules) > 0
     assert "SAT-SQLI-01" in proof.formal_proof_latex
-
 
 
 def test_xss_detection(sat_engine):

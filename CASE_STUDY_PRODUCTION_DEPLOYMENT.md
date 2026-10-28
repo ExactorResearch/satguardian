@@ -1,15 +1,15 @@
 # ENGINEERING CASE STUDY: PRODUCTION DEPLOYMENT OF GUARDIAN WAF
 
-**Objective:** Perimeter integration of Guardian WAF with Nginx in a multi-tier production environment (`exactor.tech`), live failure triage, and architectural hardening.  
+**Objective:** Perimeter integration of SATGuardian Edge WAF with Nginx in a multi-tier production environment (`satguardian.tech`), live failure triage, and architectural hardening.  
 **Date:** October 2026  
 **Validation Environment:** Linux (Ubuntu 24.04 LTS / Debian 12), Nginx 1.24, Systemd, Unix Domain Sockets (UDS).  
-**Production Domain:** `https://exactor.tech`  
+**Production Domain:** `https://satguardian.tech`  
 
 ---
 
 ## 1. Executive Summary
 
-This engineering case study documents the real-world provisioning, diagnosis, and optimization process of **Guardian WAF** as a sub-millisecond runtime web application firewall.
+This engineering case study documents the real-world provisioning, diagnosis, and optimization process of **SATGuardian Edge WAF** as a sub-millisecond runtime web application firewall.
 
 Unlike synthetic laboratory benchmarks, deploying on live HTTPS production traffic exposed four critical boundary friction points across the operating system (Linux), the reverse proxy (Nginx), and the formal Boolean invariant evaluator (Rust). Systematically resolving these issues not only achieved a **100% perimeter SQL injection detection rate (HTTP 403 in < 400 µs)**, but also drove a **foundational grammar enhancement in the SSRF parser**, completely eliminating false positives on legitimate web browsing.
 
@@ -17,7 +17,7 @@ Unlike synthetic laboratory benchmarks, deploying on live HTTPS production traff
 
 ## 2. Protected Infrastructure Topology
 
-The production server at `exactor.tech` hosts multiple simultaneous service layers coexisting under unified TLS termination with automated Certbot certificates:
+The production server at `satguardian.tech` hosts multiple simultaneous service layers coexisting under unified TLS termination with automated Certbot certificates:
 
 ```
 [ Client / Web Attacker ]
@@ -26,7 +26,7 @@ The production server at `exactor.tech` hosts multiple simultaneous service laye
            ▼
 [ Nginx Reverse Proxy (Perimeter) ]
     │
-    ├── (1) Internal Subrequest (auth_request) ──► [ /var/run/exactor/waf.sock ]
+    ├── (1) Internal Subrequest (auth_request) ──► [ /var/run/satguardian/waf.sock ]
     │                                                     │
     │                                             [ GUARDIAN WAF ]
     │                                             Rust SIMD Evaluator
@@ -47,31 +47,31 @@ The production server at `exactor.tech` hosts multiple simultaneous service laye
 ### Challenge 1: IPC Socket Lifecycle in Volatile Memory (Systemd & tmpfs)
 * **Symptom:** Service startup failed (`status=1/FAILURE`) with the error:
   ```text
-  ls: cannot access '/var/run/exactor/waf.sock': No such file or directory
+  ls: cannot access '/var/run/satguardian/waf.sock': No such file or directory
   ```
 * **Root Cause Analysis:** On modern Linux distributions, `/var/run` is a `tmpfs` RAM mount recreated upon every system reboot. When running the service as an unprivileged user (`www-data`) and the folder does not exist, the daemon aborts immediately because it cannot bind the socket file. Additionally, the Rust configuration parser aborted if `listen_addr` and `upstream_url` were omitted from the TOML configuration.
 * **Engineering Solution:**
   1. Configured native Systemd lifecycle directives:
      ```ini
-     RuntimeDirectory=exactor
+     RuntimeDirectory=satguardian
      RuntimeDirectoryMode=0775
-     StateDirectory=exactor
-     WorkingDirectory=/var/lib/exactor
+     StateDirectory=satguardian
+     WorkingDirectory=/var/lib/satguardian
      ```
-     This instructs the Linux kernel to automatically provision `/run/exactor` owned by `www-data:www-data` prior to executing the binary.
-  2. Allocated persistent state directory storage for the audit database at `/var/lib/exactor/waf_ledger.db`.
+     This instructs the Linux kernel to automatically provision `/run/satguardian` owned by `www-data:www-data` prior to executing the binary.
+  2. Allocated persistent state directory storage for the audit database at `/var/lib/satguardian/waf_ledger.db`.
 
 ---
 
 ### Challenge 2: Reverse Proxy Name Resolution (Nginx Upstream Resolution)
 * **Symptom:** Nginx failed to start after configuration reload:
   ```text
-  [emerg] host not found in upstream "exactor_waf_backend" in /etc/nginx/sites-enabled/default
+  [emerg] host not found in upstream "satguardian_waf_backend" in /etc/nginx/sites-enabled/default
   ```
-* **Root Cause Analysis:** In Nginx, `upstream` blocks may only be declared within the global `http { }` context. When declared inside a server or site configuration file without the enclosing http block, Nginx interpreted `"exactor_waf_backend"` as an external internet hostname and failed DNS resolution.
+* **Root Cause Analysis:** In Nginx, `upstream` blocks may only be declared within the global `http { }` context. When declared inside a server or site configuration file without the enclosing http block, Nginx interpreted `"satguardian_waf_backend"` as an external internet hostname and failed DNS resolution.
 * **Engineering Solution:** Removed the abstract upstream proxy layer, connecting directly via Nginx's native Unix domain socket syntax:
   ```nginx
-  proxy_pass http://unix:/var/run/exactor/waf.sock:/ext_authz;
+  proxy_pass http://unix:/var/run/satguardian/waf.sock:/ext_authz;
   ```
   This eliminates DNS lookups entirely and ensures pure in-kernel memory IPC communication (~123 µs latency).
 
@@ -93,13 +93,13 @@ The production server at `exactor.tech` hosts multiple simultaneous service laye
 ---
 
 ### Challenge 4: SSRF False Positives and Logical Grammar Hardening (`SAT-SSRF-01`)
-* **Symptom:** Browsing to `https://exactor.tech/login.html` or submitting credentials triggered unexpected perimeter blocking:
+* **Symptom:** Browsing to `https://satguardian.tech/login.html` or submitting credentials triggered unexpected perimeter blocking:
   ```json
   {"error": "Forbidden by Guardian Perimeter Security", "status": "BLOCKED", "rule": "SAT-SSRF-01"}
   ```
 * **Root Cause Analysis (The Critical Finding):**
   1. Connecting to a Unix socket without explicitly setting `Host` caused Nginx to default to `Host: localhost`.
-  2. The browser legitimately included `Referer: https://exactor.tech/login.html` (which contains `https://`).
+  2. The browser legitimately included `Referer: https://satguardian.tech/login.html` (which contains `https://`).
   3. The WAF's SSRF evaluator evaluated an overly broad Boolean co-occurrence rule:
      $$\text{has\_scheme}(\text{"https://"}) \land \text{matches\_target}(\text{"localhost"}) \implies \text{SSRF\_ATTACK}$$
   4. Although these tokens originated from completely distinct and unrelated headers, the WAF grouped them in the evaluation lattice, incorrectly detecting a loopback SSRF attack (*Host Header Pollution*).
@@ -119,7 +119,7 @@ The production server at `exactor.tech` hosts multiple simultaneous service laye
 ---
 
 ### Challenge 5: Unified Perimeter Coverage (`/search` vs `/api/search`)
-* **Symptom:** `curl "https://exactor.tech/api/search?q=admin'%20OR%201=1--"` was blocked with 403, but `curl "https://exactor.tech/search?q=admin'%20OR%201=1--"` bypassed inspection.
+* **Symptom:** `curl "https://satguardian.tech/api/search?q=admin'%20OR%201=1--"` was blocked with 403, but `curl "https://satguardian.tech/search?q=admin'%20OR%201=1--"` bypassed inspection.
 * **Root Cause Analysis:** The `auth_request` directive had been restricted exclusively to the `location /api/` block, leaving root endpoints under `location /` exposed directly to the backend.
 * **Engineering Solution:** Promoted `auth_request` to the global `server { }` block, ensuring omnidirectional perimeter enforcement (`/`, `/api/`, `/mcp/`, `/apibnn/`), while specifically excluding Certbot ACME renewal challenges and static assets (`.css`, `.js`, images).
 
@@ -131,7 +131,7 @@ Following the implementation of these solutions, automated verification tests we
 
 ### Case A: Tautological SQL Injection Detection at Perimeter
 ```bash
-curl -i "https://exactor.tech/api/search?q=admin'%20OR%201=1--"
+curl -i "https://satguardian.tech/api/search?q=admin'%20OR%201=1--"
 ```
 **Server Response:**
 ```http
@@ -152,7 +152,7 @@ X-WAF-Rule: SAT-SQLI-01
 
 ### Case B: SQL Injection Detection on Root Path
 ```bash
-curl -i "https://exactor.tech/search?q=admin'%20OR%201=1--"
+curl -i "https://satguardian.tech/search?q=admin'%20OR%201=1--"
 ```
 **Server Response:**
 ```http
@@ -166,7 +166,7 @@ X-WAF-Rule: SAT-SQLI-01
 
 ### Case C: Legitimate Web Browsing (Login Page)
 ```bash
-curl -i "https://exactor.tech/login.html"
+curl -i "https://satguardian.tech/login.html"
 ```
 **Server Response:**
 ```http
@@ -182,9 +182,9 @@ X-WAF-Verified: ALLOW
 
 ### Case D: User Creation and JSON Authentication (POST)
 ```bash
-curl -i -X POST "https://exactor.tech/api/login" \
+curl -i -X POST "https://satguardian.tech/api/login" \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@exactor.tech","password":"valid_secret"}'
+  -d '{"email":"admin@satguardian.tech","password":"valid_secret"}'
 ```
 **Server Response:**
 ```http
@@ -201,7 +201,7 @@ X-WAF-Verified: ALLOW
 | Vector / Metric | Pre-Deployment State | Production Optimized State |
 | :--- | :--- | :--- |
 | **Nginx Integration** | Unprotected (Direct exposure to `:5000`) | Native UDS subrequest (`waf.sock`) in < 130 µs |
-| **Linux IPC Lifecycle** | Manual script vulnerable to reboot failure | Systemd `RuntimeDirectory=exactor` (100% resilient) |
+| **Linux IPC Lifecycle** | Manual script vulnerable to reboot failure | Systemd `RuntimeDirectory=satguardian` (100% resilient) |
 | **POST Traffic with Body** | Failed due to body drain (400/504) | Streaming decoupled (`proxy_pass_request_body off`) |
 | **SSRF Rule Accuracy** | False positives from cross-header co-occurrence | Strict AST syntactic token binding (0% false positives) |
 | **SQLi/XSS Protection** | Vulnerable at application level | Perimeter drop with HTTP 403 in P99 < 0.5 ms |
@@ -225,7 +225,7 @@ To ensure high availability and rapid incident resolution in production, a four-
 
 ### Layer 1: Nginx Perimeter Diagnostics (Headers and Log Formatting)
 When client applications report unexpected behavior, HTTP response headers provide immediate diagnostic insight:
-- `X-WAF-Blocked: true`: Request was dropped by Guardian WAF.
+- `X-WAF-Blocked: true`: Request was dropped by SATGuardian Edge WAF.
 - `X-WAF-Rule: SAT-XXXX-XX`: Exact invariant rule triggered (e.g. `SAT-SQLI-01`, `SAT-SSRF-01`, `SAT-XSS-01`).
 - `X-WAF-Latency-US: 118.4`: Formal mathematical evaluation duration in microseconds.
 - `X-WAF-Verified: ALLOW`: Request was inspected and verified as legitimate.
@@ -244,7 +244,7 @@ log_format guardian_audit '$remote_addr - $remote_user [$time_local] "$request" 
 ### Layer 2: Live Monitoring via Systemd Journalctl
 To observe firewall activity in real time and monitor security alerts:
 ```bash
-sudo journalctl -u exactor-waf -f -n 50
+sudo journalctl -u satguardian-waf -f -n 50
 ```
 **Drop Log Structure:**
 ```text
@@ -258,14 +258,14 @@ sudo journalctl -u exactor-waf -f -n 50
 
 ---
 
-### Layer 3: Forensic Auditing in SQLite WAL (`/var/lib/exactor/waf_ledger.db`)
+### Layer 3: Forensic Auditing in SQLite WAL (`/var/lib/satguardian/waf_ledger.db`)
 The daemon asynchronously records every transaction to a local SQLite database configured in WAL (*Write-Ahead Logging*) mode without impacting network request paths.
 
 **Essential Forensic Queries:**
 
 1. **Inspect recent blocked attacks with their rule ID and target path:**
    ```bash
-   sqlite3 /var/lib/exactor/waf_ledger.db "
+   sqlite3 /var/lib/satguardian/waf_ledger.db "
    SELECT id, request_id, client_ip, method, path, action, category, execution_time_us, created_at 
    FROM audit_log 
    WHERE action = 'BLOCK' 
@@ -274,16 +274,16 @@ The daemon asynchronously records every transaction to a local SQLite database c
 
 2. **Retrieve the formal mathematical proof (LaTeX and causal deduction steps) for an incident:**
    ```bash
-   sqlite3 /var/lib/exactor/waf_ledger.db "
+   sqlite3 /var/lib/satguardian/waf_ledger.db "
    SELECT request_id, path, proof 
    FROM audit_log 
    WHERE request_id = '7c79fd7a';"
    ```
    *Output:* Returns the logical deduction tree, active bitvector tokens, and causal theorem governing the decision.
 
-3. **Check unobserved pattern anomalies awaiting cloud Boolean minimization (`exactor.tech`):**
+3. **Check unobserved pattern anomalies awaiting cloud Boolean minimization (`satguardian.tech`):**
    ```bash
-   sqlite3 /var/lib/exactor/waf_ledger.db "
+   sqlite3 /var/lib/satguardian/waf_ledger.db "
    SELECT count(*) FROM novel_anomalies WHERE status = 'PENDING';"
    ```
 
@@ -312,14 +312,14 @@ curl -s http://127.0.0.1:9002/api/waf/metrics | jq .
 
 ### Layer 5: Terminal Operational Suite (`guardian-top` and `guardian-rules`)
 
-For on-server administration and observability without external browsers, Guardian WAF provides a comprehensive terminal suite based on `curses` with CLI fallbacks:
+For on-server administration and observability without external browsers, SATGuardian Edge WAF provides a comprehensive terminal suite based on `curses` with CLI fallbacks:
 
 1. **`guardian-top` (Real-Time Forensic Monitor):**
    - Inspired by `htop` / `btop`.
    - Real-time display of inspected traffic, percentile latencies (P95, P99), attack distributions, and sliding window rate limiter status.
    - Arrow-key navigation with `[ENTER]` to inspect AST token structures and formal LaTeX causal proofs.
    ```bash
-   python exactor-top.py
+   python satguardian-top.py
    ```
 
 2. **`guardian-rules` (Interactive Rule & Protection Island Manager):**
@@ -332,7 +332,7 @@ For on-server administration and observability without external browsers, Guardi
    - **Live SAT Simulator (`[P]`):** Tests live HTTP payloads against local invariants, reporting verdict, triggered rule, and exact latency in microseconds.
    - **Dual Persistence:** Hot-reloads running daemon memory via REST API (`/api/waf/rules/customer`) and persists to `waf_config.toml` (`[S]`).
    ```bash
-   python exactor-rules.py
+   python satguardian-rules.py
    ```
 
 ---
@@ -341,20 +341,20 @@ For on-server administration and observability without external browsers, Guardi
 
 | HTTP Status | Quick Diagnosis | Probable Cause | Immediate Remediation |
 | :--- | :--- | :--- | :--- |
-| **`403 Forbidden`** | Perimeter drop by WAF | Confirmed attack or overly strict policy rule. | Check `X-WAF-Rule`. Inspect `journalctl -u exactor-waf -n 20` for rule ID and `request_id`. |
+| **`403 Forbidden`** | Perimeter drop by WAF | Confirmed attack or overly strict policy rule. | Check `X-WAF-Rule`. Inspect `journalctl -u satguardian-waf -n 20` for rule ID and `request_id`. |
 | **`502 Bad Gateway`** | Upstream connection failure | Backend service (`:5000`, `:8080`, `:8090`) is inactive. | Verify services with `sudo ss -tulpn` and restart target backend. |
-| **`500 Internal Error`** | Subrequest failure | Unix socket `/var/run/exactor/waf.sock` inaccessible or bad permissions. | Check permissions: `ls -la /var/run/exactor/waf.sock` (must be `www-data:www-data 0775`). |
+| **`500 Internal Error`** | Subrequest failure | Unix socket `/var/run/satguardian/waf.sock` inaccessible or bad permissions. | Check permissions: `ls -la /var/run/satguardian/waf.sock` (must be `www-data:www-data 0775`). |
 | **`504 Timeout`** | Socket starvation | Request body being consumed by subrequest. | Verify that `location = /_waf_verify` includes `proxy_pass_request_body off;`. |
 
 #### Emergency De-escalation Protocol (Dry-Run / Monitor Mode):
 If a critical blocking event is suspected of impacting legitimate commercial traffic and immediate triage is required without dropping requests:
-1. Update `/etc/exactor/waf_config.toml`:
+1. Update `/etc/satguardian/waf_config.toml`:
    ```toml
    mode = "monitor"
    ```
-2. Restart Guardian WAF service:
+2. Restart SATGuardian Edge WAF service:
    ```bash
-   sudo systemctl restart exactor-waf
+   sudo systemctl restart satguardian-waf
    ```
    *Effect:* The firewall continues evaluating traffic and recording all violations to the journal and SQLite ledger, but **permits requests upstream with HTTP 200**, eliminating disruption while rules are calibrated.
 
@@ -364,4 +364,4 @@ If a critical blocking event is suspected of impacting legitimate commercial tra
 
 1. **Naive heuristics are the enemy of web application firewalls:** Evaluating isolated Boolean flags without considering syntactic token binding causes severe operational friction. The evolution of `SAT-SSRF-01` demonstrates that deterministic security requires context-aware grammars.
 2. **Nginx subrequest contracts are asymmetric:** Nginx handles request body streams non-reentrantly during internal subrequests. Perimeter inspection of headers, URIs, and metadata provides the cleanest and fastest architecture for decoupled reverse proxies.
-3. **Live Traffic Validation is Irreplaceable:** Synthetic laboratory benchmarks cannot replicate the diversity of modern web browsers with their complex header suites (`Referer`, `Origin`, `Sec-Fetch-*`). This deployment cements Guardian WAF as an enterprise-ready, sub-millisecond cyber-defense platform.
+3. **Live Traffic Validation is Irreplaceable:** Synthetic laboratory benchmarks cannot replicate the diversity of modern web browsers with their complex header suites (`Referer`, `Origin`, `Sec-Fetch-*`). This deployment cements SATGuardian Edge WAF as an enterprise-ready, sub-millisecond cyber-defense platform.

@@ -148,7 +148,7 @@ async fn update_islands_config(
         let mut cur = state.engine.islands_config.write().unwrap();
         *cur = cfg.clone();
     }
-    info!(target: "exactor::api", "Updated islands config: wordpress={}, exposure={}, framework={}",
+    info!(target: "satguardian::api", "Updated islands config: wordpress={}, exposure={}, framework={}",
         cfg.wordpress_shield, cfg.exposure_shield, cfg.framework_shield);
     Json(serde_json::json!({
         "status": "ok",
@@ -170,7 +170,7 @@ async fn add_customer_rule(
     State(state): State<Arc<ProxyState>>,
     Json(rule): Json<CustomBusinessRule>,
 ) -> impl IntoResponse {
-    info!(target: "exactor::api", "Adding/updating customer business rule: {} (id: {})", rule.name, rule.id);
+    info!(target: "satguardian::api", "Adding/updating customer business rule: {} (id: {})", rule.name, rule.id);
     state.engine.add_customer_business_rule(rule.clone());
     Json(serde_json::json!({
         "status": "ok",
@@ -185,7 +185,7 @@ async fn delete_customer_rule(
 ) -> impl IntoResponse {
     let removed = state.engine.remove_customer_business_rule(&id);
     if removed {
-        info!(target: "exactor::api", "Removed customer business rule id: {}", id);
+        info!(target: "satguardian::api", "Removed customer business rule id: {}", id);
         Json(serde_json::json!({
             "status": "ok",
             "message": format!("Rule '{}' removed successfully", id)
@@ -198,14 +198,14 @@ async fn delete_customer_rule(
     }
 }
 
-/// Triggers autonomous Exact Boolean Minimization using https://exactor.tech/api/simplify.
+/// Triggers autonomous Exact Boolean Minimization using https://satguardian.tech/api/simplify.
 async fn trigger_sync_simplify(State(state): State<Arc<ProxyState>>) -> Response {
-    info!(target: "exactor::sync", "Received request to synchronize novel anomalies with https://exactor.tech");
+    info!(target: "satguardian::sync", "Received request to synchronize novel anomalies with https://satguardian.tech");
 
     let pending_minterms = match state.ledger.get_pending_anomalies(100).await {
         Ok(m) => m,
         Err(e) => {
-            error!(target: "exactor::sync", "Failed to fetch pending anomalies: {}", e);
+            error!(target: "satguardian::sync", "Failed to fetch pending anomalies: {}", e);
             return (StatusCode::INTERNAL_SERVER_ERROR, format!("DB error: {}", e)).into_response();
         }
     };
@@ -239,7 +239,7 @@ async fn trigger_sync_simplify(State(state): State<Arc<ProxyState>>) -> Response
             let _ = state.ledger.mark_anomalies_simplified(&pending_minterms).await;
 
             info!(
-                target: "exactor::sync",
+                target: "satguardian::sync",
                 reduction = %format!("{:.1}%", resp.reduction_percent),
                 hot_rules_added = clauses_count,
                 "Hot minimization complete. Dynamic clauses registered into in-memory Fast-Path."
@@ -247,7 +247,7 @@ async fn trigger_sync_simplify(State(state): State<Arc<ProxyState>>) -> Response
 
             Json(serde_json::json!({
                 "status": "success",
-                "message": "Exact Boolean Simplification completed via https://exactor.tech",
+                "message": "Exact Boolean Simplification completed via https://satguardian.tech",
                 "minterms_processed": pending_minterms.len(),
                 "variables_count": variables.len(),
                 "reduction_percent": resp.reduction_percent,
@@ -259,10 +259,10 @@ async fn trigger_sync_simplify(State(state): State<Arc<ProxyState>>) -> Response
             .into_response()
         }
         Err(err) => {
-            error!(target: "exactor::sync", "EXACTOR Cloud simplification error: {}", err);
+            error!(target: "satguardian::sync", "SATGuardian Cloud simplification error: {}", err);
             (
                 StatusCode::BAD_GATEWAY,
-                format!("Failed to reach EXACTOR Cloud at https://exactor.tech: {}", err),
+                format!("Failed to reach SATGuardian Cloud at https://satguardian.tech: {}", err),
             )
                 .into_response()
         }
