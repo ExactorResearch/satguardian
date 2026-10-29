@@ -65,3 +65,4 @@ Running `python satguardian-advisor.py --report audit_report.html` and `python s
 - **Approved Benign Traffic:** `1,663` (`43.8%`)
 - **Median Ledger Latency (`p50`):** `856.7 µs` (`0.857 ms`, including SQLite persistence)
 - **Digital Twin Replay:** All 6 synthesized rules passed replay across all `1,663` benign records with `< 0.1%` false positives, and `14` novel `u128` minterms are queued for **EXACTOR GXOR** (`{AND, OR, NOT, XOR}` up to 128 variables) synthesis (`1 SU` estimated consumption).
+

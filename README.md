@@ -218,6 +218,7 @@ python satguardian-advisor.py --report audit_report.html
 python satguardian-advisor.py --report-md audit_report.md
 ```
 
+* **Full Operations & Configuration Guide:** Read [CONFIGURATION_AND_OPERATIONS_GUIDE.md](file:///d:/proyectos/rush/exactor-waf-guardian/CONFIGURATION_AND_OPERATIONS_GUIDE.md) for detailed configuration, customization, and tool usages.
 * **Explore the Interactive Dashboard:** `streamlit run app.py`
 * **Schedule a Technical Demo & Architecture Review:** Contact our engineering team at [satguardian.tech](https://satguardian.tech) or open an issue on GitHub.
 
