@@ -706,7 +706,7 @@ class SatguardianRulesApp:
             r_str = ", ".join(r.get("rule_id", "") for r in rules) if rules else "None (Benign Traffic)"
             safe_addstr(stdscr, start_y + 12, 4, f"Triggered Rules: {r_str}", curses.color_pair(3) | curses.A_BOLD)
 
-            causal = self.sim_result.get("causal_proof", "N/A")
+            causal = self.sim_result.get("rule_match_details", "N/A")
             safe_addstr(stdscr, start_y + 13, 4, f"Causal Proof   : {causal}", curses.color_pair(4))
 
             deductions = self.sim_result.get("deduction_steps", [])
@@ -1106,7 +1106,7 @@ class SatguardianRulesApp:
         print(f"SAT Latency  : \033[1;32m{lat:.2f} µs\033[0m")
         r_str = ", ".join(r.get("rule_id", "") for r in rules) if rules else "None (Benign Traffic)"
         print(f"Invariants   : {r_str}")
-        print(f"Causal Proof : {res.get('causal_proof', 'N/A')}\n")
+        print(f"Causal Proof : {res.get('rule_match_details', 'N/A')}\n")
 
 
 def main():

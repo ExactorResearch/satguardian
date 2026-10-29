@@ -46,7 +46,7 @@ class SATProofChain:
     active_islands: List[str]
     active_tokens: List[str]
     deduction_steps: List[str]
-    formal_proof_latex: str
+    decision_reason: str
     execution_time_us: float
 
 
@@ -413,7 +413,7 @@ class SatguardianWAFSATEngine:
             active_islands=unique_islands,
             active_tokens=unique_tokens,
             deduction_steps=deduction_steps,
-            formal_proof_latex=latex_proof,
+            decision_reason=latex_proof,
             execution_time_us=round(exec_time_us, 2)
         )
 

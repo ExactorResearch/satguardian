@@ -26,7 +26,7 @@ However, an aircraft carrier requires a precision defense system. Traditional pe
 │ ENVOY PROXY (The Aircraft Carrier)   │ SATGUARDIAN EDGE (The Precision SAT) │
 ├──────────────────────────────────────┼──────────────────────────────────────┤
 │ • C++ Event-driven Network Engine    │ • Deterministic Boolean SAT Engine   │
-│ • HTTP/1.1, HTTP/2, HTTP/3, gRPC     │ • 10 Formal Certainty Islands        │
+│ • HTTP/1.1, HTTP/2, HTTP/3, gRPC     │ • módulos de inspección en Rust        │
 │ • TLS Termination & Connection Pool  │ • Sub-15 µs In-Kernel IPC (UDS)      │
 │ • Zero-Loss Circuit Breaking         │ • Zero Regex Backtracking / ReDoS    │
 │ • Kubernetes Ingress & Service Mesh  │ • 100% Free Edge / Sovereign Data    │

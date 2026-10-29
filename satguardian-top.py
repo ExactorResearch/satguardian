@@ -185,7 +185,7 @@ class SatguardianTop:
         try:
             cur = conn.cursor()
             query = """
-                SELECT id, request_id, timestamp, client_ip, method, path, action, category, latency_us, matched_rules, causal_proof
+                SELECT id, request_id, timestamp, client_ip, method, path, action, category, latency_us, matched_rules, rule_match_details
                 FROM audit_log
             """
             if self.filter_mode == "BLOCK":
@@ -370,7 +370,7 @@ class SatguardianTop:
                 safe_addstr(stdscr, box_y + 6, box_x + 2, "─" * max(0, box_w - 4), curses.color_pair(10))
                 
                 # Causal Proof Box with scroll
-                proof_text = rec["causal_proof"] or "No proof attached (legitimate traffic passing SIMD invariants)."
+                proof_text = rec["rule_match_details"] or "No proof attached (legitimate traffic passing SIMD invariants)."
                 proof_lines = proof_text.splitlines()
                 max_lines = max(1, box_h - 9)
                 max_modal_scroll = max(0, len(proof_lines) - max_lines)

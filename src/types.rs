@@ -183,7 +183,7 @@ pub struct DeductionRule {
     pub confidence: f64,
 }
 
-/// Mathematically verifiable causal proof chain explaining a decision.
+/// Mathematically verifiable detalles de coincidencia de reglas explaining a decision.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProofChain {
     pub request_id: String,
@@ -195,8 +195,8 @@ pub struct ProofChain {
     pub active_islands: Vec<String>,
     pub active_tokens: Vec<String>,
     pub deduction_steps: Vec<String>,
-    pub formal_proof_latex: String,
-    pub causal_proof: String,
+    pub decision_reason: String,
+    pub rule_match_details: String,
     pub execution_time_us: f64,
 }
 

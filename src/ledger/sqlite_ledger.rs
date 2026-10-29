@@ -52,7 +52,7 @@ impl SqliteLedger {
                 latency_us REAL,
                 matched_rules TEXT,
                 active_tokens TEXT,
-                causal_proof TEXT,
+                rule_match_details TEXT,
                 is_violation INTEGER
             );
 
@@ -159,7 +159,7 @@ impl SqliteLedger {
             let _ = sqlx::query(
                 r#"
                 INSERT INTO audit_log 
-                (request_id, client_ip, method, path, query_string, action, category, execution_path, latency_us, matched_rules, active_tokens, causal_proof, is_violation)
+                (request_id, client_ip, method, path, query_string, action, category, execution_path, latency_us, matched_rules, active_tokens, rule_match_details, is_violation)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 "#
             )
@@ -174,7 +174,7 @@ impl SqliteLedger {
             .bind(rec.proof.execution_time_us)
             .bind(&matched_rules_str)
             .bind(&active_tokens_str)
-            .bind(&rec.proof.causal_proof)
+            .bind(&rec.proof.rule_match_details)
             .bind(is_viol)
             .execute(&mut *tx)
             .await;

@@ -50,14 +50,14 @@ class SatguardianWAFAgent(BaseWAFAgent):
             explanation=explanation,
             active_tokens=proof.active_tokens,
             matched_rules=[r.rule_id for r in proof.matched_rules],
-            proof_latex=proof.formal_proof_latex,
+            proof_latex=proof.decision_reason,
             is_correct=is_correct,
             extra_metadata={
                 "engine": "SAT-Certainty-Islands-V1",
                 "rules_evaluated": len(self.engine.KNOWN_RULES),
                 "islands_evaluated": len(self.engine.CERTAINTY_ISLANDS),
                 "active_islands": proof.active_islands,
-                "causal_proof": True,
+                "rule_match_details": True,
                 "token_count": len(proof.active_tokens),
             }
         )

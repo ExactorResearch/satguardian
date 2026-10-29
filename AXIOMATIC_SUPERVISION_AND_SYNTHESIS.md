@@ -1,22 +1,22 @@
-# 📘 Axiomatic Supervision and Inductive Synthesis in SATGUARDIAN
-## Epistemic Foundation: How the WAF Learns, Classifies, and Generalizes Without Human Labeling
+# 📘 Inspección Estructurada y Síntesis Offline de Reglas
+## Principios de Diseño: Evaluación Lógica, Parsers Estructurados y Optimización Asíncrona
 
 ---
 
 ### Executive Summary
 
-One of the most critical and disruptive questions regarding the **SATGuardian Edge WAF** paradigm is:  
+One of the most critical and Pragmático questions regarding the **SATGuardian Edge WAF** paradigm is:  
 > *“If SATGUARDIAN training is not supervised by humans labeling datasets by hand... how does the system know what constitutes an attack and what is benign? And if formal invariants already detect attacks... why is training needed at all?”*
 
 The answer lies in the transition from **Probabilistic Artificial Intelligence** (neural networks based on statistical curve fitting) to **Neuro-Symbolic Computing and Exact Boolean Algebra**:
 
-1. **The Label is a Mathematical Theorem:** The WAF neither guesses nor computes statistical probabilities; the classification label $F(\mathbf{x}) = 1$ (*Confirmed Attack*) originates from **Axiomatic Supervision** enforced by formal protocol grammars.
+1. **The Label is a Mathematical Theorem:** The WAF neither guesses nor computes statistical probabilities; the classification label $F(\mathbf{x}) = 1$ (*Confirmed Attack*) originates from **Inspección Basada en Gramáticas Estructuradas** enforced by formal protocol grammars.
 2. **Training is Inductive Synthesis:** Cloud training ([`https://satguardian.tech/api/simplify`](https://satguardian.tech/api/simplify)) does not tune weight matrices; it **strips obfuscation camouflage** (*Don't Cares*), extracts the **Minimal Prime Implicant**, and generalizes protection against trillions of future variants into a single microprocessor instruction.
 3. **Commercial Model:** This high-density logic synthesis computation is the engine through which **Security Units (SU)** are consumed and monetized.
 
 ---
 
-## 1. Who Labels the Payload as an Attack? (Axiomatic Supervision)
+## 1. Who Labels the Payload as an Attack? (Inspección Basada en Gramáticas Estructuradas)
 
 In traditional Machine Learning (Deep Learning, probabilistic classifiers, Random Forests), model training requires millions of manually curated examples labeled by humans:
 $$\mathcal{D}_{\text{Traditional}} = \{(x_1, y_1), (x_2, y_2), \dots, (x_m, y_m)\}, \quad y_i \in \{0, 1\}$$
@@ -31,7 +31,7 @@ Computer vulnerabilities obey **mathematical laws and rigid grammatical constrai
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────┐
-│                   DETERMINISTIC AXIOMATIC SUPERVISION                  │
+│                   DETERMINISTIC Inspección Basada en Gramáticas Estructuradas                  │
 ├───────────────────────────────────┬────────────────────────────────────┤
 │ SYNTACTIC DOMAIN                  │ FORMAL SECURITY INVARIANT          │
 ├───────────────────────────────────┼────────────────────────────────────┤
@@ -55,7 +55,7 @@ Computer vulnerabilities obey **mathematical laws and rigid grammatical constrai
 When an HTTP request enters **SATGuardian Edge WAF**, the **AST Lexer** normalizes it and extracts structural tokens. If the request violates any of the **10 Certainty Islands**, the engine assigns:
 $$\mathbf{F(\mathbf{x}) = 1 \quad \implies \quad \text{FORMAL LABEL: CONFIRMED ATTACK}}$$
 
-> **Epistemic Conclusion:**  
+> **Arquitectónico Conclusion:**  
 > The label $F(\mathbf{x}) = 1$ is neither a probabilistic guess nor a subjective human rating. It is a **formal theorem proven by the SAT Solver in microseconds**: *the request contains a combination of primitives whose sole execution path forces the interpreter to violate its formal security specification.*
 
 ---
@@ -183,7 +183,7 @@ This architectural separation underpins the commercial efficiency of the product
 
 ## 5. Architectural Comparison: Detection Paradigms
 
-| Feature | Classic Machine Learning (Deep Learning) | Regular Expressions (ModSecurity / CRS) | SATGUARDIAN (Axiomatic Supervision + SAT) |
+| Feature | Classic Machine Learning (Deep Learning) | Regular Expressions (ModSecurity / CRS) | SATGUARDIAN (Inspección Basada en Gramáticas Estructuradas + SAT) |
 | :--- | :---: | :---: | :---: |
 | **Label Provenance** | Subjective (Manual human annotators) | Manual (Static signatures written by analysts) | **Axiomatic (Theorems on formal grammars)** |
 | **Decision Nature** | Probabilistic (Score between $0.0 - 1.0$) | Syntactic string match | **Deterministic SAT ($\text{TRUE} \lor \text{FALSE}$)** |

@@ -132,7 +132,7 @@ pub async fn proxy_handler(
             action = "BLOCK",
             category = %proof.category,
             latency_us = proof.execution_time_us,
-            proof = %proof.causal_proof,
+            proof = %proof.rule_match_details,
             "Attack blocked at perimeter"
         );
 
@@ -157,7 +157,7 @@ pub async fn proxy_handler(
         if let Ok(v) = HeaderValue::from_str(&format!("{:.2}", proof.execution_time_us)) {
             resp_headers.insert("X-SATGuardian-Latency-Us", v);
         }
-        if let Ok(v) = HeaderValue::from_str(&proof.causal_proof) {
+        if let Ok(v) = HeaderValue::from_str(&proof.rule_match_details) {
             resp_headers.insert("X-SATGuardian-Proof", v);
         }
 
@@ -168,8 +168,8 @@ pub async fn proxy_handler(
             "category": proof.category.as_str(),
             "execution_path": format!("{:?}", proof.execution_path),
             "latency_us": proof.execution_time_us,
-            "causal_proof": proof.causal_proof,
-            "formal_proof_latex": proof.formal_proof_latex,
+            "rule_match_details": proof.rule_match_details,
+            "decision_reason": proof.decision_reason,
         });
 
         return (StatusCode::FORBIDDEN, resp_headers, Json(body_json)).into_response();

@@ -21,7 +21,7 @@ def test_sqli_detection(sat_engine):
     assert proof.is_violation is True
     assert proof.category == AttackCategory.SQL_INJECTION
     assert len(proof.matched_rules) > 0
-    assert "SAT-SQLI-01" in proof.formal_proof_latex
+    assert "SAT-SQLI-01" in proof.decision_reason
 
 
 def test_xss_detection(sat_engine):
@@ -85,4 +85,4 @@ def test_benign_traffic_passes(sat_engine):
     assert proof.is_violation is False
     assert proof.category == AttackCategory.BENIGN
     assert len(proof.matched_rules) == 0
-    assert "ALLOW" in proof.formal_proof_latex
+    assert "ALLOW" in proof.decision_reason

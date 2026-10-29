@@ -18,9 +18,9 @@ fn test_sqli_detection() {
     assert_eq!(proof.action, AttackDecision::Block);
     assert_eq!(proof.category, AttackCategory::SqlInjection);
     assert!(proof.matched_rules.iter().any(|r| r.rule_id == "SAT-SQLI-01"));
-    assert!(proof.formal_proof_latex.contains("SAT-SQLI-01"));
-    assert!(proof.formal_proof_latex.contains("BLOCK"));
-    assert!(proof.causal_proof.contains("ACTION_BLOCK"));
+    assert!(proof.decision_reason.contains("SAT-SQLI-01"));
+    assert!(proof.decision_reason.contains("BLOCK"));
+    assert!(proof.rule_match_details.contains("ACTION_BLOCK"));
     let max_allowed_us = if cfg!(debug_assertions) { 5000.0 } else { 1000.0 };
     assert!(proof.execution_time_us < max_allowed_us, "Latency SLA violated: was {:.2} µs (threshold: {:.2} µs)", proof.execution_time_us, max_allowed_us);
 }
@@ -40,7 +40,7 @@ fn test_sqli_union_select() {
     assert_eq!(proof.action, AttackDecision::Block);
     assert_eq!(proof.category, AttackCategory::SqlInjection);
     assert!(proof.matched_rules.iter().any(|r| r.rule_id == "SAT-SQLI-02"));
-    assert!(proof.causal_proof.contains("ACTION_BLOCK"));
+    assert!(proof.rule_match_details.contains("ACTION_BLOCK"));
 }
 
 #[test]
@@ -58,8 +58,8 @@ fn test_xss_detection() {
     assert_eq!(proof.action, AttackDecision::Block);
     assert_eq!(proof.category, AttackCategory::Xss);
     assert!(proof.matched_rules.iter().any(|r| r.rule_id == "SAT-XSS-01"));
-    assert!(proof.formal_proof_latex.contains("BLOCK"));
-    assert!(proof.causal_proof.contains("ACTION_BLOCK"));
+    assert!(proof.decision_reason.contains("BLOCK"));
+    assert!(proof.rule_match_details.contains("ACTION_BLOCK"));
 }
 
 #[test]
@@ -77,7 +77,7 @@ fn test_xss_event_handler() {
     assert_eq!(proof.action, AttackDecision::Block);
     assert_eq!(proof.category, AttackCategory::Xss);
     assert!(proof.matched_rules.iter().any(|r| r.rule_id == "SAT-XSS-02"));
-    assert!(proof.causal_proof.contains("ACTION_BLOCK"));
+    assert!(proof.rule_match_details.contains("ACTION_BLOCK"));
 }
 
 #[test]
@@ -95,8 +95,8 @@ fn test_rce_detection() {
     assert_eq!(proof.action, AttackDecision::Block);
     assert_eq!(proof.category, AttackCategory::CommandInjection);
     assert!(proof.matched_rules.iter().any(|r| r.rule_id == "SAT-RCE-01"));
-    assert!(proof.formal_proof_latex.contains("BLOCK"));
-    assert!(proof.causal_proof.contains("ACTION_BLOCK"));
+    assert!(proof.decision_reason.contains("BLOCK"));
+    assert!(proof.rule_match_details.contains("ACTION_BLOCK"));
 }
 
 #[test]
@@ -114,8 +114,8 @@ fn test_path_traversal_detection() {
     assert_eq!(proof.action, AttackDecision::Block);
     assert_eq!(proof.category, AttackCategory::PathTraversal);
     assert!(proof.matched_rules.iter().any(|r| r.rule_id == "SAT-PATH-01"));
-    assert!(proof.formal_proof_latex.contains("BLOCK"));
-    assert!(proof.causal_proof.contains("ACTION_BLOCK"));
+    assert!(proof.decision_reason.contains("BLOCK"));
+    assert!(proof.rule_match_details.contains("ACTION_BLOCK"));
 }
 
 #[test]
@@ -133,8 +133,8 @@ fn test_ssrf_detection() {
     assert_eq!(proof.action, AttackDecision::Block);
     assert_eq!(proof.category, AttackCategory::Ssrf);
     assert!(proof.matched_rules.iter().any(|r| r.rule_id == "SAT-SSRF-01"));
-    assert!(proof.formal_proof_latex.contains("BLOCK"));
-    assert!(proof.causal_proof.contains("ACTION_BLOCK"));
+    assert!(proof.decision_reason.contains("BLOCK"));
+    assert!(proof.rule_match_details.contains("ACTION_BLOCK"));
 }
 
 #[test]
@@ -152,8 +152,8 @@ fn test_benign_traffic_passes_with_zero_false_positives() {
     assert_eq!(proof.action, AttackDecision::Allow);
     assert_eq!(proof.category, AttackCategory::Benign);
     assert!(proof.matched_rules.is_empty());
-    assert!(proof.formal_proof_latex.contains("ALLOW"));
-    assert!(proof.causal_proof.contains("ACTION_ALLOW"));
+    assert!(proof.decision_reason.contains("ALLOW"));
+    assert!(proof.rule_match_details.contains("ACTION_ALLOW"));
 }
 
 #[test]
@@ -172,7 +172,7 @@ fn test_graphql_introspection_blocked() {
     assert_eq!(proof.category, AttackCategory::GraphqlAbuse);
     assert!(proof.matched_rules.iter().any(|r| r.rule_id == "SAT-GQL-01"));
     assert!(proof.active_islands.contains(&"ISLAND-GRAPHQL".to_string()));
-    assert!(proof.causal_proof.contains("ACTION_BLOCK"));
+    assert!(proof.rule_match_details.contains("ACTION_BLOCK"));
 }
 
 #[test]
@@ -368,7 +368,7 @@ fn test_stateful_sliding_window_rate_limiting() {
     assert_eq!(proof.category, AttackCategory::RateLimitDdos);
     assert!(proof.matched_rules.iter().any(|r| r.rule_id == "SAT-STATE-01"));
     assert!(proof.active_islands.contains(&"ISLAND-STATEFUL".to_string()));
-    assert!(proof.causal_proof.contains("ACTION_BLOCK"));
+    assert!(proof.rule_match_details.contains("ACTION_BLOCK"));
 }
 
 #[test]

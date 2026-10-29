@@ -101,9 +101,9 @@ impl SafeLinePgReporter {
                 proof.category.display_name(),
                 rule_id,
                 proof.matched_rules.first().map(|r| r.invariant_formula.as_str()).unwrap_or("N/A"),
-                proof.causal_proof,
+                proof.rule_match_details,
                 proof.active_tokens.join(", "),
-                proof.formal_proof_latex,
+                proof.decision_reason,
                 proof.execution_time_us
             );
 

@@ -180,8 +180,8 @@ async fn handle_envoy_authz_check(
             "category": proof.category.as_str(),
             "category_name": proof.category.display_name(),
             "violated_rule": rule_id,
-            "causal_proof": proof.causal_proof,
-            "formal_proof_latex": proof.formal_proof_latex,
+            "rule_match_details": proof.rule_match_details,
+            "decision_reason": proof.decision_reason,
             "active_tokens": proof.active_tokens,
             "latency_us": eval_us,
             "engine": "Envoy SAT Security Module (Powered by SATGuardian Core)"

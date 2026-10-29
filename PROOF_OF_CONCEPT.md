@@ -5,7 +5,7 @@
 Before transitioning to the production-grade Rust reverse proxy daemon, the **SATGuardian Edge WAF Proof of Concept (PoC)** was developed in Python to empirically demonstrate, benchmark, and visualize the neuro-symbolic SAT cyber-defense architecture against industry standards.
 
 The PoC implements a **Multi-Agent Duel Simulator** that pits three distinct security paradigms against an identical, standardized stream of OWASP attack vectors and benign enterprise traffic:
-1. **SATGuardian SAT Agent (Neuro-Symbolic SAT & Certainty Islands):** Sub-millisecond deterministic evaluation, zero inference cost, and mathematically verifiable causal proof chains.
+1. **SATGuardian SAT Agent (Neuro-Symbolic SAT & Certainty Islands):** Sub-millisecond deterministic evaluation, zero inference cost, and mathematically verifiable detalles de coincidencia de reglass.
 2. **Regex Baseline Agent (OWASP CRS / ModSecurity Paradigm):** High-speed pattern matching prone to evasion through obfuscation and high false-positive rates on complex technical payloads.
 3. **Pure LLM Agent (JEV Solo / Cloud AI WAFs):** Heavyweight transformer-based reasoning capable of contextual triage but penalized by unbearable network latency ($> 400\text{ ms}$), steep API token costs ($>\$2,000 / \text{1M reqs}$), and non-deterministic hallucination drift.
 

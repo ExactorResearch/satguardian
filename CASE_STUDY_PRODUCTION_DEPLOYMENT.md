@@ -332,7 +332,7 @@ Run on the server for real-time visualization:
 python satguardian-top.py --db /var/lib/satguardian/waf_ledger.db
 ```
 - Real-time RPS counter, latency percentiles (P50/P95/P99), and attack breakdown by category.
-- Press `[ENTER]` on any blocked event to inspect the AST bitvector and formal LaTeX causal proof chain.
+- Press `[ENTER]` on any blocked event to inspect the AST bitvector and formal LaTeX detalles de coincidencia de reglas.
 
 ### Layer 2: Interactive Rule & Shield Management (`satguardian-rules.py`)
 Hot-configure security policies without restarting the daemon:

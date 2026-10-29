@@ -280,10 +280,10 @@ class TrafficPatternAgent:
 
         # 8. Top Causal Proofs
         cur.execute("""
-            SELECT category, matched_rules, causal_proof, count(*) as cnt
+            SELECT category, matched_rules, rule_match_details, count(*) as cnt
             FROM audit_log
             WHERE action = 'Block'
-            GROUP BY category, matched_rules, causal_proof
+            GROUP BY category, matched_rules, rule_match_details
             ORDER BY cnt DESC
             LIMIT 6
         """)
@@ -291,7 +291,7 @@ class TrafficPatternAgent:
             patterns["top_proofs"].append({
                 "category": r["category"],
                 "matched_rules": r["matched_rules"],
-                "causal_proof": r["causal_proof"],
+                "rule_match_details": r["rule_match_details"],
                 "count": r["cnt"],
             })
 
@@ -711,7 +711,7 @@ class ForensicReportAgent:
             <tr>
                 <td><span class="badge badge-danger">{pr['category']}</span></td>
                 <td><code>{pr['matched_rules']}</code></td>
-                <td><code>{pr['causal_proof']}</code></td>
+                <td><code>{pr['rule_match_details']}</code></td>
                 <td><strong>{pr['count']:,}</strong></td>
             </tr>
         """ for pr in p.get("top_proofs", []))
@@ -913,7 +913,7 @@ class ForensicReportAgent:
             "| :--- | :--- | :--- | :---: |",
         ])
         for pr in p.get("top_proofs", []):
-            lines.append(f"| `{pr['category']}` | `{pr['matched_rules']}` | `{pr['causal_proof']}` | {pr['count']:,} |")
+            lines.append(f"| `{pr['category']}` | `{pr['matched_rules']}` | `{pr['rule_match_details']}` | {pr['count']:,} |")
 
         lines.extend([
             "",

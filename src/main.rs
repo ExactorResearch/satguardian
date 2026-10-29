@@ -471,9 +471,9 @@ fn run_cli_inspect(config: &WafConfig, method: &str, path: &str, query: &str, bo
     println!("Active Tokens    : {:?}", proof.active_tokens);
     println!("Certainty Islands: {:?}", proof.active_islands);
     println!("------------------------------------------------------------");
-    println!("Causal Proof     :\n{}", proof.causal_proof);
+    println!("Causal Proof     :\n{}", proof.rule_match_details);
     println!("------------------------------------------------------------");
-    println!("LaTeX Formal SAT Proof:\n{}", proof.formal_proof_latex);
+    println!("LaTeX Formal SAT Proof:\n{}", proof.decision_reason);
     println!("============================================================\n");
 }
 

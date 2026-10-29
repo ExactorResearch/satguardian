@@ -723,8 +723,8 @@ impl SatguardianSatEngine {
                 active_islands: vec!["ISLAND-BUSINESS-RULES".to_string()],
                 active_tokens: vec!["PAYLOAD_EXCEEDS_MAX_SAFE_DEPTH".to_string()],
                 deduction_steps: vec!["[EARLY-EXIT] Payload length exceeded 1MB safety threshold. Fast-failed in < 1µs.".to_string()],
-                formal_proof_latex: r"\text{Length}(req) > 1\text{MB} \implies \mathbf{BLOCK}".to_string(),
-                causal_proof: "Invariant(PayloadSize <= MAX_SAFE_DEPTH) breached ⟹ ACTION_BLOCK [FAST_FAIL < 1µs]".to_string(),
+                decision_reason: r"\text{Length}(req) > 1\text{MB} \implies \mathbf{BLOCK}".to_string(),
+                rule_match_details: "Invariant(PayloadSize <= MAX_SAFE_DEPTH) breached ⟹ ACTION_BLOCK [FAST_FAIL < 1µs]".to_string(),
                 execution_time_us: (elapsed.as_secs_f64() * 1_000_000.0 * 100.0).round() / 100.0,
             };
         }
@@ -1137,7 +1137,7 @@ impl SatguardianSatEngine {
             ExecutionPath::FastPathLocal
         };
 
-        let formal_proof_latex = if is_violation {
+        let decision_reason = if is_violation {
             let island_str = active_islands
                 .iter()
                 .map(|i| format!(r"\mathcal{{I}}_{{\text{{{}}}}}", i.replace("ISLAND-", "")))
@@ -1172,7 +1172,7 @@ impl SatguardianSatEngine {
 \end{aligned}".to_string()
         };
 
-        let causal_proof = if is_violation {
+        let rule_match_details = if is_violation {
             let rule_ids = matched_rules.iter().map(|r| r.rule_id.as_str()).collect::<Vec<_>>().join(" | ");
             let tok_ids = active_tokens.join(" AND ");
             format!("({tok_ids}) violates [{rule_ids}] -> ACTION_BLOCK [{category}]")
@@ -1193,8 +1193,8 @@ impl SatguardianSatEngine {
             active_islands,
             active_tokens,
             deduction_steps,
-            formal_proof_latex,
-            causal_proof,
+            decision_reason,
+            rule_match_details,
             execution_time_us: (execution_time_us * 100.0).round() / 100.0,
         }
     }

@@ -1,5 +1,6 @@
 # SATGuardian Edge WAF
 
+[![Architecture](https://img.shields.io/badge/Architecture-Pragmatic%20WAF-blue.svg)](ARCHITECTURE.md)
 [![License: MIT/Apache-2.0](https://img.shields.io/badge/License-MIT%2FApache--2.0-blue.svg)](#license)
 [![Powered by](https://img.shields.io/badge/Engine-SATGuardian%20(Rust)-orange.svg)](https://satguardian.tech)
 [![Envoy Aircraft Carrier](https://img.shields.io/badge/Envoy%20Proxy-ext__authz%20UDS%20(<15µs)-purple.svg)](ENVOY_INTEGRATION_GUIDE.md)
@@ -7,9 +8,9 @@
 [![Throughput](https://img.shields.io/badge/Throughput-52k%2B%20req%2Fs-blue.svg)](#benchmarks)
 [![Cloud Optimization](https://img.shields.io/badge/Optimization-Security%20Units%20(SU)-purple.svg)](https://satguardian.tech)
 [![Proof of Concept](https://img.shields.io/badge/PoC-Interactive%20Duel-success.svg)](PROOF_OF_CONCEPT.md)
-[![Epistemology](https://img.shields.io/badge/Theory-Axiomatic%20Supervision-blueviolet.svg)](AXIOMATIC_SUPERVISION_AND_SYNTHESIS.md)
+[![Arquitectura](https://img.shields.io/badge/Theory-Axiomatic%20Supervision-blueviolet.svg)](AXIOMATIC_SUPERVISION_AND_SYNTHESIS.md)
 
-Unlimited protected requests (100% free Edge WAF) is free, open source, and available for download with instructions below. It replaces fragile regular expressions with a deterministic local Boolean SAT engine in < 0.05ms (0.02ms typical) across 10 formal certainty islands. You only pay for the optional cloud service for rule matrix simplification and minterm compression.
+Unlimited protected requests (100% free Edge WAF) is free, open source, and available for download with instructions below. It replaces fragile regular expressions with a local Boolean rule matrix evaluator in < 0.05ms (0.02ms typical) using a structured Rust parser. You only pay for the optional cloud service for rule matrix simplification and minterm compression.
 
 > 🛡️ **Zero Traffic Intermediation (100% Sovereign):**  
 > SATGuardian never requires CNAME DNS redirection or cloud proxies. Customer traffic stays 100% inside your infrastructure. You only spend **Security Units (SU)** when synthesizing and compressing Boolean rule matrices in the cloud.
@@ -39,7 +40,7 @@ kubectl apply -f envoy/kubernetes-sidecar.yaml
 *(For complete details, see [ENVOY_INTEGRATION_GUIDE.md](ENVOY_INTEGRATION_GUIDE.md)).*
 
 ### Method 2: Reverse Proxy over Existing Servers (Nginx / IIS / Apache)
-Direct frontline positioned ahead of existing Nginx, Apache, or Microsoft IIS servers. Intercepts incoming internet traffic in microseconds, mathematically blocks threats, and transfers only legitimate requests to internal web server instances:
+Direct frontline positioned ahead of existing Nginx, Apache, or Microsoft IIS servers. Intercepts incoming internet traffic in microseconds, blocks threats with low latency, and transfers only legitimate requests to internal web server instances:
 
 - **Linux (Ubuntu / Debian / RHEL / CentOS / Rocky / Alpine):**
   ```bash
@@ -81,14 +82,14 @@ curl -i http://localhost:8080/
 curl -i "http://localhost:8080/?id=1'%20OR%201=1--"
 ```
 > **Result:** HTTP `403 Forbidden` in $< 0.05\text{ ms}$. The backend never receives the malicious packet.  
-> The JSON payload contains the causal proof chain and formal $\LaTeX$ theorem:
+> The JSON payload contains the rule match details and formal $\LaTeX$ theorem:
 > ```json
 > {
 >   "action": "BLOCK",
 >   "category": "sql_injection",
 >   "latency_us": 24.1,
->   "causal_proof": "(TAUTOLOGY_EQUALS) violates [SAT-SQLI-01] -> ACTION_BLOCK",
->   "formal_proof_latex": "\\begin{aligned} ... \\text{Eval}(\\mathcal{C}_{\\text{WAF}}, \\mathcal{T}) \\equiv \\mathbf{FALSE} \\implies \\mathbf{BLOCK} \\end{aligned}"
+>   "rule_match_details": "(TAUTOLOGY_EQUALS) violates [SAT-SQLI-01] -> ACTION_BLOCK",
+>   "decision_reason": "\\begin{aligned} ... \\text{Eval}(\\mathcal{C}_{\\text{WAF}}, \\mathcal{T}) \\equiv \\mathbf{FALSE} \\implies \\mathbf{BLOCK} \\end{aligned}"
 > }
 > ```
 
@@ -211,7 +212,7 @@ satguardian-waf entitlement
 │     - Shannon entropy binarizer & Boolean Hypercube {0, 1}^N           │
 │                                                                        │
 │  2. In-Memory Fast-Path SAT Solver (< 0.02 ms)                         │
-│     Evaluates 10 Formal Certainty Islands:                             │
+│     Evaluates módulos de inspección en Rust:                             │
 │     • ISLAND-SQLI       (Tautologies, UNION select, Time-delay, DDL)   │
 │     • ISLAND-XSS        (Script contexts, Event attributes, SVG, URIs) │
 │     • ISLAND-RCE        (Shell chains, Subshells, Dynamic eval sinks)  │
@@ -227,7 +228,7 @@ satguardian-waf entitlement
 │     ├─ [ VIOLATION DETECTED ]                                          │
 │     │   └─ Immediate HTTP 403 Forbidden Response (< 0.05 ms)           │
 │     │      • X-SATGuardian-Action: BLOCK                                   │
-│     │      • X-SATGuardian-Proof: [Causal Proof Chain]                     │
+│     │      • X-SATGuardian-Proof: [detalles de coincidencia de reglas]                     │
 │     │      • JSON Body: LaTeX Formal Proof + Active Predicate Tokens   │
 │     │                                                                  │
 │     └─ [ CLEAN TRAFFIC (ALLOW) ]                                       │

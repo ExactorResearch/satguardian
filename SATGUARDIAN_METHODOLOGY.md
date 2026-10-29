@@ -50,7 +50,7 @@ $$\mathcal{D}(\mathcal{R}) = \begin{cases}
 \mathbf{BLOCK}, & \text{if } \text{Eval}(\mathcal{C}_{\text{WAF}}, \mathcal{T}(\mathcal{R})) \equiv \mathbf{FALSE}
 \end{cases}$$
 
-When an invariant is violated, SATGuardian outputs the exact clause $\mathcal{C}_k^*$ that triggered the contradiction, yielding a zero-hallucination causal proof chain and verifiable LaTeX proof.
+When an invariant is violated, SATGuardian outputs the exact clause $\mathcal{C}_k^*$ that triggered the contradiction, yielding a zero-hallucination detalles de coincidencia de reglas and verifiable LaTeX proof.
 
 ---
 
@@ -77,7 +77,7 @@ $$\mathbf{x} = (x_0, x_1, \dots, x_{N-1}) \in \{0, 1\}^N, \quad \text{Minterm}(\
 | **Hardware Requirement** | CPU Server | High-End GPU Cluster | Single Core / Bare Metal / Microcontroller |
 | **Throughput per Core** | $\sim 2,000\text{ req/sec}$ | $\sim 2 - 5\text{ req/sec}$ | **$> 80,000\text{ req/sec}$** |
 | **Cost per 1M Requests** | $\$0.10$ (Compute) | $\$2,000.00+$ (API Token Fees) | **$\$0.00$ (Local In-Memory Evaluation)** |
-| **Proof Verifiability** | Regex string match | Non-deterministic explanation | **Formal LaTeX + Causal Proof Chains** |
+| **Proof Verifiability** | Regex string match | Non-deterministic explanation | **Formal LaTeX + detalles de coincidencia de reglass** |
 
 ---
 

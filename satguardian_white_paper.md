@@ -2,7 +2,7 @@
 
 **Research & Engineering Team:** Satguardian Research
 **Core Technologies:** Rust SAT Engine, Envoy Proxy (`ext_authz`), GXOR-Lattice Minimization
-**Classification:** Systems Architecture & Academic White Paper
+**Classification:** Systems Architecture & Academic Documento Técnico de Arquitectura
 
 ---
 

@@ -211,7 +211,7 @@ async fn handle_t1k_connection(
             );
 
             // Respond with T1K Blocked frame
-            send_blocked_verdict(&mut stream, &event_id, 403, &proof.causal_proof).await?;
+            send_blocked_verdict(&mut stream, &event_id, 403, &proof.rule_match_details).await?;
 
             // Record to local SQLite ledger
             if let Some(ref ledger) = state.ledger {
