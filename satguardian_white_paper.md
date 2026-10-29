@@ -1,7 +1,7 @@
-# SATGuardian Edge WAF: Sub-Millisecond Lexical Normalization, 128-Bit Boolean Mask Evaluation, and Offline Quine-McCluskey Rule Synthesis
+# SATGuardian Edge WAF: Sub-Millisecond Lexical Normalization, 128-Bit Boolean Mask Evaluation, and Out-of-Band EXACTOR GXOR Rule Synthesis
 
 **Technical White Paper — Version 2.0 (Empirical Engineering Edition)**  
-**Implementation Reference:** `exactor-waf-guardian` (`src/` in Rust, `satguardian_waf/` in Python)
+**Implementation Reference:** `exactor-waf-guardian` (`src/` in Rust, `satguardian_waf/` in Python) & `exactor-core-v128` (EXACTOR GXOR Engine)
 
 ---
 
@@ -10,8 +10,8 @@
 Modern Web Application Firewalls (WAFs) face a fundamental engineering tension between **inspection latency**, **evasion resistance**, and **false positive rates**. Traditional unnormalized regular expression engines execute quickly (`0.0427 ms` average in our Python benchmark) but fail against multi-layer URL encoding, inline SQL comments (`/**/`), and alternative DOM execution contexts (`47.0%` False Negative Rate). Conversely, full OWASP Core Rule Set (CRS v4) Anomaly Scoring engines apply multi-target transformations across dozens of rules per request (`0.2178 ms` average), while probabilistic NLP/token-weight classifiers suffer from high false positive rates (`24.6%` FPR) when benign requests contain technical terminology.
 
 This paper presents the implemented architecture and empirical evaluation of **SATGuardian Edge WAF** (`exactor-waf-guardian`). SATGuardian decouples **in-path request evaluation** from **out-of-band boolean rule minimization**:
-1. **In-Path Hot Plane (Native Rust):** Applies bounded multi-pass lexical normalization (`src/ast/lexer.rs`), packs structural tokens and request attributes into a 128-bit integer (`FeatureVector(pub u128)` in `src/ast/features.rs`), and evaluates compiled rule cubes via single-cycle bitwise `AND` operations (`(minterm & required_mask) == expected_bits` in `src/engine/sat_solver.rs`). Across 10,000 requests, the compiled Rust engine achieves a median latency (`p50`) of **`13.60 µs`** (`0.0136 ms`), a mean latency of **`14.53 µs`** (`0.0145 ms`), and a `p99` of **`30.50 µs`** (`65,441.13 req/sec` single-thread throughput).
-2. **Out-of-Band Synthesis Plane (Rust & Python):** Logs novel anomalous `u128` minterms to a local SQLite ledger (`waf_ledger.db`), compresses them asynchronously into minimal prime implicant covers using the **Quine-McCluskey algorithm** and **Petrick's Method** (`src/engine/qm_synthesizer.rs`), verifies `< 0.1%` false positives against historical benign traffic in a **Digital Twin** (`satguardian-advisor.py`), and hot-reloads the compiled bitmasks via lock-free `ArcSwap`.
+1. **In-Path Hot Plane (Native Rust):** Applies bounded multi-pass lexical normalization (`src/ast/lexer.rs`), packs structural tokens and request attributes into a 128-bit integer (`FeatureVector(pub u128)` in `src/ast/features.rs`), and evaluates compiled rule cubes via single-cycle bitwise operations (`(minterm & required_mask) == expected_bits` in `src/engine/sat_solver.rs`). Across 10,000 requests, the compiled Rust engine achieves a median latency (`p50`) of **`13.60 µs`** (`0.0136 ms`), a mean latency of **`14.53 µs`** (`0.0145 ms`), and a `p99` of **`30.50 µs`** (`65,441.13 req/sec` single-thread throughput).
+2. **Out-of-Band Synthesis Plane (Rust & Python):** Logs novel anomalous `u128` minterms to a local SQLite ledger (`waf_ledger.db`), simplifies up to **128 Boolean variables** asynchronously using the **EXACTOR GXOR** engine (`src/cloud/satguardian_client.rs` $\rightarrow$ `exactor-core-v128`) over the complete **`{AND, OR, NOT, XOR}`** operator basis via Differential Gray Code Mapping, verifies `< 0.1%` false positives against historical benign traffic in a **Digital Twin** (`satguardian-advisor.py`), and hot-reloads the compiled bitmasks via lock-free `ArcSwap`.
 
 ---
 
@@ -37,12 +37,12 @@ $$\text{Match}(\mathbf{v}(r), c_j) \iff (\mathbf{v}(r) \mathbin{\&} M_j) == E_j$
 
 If no rule cube matches ($\forall j, \, (\mathbf{v}(r) \mathbin{\&} M_j) \neq E_j$), the security invariant holds and the request is allowed. Unlike backtracking regular expressions or NP-complete in-path DPLL/CDCL solvers, bitwise evaluation over $R$ rules executes in deterministic $O(R)$ CPU cycles.
 
-### 1.3 Offline Quine-McCluskey & Petrick Minimization (`src/engine/qm_synthesizer.rs`)
-When unobserved malicious minterms $\mathcal{M} = \{m_1, m_2, \dots, m_k\} \subset \{0, 1\}^{n}$ ($n \le 128$) are collected in `waf_ledger.db`, the offline synthesizer computes the minimal sum-of-products (SOP) cover:
-1. **Prime Implicant Generation:** Pairs of cubes $(M_a, E_a)$ and $(M_b, E_b)$ with identical masks ($M_a = M_b$) whose expected bits differ in exactly one bit position ($\text{popcount}(E_a \oplus E_b) = 1$) are combined by clearing that bit in the mask:
+### 1.3 Out-of-Band EXACTOR GXOR Minimization (`src/cloud/satguardian_client.rs`, `exactor-core-v128`)
+When unobserved malicious minterms $\mathcal{M} = \{m_1, m_2, \dots, m_k\} \subset \{0, 1\}^{n}$ ($n \le 128$) are collected in `waf_ledger.db`, classical `{AND, OR, NOT}` minimizers (such as Quine-McCluskey or Espresso) suffer from $O(2^n)$ exponential blow-up beyond 20–30 variables. Instead, the out-of-band synthesizer invokes the **EXACTOR GXOR** engine (`procesar_gxor` in `exactor-core-v128`) via `SatguardianCloudClient::simplify`:
+1. **Differential Gray Code Mapping (`modify_gray_code`):** Projects 128-bit minterms into a Gray Code space and locates logical neighbors differing by a single bit ($\text{popcount}(E_a \oplus E_b) = 1$) in $O(1)$ constant time via `BTreeMap`/`HashMap` lookups, achieving $O(\text{term\_count})$ linear complexity:
    $$M_{\text{merged}} = M_a \mathbin{\&} \neg(E_a \oplus E_b), \quad E_{\text{merged}} = E_a \mathbin{\&} M_{\text{merged}}$$
-2. **Petrick's Method:** Constructs the prime implicant chart over $\mathcal{M}$, identifies essential prime implicants, and solves the product-of-sums covering function to select the minimal cardinality set of prime implicants $\mathcal{P}^*$ covering all attack minterms.
-3. **Digital Twin Verification (`satguardian-advisor.py`):** Before adding any $c^* \in \mathcal{P}^*$ to the active rule matrix, the `SimulationAgent` verifies that $c^*$ produces `< 0.1%` false positives across the historical benign set $\mathcal{B}_{\text{ledger}}$ (`1,663` benign requests in `waf_ledger.db`).
+2. **GXOR / NXOR Algebraic Reduction over `{AND, OR, NOT, XOR}`:** Detects exclusive-OR ($\oplus$) and equivalence ($\odot$) structures across up to **128 Boolean variables (`u128`)**, collapsing parity and symmetric attack predicates that would otherwise require exponentially many Sum-of-Products (SOP) clauses.
+3. **Digital Twin Verification (`satguardian-advisor.py`):** Before adding any reduced invariant $c^*$ to the active rule matrix, the `SimulationAgent` verifies that $c^*$ produces `< 0.1%` false positives across the historical benign set $\mathcal{B}_{\text{ledger}}$ (`1,663` benign requests in `waf_ledger.db`).
 
 ---
 
@@ -80,4 +80,4 @@ When unobserved malicious minterms $\mathcal{M} = \{m_1, m_2, \dots, m_k\} \subs
 SATGuardian is designed for **100% on-premise data sovereignty**:
 - **Zero Traffic Hosting:** Customer DNS CNAMEs never point to SATGuardian servers. The Edge WAF deploys as a **Standalone Rust Binary**, a **Reverse Proxy** in front of Nginx/Apache/IIS, or a **Kubernetes Envoy Sidecar** (`unix:///run/satguardian/waf.sock`).
 - **100% Free & Unlimited Edge Inspection:** In-path traffic inspection carries zero per-request fees (`$0.00 / 1M requests`).
-- **Cloud Optimization via Security Units (SU):** Only out-of-band cloud boolean minimization (Quine-McCluskey synthesis) consumes Security Units (SU) across five tiers (**Scout** `$20/mo`, **Pro/Dev** `$49/mo`, **Startup** `$499/mo`, **Scale** `$2,499/mo`, and **Enterprise** custom up to 128 variables; 256+ variables are delivered as dedicated bare-metal Engineering Expansion Projects). When a plan's monthly SU quota is exhausted (`HTTP 402 SU_QUOTA_EXHAUSTED`), cloud optimization pauses while the Edge WAF continues protecting traffic uninterrupted with its last compiled bitmask matrix.
+- **Cloud Optimization via Security Units (SU):** Only out-of-band cloud boolean minimization (**EXACTOR GXOR** `{AND, OR, NOT, XOR}` synthesis up to 128 variables) consumes Security Units (SU) across five tiers (**Scout** `$20/mo` up to 20 vars, **Pro/Dev** `$49/mo` up to 64 vars, **Startup** `$499/mo` up to 128 vars, **Scale** `$2,499/mo` up to 128 vars, and **Enterprise** custom up to 128 variables; 256+ variables are delivered as dedicated bare-metal Engineering Expansion Projects). When a plan's monthly SU quota is exhausted (`HTTP 402 SU_QUOTA_EXHAUSTED`), cloud optimization pauses while the Edge WAF continues protecting traffic uninterrupted with its last compiled bitmask matrix.

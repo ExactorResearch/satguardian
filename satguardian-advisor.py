@@ -500,18 +500,18 @@ class RuleSynthesizerAgent:
                 "impact": "Blocks credential harvesting and reconnaissance probes via SAT-EXP-01 and SAT-EXP-02.",
             })
 
-        # 4. Suggest Cloud Boolean Minimization for Novel Anomalies
+        # 4. Suggest Cloud GXOR Boolean Minimization for Novel Anomalies
         nov = self.patterns.get("novel_anomalies", {})
         if nov.get("pending_count", 0) > 0:
             p_cnt = nov["pending_count"]
             tot_occ = nov["total_occurrences"]
             suggestions.append({
                 "type": "cloud_synthesis",
-                "action_name": "Cloud Boolean Synchronization & Minimization (Novel Anomalies)",
+                "action_name": "EXACTOR GXOR Cloud Boolean Minimization (AND, OR, NOT, XOR up to 128 vars)",
                 "island_key": "cloud_sync_pending_anomalies",
-                "evidence": f"Detected {p_cnt} novel unobserved pattern anomalies across {tot_occ} production occurrences pending cloud synthesis.",
-                "risk_assessment": "Zero risk. Deterministic Boolean compilation process that optimizes gate count without altering security logic.",
-                "impact": f"Compiles anomalies into baseline SAT equation reducing gate count by up to 80%. Estimated consumption: 1 Silicon Unit (SU).",
+                "evidence": f"Detected {p_cnt} novel unobserved u128 minterm anomalies across {tot_occ} production occurrences pending EXACTOR GXOR cloud synthesis.",
+                "risk_assessment": "Zero risk. Deterministic GXOR algebraic compilation over {AND, OR, NOT, XOR} that compresses up to 128 variables without altering security logic.",
+                "impact": f"Compiles u128 minterms via EXACTOR GXOR into minimal boolean invariants, reducing gate count by up to 80%. Estimated consumption: 1 Security Unit (SU).",
             })
 
         return suggestions

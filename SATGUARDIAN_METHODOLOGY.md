@@ -1,23 +1,23 @@
 # SATGuardian Methodology: Lexical Tokenization, Bitmask Evaluation & Offline Rule Minimization
 
 **Technical Architecture Specification**  
-**Codebase Reference:** `src/ast/lexer.rs`, `src/ast/features.rs`, `src/engine/sat_solver.rs`, `src/engine/qm_synthesizer.rs`
+**Codebase Reference:** `src/ast/lexer.rs`, `src/ast/features.rs`, `src/engine/sat_solver.rs`, `src/cloud/satguardian_client.rs`, `exactor-core-v128`
 
 ---
 
 ## 1. Architectural Separation: Hot Path vs. Offline Control Plane
 
-A core engineering principle of **SATGuardian Edge WAF** is the strict separation between **in-path request evaluation** (which must execute in microseconds with predictable latency) and **out-of-band rule optimization** (which performs combinational boolean minimization asynchronously).
+A core engineering principle of **SATGuardian Edge WAF** is the strict separation between **in-path request evaluation** (which must execute in microseconds with predictable latency) and **out-of-band rule optimization** (which performs 128-variable algebraic boolean minimization asynchronously via **EXACTOR GXOR**).
 
 | Subsystem | Execution Path | Implemented Algorithm | Computational Complexity | Measured Latency |
 | :--- | :--- | :--- | :--- | :--- |
 | **Lexical Decoder & Tokenizer** | In-Path (Edge WAF) | Iterative URL/HTML decoding + comment stripping + token scan (`src/ast/lexer.rs`) | $O(L)$ where $L$ is payload byte length | `~6–10 µs` (Rust) |
-| **Bitmask Rule Evaluator** | In-Path (Edge WAF) | 128-bit `FeatureVector` bitwise `AND` comparison (`src/engine/sat_solver.rs`) | $O(R)$ bitwise operations ($R \le 64$ rules) | `~4–6 µs` (Rust) |
+| **Bitmask Rule Evaluator** | In-Path (Edge WAF) | 128-bit `FeatureVector` bitwise comparison (`src/engine/sat_solver.rs`) | $O(R)$ bitwise operations ($R \le 64$ rules) | `~4–6 µs` (Rust) |
 | **Total Edge Hot Path** | **In-Path (Edge WAF)** | **Combined Lexer + Bitmask Evaluator** | **Linear in payload size, constant per rule** | **`13.60 µs` p50 / `14.53 µs` avg** |
-| **Boolean Rule Minimizer** | Out-of-Band (Advisor / Cloud) | Quine-McCluskey prime implicants + Petrick's Method (`src/engine/qm_synthesizer.rs`) | Exponential in active variables (bounded offline) | `10–250 ms` (Background) |
+| **EXACTOR GXOR Boolean Minimizer** | Out-of-Band (Cloud / Advisor) | Differential Gray Code Mapping + `{AND, OR, NOT, XOR}` reduction (`exactor-core-v128`) | $O(\text{term\_count})$ linear scaling up to 128 vars | `10–250 ms` (Background) |
 | **Digital Twin Verifier** | Out-of-Band (`satguardian-advisor.py`) | Historical replay over benign SQLite ledger (`waf_ledger.db`) | $O(N_{\text{benign}})$ | `~50 ms` for `1,663` benign logs |
 
-> **Important Clarification:** SATGuardian does **not** execute an NP-complete backtracking SAT solver (such as DPLL or CDCL) on the live HTTP request path. All combinational logic minimization happens offline via Quine-McCluskey and Petrick's Method, compiling rules into compact `u128` bitmasks for single-cycle bitwise evaluation on the edge.
+> **Important Clarification:** SATGuardian does **not** execute an NP-complete backtracking SAT solver (such as DPLL or CDCL) on the live HTTP request path, nor is it limited by the 20–30 variable exponential ceiling of classical Quine-McCluskey. Out-of-band logic minimization is powered by **EXACTOR GXOR**, which simplifies up to **128 Boolean variables (`u128`)** over `{AND, OR, NOT, XOR}` and compiles the reduced invariants into `u128` bitmasks for single-cycle bitwise evaluation on the edge.
 
 ---
 
@@ -56,12 +56,12 @@ pub fn matches_minterm(minterm: u128, required_mask: u128, expected_bits: u128) 
 
 ---
 
-## 4. Stage 3: Offline Boolean Minimization (`src/engine/qm_synthesizer.rs`)
+## 4. Stage 3: Out-of-Band EXACTOR GXOR Boolean Minimization (`src/cloud/satguardian_client.rs`, `exactor-core-v128`)
 
 When the Edge WAF encounters anomalous high-entropy requests or repeated hostile bursts that do not match an existing compiled cube, it logs the observed 128-bit minterm in the `novel_anomalies` table of `waf_ledger.db`.
 
-Out of band, the **Quine-McCluskey Synthesizer** (`qm_synthesizer.rs`) and **Multi-Agent Advisor** (`satguardian-advisor.py`) compress these minterms:
-1. **Prime Implicant Generation (Quine-McCluskey):** Adjacent minterms differing by a single bit (Hamming distance 1) are merged iteratively by replacing the differing variable with a "don't-care" (`-`) bit in `required_mask`.
-2. **Minimal Cover Selection (Petrick's Method):** Selects the smallest set of prime implicants that covers all observed malicious minterms.
+Out of band, `SatguardianCloudClient` (`src/cloud/satguardian_client.rs`) and the **Multi-Agent Advisor** (`satguardian-advisor.py`) invoke the **EXACTOR GXOR** engine (`procesar_gxor` in `exactor-core-v128`) to compress these `u128` minterms across up to **128 variables**:
+1. **Differential Gray Code Mapping (`modify_gray_code`):** Rather than performing exhaustive $O(m^2)$ pairwise comparisons like classical Quine-McCluskey, EXACTOR projects `u128` minterms into Gray Code space and locates logical neighbors in $O(1)$ constant time via `BTreeMap`/`HashMap` lookups, achieving $O(\text{term\_count})$ linear scaling.
+2. **GXOR / NXOR Algebraic Reduction over `{AND, OR, NOT, XOR}`:** Classical `{AND, OR, NOT}` minimizers suffer from exponential clause explosion when simplifying symmetric, parity, or cross-dependent security predicates. **EXACTOR GXOR** detects exclusive-OR (`XOR` / `NXOR`) parity structures natively and reduces them into compact algebraic invariants over `{AND, OR, NOT, XOR}` up to 128 variables.
 3. **Digital Twin Replay (`SimulationAgent`):** Before any synthesized rule is applied, `satguardian-advisor.py` tests the candidate bitmask against all historical benign requests stored in `waf_ledger.db` (`1,663` benign requests in the current ledger) to verify `< 0.1%` false positives.
-4. **Atomic Hot-Reload (`ArcSwap`):** Validated rules are hot-swapped into the running Rust Edge WAF via lock-free pointer replacement (`ArcSwap`) without dropping active TCP connections.
+4. **Atomic Hot-Reload (`ArcSwap`):** Validated rules are compiled via `compile_equation_to_clauses` and hot-swapped into the running Rust Edge WAF via lock-free pointer replacement (`ArcSwap`) without dropping active TCP connections.

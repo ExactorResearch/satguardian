@@ -2,12 +2,12 @@
 
 [![Architecture](https://img.shields.io/badge/Architecture-Lexical_&_Bitmask_WAF-blue.svg)](#1-architectural-overview)
 [![Engine](https://img.shields.io/badge/Hot_Path-Rust_14.53_µs_Avg-brightgreen.svg)](#2-empirical-benchmark-results)
-[![Synthesis](https://img.shields.io/badge/Rule_Synthesis-Quine--McCluskey_&_Petrick-orange.svg)](#3-offline-boolean-synthesis--digital-twin)
+[![Synthesis](https://img.shields.io/badge/Rule_Synthesis-EXACTOR_GXOR_(128_Vars)-orange.svg)](#3-offline-boolean-synthesis--digital-twin)
 [![License](https://img.shields.io/badge/Edge_WAF-100%25_Free_&_Unlimited_Traffic-success.svg)](#5-commercial-model--security-units-su)
 
 **SATGuardian Edge WAF** (`exactor-waf-guardian`) is a 100% self-contained, sovereign Web Application Firewall written in native **Rust** with an accompanying **Python** multi-agent benchmark, forensic audit, and offline rule synthesis suite.
 
-Instead of relying on backtracking regular expressions or high-latency in-path LLM calls, SATGuardian normalizes incoming HTTP requests across nested encoding layers, maps structural tokens into a **128-bit integer feature vector (`u128`)**, and evaluates pre-compiled rule bitmasks in **microseconds** (`13.60 µs` median / `14.53 µs` mean in native Rust). Out of band, an offline **Quine-McCluskey + Petrick's Method** synthesizer compresses new threat patterns into minimal prime implicant bitmasks and verifies them against historical benign traffic in a **Digital Twin** before atomic hot-reload.
+Instead of relying on backtracking regular expressions or high-latency in-path LLM calls, SATGuardian normalizes incoming HTTP requests across nested encoding layers, maps structural tokens into a **128-bit integer feature vector (`u128`)**, and evaluates pre-compiled rule bitmasks in **microseconds** (`13.60 µs` median / `14.53 µs` mean in native Rust). Out of band, the **EXACTOR GXOR** boolean minimization engine (`src/cloud/satguardian_client.rs` $\rightarrow$ `exactor-core-v128`) simplifies up to **128 Boolean variables (`u128` minterms)** over the complete **`{AND, OR, NOT, XOR}`** operator basis using Differential Gray Code Mapping in $O(\text{term\_count})$ time, and verifies candidate rules against historical benign traffic in a **Digital Twin** before atomic hot-reload.
 
 ---
 
@@ -18,7 +18,7 @@ Instead of relying on backtracking regular expressions or high-latency in-path L
 | **Lexical Decoder & Tokenizer** | `src/ast/lexer.rs` | Iterative URL/HTML decoding, inline comment stripping (`/**/`), and structural token extraction across 5 domains (`SQLi`, `XSS`, `RCE`, `LFI`, `SSRF`). | **In-Path (Edge Hot Path)** |
 | **128-Bit Feature Vector** | `src/ast/features.rs` | Packs HTTP request metadata, Shannon entropy flags, and extracted lexical tokens into a single `FeatureVector(pub u128)`. | **In-Path (Edge Hot Path)** |
 | **Bitmask Rule Evaluator** | `src/engine/sat_solver.rs` | Evaluates compiled boolean cubes via bitwise `AND`: `(minterm & required_mask) == expected_bits`, plus token-bucket rate limiting (`DashMap`). | **In-Path (Edge Hot Path)** |
-| **Quine-McCluskey Minimizer** | `src/engine/qm_synthesizer.rs` | Exact boolean minimization (Quine-McCluskey prime implicants + Petrick's Method) over observed `u128` minterms. | **Out-of-Band (Advisor / Cloud)** |
+| **EXACTOR GXOR Cloud Minimizer** | `src/cloud/satguardian_client.rs` & `exactor-core-v128` | Algebraic boolean simplification of up to 128 variables (`u128` minterms) using `{AND, OR, NOT, XOR}` and Differential Gray Code Mapping. | **Out-of-Band (Advisor / Cloud)** |
 | **Multi-Agent Advisor & Digital Twin** | `satguardian-advisor.py` | Mines `waf_ledger.db`, synthesizes IP/method/minterm rules, replays candidates against all benign logs (`< 0.1%` FPR verification), and outputs HTML/Markdown audit reports. | **Out-of-Band (Control Plane)** |
 
 ---

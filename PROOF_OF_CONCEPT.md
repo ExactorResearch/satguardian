@@ -8,7 +8,7 @@ This guide provides step-by-step instructions to run, test, and benchmark the **
 
 1. **Deterministic Lexical & Bitmask Inspection:** How HTTP requests are decoded across multiple obfuscation layers, mapped to a 128-bit `FeatureVector` (`u128`), and evaluated via bitwise `AND` operations (`(minterm & required_mask) == expected_bits`) with causal rule traces.
 2. **Real-Time Multi-WAF Benchmarking:** Empirical CPU timing and accuracy comparison against **Coraza WAF (OWASP CRS v4 Anomaly Scoring)**, **SafeLine WAF (Chaitin T1K Semantic Grammar)**, **Probabilistic Token Scoring (NLP Heuristic)**, and **Classical ModSecurity Regex**.
-3. **Offline Quine-McCluskey Rule Synthesis & Digital Twin Verification:** How `satguardian-advisor.py` mines `waf_ledger.db`, verifies candidate rules against historical benign traffic (`< 0.1%` FPR), and generates compliance reports (`audit_report.html` and `audit_report.md`).
+3. **Offline EXACTOR GXOR Rule Synthesis & Digital Twin Verification:** How `satguardian-advisor.py` and `SatguardianCloudClient` (`src/cloud/satguardian_client.rs`) mine `waf_ledger.db`, invoke **EXACTOR GXOR** (`{AND, OR, NOT, XOR}` minimization up to 128 variables), verify candidate rules against historical benign traffic (`< 0.1%` FPR), and generate compliance reports (`audit_report.html` and `audit_report.md`).
 
 ---
 

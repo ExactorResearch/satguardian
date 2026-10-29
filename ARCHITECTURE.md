@@ -10,8 +10,8 @@
 
 `exactor-waf-guardian` is a hybrid Web Application Firewall (WAF) divided into two strictly decoupled execution planes:
 
-1. **In-Path Edge Data Plane (Native Rust — `src/`):** Inspects live HTTP requests in microseconds (`13.60 µs` median / `14.53 µs` mean latency across 10,000 requests) using multi-pass lexical normalization, a 128-bit feature bitmask (`FeatureVector(pub u128)`), and bitwise `AND` rule comparisons (`(minterm & required_mask) == expected_bits`).
-2. **Out-of-Band Control & Synthesis Plane (Rust & Python — `src/engine/qm_synthesizer.rs`, `satguardian-advisor.py`):** Asynchronously reads the SQLite forensic audit ledger (`waf_ledger.db`), synthesizes minimal boolean rule covers using the **Quine-McCluskey algorithm** and **Petrick's Method**, validates candidate rules against historical benign traffic in a **Digital Twin**, and hot-reloads validated rules into the Edge WAF via `ArcSwap`.
+1. **In-Path Edge Data Plane (Native Rust — `src/`):** Inspects live HTTP requests in microseconds (`13.60 µs` median / `14.53 µs` mean latency across 10,000 requests) using multi-pass lexical normalization, a 128-bit feature bitmask (`FeatureVector(pub u128)`), and bitwise rule comparisons (`(minterm & required_mask) == expected_bits`).
+2. **Out-of-Band Control & GXOR Synthesis Plane (Rust & Python — `src/cloud/satguardian_client.rs`, `exactor-core-v128`, `satguardian-advisor.py`):** Asynchronously reads the SQLite forensic audit ledger (`waf_ledger.db`), simplifies up to **128 Boolean variables (`u128` minterms)** using the **EXACTOR GXOR** engine over the complete **`{AND, OR, NOT, XOR}`** operator basis via Differential Gray Code Mapping, validates candidate rules against historical benign traffic in a **Digital Twin**, and hot-reloads validated rules into the Edge WAF via `ArcSwap`.
 
 ```mermaid
 flowchart TD
@@ -22,7 +22,7 @@ flowchart TD
     D -- "Satisfies All Rules" --> F["Forward to Upstream / Envoy 200 OK"]
     E --> G[("SQLite Audit Ledger: waf_ledger.db")]
     F --> G
-    G --> H["Offline Advisor & Quine-McCluskey Synthesizer (qm_synthesizer.rs / satguardian-advisor.py)"]
+    G --> H["Offline Advisor & EXACTOR GXOR Synthesizer (satguardian_client.rs / exactor-core-v128)"]
     H --> I["Digital Twin Benign Traffic Replay (< 0.1% FPR Check)"]
     I -- "Verified Safe" --> J["Atomic Hot-Reload via ArcSwap"]
     J -.-> D
@@ -36,10 +36,10 @@ flowchart TD
 
 | File Path | Key Structs / Functions | Verified Implementation Details |
 | :--- | :--- | :--- |
-| `src/ast/lexer.rs` | `Lexer`, `Token`, `normalize_and_tokenize()` | Performs bounded multi-pass URL/HTML decoding, strips inline SQL/C comments (`/*...*/`), and extracts structural tokens across 5 attack domains (`SQLi`, `XSS`, `RCE`, `LFI`, `SSRF`). |
+| `src/ast/lexer.rs` | `AstLexer`, `FeatureBinarizer` | Performs bounded multi-pass URL/HTML decoding, strips inline SQL/C comments (`/*...*/`), and extracts structural tokens across 5 attack domains (`SQLi`, `XSS`, `RCE`, `LFI`, `SSRF`). |
 | `src/ast/features.rs` | `FeatureVector(pub u128)` | Maps HTTP methods, path attributes, Shannon character entropy thresholds, and lexical token presence into 128 discrete bit positions (`0..127`). |
-| `src/engine/sat_solver.rs` | `SatEngine`, `CompiledRule`, `evaluate_payload()` | Evaluates rules via bitwise masking `(minterm & required_mask) == expected_bits`, enforces per-IP token-bucket rate limits (`DashMap`), and formats human-readable causal proof traces. |
-| `src/engine/qm_synthesizer.rs` | `QuineMcCluskeySynthesizer`, `synthesize_minimal_cover()` | Implements exact Quine-McCluskey prime implicant generation and Petrick's Method over `u128` minterms for out-of-band rule compression. |
+| `src/engine/sat_solver.rs` | `SatguardianSatEngine`, `DynamicCompiledClause`, `evaluate_payload()` | Evaluates rules via bitwise masking `(minterm & required_mask) == expected_bits`, enforces per-IP token-bucket rate limits (`DashMap`), and formats human-readable causal proof traces. |
+| `src/cloud/satguardian_client.rs` | `SatguardianCloudClient`, `SimplifyRequest`, `compile_equation_to_clauses()` | Invokes the **EXACTOR GXOR** Cloud Optimization API (`POST /api/simplify` backed by `exactor-core-v128`) to simplify up to 128 variables (`u128` minterms) over `{AND, OR, NOT, XOR}`, and compiles the reduced formula into runtime bitmask clauses. |
 | `src/proxy/http_proxy.rs` | `start_reverse_proxy()` | Asynchronous Tokio/Hyper reverse proxy with `ArcSwap` lock-free rule hot-reloading and background SQLite audit logging. |
 | `src/proxy/envoy_grpc.rs` | `EnvoyExtAuthzServer` | High-speed Envoy `ext_authz` authorization daemon supporting Unix Domain Sockets (`unix:///run/satguardian/waf.sock`). |
 
