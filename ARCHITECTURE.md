@@ -1,6 +1,6 @@
 # SATGuardian Edge WAF — System Architecture & Implementation Reference
 
-**Repository:** `exactor-waf-guardian`  
+**Repository:** `satguardian`  
 **Version:** `v0.2.0`  
 **Scope:** Verified Implementation Architecture (Rust Hot Path & Python Control Plane)
 
@@ -8,7 +8,7 @@
 
 ## 1. Architectural Overview
 
-`exactor-waf-guardian` is a hybrid Web Application Firewall (WAF) divided into two strictly decoupled execution planes:
+`satguardian` is a hybrid Web Application Firewall (WAF) divided into two strictly decoupled execution planes:
 
 1. **In-Path Edge Data Plane (Native Rust — `src/`):** Inspects live HTTP requests in microseconds (`13.60 µs` median / `14.53 µs` mean latency across 10,000 requests) using multi-pass lexical normalization, a 128-bit feature bitmask (`FeatureVector(pub u128)`), and bitwise rule comparisons (`(minterm & required_mask) == expected_bits`).
 2. **Out-of-Band Control & GXOR Synthesis Plane (Rust & Python — `src/cloud/satguardian_client.rs`, `exactor-core-v128`, `satguardian-advisor.py`):** Asynchronously reads the SQLite forensic audit ledger (`waf_ledger.db`), simplifies up to **128 Boolean variables (`u128` minterms)** using the **EXACTOR GXOR** engine over the complete **`{AND, OR, NOT, XOR}`** operator basis via Differential Gray Code Mapping, validates candidate rules against historical benign traffic in a **Digital Twin**, and hot-reloads validated rules into the Edge WAF via `ArcSwap`.

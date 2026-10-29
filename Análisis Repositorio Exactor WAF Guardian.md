@@ -1,4 +1,4 @@
-# Technical Audit & Empirical Verification Report: `exactor-waf-guardian` (SATGuardian Edge WAF)
+# Technical Audit & Empirical Verification Report: `satguardian` (SATGuardian Edge WAF)
 
 **Audit Scope:** Full Codebase Verification (`src/` in Rust, `satguardian_waf/` in Python, `waf_ledger.db` SQLite Ledger)  
 **Target Version:** `v0.2.0`  
@@ -8,9 +8,9 @@
 
 ## 1. Executive Summary: What Is Implemented vs. Theoretical Research
 
-An exhaustive line-by-line audit of the `exactor-waf-guardian` repository and adjacent workspace projects (`hesize-code-ia`, `adn`, `guardian-api-`, `optimizador_bayesiano`, `f32`) confirms a clear distinction between **implemented production code** and **external research concepts**:
+An exhaustive line-by-line audit of the `satguardian` repository and adjacent workspace projects (`hesize-code-ia`, `adn`, `guardian-api-`, `optimizador_bayesiano`, `f32`) confirms a clear distinction between **implemented production code** and **external research concepts**:
 
-| Technical Concept | Status in `exactor-waf-guardian` | Actual Code Implementation & Location |
+| Technical Concept | Status in `satguardian` | Actual Code Implementation & Location |
 | :--- | :---: | :--- |
 | **Multi-Pass Lexical Normalization & Tokenization** | **✅ Implemented** | `src/ast/lexer.rs` (`Lexer::normalize_and_tokenize`) and `satguardian_waf/core/solver_sat.py` unwind nested URL/HTML encodings, strip `/*...*/` comments, and extract structural tokens across 5 attack domains (`SQLi`, `XSS`, `RCE`, `LFI`, `SSRF`). |
 | **128-Bit Feature Vector (`u128`)** | **✅ Implemented** | `src/ast/features.rs` (`FeatureVector(pub u128)`) packs HTTP metadata, Shannon entropy flags, and lexical token presence into a 128-bit integer. |

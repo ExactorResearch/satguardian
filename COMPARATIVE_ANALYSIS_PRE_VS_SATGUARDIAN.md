@@ -2,7 +2,7 @@
 
 **Technical Evaluation Report**  
 **Subject:** Empirical Comparison of Signature-Based, Anomaly-Scoring, Semantic-Grammar, Probabilistic NLP, and Deterministic Bitmask WAF Engines  
-**Target System:** `exactor-waf-guardian` (SATGuardian Edge WAF v0.2.0)
+**Target System:** `satguardian` (SATGuardian Edge WAF v0.2.0)
 
 ---
 

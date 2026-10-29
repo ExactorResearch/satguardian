@@ -1,7 +1,7 @@
 # SATGuardian Edge WAF: Sub-Millisecond Lexical Normalization, 128-Bit Boolean Mask Evaluation, and Out-of-Band EXACTOR GXOR Rule Synthesis
 
 **Technical White Paper — Version 2.0 (Empirical Engineering Edition)**  
-**Implementation Reference:** `exactor-waf-guardian` (`src/` in Rust, `satguardian_waf/` in Python) & `exactor-core-v128` (EXACTOR GXOR Engine)
+**Implementation Reference:** `satguardian` (`src/` in Rust, `satguardian_waf/` in Python) & `exactor-core-v128` (EXACTOR GXOR Engine)
 
 ---
 
@@ -9,7 +9,7 @@
 
 Modern Web Application Firewalls (WAFs) face a fundamental engineering tension between **inspection latency**, **evasion resistance**, and **false positive rates**. Traditional unnormalized regular expression engines execute quickly (`0.0427 ms` average in our Python benchmark) but fail against multi-layer URL encoding, inline SQL comments (`/**/`), and alternative DOM execution contexts (`47.0%` False Negative Rate). Conversely, full OWASP Core Rule Set (CRS v4) Anomaly Scoring engines apply multi-target transformations across dozens of rules per request (`0.2178 ms` average), while probabilistic NLP/token-weight classifiers suffer from high false positive rates (`24.6%` FPR) when benign requests contain technical terminology.
 
-This paper presents the implemented architecture and empirical evaluation of **SATGuardian Edge WAF** (`exactor-waf-guardian`). SATGuardian decouples **in-path request evaluation** from **out-of-band boolean rule minimization**:
+This paper presents the implemented architecture and empirical evaluation of **SATGuardian Edge WAF** (`satguardian`). SATGuardian decouples **in-path request evaluation** from **out-of-band boolean rule minimization**:
 1. **In-Path Hot Plane (Native Rust):** Applies bounded multi-pass lexical normalization (`src/ast/lexer.rs`), packs structural tokens and request attributes into a 128-bit integer (`FeatureVector(pub u128)` in `src/ast/features.rs`), and evaluates compiled rule cubes via single-cycle bitwise operations (`(minterm & required_mask) == expected_bits` in `src/engine/sat_solver.rs`). Across 10,000 requests, the compiled Rust engine achieves a median latency (`p50`) of **`13.60 µs`** (`0.0136 ms`), a mean latency of **`14.53 µs`** (`0.0145 ms`), and a `p99` of **`30.50 µs`** (`65,441.13 req/sec` single-thread throughput).
 2. **Out-of-Band Synthesis Plane (Rust & Python):** Logs novel anomalous `u128` minterms to a local SQLite ledger (`waf_ledger.db`), simplifies up to **128 Boolean variables** asynchronously using the **EXACTOR GXOR** engine (`src/cloud/satguardian_client.rs` $\rightarrow$ `exactor-core-v128`) over the complete **`{AND, OR, NOT, XOR}`** operator basis via Differential Gray Code Mapping, verifies `< 0.1%` false positives against historical benign traffic in a **Digital Twin** (`satguardian-advisor.py`), and hot-reloads the compiled bitmasks via lock-free `ArcSwap`.
 

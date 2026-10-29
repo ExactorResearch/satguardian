@@ -107,8 +107,8 @@ fi
 # 2. Install Binary & CLI Suite
 echo -e "${YELLOW}[2/5] Installing binary and management tools to ${INSTALL_DIR}...${NC}"
 install -m 755 "${BINARY_PATH}" "${INSTALL_DIR}/satguardian-waf"
-ln -sf "${INSTALL_DIR}/satguardian-waf" "${INSTALL_DIR}/exactor-waf-guardian"
-echo -e "${GREEN}✓ Binary installed at ${INSTALL_DIR}/satguardian-waf (alias: exactor-waf-guardian)${NC}"
+ln -sf "${INSTALL_DIR}/satguardian-waf" "${INSTALL_DIR}/satguardian"
+echo -e "${GREEN}✓ Binary installed at ${INSTALL_DIR}/satguardian-waf (alias: satguardian)${NC}"
 
 for tool in satguardian-top satguardian-advisor satguardian-rules; do
     if [[ -f "${SCRIPT_DIR}/${tool}.py" ]]; then

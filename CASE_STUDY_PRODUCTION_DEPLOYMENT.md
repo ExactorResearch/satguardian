@@ -1,6 +1,6 @@
 # Production Deployment & Forensic Audit Case Study: SATGuardian Edge WAF
 
-**Environment:** Sovereign On-Premise Edge Deployment (`exactor-waf-guardian` v0.2.0)  
+**Environment:** Sovereign On-Premise Edge Deployment (`satguardian` v0.2.0)  
 **Data Sources:** SQLite Forensic Audit Ledger (`waf_ledger.db`, `3,799` transactions), Native Rust Benchmark (`10,000` requests), and Multi-WAF Comparative Suite (`1,000` requests)
 
 ---

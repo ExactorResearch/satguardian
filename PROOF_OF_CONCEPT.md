@@ -1,6 +1,6 @@
 # Proof of Concept (PoC) Guide: SATGuardian Edge WAF
 
-This guide provides step-by-step instructions to run, test, and benchmark the **SATGuardian Edge WAF** (`exactor-waf-guardian`) on your local machine using both the compiled Rust binary and the Python benchmark and advisor suite.
+This guide provides step-by-step instructions to run, test, and benchmark the **SATGuardian Edge WAF** (`satguardian`) on your local machine using both the compiled Rust binary and the Python benchmark and advisor suite.
 
 ---
 

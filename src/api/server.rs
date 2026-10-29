@@ -61,7 +61,7 @@ pub fn create_api_router() -> Router<Arc<ProxyState>> {
 async fn health_check() -> impl IntoResponse {
     Json(serde_json::json!({
         "status": "healthy",
-        "service": "exactor-waf-guardian",
+        "service": "satguardian",
         "version": env!("CARGO_PKG_VERSION"),
         "methodology": "Deterministic SAT Neuro-Symbolic Cyber-Defense"
     }))
