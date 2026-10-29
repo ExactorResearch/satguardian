@@ -1,10 +1,10 @@
 site_name: SATGuardian Edge WAF Documentation
 site_description: Sub-Millisecond Lexical Normalization, 128-Bit Integer Mask Evaluation, and EXACTOR GXOR Boolean Cloud Optimization
 site_author: SATGuardian Cyber-Defense Systems
-site_url: https://satguardian.tech
+site_url: https://ExactorResearch.github.io/satguardian/
 
-repo_name: SATGuardian/satguardian
-repo_url: https://github.com/SATGuardian/satguardian
+repo_name: ExactorResearch/satguardian
+repo_url: https://github.com/ExactorResearch/satguardian
 
 theme:
   name: material
