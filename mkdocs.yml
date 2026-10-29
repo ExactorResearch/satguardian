@@ -65,6 +65,7 @@ extra_javascript:
 nav:
   - Home: index.md
   - Getting Started:
+      - Complete Configuration Guide: getting-started/configuration.md
       - Configuration & Operations: getting-started/operations.md
       - Proof of Concept Guide: getting-started/poc-guide.md
   - Architecture:
