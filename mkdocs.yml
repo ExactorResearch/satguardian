@@ -1,0 +1,84 @@
+site_name: SATGuardian Edge WAF Documentation
+site_description: Sub-Millisecond Lexical Normalization, 128-Bit Integer Mask Evaluation, and EXACTOR GXOR Boolean Cloud Optimization
+site_author: SATGuardian Cyber-Defense Systems
+site_url: https://satguardian.tech
+
+repo_name: SATGuardian/satguardian
+repo_url: https://github.com/SATGuardian/satguardian
+
+theme:
+  name: material
+  language: en
+  palette:
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: cyan
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: cyan
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.arithmatex:
+      generic: true
+  - admonition
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - tables
+  - attr_list
+  - md_in_html
+
+extra_javascript:
+  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Configuration & Operations: getting-started/operations.md
+      - Proof of Concept Guide: getting-started/poc-guide.md
+  - Architecture:
+      - System Architecture: architecture/system-architecture.md
+      - Axiomatic Supervision & Synthesis: architecture/axiomatic-supervision.md
+      - SAT Guardian Methodology: architecture/satguardian-methodology.md
+  - Deployments & Integration:
+      - Envoy Proxy Integration: deployments/envoy-integration.md
+      - Production Case Study: deployments/case-study.md
+  - Benchmarks & Analysis:
+      - Multi-WAF Comparative Analysis: benchmarks/comparative-analysis.md
+  - Audit & Reports:
+      - Technical Audit Report: reports/technical-audit.md
+      - Forensic Audit Ledger: reports/audit-report.md
+  - Research & Theory:
+      - Technical White Paper: research/white-paper.md
+
