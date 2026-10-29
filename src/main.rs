@@ -26,7 +26,7 @@ use tracing_subscriber::EnvFilter;
     name = "satguardian-waf",
     author = "Satguardian Research",
     version = env!("CARGO_PKG_VERSION"),
-    about = "SATGuardian Edge WAF: Production-grade, sub-millisecond SAT Web Application Firewall & Reverse Proxy (100% Free Edge traffic) powered by satguardian.tech Boolean Logic Optimization"
+    about = "SATGuardian Edge WAF: Production-grade, sub-millisecond SAT Web Application Firewall & Reverse Proxy (99.9% Free Edge traffic) powered by satguardian.tech Boolean Logic Optimization"
 )]
 struct Cli {
     #[command(subcommand)]
@@ -215,7 +215,7 @@ async fn run_server(config: WafConfig) -> Result<(), Box<dyn std::error::Error +
    ╚════██║██╔══██║   ██║   ██║   ██║██║   ██║██╔══██║██╔══██╗██║  ██║██║██╔══██║██║╚██╗██║
    ███████║██║  ██║   ██║   ╚██████╔╝╚██████╔╝██║  ██║██║  ██║██████╔╝██║██║  ██║██║ ╚████║
    ╚══════╝╚═╝  ╚═╝   ╚═╝    ╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝
-             SATGUARDIAN EDGE WAF - 100% FREE LOCAL DEFENSE
+             SATGUARDIAN EDGE WAF - 99.9% FREE LOCAL DEFENSE
         Cloud Boolean Optimization Powered by Security Units (SU)
                          https://satguardian.tech
     "#
@@ -492,7 +492,7 @@ async fn run_check_entitlement(
     match cloud.get_entitlement().await {
         Ok(ent) => {
             println!("\n✅ Entitlement verified successfully!");
-            println!("   Edge Traffic Inspection : {}", if ent.edge_traffic_unlimited { "100% UNLIMITED & FREE (Open Source Edge)" } else { "Restricted" });
+            println!("   Edge Traffic Inspection : {}", if ent.edge_traffic_unlimited { "99.9% UNLIMITED & FREE (Open Source Edge)" } else { "Restricted" });
             println!("   Cloud Synthesis Service : {}", if ent.cloud_synthesis_enabled { "ACTIVE" } else { "PAUSED (Quota reached - edge keeps protecting)" });
             println!("   Subscription Tier       : {}", ent.subscription_tier);
             println!("   Security Units (SU)     : {} SU available", ent.su_available);

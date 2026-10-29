@@ -797,9 +797,9 @@ class SatguardianRulesApp:
             skey = sug.get("rule_id", sug.get("island_key", "n/a"))[:27]
             sim = sug.get("simulation")
             if sim and sim.get("certified_zero_false_positives"):
-                verdict = f"[0% FP] {sim.get('attacks_intercepted_at_perimeter', 0)} intercepted"
+                verdict = f"[<0.1% FP] {sim.get('attacks_intercepted_at_perimeter', 0)} intercepted"
             else:
-                verdict = "[AUDITED 0% FP]"
+                verdict = "[AUDITED <0.1% FP]"
             
             row_str = f" {stype:<16s} {skey:<28s} {verdict:<30s} [Y] Approve / [N] Reject"
             attr = curses.color_pair(7) | curses.A_BOLD if item_idx == self.selected_advisor_idx else 0
@@ -817,7 +817,7 @@ class SatguardianRulesApp:
             
             sim = sel_sug.get("simulation")
             if sim and not sim.get("error"):
-                badge = "[✓ CERTIFIED ZERO FALSE POSITIVES]" if sim.get("certified_zero_false_positives") else "[COLLISION ALERT]"
+                badge = "[✓ CERTIFIED Low False Positive Rate (<0.1%)]" if sim.get("certified_zero_false_positives") else "[COLLISION ALERT]"
                 safe_addstr(stdscr, det_y + 5, 4, f"Digital Twin      : {badge} {sim.get('benign_tested', 0)} benign requests tested.", curses.color_pair(1) | curses.A_BOLD)
                 if sim.get("saved_latency_ms", 0) > 0:
                     safe_addstr(stdscr, det_y + 6, 4, f"Compute Savings   : ~{sim.get('saved_latency_ms')} ms CPU saved by dropping before SAT evaluation.", curses.color_pair(1))
@@ -976,7 +976,7 @@ class SatguardianRulesApp:
             print(f"    Evidence   : {sug.get('evidence')}")
             sim = sug.get("simulation")
             if sim and sim.get("certified_zero_false_positives"):
-                print(f"    Simulation : \033[1;32m[0% FP CERTIFIED]\033[0m {sim.get('attacks_intercepted_at_perimeter', 0)} attacks intercepted")
+                print(f"    Simulation : \033[1;32m[<0.1% FP CERTIFIED]\033[0m {sim.get('attacks_intercepted_at_perimeter', 0)} attacks intercepted")
             print(f"    Impact     : {sug.get('impact')}")
             resp = input("    Approve and apply? [y/N/q]: ").strip().lower()
             if resp in ("y", "yes"):

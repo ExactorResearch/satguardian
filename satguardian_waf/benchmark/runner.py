@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import random
 from typing import List, Dict, Any, Optional, Callable
 from dataclasses import dataclass, field
 
@@ -12,6 +11,9 @@ from satguardian_waf.agents.base import BaseWAFAgent
 from satguardian_waf.agents.satguardian_agent import SatguardianWAFAgent, ExactorWAFAgent
 from satguardian_waf.agents.jev_pure_agent import PureJEVAgent
 from satguardian_waf.agents.regex_baseline_agent import RegexBaselineAgent
+from satguardian_waf.agents.coraza_agent import CorazaWAFAgent
+from satguardian_waf.agents.safeline_agent import SafeLineWAFAgent
+from satguardian_waf.agents.docker_http_agent import DockerHTTPWAFAgent
 from satguardian_waf.benchmark.metrics import compute_metrics, AgentBenchmarkMetrics
 
 
@@ -31,8 +33,10 @@ class WAFBenchmarkRunner:
         if agents is None:
             self.agents: List[BaseWAFAgent] = [
                 SatguardianWAFAgent(),
-                PureJEVAgent(),
-                RegexBaselineAgent()
+                SafeLineWAFAgent(),
+                CorazaWAFAgent(),
+                RegexBaselineAgent(),
+                PureJEVAgent()
             ]
         else:
             self.agents = agents
@@ -64,21 +68,34 @@ class WAFBenchmarkRunner:
             metrics = compute_metrics(agent.name, decisions, ground_truth)
             agent_metrics[agent.name] = metrics
 
-        # Generate comparative insights
+        # Generate empirical comparative insights
         insights = []
         satguardian_m = next((m for k, m in agent_metrics.items() if "SATGuardian" in k or "Exactor" in k), None)
-        jev_m = next((m for k, m in agent_metrics.items() if "JEV" in k), None)
+        safeline_m = next((m for k, m in agent_metrics.items() if "SafeLine" in k), None)
+        coraza_m = next((m for k, m in agent_metrics.items() if "Coraza" in k), None)
+        jev_m = next((m for k, m in agent_metrics.items() if "Probabilistic" in k or "JEV" in k), None)
         regex_m = next((m for k, m in agent_metrics.items() if "Regex" in k), None)
 
-        if satguardian_m and jev_m:
-            speedup = round(jev_m.avg_latency_ms / satguardian_m.avg_latency_ms, 1) if satguardian_m.avg_latency_ms > 0 else 25000.0
-            savings = round(jev_m.cost_per_million_usd - satguardian_m.cost_per_million_usd, 2)
-            insights.append(f"⚡ SATGuardian is **{speedup:,.0f}x faster** than Pure JEV (LLM Cloud) with **0.00 ms cold start**.")
-            insights.append(f"💰 SATGuardian saves **${savings:,.2f} per 1M requests** compared to standard LLM token pricing.")
+        if satguardian_m and coraza_m and satguardian_m.avg_latency_ms > 0:
+            coraza_speedup = round(coraza_m.avg_latency_ms / satguardian_m.avg_latency_ms, 2)
+            insights.append(
+                f"🚀 SATGuardian evaluated payloads **{coraza_speedup}x faster** than Coraza OWASP CRS v4 "
+                f"({satguardian_m.avg_latency_ms:.4f} ms vs. {coraza_m.avg_latency_ms:.4f} ms avg CPU time)."
+            )
 
         if satguardian_m and regex_m:
             fnr_diff = round((regex_m.false_negative_rate - satguardian_m.false_negative_rate) * 100, 1)
-            insights.append(f"🛡️ SATGuardian eliminated **{fnr_diff}% of evasion bypasses** that bypassed Classical ModSecurity Regex.")
+            insights.append(
+                f"🛡️ SATGuardian reduced false negatives by **{fnr_diff} percentage points** compared to Classical ModSecurity Regex "
+                f"(FNR: {satguardian_m.false_negative_rate * 100:.1f}% vs. {regex_m.false_negative_rate * 100:.1f}%)."
+            )
+
+        if satguardian_m and jev_m:
+            fpr_diff = round((jev_m.false_positive_rate - satguardian_m.false_positive_rate) * 100, 1)
+            insights.append(
+                f"🎯 SATGuardian reduced false positives on benign technical traffic by **{fpr_diff} percentage points** "
+                f"compared to Probabilistic Token Scoring (FPR: {satguardian_m.false_positive_rate * 100:.1f}% vs. {jev_m.false_positive_rate * 100:.1f}%)."
+            )
 
         return BenchmarkSuiteResult(
             dataset_size=len(dataset),

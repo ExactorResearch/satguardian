@@ -81,12 +81,11 @@ class HTTPRequestPayload:
         """Returns decoded, normalized text representation of request targets."""
         raw = f"{self.path} {self.query_string} {self.body} {self.headers_str}"
         try:
-            # Multi-pass URL decode
             d1 = urllib.parse.unquote_plus(raw)
-            d2 = urllib.parse.unquote_plus(d1)
-            # Remove inline SQL comments (/**/)
-            d3 = re.sub(r"/\*.*?\*/", " ", d2)
-            return f"{raw} {d1} {d2} {d3}"
+            d2 = urllib.parse.unquote_plus(d1) if "%" in d1 else d1
+            if "/*" in d2:
+                d2 = re.sub(r"/\*.*?\*/", " ", d2)
+            return d2
         except Exception:
             return raw
 

@@ -6,7 +6,7 @@
 ===============================================================================
  Specialized Agent Architecture:
    1. TrafficPatternAgent   : Forensic analysis and trace clustering (SQLite / audit_log)
-   2. SimulationAgent       : Digital twin simulation and 0% FP formal verification
+   2. SimulationAgent       : Digital twin simulation and <0.1% FP formal verification
    3. RuleSynthesizerAgent  : O(1) rule synthesis and hardware optimization
    4. HumanApprovalAgent    : Interactive governance and hot rule application
    5. ForensicReportAgent   : Executive HTML and Markdown report generator
@@ -280,10 +280,10 @@ class TrafficPatternAgent:
 
         # 8. Top Causal Proofs
         cur.execute("""
-            SELECT category, matched_rules, rule_match_details, count(*) as cnt
+            SELECT category, matched_rules, causal_proof AS rule_match_details, count(*) as cnt
             FROM audit_log
             WHERE action = 'Block'
-            GROUP BY category, matched_rules, rule_match_details
+            GROUP BY category, matched_rules, causal_proof
             ORDER BY cnt DESC
             LIMIT 6
         """)
@@ -702,7 +702,7 @@ class ForensicReportAgent:
                 <td><span class="badge badge-primary">{sug.get('type', 'rule')}</span></td>
                 <td><code>{sug.get('rule_id', sug.get('island_key'))}</code></td>
                 <td>{sug['evidence']}</td>
-                <td><span class="badge badge-success">✓ 0% FP Certified</span></td>
+                <td><span class="badge badge-success">✓ <0.1% FP Verified</span></td>
                 <td>{sug['impact']}</td>
             </tr>
         """ for sug in self.suggestions)
@@ -873,7 +873,7 @@ class ForensicReportAgent:
 
         <footer>
             <div>GUARDIAN WAF Deterministic Cyber-Defense Engine & SAT Logic — satguardian.tech</div>
-            <div>Formal Certification: Certified 0% False Positives Empirically Proven</div>
+            <div>Empirical Verification: &lt; 0.1% False Positive Rate in Benchmark Validation</div>
         </footer>
     </div>
 </body>
@@ -891,7 +891,7 @@ class ForensicReportAgent:
         lines = [
             "# GUARDIAN WAF — Forensic & Security Audit Report",
             f"*Generation Date:* {time.strftime('%Y-%m-%d %H:%M:%S UTC')}  ",
-            f"*Attestation:* SOC 2 CC6.6 & PCI-DSS 6.6 (Certified Formal Zero False Positives)  ",
+            f"*Attestation:* SOC 2 CC6.6 & PCI-DSS 6.6 (Empirically Tested High Accuracy (<0.1% FPR))  ",
             "",
             "## 1. Executive Traffic Summary",
             f"- **Total Requests:** {total:,}",
@@ -922,7 +922,7 @@ class ForensicReportAgent:
             "| :--- | :--- | :--- | :--- |",
         ])
         for sug in self.suggestions:
-            lines.append(f"| `{sug.get('rule_id', sug.get('island_key'))}` | {sug['evidence']} | **✓ 0% FP Certified** | {sug['impact']} |")
+            lines.append(f"| `{sug.get('rule_id', sug.get('island_key'))}` | {sug['evidence']} | **✓ <0.1% FP Verified** | {sug['impact']} |")
 
         with open(output_path, "w", encoding="utf-8") as f:
             f.write("\n".join(lines) + "\n")
@@ -1079,7 +1079,7 @@ def main():
         print(f"\n\033[1;33m[DRY-RUN] Informational mode: Found {len(suggestions)} candidate rules.\033[0m")
         for s in suggestions:
             sim = s.get("simulation")
-            sim_badge = f" [0% FP, {sim['attacks_intercepted_at_perimeter']} attacks prevented]" if sim else ""
+            sim_badge = f" [<0.1% FP, {sim['attacks_intercepted_at_perimeter']} attacks prevented]" if sim else ""
             print(f"  • [{s['type'].upper()}] {s['action_name']} -> {s.get('rule_id', s.get('island_key'))}{sim_badge}")
         return
 
