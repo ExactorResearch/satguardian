@@ -1,5 +1,7 @@
 # 🛡️ SATGuardian Edge WAF (`satguardian`)
 
+**📚 Official Documentation:** [https://exactorresearch.github.io/satguardian/](https://exactorresearch.github.io/satguardian/)
+
 [![Architecture](https://img.shields.io/badge/Architecture-Lexical_&_Bitmask_WAF-blue.svg)](#2-consideration-the-solution--satguardian-architecture)
 [![Performance](https://img.shields.io/badge/Hot_Path-Rust_13.60_µs_p50-brightgreen.svg)](#3-decision-empirical-proof--business-value)
 [![Synthesis](https://img.shields.io/badge/Rule_Synthesis-EXACTOR_GXOR_(128_Vars)-orange.svg)](#22-out-of-band-cloud-synthesis-exactor-gxor)
@@ -218,7 +220,7 @@ python satguardian-advisor.py --report audit_report.html
 python satguardian-advisor.py --report-md audit_report.md
 ```
 
-* **Full Operations & Configuration Guide:** Read [CONFIGURATION_AND_OPERATIONS_GUIDE.md](file:///d:/proyectos/rush/exactor-waf-guardian/CONFIGURATION_AND_OPERATIONS_GUIDE.md) for detailed configuration, customization, and tool usages.
+* **Full Operations & Configuration Guide:** Read the [Official Documentation](https://exactorresearch.github.io/satguardian/) for detailed configuration, customization, and tool usages.
 * **Explore the Interactive Dashboard:** `streamlit run app.py`
 * **Schedule a Technical Demo & Architecture Review:** Contact our engineering team at [satguardian.tech](https://satguardian.tech) or open an issue on GitHub.
 
