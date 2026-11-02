@@ -1,4 +1,4 @@
-"""Statistical Token & N-Gram Heuristic WAF Agent (Probabilistic NLP Classifier)."""
+"""Illustrative probabilistic token classifier (a hand-written heuristic)."""
 
 from __future__ import annotations
 
@@ -11,14 +11,11 @@ from satguardian_waf.core.payload import HTTPRequestPayload, AttackCategory, Att
 
 
 class PureJEVAgent(BaseWAFAgent):
-    """Probabilistic Token & Character N-Gram Classifier (Heuristic NLP Baseline).
-    
-    Executes real CPU character n-gram tokenization, Shannon entropy calculation,
-    and log-odds keyword weight scoring over the raw HTTP request without
-    artificial delays (zero time.sleep, zero random number generation).
-    Demonstrates why probabilistic token-weight classifiers suffer from false
-    positives on benign technical discussions containing SQL/HTML/shell terms
-    and false negatives on heavily encoded payloads.
+    """Hand-written keyword/n-gram scorer with fixed weights.
+
+    This is not a trained NLP model and does not represent any commercial
+    classifier. It exists only to illustrate that fixed token weights drift
+    between benign technical prose and encoded payloads.
     """
 
     CATEGORY_WEIGHTS: Dict[AttackCategory, List[Tuple[str, float]]] = {
@@ -52,8 +49,9 @@ class PureJEVAgent(BaseWAFAgent):
 
     def __init__(self, decision_threshold: float = 2.4):
         super().__init__(
-            name="Probabilistic Token Scorer (Heuristic NLP Baseline)",
-            description="Deterministic character n-gram, Shannon entropy, and log-odds token weight classifier."
+            name="Probabilistic Token stand-in (Python heuristic)",
+            description="Hand-written character n-gram, Shannon entropy, and fixed token-weight scorer.",
+            provenance="python stand-in: illustrative heuristic, not a trained or commercial model",
         )
         self.decision_threshold = decision_threshold
 

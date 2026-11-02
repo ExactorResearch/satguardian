@@ -1,8 +1,8 @@
 """Guardian WAF SAT & Constraint Propagation Engine - Certainty Islands Architecture.
 
 Deterministic, sub-millisecond Boolean rule evaluator with formal Certainty Islands.
-Evaluates structured grammar invariants, achieving up to 99.9% accuracy on tested attack grammars with < 0.1% false positives on benign traffic,
-and outputs structured deduction traces in LaTeX.
+Evaluates structured grammar invariants and outputs structured deduction traces in
+LaTeX. Accuracy is measured on the pinned in-repo corpus only; see STATUS.md.
 """
 
 from __future__ import annotations

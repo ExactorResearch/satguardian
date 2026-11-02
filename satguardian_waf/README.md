@@ -21,4 +21,4 @@ python ../run_benchmark.py 100
 ```
 
 For complete documentation, architecture, and empirical findings, see the root [PROOF_OF_CONCEPT.md](../PROOF_OF_CONCEPT.md).
-For the production-grade Rust reverse proxy server, refer to the root [README.md](../README.md).
+For the Rust reverse proxy server (also a research prototype), refer to the root [README.md](../README.md).

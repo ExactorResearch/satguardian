@@ -182,61 +182,137 @@ impl SatguardianCloudClient {
         Ok(parsed)
     }
 
-    /// Compiles the returned boolean formula / result into runtime bitmask invariants.
+    /// Compiles the returned boolean formula into runtime bitmask invariants.
+    ///
+    /// The parser is intentionally strict: every literal must be an exact variable
+    /// name, and unsupported syntax is rejected instead of being silently dropped.
     pub fn compile_equation_to_clauses(
         &self,
         equation: &str,
         variable_names: &[String],
-    ) -> Vec<DynamicCompiledClause> {
+    ) -> Result<Vec<DynamicCompiledClause>, String> {
+        const MAX_TERMS: usize = 4096;
+
         let mut clauses = Vec::new();
-        if equation.is_empty() || equation == "FALSE" {
-            return clauses;
+        let equation = equation.trim();
+        if equation.is_empty()
+            || equation.eq_ignore_ascii_case("FALSE")
+            || equation == "0"
+        {
+            return Ok(clauses);
+        }
+        if equation.eq_ignore_ascii_case("TRUE") || equation == "1" {
+            return Err("equation TRUE would match every request; refusing to compile".to_string());
         }
 
-        // Each term separated by '+' or '|' represents an OR prime implicant
-        let terms = equation.split(['+', '|']);
-        for (idx, term) in terms.enumerate() {
-            let clean_term = term.trim();
-            if clean_term.is_empty() || clean_term == "TRUE" {
+        // Each term separated by '+' or '|' represents an OR prime implicant.
+        for raw_term in equation.split(['+', '|', '∨']) {
+            if clauses.len() >= MAX_TERMS {
+                return Err(format!("equation exceeds the {} term limit", MAX_TERMS));
+            }
+
+            let term = raw_term
+                .trim()
+                .trim_matches(|c| c == '(' || c == ')')
+                .trim();
+            if term.is_empty() || term.eq_ignore_ascii_case("FALSE") || term == "0" {
                 continue;
             }
+            if term.eq_ignore_ascii_case("TRUE") || term == "1" {
+                return Err(format!(
+                    "term '{}' would match every request; refusing to compile",
+                    term
+                ));
+            }
+            if term.contains('(') || term.contains(')') {
+                return Err(format!(
+                    "nested parentheses are not supported in term '{}'",
+                    term
+                ));
+            }
+            if term.contains('^') {
+                return Err(format!("XOR is not supported in term '{}'", term));
+            }
 
+            let normalized = term.replace(['∧', '&', '*', '·'], " ");
             let mut required_mask: u128 = 0;
             let mut expected_bits: u128 = 0;
+            let mut seen: Vec<(usize, bool)> = Vec::new();
+            let mut literal_count = 0usize;
 
-            for (var_idx, var_name) in variable_names.iter().enumerate() {
+            for literal in normalized.split_whitespace() {
+                let literal = literal.trim_matches(|c| c == '(' || c == ')');
+                if literal.is_empty() {
+                    continue;
+                }
+
+                let (raw_name, negated) = if let Some(rest) = literal.strip_prefix('!') {
+                    (rest, true)
+                } else if let Some(rest) = literal.strip_prefix('~') {
+                    (rest, true)
+                } else if let Some(rest) = literal.strip_prefix('¬') {
+                    (rest, true)
+                } else if let Some(rest) = literal.strip_suffix('\'') {
+                    (rest, true)
+                } else {
+                    (literal, false)
+                };
+
+                let name = raw_name.trim_matches(|c| c == '(' || c == ')');
+                if name.is_empty() {
+                    return Err(format!("malformed literal '{}' in term '{}'", literal, term));
+                }
+
+                let var_idx = variable_names
+                    .iter()
+                    .position(|candidate| candidate == name)
+                    .ok_or_else(|| {
+                        format!("unknown variable '{}' in term '{}'", name, term)
+                    })?;
                 if var_idx >= 128 {
-                    break;
+                    return Err(format!(
+                        "variable '{}' exceeds the 128-bit feature space",
+                        name
+                    ));
                 }
 
-                // Match literal presence (e.g. "v0", "v0'", "!v0")
-                let neg_name1 = format!("{}'", var_name);
-                let neg_name2 = format!("!{}", var_name);
-                let neg_name3 = format!("~{}", var_name);
-
-                if clean_term.contains(&neg_name1)
-                    || clean_term.contains(&neg_name2)
-                    || clean_term.contains(&neg_name3)
+                if let Some((_, previous_negation)) =
+                    seen.iter().find(|(index, _)| *index == var_idx)
                 {
-                    required_mask |= 1u128 << var_idx;
-                    // expected bit is 0
-                } else if clean_term.contains(var_name) {
-                    required_mask |= 1u128 << var_idx;
-                    expected_bits |= 1u128 << var_idx;
+                    if *previous_negation != negated {
+                        return Err(format!(
+                            "contradictory literal '{}' in term '{}'",
+                            name, term
+                        ));
+                    }
+                } else {
+                    seen.push((var_idx, negated));
                 }
+
+                let bit = 1u128 << var_idx;
+                required_mask |= bit;
+                if !negated {
+                    expected_bits |= bit;
+                }
+                literal_count += 1;
             }
 
-            if required_mask != 0 {
-                clauses.push(DynamicCompiledClause {
-                    clause_id: format!("SATGUARDIAN-OPT-{:03}", idx + 1),
-                    description: format!("Dynamically minimized invariant term: {}", clean_term),
-                    required_mask,
-                    expected_bits,
-                    category: AttackCategory::Unknown,
-                });
+            if literal_count == 0 || required_mask == 0 {
+                return Err(format!("term '{}' contains no known literals", term));
             }
+
+            clauses.push(DynamicCompiledClause {
+                clause_id: format!(
+                    "SAT-OPT-{:032x}-{:032x}",
+                    required_mask, expected_bits
+                ),
+                description: format!("Dynamically minimized invariant term: {}", term),
+                required_mask,
+                expected_bits,
+                category: AttackCategory::Unknown,
+            });
         }
 
-        clauses
+        Ok(clauses)
     }
 }

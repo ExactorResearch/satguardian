@@ -129,9 +129,9 @@ function renderVerdictCards(agents) {
   const satAgent = agents.satguardian || agents.exactor;
   container.innerHTML = `
     <div class="verdicts-container">
-      ${renderSingleAgentCard(satAgent, '⚡ SATGuardian-Edge (SAT)', 'emerald')}
-      ${renderSingleAgentCard(agents.jev_pure, '🤖 Pure JEV (Solo LLM Cloud)', 'amber')}
-      ${renderSingleAgentCard(agents.regex, '📜 Classical ModSecurity Regex', 'blue')}
+      ${renderSingleAgentCard(satAgent, '⚡ SATGuardian-Edge (Python reference)', 'emerald')}
+      ${renderSingleAgentCard(agents.jev_pure, '🤖 Probabilistic token stand-in (Python heuristic)', 'amber')}
+      ${renderSingleAgentCard(agents.regex, '📜 Unnormalized regex stand-in (Python)', 'blue')}
     </div>
   `;
 }
@@ -303,7 +303,7 @@ async function runFullBenchmark() {
   const btn = document.getElementById('btn-run-full-benchmark');
 
   btn.disabled = true;
-  btn.innerHTML = '⏳ <span>Simulating Monte Carlo Streams...</span>';
+  btn.innerHTML = '⏳ <span>Running in-repo stream...</span>';
 
   try {
     const res = await fetch('/api/waf/benchmark/run', {
@@ -316,7 +316,7 @@ async function runFullBenchmark() {
     if (data.status === 'ok') {
       renderBenchmarkTable(data.metrics);
       renderBenchmarkCharts(data.metrics);
-      renderInsights(data.summary_insights);
+      renderInsights(data);
     }
   } catch (err) {
     console.error('Benchmark run error:', err);
@@ -412,11 +412,20 @@ function renderBenchmarkCharts(metrics) {
   });
 }
 
-function renderInsights(insights) {
+function renderInsights(data) {
   const container = document.getElementById('benchmark-insights-container');
   const list = document.getElementById('benchmark-insights-list');
+  const provenanceList = document.getElementById('benchmark-provenance-list');
   container.style.display = 'block';
-  list.innerHTML = insights.map(i => `<li>${i}</li>`).join('');
+  list.innerHTML = (data.summary_insights || []).map(i => `<li>${i}</li>`).join('');
+
+  const provenance = [];
+  if (data.dataset_provenance) provenance.push(`<li><strong>Dataset:</strong> ${data.dataset_provenance}</li>`);
+  Object.entries(data.agent_provenance || {}).forEach(([name, prov]) => {
+    provenance.push(`<li><strong>${name}:</strong> ${prov}</li>`);
+  });
+  if (data.disclaimer) provenance.push(`<li><strong>Disclaimer:</strong> ${data.disclaimer}</li>`);
+  provenanceList.innerHTML = provenance.join('');
 }
 
 /* ==========================================================================

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SATGuardian Edge WAF - Sub-Millisecond SAT Security vs LLM & Regex</title>
+  <title>SATGuardian Edge WAF - Sub-Millisecond Bitmask Evaluation (Research Prototype)</title>
   
   <!-- Google Fonts & Icons -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -30,7 +30,7 @@
         <span class="shield-icon">🛡️</span>
         <div class="logo-text">
           <h1>SATGUARDIAN <span class="accent-text">EDGE WAF</span></h1>
-          <span class="badge-subtitle">Deterministic Neuro-Symbolic & SAT Cyber-Defense (99.9% Free Edge)</span>
+          <span class="badge-subtitle">Deterministic SAT rule engine research prototype (in-sample benchmarks)</span>
         </div>
       </div>
     </div>
@@ -174,8 +174,8 @@
     <section id="tab-duel" class="tab-pane">
       <div class="duel-header card glass-card">
         <div class="duel-controls">
-          <h2>⚔️ High-Speed Stream Race: SATGuardian vs Pure JEV (LLM) vs ModSecurity Regex</h2>
-          <p>Watch each engine process real-time attack streams with live microsecond timers, cost meters, and accuracy trackers.</p>
+          <h2>⚔️ Stream Run: SATGuardian (Python reference) vs heuristic and regex stand-ins</h2>
+          <p>Runs the in-repo payload list through three Python implementations. The "JEV" and "ModSec" lanes are local stand-ins, not those products.</p>
           <div class="duel-btns">
             <button class="btn btn-primary btn-large" id="btn-start-duel" onclick="startLiveDuel()">
               ▶️ <span>Start 20-Request Live Duel Race</span>
@@ -195,7 +195,7 @@
               <span class="lane-icon">⚡</span>
               <h3>SATGuardian-Edge</h3>
             </div>
-            <span class="badge badge-emerald">Deterministic SAT</span>
+            <span class="badge badge-emerald">Python reference</span>
           </div>
           <div class="lane-stats">
             <div class="stat-box">
@@ -212,7 +212,7 @@
             </div>
             <div class="stat-box">
               <span class="stat-lbl">Accuracy</span>
-              <span class="stat-val" id="duel-exactor-acc">99.9%</span>
+              <span class="stat-val" id="duel-exactor-acc">--%</span>
             </div>
           </div>
           <div class="lane-progress">
@@ -226,9 +226,9 @@
           <div class="lane-header">
             <div class="lane-title">
               <span class="lane-icon">🤖</span>
-              <h3>Pure JEV (Solo LLM)</h3>
+              <h3>Probabilistic token stand-in</h3>
             </div>
-            <span class="badge badge-amber">Cloud Neural API</span>
+            <span class="badge badge-amber">Python heuristic</span>
           </div>
           <div class="lane-stats">
             <div class="stat-box">
@@ -259,9 +259,9 @@
           <div class="lane-header">
             <div class="lane-title">
               <span class="lane-icon">📜</span>
-              <h3>Classical Regex (ModSec)</h3>
+              <h3>Unnormalized regex stand-in</h3>
             </div>
-            <span class="badge badge-blue">Signature Ruleset</span>
+            <span class="badge badge-blue">Python baseline</span>
           </div>
           <div class="lane-stats">
             <div class="stat-box">
@@ -291,6 +291,11 @@
 
     <!-- TAB 3: BENCHMARK SUITE -->
     <section id="tab-benchmark" class="tab-pane">
+      <div class="card glass-card" style="margin-bottom: 1rem;">
+        <div class="card-body">
+          <p><strong>Scope:</strong> this page compares the Python reference implementation against local Python stand-ins. It does not run Coraza, SafeLine, ModSecurity, or any vendor engine, and the dataset is small and in-sample. These numbers are not a held-out quality estimate and do not support production-readiness claims.</p>
+        </div>
+      </div>
       <div class="benchmark-controls card glass-card">
         <div class="controls-row">
           <div class="ctrl-group">
@@ -351,14 +356,16 @@
                 </tr>
               </thead>
               <tbody id="benchmark-table-body">
-                <tr><td colspan="9" class="text-center">Click 'Execute Comparative Benchmark' to run Monte Carlo attack streams.</td></tr>
+                <tr><td colspan="9" class="text-center">Click 'Execute Comparative Benchmark' to run the in-repo payload stream.</td></tr>
               </tbody>
             </table>
           </div>
           
           <div class="insights-box" id="benchmark-insights-container" style="display: none;">
-            <h4>💡 Architectural Verdicts</h4>
+            <h4>Measured Observations (not vendor comparisons)</h4>
             <ul id="benchmark-insights-list"></ul>
+            <h4>Provenance and Disclaimer</h4>
+            <ul id="benchmark-provenance-list"></ul>
           </div>
         </div>
       </div>
@@ -391,12 +398,12 @@
         <!-- Hero Story -->
         <div class="hero-story card glass-card">
           <span class="hero-tag">✨ FOR TECH CREATORS, INFLUENCERS & SECURITY ENTHUSIASTS</span>
-          <h2>Why the World Needs SATGuardian: <br><span class="accent-gradient">The End of 500ms AI Bottlenecks in Cyber-Defense</span></h2>
+          <h2>Why SATGuardian Exists: <br><span class="accent-gradient">Studying Local Rule Evaluation for Request Inspection</span></h2>
           <p class="hero-intro">
-            Imagine hiring a <strong>supercomputer chatbot</strong> as a security guard at an airport security checkpoint. Every time a passenger walks through, the guard stops them for <strong>half a second (500 milliseconds)</strong>, writes an essay on why their belt might be dangerous, charges you <strong>$0.002 per scan</strong>, and occasionally gets confused by loose change.
+            Imagine a check that requires a remote model call for every request: it adds a network round-trip and an inference call to the request path, and it is billed per call. That is a different engineering trade-off from evaluating fixed rules locally.
           </p>
           <p class="hero-intro">
-            <strong>SATGuardian-Edge is the Airport Metal Detector:</strong> A deterministic, mathematical invariant sensor that beeps in <strong>0.01 milliseconds</strong>, costs <strong>$0.00</strong>, never hallucinates, and runs locally on hardware as tiny as a $2 microchip.
+            <strong>SATGuardian-Edge is a rule-based detector:</strong> it evaluates named invariants over normalized request text and returns a deterministic verdict. On the checked-in corpus it measures roughly <strong>15–40 microseconds per payload in memory</strong> (UDP/TLS/proxy hops excluded). It is a research prototype, not a validated production WAF.
           </p>
         </div>
 
@@ -405,22 +412,22 @@
           <div class="pillar-card card glass-card">
             <div class="pillar-icon">⏱️</div>
             <h3>1. The Speed Gap</h3>
-            <p><strong>Pure LLMs (JEV Solo):</strong> ~400–600 ms latency per web request. In web applications, adding 500ms to every click is catastrophic.</p>
-            <p><strong>SATGuardian-Edge:</strong> ~0.015 ms (15 microseconds). That is <strong>30,000x faster</strong>, easily handling 100,000 requests/sec on a single CPU core.</p>
+            <p><strong>Remote-inference checkers:</strong> each payload requires a remote API call, which adds network and inference latency to the request path.</p>
+            <p><strong>SATGuardian-Edge:</strong> rule evaluation is local and in-memory. The Rust benchmark measures tens of microseconds per payload; end-to-end proxy latency is higher and has not been characterized here.</p>
           </div>
 
           <div class="pillar-card card glass-card">
             <div class="pillar-icon">💰</div>
-            <h3>2. The Cost Disruption</h3>
-            <p><strong>Cloud LLMs:</strong> $2,000.00+ for every 1 million requests in API token metering costs.</p>
-            <p><strong>SATGuardian-Edge:</strong> <strong>$0.00</strong>. It operates using pure deterministic Boolean SAT logic directly in memory without calling cloud APIs.</p>
+            <h3>2. The Cost Model</h3>
+            <p><strong>Remote-inference checkers:</strong> billed per API call or token, so cost scales with protected traffic volume.</p>
+            <p><strong>SATGuardian-Edge:</strong> no per-request API cost. It evaluates local rules in memory. Infrastructure and operations costs still apply.</p>
           </div>
 
           <div class="pillar-card card glass-card">
             <div class="pillar-icon">🔍</div>
             <h3>3. "Glass Box" vs "Black Box"</h3>
-            <p><strong>Cloud LLMs:</strong> Black-box probabilistic reasoning. If it blocks your CEO or allows a hacker through, you cannot prove why mathematically.</p>
-            <p><strong>SATGuardian-Edge:</strong> 99.9% Causal SAT Proofs (Glass Box). Every block produces an undeniable mathematical invariant theorem.</p>
+            <p><strong>Remote model scores:</strong> a model score is difficult to audit case by case.</p>
+            <p><strong>SATGuardian-Edge:</strong> every block names the invariant that fired and the tokens that satisfied it. That is an auditable rule trace, not proof that the verdict is correct.</p>
           </div>
         </div>
 
@@ -435,12 +442,12 @@
               <div class="cheatsheet-item">
                 <span class="hook-number">01</span>
                 <h4>The 10-Second Hook</h4>
-                <p><em>"Did you know companies are spending millions putting GPT-4 inside firewalls, slowing down websites by half a second? Here's why SATGuardian's math beats LLMs in 15 microseconds."</em></p>
+                <p><em>"Remote-inference checkers add a network call to every request. Here's a local rule engine that measures its verdict in tens of microseconds in memory."</em></p>
               </div>
               <div class="cheatsheet-item">
                 <span class="hook-number">02</span>
-                <h4>The $2 Chip Argument</h4>
-                <p><em>"SATGuardian doesn't need an Nvidia H100 GPU cluster. Because it uses Boolean SAT invariants, the entire engine can run on a $2 ESP32 microcontroller at the physical edge!"</em></p>
+                <h4>The Embedded Argument</h4>
+                <p><em>"The rule engine does not need a GPU. An embedded port is a research direction; no ESP32 deployment exists yet."</em></p>
               </div>
               <div class="cheatsheet-item">
                 <span class="hook-number">03</span>
@@ -449,8 +456,8 @@
               </div>
               <div class="cheatsheet-item">
                 <span class="hook-number">04</span>
-                <h4>Zero Hallucination Guarantee</h4>
-                <p><em>"In security, a 95% accurate AI means 5% of hackers get in and 5% of real customers are blocked. SATGuardian's SAT solver gives a 99.9% deterministic mathematical verdict."</em></p>
+                <h4>Deterministic, Auditable Verdicts</h4>
+                <p><em>"A classifier returns a score. This engine returns the named rules that matched. That makes the decision reproducible and reviewable, but it does not guarantee every attack is caught."</em></p>
               </div>
             </div>
           </div>

@@ -1,14 +1,19 @@
 # Technical Audit & Empirical Verification Report: `satguardian` (SATGuardian Edge WAF)
 
-**Audit Scope:** Full Codebase Verification (`src/` in Rust, `satguardian_waf/` in Python, `waf_ledger.db` SQLite Ledger)  
-**Target Version:** `v0.2.0`  
-**Audit Objective:** Verify mathematical claims against actual source code implementation and validate all benchmark and forensic metrics using 100% real CPU execution.
+**Audit Scope:** Code review of `src/` (Rust), `satguardian_waf/` (Python) and the bundled SQLite ledger  
+**Target Version:** `v0.3.0`  
+**Audit Objective:** Check implementation claims against source, and report only measurements that can be reproduced from the repository.
+
+> **Status: research prototype, not a production-ready WAF.** Earlier revisions of
+> this report capped accuracy at `99.9%`, floored error rates at `< 0.1%`, and
+> labelled Python stand-ins as vendor products. Those claims were fabricated or
+> misleading and have been removed. See [STATUS.md](../status.md).
 
 ---
 
 ## 1. Executive Summary: What Is Implemented vs. Theoretical Research
 
-An exhaustive line-by-line audit of the `satguardian` repository and adjacent workspace projects (`hesize-code-ia`, `adn`, `guardian-api-`, `optimizador_bayesiano`, `f32`) confirms a clear distinction between **implemented production code** and **external research concepts**:
+A line-by-line review of the `satguardian` repository and adjacent workspace projects (`hesize-code-ia`, `adn`, `guardian-api-`, `optimizador_bayesiano`, `f32`) distinguishes **implemented code** from **external research concepts**:
 
 | Technical Concept | Status in `satguardian` | Actual Code Implementation & Location |
 | :--- | :---: | :--- |
@@ -16,53 +21,62 @@ An exhaustive line-by-line audit of the `satguardian` repository and adjacent wo
 | **128-Bit Feature Vector (`u128`)** | **✅ Implemented** | `src/ast/features.rs` (`FeatureVector(pub u128)`) packs HTTP metadata, Shannon entropy flags, and lexical token presence into a 128-bit integer. |
 | **Bitmask Conjunction Evaluator ("SAT Engine")** | **✅ Implemented** | `src/engine/sat_solver.rs` (`SatEngine`) evaluates pre-compiled boolean cubes in $O(1)$ per rule via bitwise `AND`: `(minterm & required_mask) == expected_bits`. *(Note: It is a fast bitmask evaluator, not an in-path backtracking DPLL/CDCL SAT solver).* |
 | **Out-of-Band EXACTOR GXOR Minimization** | **✅ Implemented** | `src/cloud/satguardian_client.rs` (`SatguardianCloudClient::simplify`) and `exactor-core-v128` (`procesar_gxor`, `modify_gray_code`) simplify up to **128 Boolean variables (`u128` minterms)** out of band using the **`{AND, OR, NOT, XOR}`** operator basis and Differential Gray Code Mapping in $O(\text{term\_count})$ linear time. |
-| **Digital Twin Benign Traffic Replay** | **✅ Implemented** | `satguardian-advisor.py` (`SimulationAgent`) replays candidate synthesized rules against all `1,663` historical benign requests in `waf_ledger.db` to verify `< 0.1%` false positives before hot-reload. |
+| **Digital Twin Benign Traffic Replay** | **✅ Implemented** | `satguardian-advisor.py` (`SimulationAgent`) replays candidate rules against benign requests recorded in `waf_ledger.db` and reports collisions. It does not certify a fixed false-positive rate. |
 | **Lock-Free Atomic Rule Hot-Reload** | **✅ Implemented** | `src/proxy/http_proxy.rs` uses `arc_swap::ArcSwap` to swap rule matrices in memory without dropping TCP connections. |
 | **Token-Bucket Burst Rate Limiting** | **✅ Implemented** | `src/engine/sat_solver.rs` uses lock-free `DashMap` counters per client IP to block Layer-7 burst floods (`SAT-STATE-01`). |
 | **Wolfram Cellular Automata / M-Code / Graph Isomorphism** | **❌ Not in WAF Code** | Part of separate theoretical research projects (`hesize-code-ia`, `adn`); removed from all WAF documentation to maintain strict engineering accuracy. |
 
 ---
 
-## 2. Empirical Benchmark Verification (100% Real CPU Execution)
+## 2. Reproducible Measurements
 
-All benchmarks were executed directly on the local CPU without synthetic `time.sleep` delays or random number simulation. In accordance with our engineering realism policy, reported accuracy, precision, and recall are capped at **`99.9%`** and False Positive / False Negative rates are floored at **`< 0.1%` (`0.1%`)**.
+No value is capped or floored. The benchmark refuses to run without the pinned
+corpus, and prints its scope on every run.
 
-### 2.1 Native Rust Hot-Path Benchmark (`satguardian-waf-v0.2.0.exe benchmark -r 10000`)
+### 2.1 Detection on the pinned corpus
 
-- **Total Requests Evaluated:** `10,000` (`8,096` blocked attacks / `1,904` allowed benign)
-- **Total Execution Time:** `0.1528 seconds`
-- **Single-Thread Throughput:** `65,441.13 req/sec`
-- **Latency Percentiles:**
-  - **Min:** `8.20 µs` (`0.0082 ms`)
-  - **Median (`p50`):** `13.60 µs` (`0.0136 ms`)
-  - **Mean (`avg`):** `14.53 µs` (`0.0145 ms`)
-  - **90th Percentile (`p90`):** `19.10 µs` (`0.0191 ms`)
-  - **99th Percentile (`p99`):** `30.50 µs` (`0.0305 ms`)
+| Corpus | First run before fixes | Current regression | Nature of the number |
+| :--- | :---: | :---: | :--- |
+| `corpus/independent_v1.json` (63 attacks, 16 benign) | 51/63 recall (80.95%), 3/16 benign blocked (18.75% FPR) | 63/63, 0/16 blocked | In-sample regression |
+| `corpus/heldout_v1.json` (17 attacks, 4 benign) | 11/17 recall (64.71%), 0/4 benign blocked | 17/17, 0/4 blocked | Consumed held-out batch |
 
-### 2.2 Multi-WAF Comparative Matrix (`python run_benchmark.py 1000`)
+Both corpora were used to drive fixes after their first run. The current 100%/0%
+therefore means "the pinned cases still pass", not "the engine catches X% of
+real attacks". Protocol: [corpus/README.md](../corpus.md).
 
-| WAF Engine / Architecture | Accuracy (Capped) | Mean CPU Latency | P99 CPU Latency | False Positive Rate | False Negative Rate | Variable Cost / 1M Req |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| **SATGuardian Edge (Native Rust v0.2.0, 10k reqs)** | **99.9%** | **`0.0145 ms` (`14.53 µs`)** | **`0.0305 ms` (`30.50 µs`)** | **< 0.1%** (`0.1%`) | **< 0.1%** (`0.1%`) | **$0.00** |
-| **SATGuardian Edge (Python Reference, 1k reqs)** | **99.9%** | **`0.0644 ms` (`64.40 µs`)** | **`0.1882 ms` (`188.20 µs`)** | **< 0.1%** (`0.1%`) | **< 0.1%** (`0.1%`) | **$0.00** |
-| **Coraza WAF (OWASP CRS v4 PL1 Anomaly Scoring)** | 97.3% | `0.2178 ms` (`217.80 µs`) | `0.4691 ms` (`469.10 µs`) | < 0.1% (`0.1%`) | 5.4% | **$0.00** |
-| **SafeLine WAF (Chaitin T1K Semantic Grammar)** | 94.4% | `0.0597 ms` (`59.70 µs`) | `0.1416 ms` (`141.60 µs`) | < 0.1% (`0.1%`) | 11.2% | **$0.00** |
-| **Probabilistic Token Scorer (Heuristic NLP)** | 77.3% | `0.0731 ms` (`73.10 µs`) | `0.1793 ms` (`179.30 µs`) | 24.6% | 20.8% | **$0.00** |
-| **Classical Regex (ModSecurity CRS v3 Baseline)** | 76.5% | `0.0427 ms` (`42.70 µs`) | `0.1059 ms` (`105.90 µs`) | < 0.1% (`0.1%`) | 47.0% | **$0.00** |
+### 2.2 In-memory latency
 
-### 2.3 Key Engineering Conclusions
-1. **Why SATGuardian Is `3.38x` Faster than Coraza CRS v4 in Python (`15.0x` in Native Rust):** Coraza's OWASP CRS v4 Anomaly Scoring transforms 5+ request targets (`REQUEST_URI`, `ARGS`, `REQUEST_BODY`, `REQUEST_HEADERS`) and evaluates all 20 CRS rules without early exit (`0.2178 ms` avg). SATGuardian normalizes once and uses `O(1)` token surface guards and 128-bit integer masks (`0.0644 ms` in Python; `0.0145 ms` in Rust).
-2. **Why Multi-Pass Lexical Decoding Matters (`< 0.1%` vs. `47.0%` / `11.2%` / `5.4%` FNR):** Classical Regex misses `47.0%` of obfuscated attacks, SafeLine misses `11.2%`, and single-pass Coraza CRS PL1 misses `5.4%` (triple URL-encoded LFI `..%25252f`). SATGuardian unwinds up to three encoding passes before token extraction.
-3. **Why Structural Conjunctions Beat Probabilistic Keyword Scoring (`< 0.1%` vs. `24.6%` FPR):** Probabilistic token scoring blocks `24.6%` of benign traffic when comments contain words like `"script"` and `"character"`. SATGuardian requires full structural token conjunctions (`TAG_OPEN` $\land$ `SCRIPT_ELEMENT` $\land$ `DOM_EXEC`).
+`satguardian-waf benchmark -r 10000` on the same corpus, one representative run:
+
+- **Total requests:** `10,000` (corpus cycled)
+- **Single-thread throughput:** `44,492 req/sec`
+- **Min:** `11.9 µs`
+- **p50:** `19.8 µs`
+- **Mean:** `21.6 µs`
+- **p90:** `29.1 µs`
+- **p99:** `49.3 µs` (near the `50 µs` target; varies with load)
+- **Max:** `311.1 µs`
+
+Scope: in-memory rule evaluation only. No TLS, proxy hop, upstream service or
+stateful tracking is included.
+
+### 2.3 Python stand-in harness
+
+`python run_benchmark.py 1000` compares the Python reference port against local
+Python stand-ins. It does not execute Coraza, SafeLine, ModSecurity or an LLM.
+The report prints the dataset provenance and a disclaimer next to the metrics.
 
 ---
 
-## 3. Forensic Audit Ledger Verification (`waf_ledger.db`)
+## 3. Bundled Ledger Walkthrough (`waf_ledger.db`)
 
-Running `python satguardian-advisor.py --report audit_report.html` and `python satguardian-advisor.py --report-md audit_report.md` against `waf_ledger.db` confirms:
-- **Total Audited Requests:** `3,799`
-- **Mitigated Attacks:** `2,136` (`56.2%` — `951` SQLi, `477` XSS, `472` Path Traversal, `234` Rate-Limit DDoS, `2` SSRF)
-- **Approved Benign Traffic:** `1,663` (`43.8%`)
-- **Median Ledger Latency (`p50`):** `856.7 µs` (`0.857 ms`, including SQLite persistence)
-- **Digital Twin Replay:** All 6 synthesized rules passed replay across all `1,663` benign records with `< 0.1%` false positives, and `14` novel `u128` minterms are queued for **EXACTOR GXOR** (`{AND, OR, NOT, XOR}` up to 128 variables) synthesis (`1 SU` estimated consumption).
+Running `python satguardian-advisor.py --report-md audit_report.md` against the
+bundled ledger produces a demo audit:
+- **Total recorded requests:** `3,799`
+- **Blocked:** `2,136` (`951` SQLi, `477` XSS, `472` path traversal, `234` rate-limit bursts, `2` SSRF)
+- **Allowed benign:** `1,663`
+- **Replay:** candidate rules are replayed against the benign rows; collisions are reported per run. No fixed false-positive floor is claimed.
+
+The ledger is demo data for exercising the advisor pipeline, not independently
+labelled ground truth and not a customer tenant.
 

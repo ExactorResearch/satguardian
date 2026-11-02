@@ -23,7 +23,9 @@ fn init_json_regexes() {
         Regex::new(r#"(?i)"constructor"\s*:\s*\{[^}]*"prototype"\s*:"#).unwrap()
     });
     let _ = RE_UNICODE_PROTO.get_or_init(|| {
-        Regex::new(r#"(?i)\\u005f\\u005fproto\\u005f\\u005f|\\u002e\\u002e"#).unwrap()
+        // The old `\\u002e\\u002e` alternative flagged every escaped `..` as prototype
+        // pollution, misclassifying path traversal payloads.
+        Regex::new(r#"(?i)\\u005f\\u005f(?:proto|constructor)\\u005f\\u005f"#).unwrap()
     });
 }
 

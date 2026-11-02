@@ -1,5 +1,9 @@
 """
-Curated Security Benchmark Dataset: Real-World Attacks and Realistic Benign HTTP Traffic.
+Small hand-written payload list used for development benchmarks.
+
+These payloads were written alongside the reference engine, so results on them
+are in-sample. The list is not a held-out corpus and must not be presented as
+an independent quality measurement.
 """
 
 from typing import List
@@ -174,7 +178,7 @@ CANONICAL_ATTACK_DATASET: List[HTTPRequestPayload] = [
         description="Localhost Redis Internal Database Purge Probe",
     ),
 
-    # --- BENIGN NORMAL WEB TRAFFIC (0% FALSE POSITIVE BENCHMARK) ---
+    # --- BENIGN CONTROL TRAFFIC ---
     HTTPRequestPayload(
         id="benign-01",
         method="GET",

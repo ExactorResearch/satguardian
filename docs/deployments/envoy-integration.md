@@ -1,7 +1,10 @@
 # Kubernetes & Envoy Proxy Integration Guide (Native Sidecar Pattern)
 
-**Deployment Architecture:** 100% On-Premise / Sovereign Edge Inspection  
+**Deployment Architecture:** On-premise edge inspection (lab configuration)  
 **Codebase Reference:** `src/proxy/envoy_grpc.rs`, `k8s/envoy-sidecar-deployment.yaml`
+
+> **Status: research prototype.** This guide describes an integration that has
+> been exercised in a lab, not a production rollout. See [STATUS.md](../status.md).
 
 ---
 
@@ -15,7 +18,7 @@ For high-throughput Kubernetes microservices and service meshes (Istio / Envoy),
                       ┌─────────────────────────── Kubernetes Pod ───────────────────────────┐
                       │                                                                      │
 Incoming Traffic ────►│  [ Envoy Proxy ] ──(ext_authz UDS)──► [ SATGuardian Rust Sidecar ]   │
-  (Ingress/Mesh)      │         │                               (14.53 µs avg evaluation)    │
+  (Ingress/Mesh)      │         │                               (~20 µs avg in-memory eval)  │
                       │         │ (HTTP 200 OK / Allow)                     │                │
                       │         ▼                                           ▼                │
                       │  [ Upstream App Container ]              [ Local waf_ledger.db ]     │
@@ -23,7 +26,11 @@ Incoming Traffic ────►│  [ Envoy Proxy ] ──(ext_authz UDS)──
 ```
 
 ### Why the Native Rust Sidecar Pattern Excels
-1. **Microsecond-Scale Engine Overhead:** In empirical benchmarks (`satguardian-waf-v0.2.0.exe benchmark -r 10000`), the native Rust lexical and 128-bit bitmask engine evaluates requests in **`13.60 µs` median (`p50`)** and **`14.53 µs` average** (`30.50 µs` `p99`), keeping total sidecar authorization overhead well below Envoy's sub-millisecond SLA budget.
+1. **Microsecond-Scale Engine Evaluation:** `satguardian-waf benchmark -r 10000`
+   measures in-memory lexical and bitmask evaluation at roughly `20 µs` p50 and
+   `22 µs` mean, with p99 fluctuating around `50 µs` depending on load. These
+   numbers exclude the UDS hop, Envoy itself and the upstream service; end-to-end
+   sidecar latency has not been characterized.
 2. **100% Traffic Sovereignty & Zero Per-Request Cost:** All HTTP payloads stay strictly inside your Kubernetes cluster. There is zero external DNS CNAME routing, zero third-party traffic inspection, and **$0.00 cost per request**.
 3. **Lock-Free Atomic Rule Updates (`ArcSwap`):** When the offline advisor or SATGuardian Cloud synthesizes a minimized `u128` rule matrix (consuming Security Units, SU), the sidecar hot-reloads the compiled bitmasks in memory via `ArcSwap` without restarting pods or dropping connections.
 4. **Fail-Safe Continuity:** If the organization's monthly Security Units (SU) balance is exhausted (`HTTP 402 SU_QUOTA_EXHAUSTED`), cloud rule synthesis pauses while every Kubernetes sidecar continues inspecting and blocking attacks indefinitely using its last compiled rule matrix.
@@ -125,13 +132,15 @@ spec:
 
 ---
 
-## 4. Empirical Sidecar Performance Summary
+## 4. Measurement Summary
 
-| Metric | Native Rust Sidecar (`v0.2.0`) | Coraza WAF (OWASP CRS v4 PL1) | Classical ModSecurity Regex |
-| :--- | :---: | :---: | :---: |
-| **Mean Engine Latency** | **`14.53 µs` (`0.0145 ms`)** | `217.80 µs` (`0.2178 ms`) | `42.70 µs` (`0.0427 ms`) |
-| **99th Percentile (`p99`)** | **`30.50 µs` (`0.0305 ms`)** | `469.10 µs` (`0.4691 ms`) | `105.90 µs` (`0.1059 ms`) |
-| **Detection Accuracy (Capped)** | **99.9%** | 97.3% | 76.5% |
-| **False Positive Rate (Floored)** | **< 0.1%** (`0.1%`) | < 0.1% (`0.1%`) | < 0.1% (`0.1%`) |
-| **False Negative Rate (Evasions)** | **< 0.1%** (`0.1%`) | 5.4% | 47.0% |
-| **Memory Footprint per Pod** | `< 35 MB` RSS | `~120 MB` RSS | `~95 MB` RSS |
+| Measurement | Source | Result |
+| :--- | :--- | :--- |
+| In-memory rule latency | `benchmark -r 10000` | p50 `~20 µs`, mean `~22 µs`, p99 near `50 µs` depending on load |
+| Detection, pinned corpus | `corpus/independent_v1.json` | 63/63 attacks, 0/16 benign blocked (in-sample regression) |
+| Detection, first run before fixes | same corpus | 51/63 recall (80.95%), 3/16 benign blocked (18.75% FPR) |
+| Memory footprint | not measured in this repository | — |
+
+No sidecar-to-vendor comparison is reported. Coraza, SafeLine and ModSecurity
+have not been run in this environment; the Python harness agents that resemble
+them are local stand-ins. See [STATUS.md](../status.md).

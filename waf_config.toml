@@ -27,6 +27,26 @@ stealth_mode = true
 # stealth_block_body = "<html><head><title>403 Forbidden</title></head><body><center><h1>403 Forbidden</h1></center></body></html>"
 
 # ------------------------------------------------------------------------------
+# MANAGEMENT API & REQUEST LIMITS
+# ------------------------------------------------------------------------------
+# Dedicated listener for /api/waf/*. It is never mounted on the public data-plane
+# port. Set to "off" to disable the management API entirely.
+admin_listen_addr = "127.0.0.1:10001"
+
+# Bearer token required by every management route. Prefer setting
+# SATGUARDIAN_ADMIN_TOKEN in the environment over storing it here.
+# admin_token = "change-me"
+
+# Maximum accepted inbound request body (2 MiB).
+max_body_bytes = 2097152
+
+# Upstream proxies allowed to supply X-Forwarded-For / X-Real-IP /
+# CF-Connecting-IP / True-Client-IP. Loopback is always trusted, so a local
+# Envoy sidecar or reverse proxy works out of the box. Add your load balancer
+# ranges (e.g. "10.0.0.0/8") before trusting headers from them.
+trusted_proxies = []
+
+# ------------------------------------------------------------------------------
 # CLOUD OPTIMIZATION SERVICE (Security Units - SU)
 # ------------------------------------------------------------------------------
 # SATGuardian Cloud Optimization API URL for Autonomous Boolean Minimization.

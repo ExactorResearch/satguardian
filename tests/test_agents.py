@@ -24,7 +24,7 @@ def test_satguardian_agent_speed_and_decision():
 
 
 def test_pure_jev_agent():
-    agent = PureJEVAgent(simulated_latency_ms=10.0)
+    agent = PureJEVAgent()
     req = HTTPRequestPayload(
         method="GET",
         path="/login",
@@ -32,8 +32,10 @@ def test_pure_jev_agent():
         expected_category=AttackCategory.BENIGN
     )
     decision = agent.inspect(req)
-    assert decision.cost_usd > 0.0
-    assert decision.latency_ms >= 5.0
+    assert decision.decision == AttackDecision.ALLOW
+    assert decision.cost_usd == 0.0
+    assert decision.latency_ms >= 0.0
+    assert decision.extra_metadata["measurement_type"] == "Empirical CPU Timing"
 
 
 def test_regex_agent():

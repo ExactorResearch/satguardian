@@ -6,6 +6,7 @@ pub mod config;
 pub mod engine;
 pub mod envoy;
 pub mod ledger;
+pub mod metrics;
 pub mod proxy;
 pub mod reporter;
 pub mod stateful;

@@ -8,17 +8,17 @@ from satguardian_waf.core.solver_sat import SatguardianWAFSATEngine, ExactorWAFS
 
 
 class SatguardianWAFAgent(BaseWAFAgent):
-    """SATGuardian Edge WAF Agent.
-    
-    Uses deterministic AST Token Constraints & Boolean Bitmask Resolution.
-    Low false-positive rate, sub-millisecond execution, zero API token cost.
-    100% Free & Unlimited Edge Traffic.
+    """Python reference implementation of the SATGuardian rule engine.
+
+    This is a port used for cross-checking, not the production Rust engine.
+    Python latency here says nothing about the native binary's performance.
     """
 
     def __init__(self):
         super().__init__(
-            name="SATGuardian-Edge (SAT / Neuro-Symbolic)",
-            description="Deterministic boolean bitmask engine with structured causal traces and zero external API latency."
+            name="SATGuardian-Edge (Python reference, not Rust)",
+            description="Python reference port of the deterministic bitmask rule engine.",
+            provenance="reference-implementation: Python port, not the native Rust engine",
         )
         self.engine = SatguardianWAFSATEngine()
 
@@ -50,7 +50,7 @@ class SatguardianWAFAgent(BaseWAFAgent):
             proof_latex=proof.decision_reason,
             is_correct=is_correct,
             extra_metadata={
-                "engine": "SAT-Certainty-Islands-V1",
+                "engine": "SAT-Certainty-Islands-V1 (Python reference)",
                 "rules_evaluated": len(self.engine.KNOWN_RULES),
                 "islands_evaluated": len(self.engine.CERTAINTY_ISLANDS),
                 "active_islands": proof.active_islands,

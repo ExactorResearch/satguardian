@@ -1,5 +1,6 @@
 use crate::cloud::SimplifyResponse;
-use crate::types::ProofChain;
+use crate::engine::DynamicCompiledClause;
+use crate::types::{AttackCategory, ProofChain};
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use sqlx::{Pool, Sqlite};
 use std::str::FromStr;
@@ -79,6 +80,15 @@ impl SqliteLedger {
                 equation TEXT
             );
 
+            CREATE TABLE IF NOT EXISTS dynamic_clauses (
+                clause_id TEXT PRIMARY KEY,
+                description TEXT NOT NULL,
+                required_mask TEXT NOT NULL,
+                expected_bits TEXT NOT NULL,
+                category TEXT NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+
             CREATE INDEX IF NOT EXISTS idx_audit_timestamp ON audit_log(timestamp);
             CREATE INDEX IF NOT EXISTS idx_novel_status ON novel_anomalies(status);
             "#,
@@ -156,7 +166,7 @@ impl SqliteLedger {
             let is_violation = rec.proof.is_violation;
             let is_viol = if is_violation { 1 } else { 0 };
 
-            let _ = sqlx::query(
+            if let Err(e) = sqlx::query(
                 r#"
                 INSERT INTO audit_log 
                 (request_id, client_ip, method, path, query_string, action, category, execution_path, latency_us, matched_rules, active_tokens, rule_match_details, is_violation)
@@ -177,12 +187,20 @@ impl SqliteLedger {
             .bind(&rec.proof.rule_match_details)
             .bind(is_viol)
             .execute(&mut *tx)
-            .await;
+            .await
+            {
+                tracing::error!(
+                    target: "satguardian::ledger",
+                    request_id = %rec.request_id,
+                    error = %e,
+                    "Failed to persist audit record"
+                );
+            }
 
             if is_violation {
                 let minterm_str = rec.minterm.to_string();
                 let bits_str = format!("{:#034x}", rec.minterm);
-                let _ = sqlx::query(
+                if let Err(e) = sqlx::query(
                     r#"
                     INSERT INTO novel_anomalies (minterm_u128, feature_bits, occurrence_count, last_seen)
                     VALUES (?, ?, 1, CURRENT_TIMESTAMP)
@@ -194,7 +212,15 @@ impl SqliteLedger {
                 .bind(&minterm_str)
                 .bind(&bits_str)
                 .execute(&mut *tx)
-                .await;
+                .await
+                {
+                    tracing::error!(
+                        target: "satguardian::ledger",
+                        minterm = %minterm_str,
+                        error = %e,
+                        "Failed to persist novel anomaly"
+                    );
+                }
             }
         }
 
@@ -205,7 +231,13 @@ impl SqliteLedger {
 
     /// Non-blocking ledger record logging (0 µs overhead to the HTTP request pipeline).
     pub fn log_event(&self, record: AuditRecord) {
-        let _ = self.sender.send(record);
+        if let Err(e) = self.sender.send(record) {
+            tracing::error!(
+                target: "satguardian::ledger",
+                error = %e,
+                "Ledger worker unavailable; audit record dropped"
+            );
+        }
     }
 
     /// Fetches minterms of novel patterns marked as PENDING for cloud simplification.
@@ -230,10 +262,20 @@ impl SqliteLedger {
     pub async fn mark_anomalies_simplified(&self, minterms: &[u128]) -> Result<(), sqlx::Error> {
         for m in minterms {
             let m_str = m.to_string();
-            let _ = sqlx::query("UPDATE novel_anomalies SET status = 'SIMPLIFIED' WHERE minterm_u128 = ?")
-                .bind(m_str)
-                .execute(&self.pool)
-                .await;
+            if let Err(e) = sqlx::query(
+                "UPDATE novel_anomalies SET status = 'SIMPLIFIED' WHERE minterm_u128 = ?",
+            )
+            .bind(&m_str)
+            .execute(&self.pool)
+            .await
+            {
+                tracing::error!(
+                    target: "satguardian::ledger",
+                    minterm = %m_str,
+                    error = %e,
+                    "Failed to mark anomaly as simplified"
+                );
+            }
         }
         Ok(())
     }
@@ -264,6 +306,50 @@ impl SqliteLedger {
         .await?;
 
         Ok(())
+    }
+
+    /// Persists a validated dynamic clause so it survives process restarts.
+    pub async fn save_dynamic_clause(
+        &self,
+        clause: &DynamicCompiledClause,
+    ) -> Result<(), sqlx::Error> {
+        sqlx::query(
+            r#"
+            INSERT INTO dynamic_clauses (clause_id, description, required_mask, expected_bits, category)
+            VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(clause_id) DO NOTHING
+            "#,
+        )
+        .bind(&clause.clause_id)
+        .bind(&clause.description)
+        .bind(clause.required_mask.to_string())
+        .bind(clause.expected_bits.to_string())
+        .bind(clause.category.as_str())
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
+    /// Loads previously validated dynamic clauses at startup.
+    pub async fn load_dynamic_clauses(&self) -> Result<Vec<DynamicCompiledClause>, sqlx::Error> {
+        let rows = sqlx::query_as::<_, (String, String, String, String, String)>(
+            "SELECT clause_id, description, required_mask, expected_bits, category FROM dynamic_clauses ORDER BY created_at ASC",
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(rows
+            .into_iter()
+            .filter_map(|(clause_id, description, required_mask, expected_bits, category)| {
+                Some(DynamicCompiledClause {
+                    clause_id,
+                    description,
+                    required_mask: required_mask.parse().ok()?,
+                    expected_bits: expected_bits.parse().ok()?,
+                    category: AttackCategory::parse(&category),
+                })
+            })
+            .collect())
     }
 
     pub async fn count_pending_anomalies(&self) -> usize {

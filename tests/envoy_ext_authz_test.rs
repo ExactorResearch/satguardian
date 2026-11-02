@@ -19,7 +19,8 @@ async fn setup_test_router(db_path: &str) -> axum::Router {
         ledger,
         stateful_limiter,
         "block".to_string(),
-    );
+    )
+    .with_stealth(false);
 
     create_envoy_authz_router(state)
 }

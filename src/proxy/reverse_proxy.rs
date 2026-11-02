@@ -4,16 +4,17 @@ use crate::cloud::ExactorCloudClient;
 use crate::config::WafConfig;
 use crate::engine::ExactorSatEngine;
 use crate::ledger::{AuditRecord, SqliteLedger};
+use crate::metrics::LatencyHistogram;
+use crate::proxy::client_ip::{resolve_client_ip, TrustedProxies};
 use crate::stateful::StatefulRateLimiter;
 use crate::types::{AttackDecision, HttpRequestPayload, ProofChain};
 use axum::{
-    body::Body,
+    body::{to_bytes, Body},
     extract::{ConnectInfo, Request, State},
-    http::{HeaderMap, HeaderValue, StatusCode},
+    http::{header, HeaderMap, HeaderValue, StatusCode},
     response::{IntoResponse, Response},
     Json,
 };
-use http_body_util::BodyExt;
 use reqwest::Client;
 use std::collections::HashMap;
 use std::net::SocketAddr;
@@ -29,6 +30,8 @@ pub struct ProxyState {
     pub stateful_limiter: Arc<StatefulRateLimiter>,
     pub cloud_client: ExactorCloudClient,
     pub http_client: Client,
+    pub trusted_proxies: TrustedProxies,
+    pub latency_histogram: LatencyHistogram,
     pub start_time: Instant,
     pub counter_total: AtomicU64,
     pub counter_blocked: AtomicU64,
@@ -56,30 +59,28 @@ pub async fn proxy_handler(
         }
     }
 
-    // Read inbound request body (up to 2MB)
-    let body_bytes = match body.collect().await {
-        Ok(collected) => collected.to_bytes(),
+    let max_body = state.config.max_body_bytes;
+    if let Some(content_length) = parts
+        .headers
+        .get(header::CONTENT_LENGTH)
+        .and_then(|v| v.to_str().ok())
+        .and_then(|v| v.parse::<usize>().ok())
+    {
+        if content_length > max_body {
+            return payload_too_large(max_body);
+        }
+    }
+
+    let body_bytes = match to_bytes(body, max_body).await {
+        Ok(collected) => collected,
         Err(e) => {
             error!(target: "satguardian::proxy", "Failed to read request body: {}", e);
-            return (StatusCode::BAD_REQUEST, "Failed to read request body").into_response();
+            return payload_too_large(max_body);
         }
     };
     let body_str = String::from_utf8_lossy(&body_bytes).to_string();
 
-    // Extract real client IP prioritizing proxy headers (X-Forwarded-For, X-Real-IP, CF-Connecting-IP, True-Client-IP)
-    let client_ip = headers_map
-        .get("cf-connecting-ip")
-        .map(|s| s.as_str())
-        .or_else(|| headers_map.get("true-client-ip").map(|s| s.as_str()))
-        .or_else(|| headers_map.get("x-real-ip").map(|s| s.as_str()))
-        .or_else(|| {
-            headers_map
-                .get("x-forwarded-for")
-                .and_then(|xff| xff.split(',').next())
-        })
-        .map(|s| s.trim().to_string())
-        .filter(|s| !s.is_empty())
-        .unwrap_or_else(|| addr.ip().to_string());
+    let client_ip = resolve_client_ip(addr.ip(), &parts.headers, &state.trusted_proxies);
 
     let payload = HttpRequestPayload {
         id: uuid::Uuid::new_v4().to_string()[..8].to_string(),
@@ -88,14 +89,16 @@ pub async fn proxy_handler(
         query_string: query_string.clone(),
         headers: headers_map.clone(),
         body: body_str,
-        client_ip: Some(client_ip),
+        client_ip: Some(client_ip.clone()),
     };
 
     // 1. Stateful Behavioral & Sliding Window Rate Limiting
     let stateful_verdict = state.stateful_limiter.check_and_update(&payload);
 
     // 2. Sub-millisecond Fast-Path Evaluation (< 0.05 ms)
-    let proof: ProofChain = state.engine.evaluate_payload_with_verdict(&payload, Some(&stateful_verdict));
+    let proof: ProofChain = state
+        .engine
+        .evaluate_payload_with_verdict(&payload, Some(&stateful_verdict));
 
     // Compute minterm for anomaly / ledger tracking
     let mut tokens = AstLexer::tokenize_request(&payload);
@@ -110,7 +113,12 @@ pub async fn proxy_handler(
 
     // Telemetry update
     state.counter_total.fetch_add(1, Ordering::Relaxed);
-    state.sum_latency_us.fetch_add(proof.execution_time_us as u64, Ordering::Relaxed);
+    state
+        .sum_latency_us
+        .fetch_add(proof.execution_time_us as u64, Ordering::Relaxed);
+    state
+        .latency_histogram
+        .observe(proof.execution_time_us as u64);
 
     // Non-blocking asynchronous WAL ledger logging
     state.ledger.log_event(AuditRecord {
@@ -144,9 +152,10 @@ pub async fn proxy_handler(
             );
             return (
                 StatusCode::FORBIDDEN,
-                [(axum::http::header::CONTENT_TYPE, "text/html; charset=utf-8")],
+                [(header::CONTENT_TYPE, "text/html; charset=utf-8")],
                 custom_body.to_string(),
-            ).into_response();
+            )
+                .into_response();
         }
 
         let mut resp_headers = HeaderMap::new();
@@ -197,37 +206,59 @@ pub async fn proxy_handler(
         .request(parts.method, &target_url)
         .body(body_bytes);
 
-    // Forward original headers
+    // Forward original headers, dropping hop-by-hop and client-supplied identity headers.
+    let request_connection_tokens = connection_tokens(&parts.headers);
     for (k, v) in &parts.headers {
         let kl = k.as_str().to_ascii_lowercase();
-        if kl != "host" && kl != "connection" && kl != "content-length" {
-            client_req = client_req.header(k, v);
+        if should_strip_request_header(&kl, &request_connection_tokens) {
+            continue;
         }
+        client_req = client_req.header(k, v);
     }
 
-    // Add SATGuardian security verification headers
     client_req = client_req
+        .header("x-forwarded-for", client_ip.as_str())
+        .header("x-real-ip", client_ip.as_str())
         .header("X-SATGuardian-WAF", "ALLOW")
-        .header("X-SATGuardian-Latency-Us", format!("{:.2}", proof.execution_time_us))
         .header("X-SATGuardian-Request-Id", &payload.id);
+
+    if !state.config.stealth_mode {
+        client_req = client_req.header(
+            "X-SATGuardian-Latency-Us",
+            format!("{:.2}", proof.execution_time_us),
+        );
+    }
 
     match client_req.send().await {
         Ok(upstream_resp) => {
             let status = upstream_resp.status();
             let mut res_builder = Response::builder().status(status);
 
+            let response_connection_tokens = connection_tokens(upstream_resp.headers());
             for (k, v) in upstream_resp.headers() {
+                let kl = k.as_str().to_ascii_lowercase();
+                if should_strip_response_header(&kl, &response_connection_tokens) {
+                    continue;
+                }
                 res_builder = res_builder.header(k, v);
             }
 
-            res_builder = res_builder
-                .header("X-SATGuardian-Protected", "true")
-                .header("X-SATGuardian-Latency-Us", format!("{:.2}", proof.execution_time_us));
+            if !state.config.stealth_mode {
+                res_builder = res_builder
+                    .header("X-SATGuardian-Protected", "true")
+                    .header(
+                        "X-SATGuardian-Latency-Us",
+                        format!("{:.2}", proof.execution_time_us),
+                    );
+            }
 
-            let bytes = upstream_resp.bytes().await.unwrap_or_default();
+            let body_stream = upstream_resp.bytes_stream();
             res_builder
-                .body(Body::from(bytes))
-                .unwrap_or_else(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response())
+                .body(Body::from_stream(body_stream))
+                .unwrap_or_else(|e| {
+                    error!(target: "satguardian::proxy", "Failed to build upstream response: {}", e);
+                    StatusCode::INTERNAL_SERVER_ERROR.into_response()
+                })
         }
         Err(err) => {
             error!(
@@ -236,11 +267,76 @@ pub async fn proxy_handler(
                 error = %err,
                 "Failed to reach upstream server"
             );
-            (
-                StatusCode::BAD_GATEWAY,
-                format!("Exactor WAF Guardian: Bad Gateway to upstream {}: {}", target_url, err),
-            )
-                .into_response()
+            if state.config.stealth_mode {
+                (StatusCode::BAD_GATEWAY, "Bad Gateway").into_response()
+            } else {
+                (
+                    StatusCode::BAD_GATEWAY,
+                    format!(
+                        "Exactor WAF Guardian: Bad Gateway to upstream {}: {}",
+                        target_url, err
+                    ),
+                )
+                    .into_response()
+            }
         }
     }
+}
+
+fn payload_too_large(max_body: usize) -> Response {
+    (
+        StatusCode::PAYLOAD_TOO_LARGE,
+        format!(
+            "Request body exceeds the configured limit of {} bytes",
+            max_body
+        ),
+    )
+        .into_response()
+}
+
+fn connection_tokens(headers: &HeaderMap) -> Vec<String> {
+    headers
+        .get_all(header::CONNECTION)
+        .iter()
+        .filter_map(|v| v.to_str().ok())
+        .flat_map(|v| v.split(','))
+        .map(|s| s.trim().to_ascii_lowercase())
+        .filter(|s| !s.is_empty())
+        .collect()
+}
+
+fn should_strip_request_header(name: &str, connection_tokens: &[String]) -> bool {
+    const ALWAYS_STRIP: &[&str] = &[
+        "host",
+        "content-length",
+        "connection",
+        "keep-alive",
+        "proxy-authenticate",
+        "proxy-authorization",
+        "proxy-connection",
+        "te",
+        "trailer",
+        "transfer-encoding",
+        "upgrade",
+        "x-forwarded-for",
+        "x-real-ip",
+        "cf-connecting-ip",
+        "true-client-ip",
+    ];
+    ALWAYS_STRIP.contains(&name) || connection_tokens.iter().any(|t| t == name)
+}
+
+fn should_strip_response_header(name: &str, connection_tokens: &[String]) -> bool {
+    const ALWAYS_STRIP: &[&str] = &[
+        "content-length",
+        "connection",
+        "keep-alive",
+        "proxy-authenticate",
+        "proxy-authorization",
+        "te",
+        "trailer",
+        "transfer-encoding",
+        "upgrade",
+    ];
+    ALWAYS_STRIP.contains(&name) || connection_tokens.iter().any(|t| t == name)
 }

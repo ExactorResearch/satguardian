@@ -1,66 +1,89 @@
-# Production Deployment & Forensic Audit Case Study: SATGuardian Edge WAF
+# Deployment Notes & Forensic Ledger Walkthrough (Lab Environment)
 
-**Environment:** Sovereign On-Premise Edge Deployment (`satguardian` v0.2.0)  
-**Data Sources:** SQLite Forensic Audit Ledger (`waf_ledger.db`, `3,799` transactions), Native Rust Benchmark (`10,000` requests), and Multi-WAF Comparative Suite (`1,000` requests)
+**Environment:** local/staging deployment of `satguardian` v0.3.0  
+**Data sources:** bundled demonstration SQLite ledger (`waf_ledger.db`), the native
+Rust benchmark, and the Python stand-in harness
 
----
-
-## 1. Executive Summary
-
-This case study documents the empirical operational metrics of **SATGuardian Edge WAF** across three verified datasets:
-1. **Forensic Production Ledger (`waf_ledger.db`):** Analysis of **3,799 recorded HTTP requests** (`2,136` blocked attacks and `1,663` approved benign requests) audited by `satguardian-advisor.py`.
-2. **Native Rust Hot-Path Stress Test (`satguardian-waf-v0.2.0.exe benchmark -r 10000`):** 10,000 requests evaluated in **`0.1528 seconds`** (`65,441.13 req/sec` single-thread throughput, **`13.60 µs` median / `14.53 µs` mean latency**, `30.50 µs` `p99`).
-3. **Multi-WAF Comparative Evaluation (`python run_benchmark.py 1000`):** Direct CPU and accuracy comparison against **Coraza WAF (OWASP CRS v4 Anomaly Scoring)**, **SafeLine WAF (Chaitin T1K Semantic Grammar)**, **Probabilistic Token Scoring**, and **Classical ModSecurity Regex**.
-
-> **Realism Capping Note:** All reported accuracy, precision, and recall metrics are capped at **`99.9%`** and False Positive / False Negative rates are floored at **`< 0.1%` (`0.1%`)** because `100.0%` accuracy is a theoretical limit in real-world security engineering.
+> **Status: research prototype.** This is not a customer production deployment
+> and does not demonstrate production readiness. Numbers below come from the
+> bundled ledger and the in-repo corpus. See [STATUS.md](../status.md) and
+> [corpus/README.md](../corpus.md).
 
 ---
 
-## 2. Forensic Audit Ledger Analysis (`waf_ledger.db`)
+## 1. Summary
 
-Generated via `python satguardian-advisor.py --report audit_report.html` and `python satguardian-advisor.py --report-md audit_report.md`:
+1. **Forensic ledger walkthrough:** the bundled `waf_ledger.db` contains recorded
+   demo traffic that can be re-analysed with `satguardian-advisor.py`. Row counts
+   depend on the ledger revision; regenerate the audit before quoting them.
+2. **Native Rust hot path:** `satguardian-waf benchmark -r 10000` evaluates the
+   pinned corpus in memory, single-threaded. On a desktop CPU this lands in the
+   tens of microseconds per payload; it excludes TLS, the proxy hop and the
+   upstream service.
+3. **Python harness:** `python run_benchmark.py 1000` compares the Python
+   reference port against local Python stand-ins. It does not execute Coraza,
+   SafeLine, ModSecurity or an LLM.
 
-### 2.1 Traffic & Threat Taxonomy (`3,799` Total Requests)
+> **Correction notice:** earlier versions of this document capped accuracy at
+> `99.9%`, floored error rates at `< 0.1%`, and presented Python stand-ins as
+> vendor products. Those numbers and labels were removed.
 
-| Traffic Category | Recorded Volume | Share of Traffic | Enforcement Action | Primary Triggered Invariants |
-| :--- | :---: | :---: | :---: | :--- |
-| **Benign Application Traffic** | `1,663` | `43.8%` | `ALLOW` | Satisfied all active `u128` rule masks |
-| **SQL Injection (`sql_injection`)** | `951` | `25.0%` | `BLOCK` | `SAT-SQLI-01` (`419`), `SAT-SQLI-02` (`412`), `SAT-SQLI-03/04` (`120`) |
-| **Cross-Site Scripting (`xss`)** | `477` | `12.6%` | `BLOCK` | `SAT-XSS-01` (`417`), `SAT-XSS-02/03` (`60`) |
-| **Path Traversal (`path_traversal`)** | `472` | `12.4%` | `BLOCK` | `SAT-PATH-01, SAT-PATH-02` (`412`), combined burst (`60`) |
-| **Layer-7 Burst DDoS (`rate_limit_ddos`)** | `234` | `6.2%` | `BLOCK` | `SAT-STATE-01` (Token-bucket rate limit exceeded) |
-| **Server-Side Request Forgery (`ssrf`)** | `2` | `0.1%` | `BLOCK` | `SAT-SSRF-01` (`169.254.169.254` / loopback target) |
-| **Total Audited Transactions** | **`3,799`** | **`100.0%`** | **`2,136` Blocked / `1,663` Allowed** | **< 0.1% False Positive Rate Verified** |
+---
 
-### 2.2 Offline Rule Synthesis & Digital Twin Verification
+## 2. Forensic Ledger Walkthrough (`waf_ledger.db`)
 
-The multi-agent advisor (`satguardian-advisor.py`) analyzed the `3,799` ledger entries and synthesized 6 optimizations, replaying each candidate against all `1,663` benign historical records before recommending deployment:
+Generated with `python satguardian-advisor.py --report audit_report.html` and
+`python satguardian-advisor.py --report-md audit_report.md`.
 
-| Synthesized Rule ID | Forensic Evidence in `waf_ledger.db` | Digital Twin Replay (`1,663` Benign Reqs) | Operational Impact |
+### 2.1 Traffic Taxonomy (bundled demonstration ledger)
+
+| Traffic category | Recorded volume | Enforcement action | Notes |
+| :--- | :---: | :--- | :--- |
+| Benign application traffic | `1,663` | `ALLOW` | Used for collision replay |
+| SQL injection | `951` | `BLOCK` | Multiple `SAT-SQLI-*` invariants |
+| Cross-site scripting | `477` | `BLOCK` | Multiple `SAT-XSS-*` invariants |
+| Path traversal | `472` | `BLOCK` | `SAT-PATH-*` invariants |
+| Rate-limited bursts | `234` | `BLOCK` | Token-bucket state rule |
+| SSRF | `2` | `BLOCK` | Metadata/loopback targets |
+| **Total** | **`3,799`** | **`2,136` blocked / `1,663` allowed** | Demo data, not a customer tenant |
+
+The ledger is demo data. It is useful for exercising the advisor pipeline; it is
+not evidence that the engine is correct on real traffic.
+
+### 2.2 Offline Rule Synthesis and Replay
+
+The advisor analyses the ledger and proposes rule candidates, then replays each
+candidate against the benign records to find collisions.
+
+| Candidate | Basis | Replay gate | Operational effect |
 | :--- | :--- | :---: | :--- |
-| `biz-ban-ip-169-254-54-10` | Source IP generated `625` attack events (`80.2%` hostility rate across SQLi, LFI, XSS, and burst DDoS). | **✓ `< 0.1%` FP Verified** | Drops hostile IP immediately in fast-path via `SAT-BIZ-02`. |
-| `biz-method-api-users` | Legitimate traffic on `/api/users` exclusively uses `['GET']`. | **✓ `< 0.1%` FP Verified** | Blocks unused HTTP methods (`DELETE`, `PUT`, `PATCH`, `TRACE`) via `SAT-BIZ-01`. |
-| `biz-method-api-v1-search` | Legitimate traffic on `/api/v1/search` exclusively uses `['GET']`. | **✓ `< 0.1%` FP Verified** | Restricts route surface to `GET` via `SAT-BIZ-01`. |
-| `biz-method-api-v1-users-profile` | Legitimate traffic on `/api/v1/users/profile` exclusively uses `['GET']`. | **✓ `< 0.1%` FP Verified** | Restricts route surface to `GET` via `SAT-BIZ-01`. |
-| `biz-method-api-waf-metrics` | Legitimate traffic on `/api/waf/metrics` exclusively uses `['GET']`. | **✓ `< 0.1%` FP Verified** | Restricts telemetry endpoint to `GET` via `SAT-BIZ-01`. |
-| `cloud_sync_pending_anomalies` | `14` novel unobserved `u128` minterms across `2,136` attack occurrences pending **EXACTOR GXOR** (`{AND, OR, NOT, XOR}` up to 128 variables) synthesis. | **✓ `< 0.1%` FP Verified** | Compresses `u128` minterms via EXACTOR GXOR into minimal boolean invariants, reducing gate count by up to 80% (Estimated cost: `1 SU`). |
+| `biz-ban-ip-169-254-54-10` | Source IP concentrated attack events | see advisor report | Drops the hostile IP in fast path |
+| `biz-method-api-users` | Benign traffic on `/api/users` used `GET` only | see advisor report | Restricts unused methods |
+| `biz-method-api-v1-search` | Benign traffic used `GET` only | see advisor report | Restricts route surface |
+| `biz-method-api-v1-users-profile` | Benign traffic used `GET` only | see advisor report | Restricts route surface |
+| `biz-method-api-waf-metrics` | Benign traffic used `GET` only | see advisor report | Restricts telemetry endpoint |
+| `cloud_sync_pending_anomalies` | Novel minterms awaiting synthesis | n/a (cloud step) | Compresses minterms via EXACTOR GXOR |
+
+Replay outcomes depend on the ledger contents and rule thresholds. The advisor
+prints the collision count for each candidate; no fixed floor is claimed here.
 
 ---
 
-## 3. Comparative Benchmark Against Competitor WAFs (`1,000` Requests)
+## 3. Measurements and Limits
 
-To contextualize SATGuardian's performance against industry alternatives, we executed `python run_benchmark.py 1000` alongside `satguardian-waf-v0.2.0.exe benchmark -r 10000`:
+| Measurement | Source | Result |
+| :--- | :--- | :--- |
+| Detection, pinned corpus | `corpus/independent_v1.json` (63 attacks, 16 benign) | 63/63 attacks, 0/16 benign blocked (in-sample regression) |
+| Detection, first run before fixes | same corpus | 51/63 recall (80.95%), 3/16 benign blocked (18.75% FPR) |
+| Detection, second batch first run | `corpus/heldout_v1.json` (17 attacks, 4 benign) | 11/17 recall (64.71%), 0/4 benign blocked |
+| In-memory latency, native Rust | `benchmark -r 10000` | p50 `~20 µs`, mean `~22 µs`, p99 near `50 µs` depending on load |
+| Python harness | `run_benchmark.py 1000` | Printed with provenance; local stand-ins only |
 
-| WAF Engine / Architecture | Accuracy (Capped) | Mean CPU Latency | P99 CPU Latency | False Positive Rate | False Negative Rate | Variable Cost / 1M Req |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| **SATGuardian Edge (Native Rust v0.2.0, 10k reqs)** | **99.9%** | **`0.0145 ms` (`14.53 µs`)** | **`0.0305 ms` (`30.50 µs`)** | **< 0.1%** (`0.1%`) | **< 0.1%** (`0.1%`) | **$0.00** |
-| **SATGuardian Edge (Python Reference, 1k reqs)** | **99.9%** | **`0.0644 ms` (`64.40 µs`)** | **`0.1882 ms` (`188.20 µs`)** | **< 0.1%** (`0.1%`) | **< 0.1%** (`0.1%`) | **$0.00** |
-| **Coraza WAF (OWASP CRS v4 PL1 Anomaly Scoring)** | 97.3% | `0.2178 ms` (`217.80 µs`) | `0.4691 ms` (`469.10 µs`) | < 0.1% (`0.1%`) | 5.4% | **$0.00** |
-| **SafeLine WAF (Chaitin T1K Semantic Grammar)** | 94.4% | `0.0597 ms` (`59.70 µs`) | `0.1416 ms` (`141.60 µs`) | < 0.1% (`0.1%`) | 11.2% | **$0.00** |
-| **Probabilistic Token Scorer (Heuristic NLP)** | 77.3% | `0.0731 ms` (`73.10 µs`) | `0.1793 ms` (`179.30 µs`) | 24.6% | 20.8% | **$0.00** |
-| **Classical Regex (ModSecurity CRS v3 Baseline)** | 76.5% | `0.0427 ms` (`42.70 µs`) | `0.1059 ms` (`105.90 µs`) | < 0.1% (`0.1%`) | 47.0% | **$0.00** |
+### Operational conclusions
 
-### Operational Conclusions
-1. **Predictable Sub-Millisecond Latency:** Native Rust bitmask evaluation (`14.53 µs` avg) is `15.0x` faster than OWASP CRS v4 Anomaly Scoring in Python (`217.80 µs`), while the Python reference engine (`64.40 µs`) is `3.38x` faster than Coraza CRS v4 on identical hardware.
-2. **Protection Against Multi-Layer Encoding:** By applying up to three passes of URL decoding and inline comment normalization before token extraction, SATGuardian eliminates the evasion bypasses observed in Classical Regex (`47.0%` FNR), SafeLine (`11.2%` FNR), and single-pass Coraza CRS PL1 (`5.4%` FNR).
-3. **100% Sovereign & Fail-Safe Commercial Operation:** The Edge WAF operates 100% on-premise with zero per-request traffic fees. Cloud boolean optimization consumes Security Units (SU) only when compressing novel minterms (`1 SU` for the `14` pending anomalies in this case study), and local protection continues uninterrupted even if the monthly SU quota is reached.
+1. **Latency is in-memory only.** The Rust engine evaluates rules in tens of
+   microseconds per payload. No end-to-end proxy latency has been characterized.
+2. **Evasion coverage is a regression floor.** The current corpus passes after
+   being used to drive fixes. It does not establish coverage of unseen payloads.
+3. **No production guarantees.** There is no third-party evaluation, soak test,
+   or real-product comparison. Treat this document as a lab walkthrough.

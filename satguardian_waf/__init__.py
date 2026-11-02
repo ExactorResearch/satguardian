@@ -1,6 +1,6 @@
 """
-SATGUARDIAN Edge WAF: Sub-Microsecond Deterministic Neuro-Symbolic Web Application Firewall.
-99.9% Free & Unlimited Edge Traffic (Open Source Edge WAF).
+SATGUARDIAN Edge WAF: research prototype for deterministic bitmask rule evaluation.
+Free and unlimited edge traffic inspection (Open Source Edge WAF).
 Cloud Boolean Optimization via Security Units (SU) at https://satguardian.tech
 """
 

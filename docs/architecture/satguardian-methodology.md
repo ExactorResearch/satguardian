@@ -3,6 +3,9 @@
 **Technical Architecture Specification**  
 **Codebase Reference:** `src/ast/lexer.rs`, `src/ast/features.rs`, `src/engine/sat_solver.rs`, `src/cloud/satguardian_client.rs`, `exactor-core-v128`
 
+> **Status: research prototype.** Detection evidence is limited to a small
+> in-sample corpus; see [STATUS.md](../status.md).
+
 ---
 
 ## 1. Architectural Separation: Hot Path vs. Offline Control Plane
@@ -13,7 +16,7 @@ A core engineering principle of **SATGuardian Edge WAF** is the strict separatio
 | :--- | :--- | :--- | :--- | :--- |
 | **Lexical Decoder & Tokenizer** | In-Path (Edge WAF) | Iterative URL/HTML decoding + comment stripping + token scan (`src/ast/lexer.rs`) | $O(L)$ where $L$ is payload byte length | `~6–10 µs` (Rust) |
 | **Bitmask Rule Evaluator** | In-Path (Edge WAF) | 128-bit `FeatureVector` bitwise comparison (`src/engine/sat_solver.rs`) | $O(R)$ bitwise operations ($R \le 64$ rules) | `~4–6 µs` (Rust) |
-| **Total Edge Hot Path** | **In-Path (Edge WAF)** | **Combined Lexer + Bitmask Evaluator** | **Linear in payload size, constant per rule** | **`13.60 µs` p50 / `14.53 µs` avg** |
+| **Total Edge Hot Path** | **In-Path (Edge WAF)** | **Combined Lexer + Bitmask Evaluator** | **Linear in payload size, constant per rule** | **`~20 µs` p50 / `~22 µs` avg (in-memory)** |
 | **EXACTOR GXOR Boolean Minimizer** | Out-of-Band (Cloud / Advisor) | Differential Gray Code Mapping + `{AND, OR, NOT, XOR}` reduction (`exactor-core-v128`) | $O(\text{term\_count})$ linear scaling up to 128 vars | `10–250 ms` (Background) |
 | **Digital Twin Verifier** | Out-of-Band (`satguardian-advisor.py`) | Historical replay over benign SQLite ledger (`waf_ledger.db`) | $O(N_{\text{benign}})$ | `~50 ms` for `1,663` benign logs |
 
@@ -49,8 +52,8 @@ pub fn matches_minterm(minterm: u128, required_mask: u128, expected_bits: u128) 
 }
 ```
 
-### Why Bitmask Conjunctions Outperform Standalone Regexes
-1. **Structural Context vs. Substring Matching:** A benign user comment containing the words `"script"` and `"character"` activates isolated keyword flags, which causes probabilistic token scorers to produce false positives (`24.6%` FPR in our 1,000-request benchmark). In SATGuardian, rule `SAT-XSS-01` requires the simultaneous presence of `TAG_OPEN` $\land$ `SCRIPT_ELEMENT` $\land$ `DOM_EXEC`, keeping the false positive rate below `0.1%`.
+### Why SATGuardian Uses Bitmask Conjunctions
+1. **Structural Context vs. Substring Matching:** A benign user comment containing the words `"script"` and `"character"` activates isolated keyword flags, which causes the local token-weight stand-in to produce false positives (`24.6%` on the in-repo stream). In SATGuardian, rule `SAT-XSS-01` requires the simultaneous presence of `TAG_OPEN` $\land$ `SCRIPT_ELEMENT` $\land$ `DOM_EXEC`; the pinned corpus records no benign collision for it, which is a regression observation and too small a sample to generalize.
 2. **Predictable CPU Execution:** Bitwise operations on a `u128` register execute in a few CPU clock cycles without backtracking, preventing Regular Expression Denial of Service (ReDoS).
 3. **Human-Auditable Causal Traces:** Every blocked request records the exact rule ID, active token set, and boolean clause in `waf_ledger.db` (e.g., `(SELECT_PROJECTION AND UNION_CLAUSE) violates [SAT-SQLI-02] -> ACTION_BLOCK [sql_injection]`).
 
@@ -63,5 +66,5 @@ When the Edge WAF encounters anomalous high-entropy requests or repeated hostile
 Out of band, `SatguardianCloudClient` (`src/cloud/satguardian_client.rs`) and the **Multi-Agent Advisor** (`satguardian-advisor.py`) invoke the **EXACTOR GXOR** engine (`procesar_gxor` in `exactor-core-v128`) to compress these `u128` minterms across up to **128 variables**:
 1. **Differential Gray Code Mapping (`modify_gray_code`):** Rather than performing exhaustive $O(m^2)$ pairwise comparisons like classical Quine-McCluskey, EXACTOR projects `u128` minterms into Gray Code space and locates logical neighbors in $O(1)$ constant time via `BTreeMap`/`HashMap` lookups, achieving $O(\text{term\_count})$ linear scaling.
 2. **GXOR / NXOR Algebraic Reduction over `{AND, OR, NOT, XOR}`:** Classical `{AND, OR, NOT}` minimizers suffer from exponential clause explosion when simplifying symmetric, parity, or cross-dependent security predicates. **EXACTOR GXOR** detects exclusive-OR (`XOR` / `NXOR`) parity structures natively and reduces them into compact algebraic invariants over `{AND, OR, NOT, XOR}` up to 128 variables.
-3. **Digital Twin Replay (`SimulationAgent`):** Before any synthesized rule is applied, `satguardian-advisor.py` tests the candidate bitmask against all historical benign requests stored in `waf_ledger.db` (`1,663` benign requests in the current ledger) to verify `< 0.1%` false positives.
+3. **Digital Twin Replay (`SimulationAgent`):** Before a synthesized rule is applied, `satguardian-advisor.py` replays the candidate bitmask against the benign requests stored in `waf_ledger.db` and reports collisions. The gate is only as good as the recorded benign traffic; it does not establish a fixed false-positive rate.
 4. **Atomic Hot-Reload (`ArcSwap`):** Validated rules are compiled via `compile_equation_to_clauses` and hot-swapped into the running Rust Edge WAF via lock-free pointer replacement (`ArcSwap`) without dropping active TCP connections.

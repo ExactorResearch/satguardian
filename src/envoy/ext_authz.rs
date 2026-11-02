@@ -6,6 +6,7 @@ use crate::ast::features::FeatureBinarizer;
 use crate::ast::lexer::AstLexer;
 use crate::engine::SatguardianSatEngine;
 use crate::ledger::{AuditRecord, SqliteLedger};
+use crate::proxy::client_ip::{resolve_client_ip, TrustedProxies};
 use crate::stateful::StatefulRateLimiter;
 use crate::types::{AttackDecision, HttpRequestPayload, ProofChain};
 use axum::body::Bytes;
@@ -15,7 +16,7 @@ use axum::response::{IntoResponse, Response};
 use axum::routing::any;
 use axum::Router;
 use std::collections::HashMap;
-use std::net::SocketAddr;
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::Instant;
@@ -28,6 +29,8 @@ pub struct EnvoyAuthzState {
     pub ledger: SqliteLedger,
     pub rate_limiter: Arc<StatefulRateLimiter>,
     pub mode: String, // "block" or "monitor"
+    pub stealth_mode: bool,
+    pub trusted_proxies: TrustedProxies,
 
     pub total_checks: Arc<AtomicU64>,
     pub blocked_checks: Arc<AtomicU64>,
@@ -46,10 +49,22 @@ impl EnvoyAuthzState {
             ledger,
             rate_limiter,
             mode,
+            stealth_mode: true,
+            trusted_proxies: TrustedProxies::default(),
             total_checks: Arc::new(AtomicU64::new(0)),
             blocked_checks: Arc::new(AtomicU64::new(0)),
             allowed_checks: Arc::new(AtomicU64::new(0)),
         }
+    }
+
+    pub fn with_stealth(mut self, enabled: bool) -> Self {
+        self.stealth_mode = enabled;
+        self
+    }
+
+    pub fn with_trusted_proxies(mut self, trusted_proxies: TrustedProxies) -> Self {
+        self.trusted_proxies = trusted_proxies;
+        self
     }
 }
 
@@ -91,17 +106,11 @@ async fn handle_envoy_authz_check(
         None => (raw_path.to_string(), uri.query().unwrap_or("").to_string()),
     };
 
-    // 2. Extract Client IP
-    let client_ip = headers
-        .get("x-forwarded-for")
-        .and_then(|v| v.to_str().ok())
-        .and_then(|s| s.split(',').next())
-        .map(|s| s.trim().to_string())
-        .unwrap_or_else(|| {
-            client_addr
-                .map(|c| c.0.ip().to_string())
-                .unwrap_or_else(|| "127.0.0.1".to_string())
-        });
+    // 2. Extract Client IP only through trusted proxies (loopback by default)
+    let peer_ip = client_addr
+        .map(|c| c.0.ip())
+        .unwrap_or(IpAddr::V4(Ipv4Addr::LOCALHOST));
+    let client_ip = resolve_client_ip(peer_ip, &headers, &state.trusted_proxies);
 
     // 3. Extract Headers map
     let mut headers_map = HashMap::with_capacity(headers.len());
@@ -171,6 +180,19 @@ async fn handle_envoy_authz_check(
             rule_id,
             eval_us
         );
+
+        if state.stealth_mode {
+            let mut res = (StatusCode::FORBIDDEN, "Forbidden").into_response();
+            res.headers_mut().insert(
+                "content-type",
+                HeaderValue::from_static("text/plain; charset=utf-8"),
+            );
+            res.headers_mut().insert(
+                "x-envoy-waf-blocked",
+                HeaderValue::from_static("true"),
+            );
+            return res;
+        }
 
         let error_body = serde_json::json!({
             "status": "BLOCKED",
@@ -259,6 +281,15 @@ async fn handle_envoy_authz_check(
             "✅ [ENVOY-SAT-ALLOW] [{}] Path: {} ({:.1} µs)",
             payload.id, payload.path, eval_us
         );
+
+        if state.stealth_mode {
+            let mut res = (StatusCode::OK, "").into_response();
+            res.headers_mut().insert(
+                "x-envoy-waf-verified",
+                HeaderValue::from_static("true"),
+            );
+            return res;
+        }
 
         let mut res = (StatusCode::OK, "").into_response();
         let headers = res.headers_mut();
