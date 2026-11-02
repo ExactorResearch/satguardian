@@ -4,7 +4,7 @@ version = "0.3.0"
 edition = "2021"
 authors = ["Satguardian Research"]
 license = "MIT OR Apache-2.0"
-description = "SATGuardian Edge WAF: Production-grade, sub-millisecond SAT Web Application Firewall with autonomous Boolean logic minimization via satguardian.tech"
+description = "SATGuardian Edge WAF: research prototype for multi-pass lexical normalization and u128 bitmask rule evaluation, with out-of-band Boolean minimization"
 
 [lib]
 name = "satguardian_waf"
@@ -25,7 +25,7 @@ hyper = { version = "1.4", features = ["full"] }
 hyper-util = { version = "0.1", features = ["tokio", "server-auto"] }
 
 # HTTP Client for Upstream Proxying & SATGuardian Cloud API
-reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "stream"] }
 
 # Serialization & Config
 serde = { version = "1.0", features = ["derive"] }

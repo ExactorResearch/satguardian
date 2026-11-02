@@ -796,10 +796,13 @@ class SatguardianRulesApp:
             stype = sug.get("type", "rule").upper()
             skey = sug.get("rule_id", sug.get("island_key", "n/a"))[:27]
             sim = sug.get("simulation")
-            if sim and sim.get("certified_zero_false_positives"):
-                verdict = f"[<0.1% FP] {sim.get('attacks_intercepted_at_perimeter', 0)} intercepted"
+            if sim and not sim.get("error"):
+                if sim.get("zero_collisions_in_ledger"):
+                    verdict = f"[no ledger collisions / {sim.get('benign_tested', 0)} allowed]"
+                else:
+                    verdict = f"[{sim.get('false_positives_count', 0)} collisions]"
             else:
-                verdict = "[AUDITED <0.1% FP]"
+                verdict = "[not replayed]"
             
             row_str = f" {stype:<16s} {skey:<28s} {verdict:<30s} [Y] Approve / [N] Reject"
             attr = curses.color_pair(7) | curses.A_BOLD if item_idx == self.selected_advisor_idx else 0
@@ -817,10 +820,8 @@ class SatguardianRulesApp:
             
             sim = sel_sug.get("simulation")
             if sim and not sim.get("error"):
-                badge = "[✓ CERTIFIED Low False Positive Rate (<0.1%)]" if sim.get("certified_zero_false_positives") else "[COLLISION ALERT]"
-                safe_addstr(stdscr, det_y + 5, 4, f"Digital Twin      : {badge} {sim.get('benign_tested', 0)} benign requests tested.", curses.color_pair(1) | curses.A_BOLD)
-                if sim.get("saved_latency_ms", 0) > 0:
-                    safe_addstr(stdscr, det_y + 6, 4, f"Compute Savings   : ~{sim.get('saved_latency_ms')} ms CPU saved by dropping before SAT evaluation.", curses.color_pair(1))
+                badge = "[NO COLLISIONS IN LEDGER]" if sim.get("zero_collisions_in_ledger") else "[COLLISION FOUND]"
+                safe_addstr(stdscr, det_y + 5, 4, f"Ledger Replay     : {badge} {sim.get('benign_tested', 0)} allowed records tested (demo ledger).", curses.color_pair(1) | curses.A_BOLD)
 
             safe_addstr(stdscr, det_y + 8, 4, "Actions: Press [Y] to APPROVE & Implement | [N] to REJECT (No-Op) | [R] Re-analyze | [▲/▼/PgUp/PgDn] Scroll", curses.color_pair(3) | curses.A_BOLD)
 
@@ -967,7 +968,7 @@ class SatguardianRulesApp:
         if not self.advisor_suggestions:
             print("\033[1;32m[OK] No pending suggestions. Traffic is fully optimized.\033[0m\n")
             return
-        print(f"\nFound {len(self.advisor_suggestions)} proposals generated with Digital Twin simulation:\n")
+        print(f"\nFound {len(self.advisor_suggestions)} proposals replayed against the local ledger:\n")
         idx = 0
         while idx < len(self.advisor_suggestions):
             sug = self.advisor_suggestions[idx]
@@ -975,8 +976,12 @@ class SatguardianRulesApp:
             print(f"    ID / Key   : {sug.get('rule_id', sug.get('island_key'))}")
             print(f"    Evidence   : {sug.get('evidence')}")
             sim = sug.get("simulation")
-            if sim and sim.get("certified_zero_false_positives"):
-                print(f"    Simulation : \033[1;32m[<0.1% FP CERTIFIED]\033[0m {sim.get('attacks_intercepted_at_perimeter', 0)} attacks intercepted")
+            if sim and not sim.get("error"):
+                if sim.get("zero_collisions_in_ledger"):
+                    status = f"\033[1;32m[NO COLLISIONS]\033[0m {sim.get('benign_tested', 0)} allowed records tested"
+                else:
+                    status = f"\033[1;31m[COLLISION FOUND]\033[0m {sim.get('false_positives_count', 0)} allowed records would be blocked"
+                print(f"    Replay     : {status}")
             print(f"    Impact     : {sug.get('impact')}")
             resp = input("    Approve and apply? [y/N/q]: ").strip().lower()
             if resp in ("y", "yes"):

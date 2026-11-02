@@ -1,6 +1,6 @@
 # GUARDIAN WAF — Forensic & Security Audit Report
-*Generation Date:* 2026-10-29 00:40:38 UTC  
-*Attestation:* SOC 2 CC6.6 & PCI-DSS 6.6 (Empirically Tested High Accuracy (<0.1% FPR))  
+*Generation Date:* 2026-11-01 21:38:55 UTC  
+*Scope:* Local demo ledger. This report is not a compliance attestation and this repository has not been independently audited.  
 
 ## 1. Executive Traffic Summary
 - **Total Requests:** 3,799
@@ -29,11 +29,11 @@
 | `path_traversal` | `SAT-PATH-01,SAT-PATH-02,SAT-STATE-01` | `(DIRECT_SYSTEM_FILE_TARGET AND DIR_TRAVERSAL_DOT_DOT AND STATEFUL_BURST_RATE_LIMIT_EXCEEDED) violates [SAT-PATH-01 | SAT-PATH-02 | SAT-STATE-01] -> ACTION_BLOCK [path_traversal]` | 60 |
 
 ## 4. Rules Synthesized by the Multi-Agent Advisor
-| Rule ID | Forensic Evidence | Digital Twin Verification | WAF Impact |
+| Rule ID | Forensic Evidence | Ledger Replay | WAF Impact |
 | :--- | :--- | :--- | :--- |
-| `biz-ban-ip-169-254-54-10` | IP detected with 625 recorded attacks (benign, sql_injection, path_traversal, xss, rate_limit_ddos) and 80.2% verified hostility rate. | **✓ <0.1% FP Verified** | Saves deep SAT evaluation by immediately dropping this IP in Fast-Path via SAT-BIZ-02. |
-| `biz-method-api-users` | Route /api/users exhibits legitimate traffic restricted to methods ['GET']. Hostile probing or unconstrained attack surface detected. | **✓ <0.1% FP Verified** | Closes attack surface by dropping unsupported methods (DELETE, PUT, PATCH, TRACE, CONNECT) via SAT-BIZ-01. |
-| `biz-method-api-v1-search` | Route /api/v1/search exhibits legitimate traffic restricted to methods ['GET']. Hostile probing or unconstrained attack surface detected. | **✓ <0.1% FP Verified** | Closes attack surface by dropping unsupported methods (DELETE, PUT, PATCH, TRACE, CONNECT) via SAT-BIZ-01. |
-| `biz-method-api-v1-users-profile` | Route /api/v1/users/profile exhibits legitimate traffic restricted to methods ['GET']. Hostile probing or unconstrained attack surface detected. | **✓ <0.1% FP Verified** | Closes attack surface by dropping unsupported methods (DELETE, PUT, PATCH, TRACE, CONNECT) via SAT-BIZ-01. |
-| `biz-method-api-waf-metrics` | Route /api/waf/metrics exhibits legitimate traffic restricted to methods ['GET']. Hostile probing or unconstrained attack surface detected. | **✓ <0.1% FP Verified** | Closes attack surface by dropping unsupported methods (DELETE, PUT, PATCH, TRACE, CONNECT) via SAT-BIZ-01. |
-| `cloud_sync_pending_anomalies` | Detected 14 novel unobserved u128 minterm anomalies across 2136 production occurrences pending EXACTOR GXOR cloud synthesis. | **✓ <0.1% FP Verified** | Compiles u128 minterms via EXACTOR GXOR into minimal boolean invariants, reducing gate count by up to 80%. Estimated consumption: 1 Security Unit (SU). |
+| `biz-ban-ip-169-254-54-10` | IP detected with 625 recorded attacks (benign, sql_injection, path_traversal, xss, rate_limit_ddos) and 80.2% verified hostility rate. | 154 collisions | Saves deep SAT evaluation by immediately dropping this IP in Fast-Path via SAT-BIZ-02. |
+| `biz-method-api-users` | Route /api/users exhibits legitimate traffic restricted to methods ['GET']. Hostile probing or unconstrained attack surface detected. | No collisions / 1663 allowed | Closes attack surface by dropping unsupported methods (DELETE, PUT, PATCH, TRACE, CONNECT) via SAT-BIZ-01. |
+| `biz-method-api-v1-search` | Route /api/v1/search exhibits legitimate traffic restricted to methods ['GET']. Hostile probing or unconstrained attack surface detected. | No collisions / 1663 allowed | Closes attack surface by dropping unsupported methods (DELETE, PUT, PATCH, TRACE, CONNECT) via SAT-BIZ-01. |
+| `biz-method-api-v1-users-profile` | Route /api/v1/users/profile exhibits legitimate traffic restricted to methods ['GET']. Hostile probing or unconstrained attack surface detected. | No collisions / 1663 allowed | Closes attack surface by dropping unsupported methods (DELETE, PUT, PATCH, TRACE, CONNECT) via SAT-BIZ-01. |
+| `biz-method-api-waf-metrics` | Route /api/waf/metrics exhibits legitimate traffic restricted to methods ['GET']. Hostile probing or unconstrained attack surface detected. | No collisions / 1663 allowed | Closes attack surface by dropping unsupported methods (DELETE, PUT, PATCH, TRACE, CONNECT) via SAT-BIZ-01. |
+| `cloud_sync_pending_anomalies` | Detected 14 novel unobserved u128 minterm anomalies across 2136 recorded ledger occurrences pending EXACTOR GXOR cloud synthesis. | Not replayed | Compiles u128 minterms via EXACTOR GXOR into boolean invariants over {AND, OR, NOT, XOR}. Estimated consumption: 1 Security Unit (SU); size reduction is not measured in this repository. |

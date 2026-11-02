@@ -1,5 +1,7 @@
 # ⚙️ SATGuardian Edge WAF — Complete Configuration Guide
 
+> **Status: research prototype, not a production-ready WAF.** See [Project Status](../status.md).
+
 This guide provides a detailed field-by-field reference and step-by-step instructions for configuring **SATGuardian Edge WAF** via `waf_config.toml` and environment variables.
 
 ---
@@ -75,7 +77,7 @@ autonomous_sync_interval_secs = 300
 auto_sync_enabled = true
 ```
 
-> **Operational Guarantee:** If your monthly Security Units (SU) quota is exhausted (`HTTP 402 SU_QUOTA_EXHAUSTED`), cloud synthesis pauses gracefully while the local Edge WAF continues protecting your application at full speed using its last compiled rule matrix ($0.00 traffic cost).
+> **Quota behavior:** If your monthly Security Units (SU) quota is exhausted (`HTTP 402 SU_QUOTA_EXHAUSTED`), cloud synthesis pauses and the local Edge WAF keeps serving traffic with its last compiled rule matrix ($0.00 traffic cost).
 
 ---
 

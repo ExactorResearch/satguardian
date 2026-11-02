@@ -10,7 +10,7 @@ def test_benchmark_runner_execution():
     result = runner.run_benchmark(num_requests=20, attack_ratio=0.5, seed=42)
     
     assert result.dataset_size == 20
-    assert len(result.agent_metrics) == 3
+    assert len(result.agent_metrics) == 5
     
     sat_metrics = next(m for k, m in result.agent_metrics.items() if "SATGuardian" in k or "Exactor" in k)
     assert sat_metrics.total_requests == 20

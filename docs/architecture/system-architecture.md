@@ -1,8 +1,13 @@
 # SATGuardian Edge WAF — System Architecture & Implementation Reference
 
 **Repository:** `satguardian`  
-**Version:** `v0.2.0`  
-**Scope:** Verified Implementation Architecture (Rust Hot Path & Python Control Plane)
+**Version:** `v0.3.0`  
+**Scope:** Implementation architecture (Rust hot path & Python control plane)
+
+> **Status: research prototype, not a production-ready WAF.** Metrics in this
+> document are in-sample measurements on a hand-written corpus. The Python
+> comparison harness runs local stand-ins, not real vendor products. See
+> [STATUS.md](../status.md) and [corpus/README.md](../corpus.md).
 
 ---
 
@@ -10,7 +15,7 @@
 
 `satguardian` is a hybrid Web Application Firewall (WAF) divided into two strictly decoupled execution planes:
 
-1. **In-Path Edge Data Plane (Native Rust — `src/`):** Inspects live HTTP requests in microseconds (`13.60 µs` median / `14.53 µs` mean latency across 10,000 requests) using multi-pass lexical normalization, a 128-bit feature bitmask (`FeatureVector(pub u128)`), and bitwise rule comparisons (`(minterm & required_mask) == expected_bits`).
+1. **In-Path Edge Data Plane (Native Rust — `src/`):** Evaluates HTTP requests in memory (tens of microseconds per payload; no network hop included) using multi-pass lexical normalization, a 128-bit feature bitmask (`FeatureVector(pub u128)`), and bitwise rule comparisons (`(minterm & required_mask) == expected_bits`).
 2. **Out-of-Band Control & GXOR Synthesis Plane (Rust & Python — `src/cloud/satguardian_client.rs`, `exactor-core-v128`, `satguardian-advisor.py`):** Asynchronously reads the SQLite forensic audit ledger (`waf_ledger.db`), simplifies up to **128 Boolean variables (`u128` minterms)** using the **EXACTOR GXOR** engine over the complete **`{AND, OR, NOT, XOR}`** operator basis via Differential Gray Code Mapping, validates candidate rules against historical benign traffic in a **Digital Twin**, and hot-reloads validated rules into the Edge WAF via `ArcSwap`.
 
 ```mermaid
@@ -23,7 +28,7 @@ flowchart TD
     E --> G[("SQLite Audit Ledger: waf_ledger.db")]
     F --> G
     G --> H["Offline Advisor & EXACTOR GXOR Synthesizer (satguardian_client.rs / exactor-core-v128)"]
-    H --> I["Digital Twin Benign Traffic Replay (< 0.1% FPR Check)"]
+    H --> I["Digital Twin Benign Traffic Replay (collision check)"]
     I -- "Verified Safe" --> J["Atomic Hot-Reload via ArcSwap"]
     J -.-> D
 ```
@@ -47,29 +52,36 @@ flowchart TD
 
 | File Path | Key Classes / Functions | Verified Implementation Details |
 | :--- | :--- | :--- |
-| `satguardian_waf/core/solver_sat.py` | `SatguardianWAFSATEngine` | Python reference implementation of the multi-pass lexical normalizer, `O(1)` token surface guards, and Certainty Island rule evaluator (`0.0644 ms` mean latency). |
-| `satguardian_waf/agents/` | `SatguardianWAFAgent`, `CorazaWAFAgent`, `SafeLineWAFAgent`, `RegexBaselineAgent`, `PureJEVAgent` | Multi-WAF benchmark agents executing real CPU inspection logic (zero `time.sleep`, zero random number simulation). |
-| `satguardian-advisor.py` | `PatternAnalysisAgent`, `SimulationAgent`, `SynthesisAgent`, `ReportGenerator` | Reads `waf_ledger.db` (`3,799` records), synthesizes candidate rules, verifies `< 0.1%` FPR via Digital Twin replay over `1,663` benign logs, and generates `audit_report.html` and `audit_report.md`. |
+| `satguardian_waf/core/solver_sat.py` | `SatguardianWAFSATEngine` | Python reference port of the lexical normalizer and rule evaluator. It is not the production engine and its latency says nothing about the Rust binary. |
+| `satguardian_waf/agents/` | `SatguardianWAFAgent`, `CorazaWAFAgent`, `SafeLineWAFAgent`, `RegexBaselineAgent`, `PureJEVAgent` | Python benchmark agents. Four of them are explicitly labelled stand-ins for third-party techniques; none executes a vendor engine. |
+| `satguardian-advisor.py` | `PatternAnalysisAgent`, `SimulationAgent`, `SynthesisAgent`, `ReportGenerator` | Reads `waf_ledger.db`, synthesizes candidate rules, replays them against recorded benign logs to find collisions, and generates `audit_report.html` and `audit_report.md`. Collision counts are recorded per run; no fixed FPR floor is claimed. |
 | `satguardian-cloud-server.py` | `SATGuardianCloudHandler` | Reference cloud optimization API implementing Security Units (SU) metering, plan tier enforcement (128-variable SaaS cap), and `HTTP 402 SU_QUOTA_EXHAUSTED` fail-safe behavior. |
 
 ---
 
-## 3. Empirical Performance & Accuracy Verification
+## 3. Measurements and Their Limits
 
-> **Realism Policy:** Reported accuracy, precision, and recall values are capped at **`99.9%`** and False Positive / False Negative rates are floored at **`< 0.1%` (`0.1%`)** to reflect realistic engineering bounds.
+No value is capped or floored. The engine reports whatever the corpus produces,
+including failures.
 
-### 3.1 Native Rust vs. Python Reference vs. Competitor WAFs
+### 3.1 Detection quality
 
-| Engine / Architecture | Dataset | Accuracy (Capped) | Mean Latency | P99 Latency | FPR (Floored) | FNR (Floored) |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| **SATGuardian Edge (Native Rust v0.2.0)** | `10,000` reqs | **99.9%** | **`0.0145 ms` (`14.53 µs`)** | **`0.0305 ms` (`30.50 µs`)** | **< 0.1%** (`0.1%`) | **< 0.1%** (`0.1%`) |
-| **SATGuardian Edge (Python Reference)** | `1,000` reqs | **99.9%** | **`0.0644 ms` (`64.40 µs`)** | **`0.1882 ms` (`188.20 µs`)** | **< 0.1%** (`0.1%`) | **< 0.1%** (`0.1%`) |
-| **Coraza WAF (OWASP CRS v4 PL1 Anomaly Scoring)** | `1,000` reqs | 97.3% | `0.2178 ms` (`217.80 µs`) | `0.4691 ms` (`469.10 µs`) | < 0.1% (`0.1%`) | 5.4% |
-| **SafeLine WAF (Chaitin T1K Semantic Grammar)** | `1,000` reqs | 94.4% | `0.0597 ms` (`59.70 µs`) | `0.1416 ms` (`141.60 µs`) | < 0.1% (`0.1%`) | 11.2% |
-| **Probabilistic Token Scorer (Heuristic NLP)** | `1,000` reqs | 77.3% | `0.0731 ms` (`73.10 µs`) | `0.1793 ms` (`179.30 µs`) | 24.6% | 20.8% |
-| **Classical Regex (ModSecurity CRS v3 Baseline)** | `1,000` reqs | 76.5% | `0.0427 ms` (`42.70 µs`) | `0.1059 ms` (`105.90 µs`) | < 0.1% (`0.1%`) | 47.0% |
+| Corpus | First run (before fixes) | Current regression run | Status |
+| :--- | :---: | :---: | :--- |
+| `corpus/independent_v1.json` (63 attacks, 16 benign) | 51/63 recall (80.95%), 3/16 benign blocked (18.75% FPR) | 63/63, 0/16 blocked | In-sample regression |
+| `corpus/heldout_v1.json` (17 attacks, 4 benign) | 11/17 recall (64.71%), 0/4 benign blocked | 17/17, 0/4 blocked | Consumed held-out batch |
 
-### 3.2 Why the Architecture Achieves These Metrics
-1. **Bitmask Conjunctions Eliminate Keyword False Positives:** Unlike probabilistic token scorers (`24.6%` FPR on benign comments containing words like `"script"` and `"character"`), SATGuardian triggers only when a complete structural token conjunction is present (`< 0.1%` FPR).
-2. **Multi-Pass Lexical Normalization Defeats Evasions:** Unnormalized regex (`47.0%` FNR), single-pass SafeLine (`11.2%` FNR), and single-pass Coraza CRS PL1 (`5.4%` FNR on triple-encoded LFI `..%25252f`) miss nested encodings that SATGuardian unwinds prior to tokenization.
-3. **Single-Pass Evaluation Outperforms Multi-Target CRS Anomaly Scoring:** Coraza CRS v4 evaluates 20 rules across 5+ transformed targets per request (`0.2178 ms` in Python), whereas SATGuardian normalizes once and checks `u128` bitmasks (`0.0644 ms` in Python; `0.0145 ms` in native Rust).
+Every corpus case was used to drive the fixes, so the current 100%/0% is a
+regression floor, not a held-out quality estimate. The protocol and rules for
+adding cases are in [corpus/README.md](../corpus.md).
+
+### 3.2 Latency
+
+`cargo run --release -- benchmark -r 10000` measures in-memory rule evaluation
+over the pinned corpus: roughly `20 µs` p50 and `22 µs` mean on a desktop CPU,
+with p99 fluctuating around the `50 µs` target depending on machine load. It
+excludes TLS, the proxy hop, the upstream service and stateful tracking.
+
+The Python harness (`python run_benchmark.py 1000`) compares the Python reference
+port against local Python stand-ins. It is not a vendor comparison and its
+numbers must not be quoted as one.

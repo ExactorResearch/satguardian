@@ -47,6 +47,28 @@ impl AttackCategory {
         }
     }
 
+    pub fn parse(value: &str) -> Self {
+        match value {
+            "benign" => AttackCategory::Benign,
+            "sql_injection" => AttackCategory::SqlInjection,
+            "xss" => AttackCategory::Xss,
+            "command_injection" => AttackCategory::CommandInjection,
+            "path_traversal" => AttackCategory::PathTraversal,
+            "ssrf" => AttackCategory::Ssrf,
+            "graphql_abuse" => AttackCategory::GraphqlAbuse,
+            "prototype_pollution" => AttackCategory::PrototypePollution,
+            "grpc_smuggling" => AttackCategory::GrpcSmuggling,
+            "jwt_tampering" => AttackCategory::JwtTampering,
+            "credential_stuffing" => AttackCategory::CredentialStuffing,
+            "rate_limit_ddos" => AttackCategory::RateLimitDdos,
+            "cms_wordpress_probe" => AttackCategory::CmsWordpressProbe,
+            "sensitive_exposure_probe" => AttackCategory::SensitiveExposureProbe,
+            "framework_exploit_probe" => AttackCategory::FrameworkExploitProbe,
+            "business_rule_violation" => AttackCategory::BusinessRuleViolation,
+            _ => AttackCategory::Unknown,
+        }
+    }
+
     pub fn display_name(&self) -> &'static str {
         match self {
             AttackCategory::Benign => "BENIGN TRAFFIC",

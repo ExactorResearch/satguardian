@@ -2,17 +2,21 @@
 
 This guide provides exhaustive documentation on **how to configure**, **customize**, and **utilize the complete suite of additional tools and CLI applications** comprising the **SATGuardian Edge WAF** cyber-defense platform.
 
+> **Status: research prototype.** Detection evidence is limited to a small
+> in-sample corpus, and the benchmark harness compares local Python stand-ins,
+> not vendor products. See [STATUS.md](../status.md).
+
 ---
 
 ## 📋 Table of Contents
-1. [WAF Configuration (`waf_config.toml` & Environment Variables)](#1-waf-configuration-waf_configtoml-environment-variables)
-2. [Customization & Business Rules Guide](#2-customization-business-rules-guide)
-3. [Suite Applications & Tooling Guide](#3-suite-applications-tooling-guide)
-   * [1. Main Engine Binary: `satguardian-waf` (Rust Engine & CLI)](#1-main-engine-binary-satguardian-waf-rust-engine-cli)
-   * [2. Forensic Advisor & Digital Twin: `satguardian-advisor.py`](#2-forensic-advisor-digital-twin-satguardian-advisorpy)
+1. [⚙️ WAF Configuration (`waf_config.toml` & Environment Variables)](#1-⚙️-waf-configuration-waf_configtoml--environment-variables)
+2. [🛠️ Customization & Business Rules Guide](#2-🛠️-customization--business-rules-guide)
+3. [🧰 Suite Applications & Tooling Guide](#3-🧰-suite-applications--tooling-guide)
+   * [1. Main Engine Binary: `satguardian-waf` (Rust Engine & CLI)](#1-main-engine-binary-satguardian-waf-rust-engine--cli)
+   * [2. Forensic Advisor & Digital Twin: `satguardian-advisor.py`](#2-forensic-advisor--digital-twin-satguardian-advisorpy)
    * [3. Business Rules Management CLI: `satguardian-rules.py`](#3-business-rules-management-cli-satguardian-rulespy)
    * [4. Real-Time Terminal Dashboard: `satguardian-top.py`](#4-real-time-terminal-dashboard-satguardian-toppy)
-   * [5. Interactive Web Dashboard: `app.py` / `run_web.py` (Streamlit)](#5-interactive-web-dashboard-apppy-run_webpy-streamlit)
+   * [5. Interactive Web Dashboard: `app.py` / `run_web.py` (Streamlit)](#5-interactive-web-dashboard-apppy--run_webpy-streamlit)
    * [6. Multi-WAF Comparative Benchmark Suite: `run_benchmark.py`](#6-multi-waf-comparative-benchmark-suite-run_benchmarkpy)
 
 ---
@@ -163,7 +167,7 @@ enabled = true
 
 Before any custom or synthesized rule matrix is deployed into active memory, SATGuardian executes a **Digital Twin replay** (`satguardian-advisor.py`):
 1. Reads all recorded benign HTTP transactions in `waf_ledger.db`.
-2. Evaluates candidate rules against historical legitimate traffic to certify **`< 0.1%` False Positive Rate**.
+2. Evaluates candidate rules against historical legitimate traffic and reports any collisions. Replay quality depends on the ledger contents; there is no fixed FPR floor.
 3. Hot-reloads verified rule masks into active memory using lock-free `ArcSwap` without dropping active TCP connections.
 
 ---
@@ -279,7 +283,10 @@ Access the web dashboard in your browser at `http://localhost:8501`.
 
 ### 6. Multi-WAF Comparative Benchmark Suite: `run_benchmark.py`
 
-Executes a reproducible empirical benchmark comparing **SATGuardian Edge WAF** against 4 popular security engines (**OWASP CRS v4 / Coraza**, **SafeLine T1K**, **ModSecurity Regex**, and **Probabilistic NLP Classifier**).
+Runs the Python reference harness against local Python stand-ins for CRS-style,
+semantic-token, raw-regex and probabilistic techniques. **It does not execute
+Coraza, SafeLine, ModSecurity or a trained NLP model.** The dataset is the small
+in-repo payload list, and the report prints provenance and a disclaimer.
 
 #### Usage:
 ```bash

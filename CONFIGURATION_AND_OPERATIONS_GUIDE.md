@@ -2,6 +2,10 @@
 
 This guide provides exhaustive documentation on **how to configure**, **customize**, and **utilize the complete suite of additional tools and CLI applications** comprising the **SATGuardian Edge WAF** cyber-defense platform.
 
+> **Status: research prototype.** Detection evidence is limited to a small
+> in-sample corpus, and the benchmark harness compares local Python stand-ins,
+> not vendor products. See [STATUS.md](STATUS.md).
+
 ---
 
 ## 📋 Table of Contents
@@ -163,7 +167,7 @@ enabled = true
 
 Before any custom or synthesized rule matrix is deployed into active memory, SATGuardian executes a **Digital Twin replay** (`satguardian-advisor.py`):
 1. Reads all recorded benign HTTP transactions in `waf_ledger.db`.
-2. Evaluates candidate rules against historical legitimate traffic to certify **`< 0.1%` False Positive Rate**.
+2. Evaluates candidate rules against historical legitimate traffic and reports any collisions. Replay quality depends on the ledger contents; there is no fixed FPR floor.
 3. Hot-reloads verified rule masks into active memory using lock-free `ArcSwap` without dropping active TCP connections.
 
 ---
@@ -279,7 +283,10 @@ Access the web dashboard in your browser at `http://localhost:8501`.
 
 ### 6. Multi-WAF Comparative Benchmark Suite: `run_benchmark.py`
 
-Executes a reproducible empirical benchmark comparing **SATGuardian Edge WAF** against 4 popular security engines (**OWASP CRS v4 / Coraza**, **SafeLine T1K**, **ModSecurity Regex**, and **Probabilistic NLP Classifier**).
+Runs the Python reference harness against local Python stand-ins for CRS-style,
+semantic-token, raw-regex and probabilistic techniques. **It does not execute
+Coraza, SafeLine, ModSecurity or a trained NLP model.** The dataset is the small
+in-repo payload list, and the report prints provenance and a disclaimer.
 
 #### Usage:
 ```bash

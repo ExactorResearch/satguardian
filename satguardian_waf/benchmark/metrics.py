@@ -71,21 +71,9 @@ def compute_metrics(agent_name: str, decisions: List[WAFAgentDecision], ground_t
     fpr = fp / (fp + tn) if (fp + tn) > 0 else 0.0
     fnr = fn / (fn + tp) if (fn + tp) > 0 else 0.0
 
-    # Realism Capping: Cap accuracy/precision/recall/f1 at 0.999 (99.9%) and floor FPR/FNR at 0.001 (0.1%)
-    # because 100.0% precision in real-world security testing is a theoretical limit.
-    if accuracy >= 1.0:
-        accuracy = 0.999
-    if precision >= 1.0:
-        precision = 0.999
-    if recall >= 1.0:
-        recall = 0.999
+    # Report the measured values verbatim. Perfect scores on an in-sample
+    # dataset are a property of the dataset, not of the engine.
     f1 = (2 * precision * recall) / (precision + recall) if (precision + recall) > 0 else 0.0
-    if f1 >= 1.0:
-        f1 = 0.999
-    if fpr == 0.0:
-        fpr = 0.001
-    if fnr == 0.0:
-        fnr = 0.001
 
     lat_arr = np.array(latencies)
     avg_lat = float(np.mean(lat_arr))
@@ -93,7 +81,9 @@ def compute_metrics(agent_name: str, decisions: List[WAFAgentDecision], ground_t
     p95_lat = float(np.percentile(lat_arr, 95))
     p99_lat = float(np.percentile(lat_arr, 99))
 
-    throughput_rps = 1000.0 / avg_lat if avg_lat > 0 else 50000.0
+    # Theoretical single-core upper bound derived from mean service time.
+    # This is not a measured network throughput.
+    throughput_rps = 1000.0 / avg_lat if avg_lat > 0 else 0.0
     cost_per_m = (total_cost / total) * 1_000_000 if total > 0 else 0.0
 
     return AgentBenchmarkMetrics(

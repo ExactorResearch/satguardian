@@ -431,13 +431,19 @@ fn test_wordpress_shield_toggle() {
     assert!(proof_blocked.matched_rules.iter().any(|r| r.rule_id == "SAT-WP-01"));
     assert!(proof_blocked.active_islands.contains(&"ISLAND-WORDPRESS".to_string()));
 
-    // Verify /index.php is also blocked under WordPress/PHP shield
-    let index_php_probe = HttpRequestPayload::new("GET", "/index.php", "", "");
+    // A bare /index.php is a generic PHP entry point, not a WordPress probe: blocking it
+    // would break Laravel/Symfony front controllers even on non-WordPress sites.
+    let index_php_probe = HttpRequestPayload::new("GET", "/index.php", "controller=catalog&action=detail", "");
     let proof_index = engine_shield_on.evaluate_payload(&index_php_probe);
-    assert!(proof_index.is_violation);
-    assert_eq!(proof_index.action, AttackDecision::Block);
-    assert_eq!(proof_index.category, AttackCategory::CmsWordpressProbe);
-    assert!(proof_index.matched_rules.iter().any(|r| r.rule_id == "SAT-WP-01"));
+    assert!(!proof_index.is_violation, "Generic /index.php must not be classified as WordPress reconnaissance");
+
+    // Verify an unambiguous WordPress administration file is blocked under the shield.
+    let wp_admin_probe = HttpRequestPayload::new("GET", "/wp-admin/setup-config.php", "", "");
+    let proof_admin = engine_shield_on.evaluate_payload(&wp_admin_probe);
+    assert!(proof_admin.is_violation);
+    assert_eq!(proof_admin.action, AttackDecision::Block);
+    assert_eq!(proof_admin.category, AttackCategory::CmsWordpressProbe);
+    assert!(proof_admin.matched_rules.iter().any(|r| r.rule_id == "SAT-WP-01"));
 
     // 2. When WordPress shield is DISABLED (for legitimate WordPress installations)
     let islands_off = IslandsConfig {

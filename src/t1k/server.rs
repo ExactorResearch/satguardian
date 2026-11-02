@@ -7,6 +7,7 @@ use crate::ast::features::FeatureBinarizer;
 use crate::ast::lexer::AstLexer;
 use crate::engine::SatguardianSatEngine;
 use crate::ledger::{AuditRecord, SqliteLedger};
+use crate::metrics::LatencyHistogram;
 use crate::reporter::SafeLinePgReporter;
 use crate::stateful::StatefulRateLimiter;
 use crate::t1k::codec::{
@@ -30,6 +31,7 @@ pub struct T1kServerState {
     pub rate_limiter: Option<Arc<StatefulRateLimiter>>,
     pub downstream_addr: Option<String>,
     pub mode: String, // "block" or "monitor"
+    pub latency_histogram: LatencyHistogram,
 
     pub total_requests: AtomicU64,
     pub blocked_requests: AtomicU64,
@@ -53,6 +55,7 @@ impl T1kServerState {
             rate_limiter,
             downstream_addr,
             mode,
+            latency_histogram: LatencyHistogram::new(),
             total_requests: AtomicU64::new(0),
             blocked_requests: AtomicU64::new(0),
             allowed_requests: AtomicU64::new(0),
@@ -70,8 +73,8 @@ impl T1kServerState {
             total_requests: total,
             blocked_requests: blocked,
             allowed_requests: allowed,
-            avg_latency_us: 18.5,
-            p99_latency_us: 42.0,
+            avg_latency_us: (self.latency_histogram.avg_us() * 100.0).round() / 100.0,
+            p99_latency_us: self.latency_histogram.percentile_us(0.99).round(),
             uptime_seconds: uptime,
             active_rules_count: self.sat_engine.get_rules().len(),
             hot_compiled_rules_count: self.sat_engine.dynamic_clauses_count(),
@@ -191,6 +194,7 @@ async fn handle_t1k_connection(
             .sat_engine
             .evaluate_payload_with_verdict(&payload, stateful_verdict.as_ref());
         let eval_us = t_eval.elapsed().as_secs_f64() * 1_000_000.0;
+        state.latency_histogram.observe(eval_us as u64);
 
         let should_block = state.mode == "block" && proof.action == AttackDecision::Block;
 

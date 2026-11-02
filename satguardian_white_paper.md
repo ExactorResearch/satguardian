@@ -1,17 +1,21 @@
 # SATGuardian Edge WAF: Sub-Millisecond Lexical Normalization, 128-Bit Boolean Mask Evaluation, and Out-of-Band EXACTOR GXOR Rule Synthesis
 
-**Technical White Paper — Version 2.0 (Empirical Engineering Edition)**  
+**Technical White Paper — Version 3.0 (Research Prototype Edition)**  
 **Implementation Reference:** `satguardian` (`src/` in Rust, `satguardian_waf/` in Python) & `exactor-core-v128` (EXACTOR GXOR Engine)
+
+> **Status: research prototype, not a production-ready WAF.** Evaluation is
+> in-sample on a small hand-written corpus; competitor rows are local Python
+> stand-ins. See [STATUS.md](STATUS.md).
 
 ---
 
 ## Abstract
 
-Modern Web Application Firewalls (WAFs) face a fundamental engineering tension between **inspection latency**, **evasion resistance**, and **false positive rates**. Traditional unnormalized regular expression engines execute quickly (`0.0427 ms` average in our Python benchmark) but fail against multi-layer URL encoding, inline SQL comments (`/**/`), and alternative DOM execution contexts (`47.0%` False Negative Rate). Conversely, full OWASP Core Rule Set (CRS v4) Anomaly Scoring engines apply multi-target transformations across dozens of rules per request (`0.2178 ms` average), while probabilistic NLP/token-weight classifiers suffer from high false positive rates (`24.6%` FPR) when benign requests contain technical terminology.
+Modern Web Application Firewalls (WAFs) face a fundamental engineering tension between **inspection latency**, **evasion resistance**, and **false positive rates**. Unnormalized regular expression engines are cheap per request but miss nested encodings and inline comments. Anomaly-scoring rule sets transform several request targets and evaluate many rules. Token-weight classifiers can fire on benign technical prose. Those statements are design-level; this repository does not benchmark the real products, only local Python stand-ins.
 
-This paper presents the implemented architecture and empirical evaluation of **SATGuardian Edge WAF** (`satguardian`). SATGuardian decouples **in-path request evaluation** from **out-of-band boolean rule minimization**:
-1. **In-Path Hot Plane (Native Rust):** Applies bounded multi-pass lexical normalization (`src/ast/lexer.rs`), packs structural tokens and request attributes into a 128-bit integer (`FeatureVector(pub u128)` in `src/ast/features.rs`), and evaluates compiled rule cubes via single-cycle bitwise operations (`(minterm & required_mask) == expected_bits` in `src/engine/sat_solver.rs`). Across 10,000 requests, the compiled Rust engine achieves a median latency (`p50`) of **`13.60 µs`** (`0.0136 ms`), a mean latency of **`14.53 µs`** (`0.0145 ms`), and a `p99` of **`30.50 µs`** (`65,441.13 req/sec` single-thread throughput).
-2. **Out-of-Band Synthesis Plane (Rust & Python):** Logs novel anomalous `u128` minterms to a local SQLite ledger (`waf_ledger.db`), simplifies up to **128 Boolean variables** asynchronously using the **EXACTOR GXOR** engine (`src/cloud/satguardian_client.rs` $\rightarrow$ `exactor-core-v128`) over the complete **`{AND, OR, NOT, XOR}`** operator basis via Differential Gray Code Mapping, verifies `< 0.1%` false positives against historical benign traffic in a **Digital Twin** (`satguardian-advisor.py`), and hot-reloads the compiled bitmasks via lock-free `ArcSwap`.
+This paper presents the implemented architecture and the measurements available for **SATGuardian Edge WAF** (`satguardian`). SATGuardian decouples **in-path request evaluation** from **out-of-band boolean rule minimization**:
+1. **In-Path Hot Plane (Native Rust):** Applies bounded multi-pass lexical normalization (`src/ast/lexer.rs`), packs structural tokens and request attributes into a 128-bit integer (`FeatureVector(pub u128)` in `src/ast/features.rs`), and evaluates compiled rule cubes via bitwise operations (`(minterm & required_mask) == expected_bits` in `src/engine/sat_solver.rs`). On the pinned corpus at 10,000 requests, a representative run measured p50 `~20 µs`, mean `~22 µs`, and p99 near `50 µs`, single-threaded, in memory only.
+2. **Out-of-Band Synthesis Plane (Rust & Python):** Logs novel anomalous `u128` minterms to a local SQLite ledger (`waf_ledger.db`), simplifies up to **128 Boolean variables** asynchronously using the **EXACTOR GXOR** engine over the complete **`{AND, OR, NOT, XOR}`** operator basis via Differential Gray Code Mapping, replays candidates against recorded benign traffic to find collisions, and hot-reloads compiled bitmasks via lock-free `ArcSwap`.
 
 ---
 
@@ -42,36 +46,86 @@ When unobserved malicious minterms $\mathcal{M} = \{m_1, m_2, \dots, m_k\} \subs
 1. **Differential Gray Code Mapping (`modify_gray_code`):** Projects 128-bit minterms into a Gray Code space and locates logical neighbors differing by a single bit ($\text{popcount}(E_a \oplus E_b) = 1$) in $O(1)$ constant time via `BTreeMap`/`HashMap` lookups, achieving $O(\text{term\_count})$ linear complexity:
    $$M_{\text{merged}} = M_a \mathbin{\&} \neg(E_a \oplus E_b), \quad E_{\text{merged}} = E_a \mathbin{\&} M_{\text{merged}}$$
 2. **GXOR / NXOR Algebraic Reduction over `{AND, OR, NOT, XOR}`:** Detects exclusive-OR ($\oplus$) and equivalence ($\odot$) structures across up to **128 Boolean variables (`u128`)**, collapsing parity and symmetric attack predicates that would otherwise require exponentially many Sum-of-Products (SOP) clauses.
-3. **Digital Twin Verification (`satguardian-advisor.py`):** Before adding any reduced invariant $c^*$ to the active rule matrix, the `SimulationAgent` verifies that $c^*$ produces `< 0.1%` false positives across the historical benign set $\mathcal{B}_{\text{ledger}}$ (`1,663` benign requests in `waf_ledger.db`).
+3. **Digital Twin Collision Replay (`satguardian-advisor.py`):** Before a reduced invariant $c^*$ is added to the active rule matrix, the `SimulationAgent` replays it against the benign records stored in `waf_ledger.db` and reports any collision. The ledger in this repository is demo data, so the replay finds collisions; it does not certify a fixed false-positive rate.
 
 ---
 
-## 2. Empirical Evaluation & Multi-WAF Benchmark
+## 2. Evaluation: What Was Measured, and What Was Not
 
-> **Methodological Note on Realism Capping:** In empirical security testing, reporting `100.0%` accuracy or `0.0%` error as an unconditional guarantee is misleading because finite test suites cannot cover every future attack mutation. Accordingly, `satguardian_waf/benchmark/metrics.py` caps reported accuracy, precision, and recall at **`99.9%`** and floors False Positive / False Negative rates at **`< 0.1%` (`0.1%`)**.
+> **No vendor comparison has been run.** The Python harness in this repository
+> contains local stand-ins for a CRS-style anomaly scorer, a semantic ruleset and
+> a token-weight classifier. They are Python reimplementations written here, not
+> Coraza, SafeLine, ModSecurity or any commercial product. Their numbers describe
+> this repository's stand-ins only.
 
-### 2.1 Comparative Benchmark Results (`1,000` Requests in Python & `10,000` Requests in Rust)
+### 2.1 Detection on the Pinned Corpus
 
-| Engine / Architecture | Implementation | Accuracy (Capped) | Mean Latency | P99 Latency | FPR (Floored) | FNR (Floored) | Cost / 1M Req |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **SATGuardian Edge (v0.2.0)** | **Native Rust (`10,000` reqs)** | **99.9%** | **`0.0145 ms` (`14.53 µs`)** | **`0.0305 ms` (`30.50 µs`)** | **< 0.1%** (`0.1%`) | **< 0.1%** (`0.1%`) | **$0.00** |
-| **SATGuardian Edge (Reference)** | **Python (`1,000` reqs)** | **99.9%** | **`0.0644 ms` (`64.40 µs`)** | **`0.1882 ms` (`188.20 µs`)** | **< 0.1%** (`0.1%`) | **< 0.1%** (`0.1%`) | **$0.00** |
-| **Coraza WAF (OWASP CRS v4 PL1)** | Python CRS Anomaly Scorer | 97.3% | `0.2178 ms` (`217.80 µs`) | `0.4691 ms` (`469.10 µs`) | < 0.1% (`0.1%`) | 5.4% | **$0.00** |
-| **SafeLine WAF (Chaitin T1K)** | Python Semantic Grammar | 94.4% | `0.0597 ms` (`59.70 µs`) | `0.1416 ms` (`141.60 µs`) | < 0.1% (`0.1%`) | 11.2% | **$0.00** |
-| **Probabilistic Token Scorer** | Python N-Gram & Entropy NLP | 77.3% | `0.0731 ms` (`73.10 µs`) | `0.1793 ms` (`179.30 µs`) | 24.6% | 20.8% | **$0.00** |
-| **Classical ModSecurity Baseline** | Python Raw Regex Signatures | 76.5% | `0.0427 ms` (`42.70 µs`) | `0.1059 ms` (`105.90 µs`) | < 0.1% (`0.1%`) | 47.0% | **$0.00** |
+`corpus/independent_v1.json` holds 63 labelled attacks and 16 benign controls;
+`corpus/heldout_v1.json` holds 17 attack variants and 4 benign controls. The
+first run of each file was recorded before any fix and is the only number in
+this repository that was not produced by tuning against the same data.
 
-### 2.2 Detailed Analysis of Experimental Findings
+| Corpus | First run (before fixes) | Current regression run | Interpretation |
+| :--- | :---: | :---: | :--- |
+| `independent_v1` | 51/63 attacks (80.95%), 3/16 benign blocked (18.75%) | 63/63 attacks, 0/16 benign blocked | In-sample regression after fixes |
+| `heldout_v1` | 11/17 attacks (64.71%), 0/4 benign blocked (0.00%) | 17/17 attacks, 0/4 benign blocked | Batch consumed by the fix pass; in-sample now |
 
-1. **Latency Comparison (Native Rust vs. Python vs. CRS Anomaly Scoring):**
-   - The native Rust engine (`satguardian-waf-v0.2.0.exe`) evaluates 10,000 requests in `0.1528 s` (`13.60 µs` median, `14.53 µs` mean, `30.50 µs` `p99`), which is **`4.4x` faster** than the Python reference implementation (`64.40 µs` mean) and **`15.0x` faster** than Coraza OWASP CRS v4 Anomaly Scoring (`217.80 µs` mean).
-   - Even within Python, SATGuardian (`0.0644 ms`) is **`3.38x` faster** than Coraza CRS v4 (`0.2178 ms`) because OWASP CRS Anomaly Scoring must transform 5+ request variables (`REQUEST_URI`, `ARGS`, `REQUEST_BODY`, `REQUEST_HEADERS`) and evaluate all 20 rules without short-circuiting to compute the total anomaly score.
-2. **False Negative Analysis (Multi-Layer Encoding Evasions):**
-   - **Classical Unnormalized Regex (`47.0%` FNR):** Fails on inline SQL comments (`admin'/**/OR/**/1=1`), URL-encoded `<script>` tags (`%3Cscript%3E`), SVG event handlers (`<svg/onload=...>`), subshell expansions (`$(...)`), and double-encoded path traversal (`..%252f..%252f`).
-   - **SafeLine T1K Semantic Grammar (`11.2%` FNR) & Coraza CRS PL1 (`5.4%` FNR):** Single-pass URL decoding (`t:urlDecodeUni`) catches single-encoded attacks but misses triple URL-encoded path traversal (`..%25252f..%25252fwindows%25252fwin.ini`). SATGuardian's 3-pass conditional URL decoder resolves nested encodings before tokenizing.
-3. **False Positive Analysis (Benign Technical Prose):**
-   - **Probabilistic Token Scorer (`24.6%` FPR):** Assigns additive log-odds weights to tokens like `"script"`, `"character"`, and `"select"`. Benign user comments such as *"The script of the movie was great. I loved the character depth & direction!"* cross the anomaly threshold and are falsely blocked.
-   - **SATGuardian Bitmask Conjunctions (`< 0.1%` FPR):** Requires structural conjunctions (`TAG_OPEN` $\land$ `SCRIPT_ELEMENT` $\land$ `DOM_EXEC`), allowing benign technical prose to pass cleanly.
+The first-run row is the honest statement about the engine as originally
+published: it missed roughly one attack in five and blocked three benign
+requests. The current row says the pinned cases pass. It is not a held-out
+estimate and it is not evidence of production accuracy. Rules for adding cases
+and the full miss list live in [corpus/README.md](corpus/README.md).
+
+### 2.2 In-Memory Latency (Native Rust)
+
+`satguardian-waf benchmark -r 10000` cycles the corpus and measures rule
+evaluation only. A representative run on the development machine reported p50
+near `20 µs`, mean near `22 µs` and p99 near `50 µs`, single-threaded. The
+figures move with machine load and should be re-measured on the target host.
+Excluded from the measurement: network, TLS, reverse-proxy hops, upstream
+calls, and SQLite ledger writes. The runner prints these exclusions and the
+in-sample caveat on every run, and it refuses to start if the corpus file is
+missing.
+
+### 2.3 Python Reference Harness (Local Stand-Ins)
+
+`python run_benchmark.py 1000` runs the Python reference port of the engine
+against the local stand-ins on the in-repo payload list. Every row is labelled
+with its provenance in the report output, the Markdown export and the API
+response. Representative 1,000-request values:
+
+| Engine | Implementation | Attacks detected | Benign blocked | Mean latency |
+| :--- | :---: | :---: | :---: | :---: |
+| SATGuardian Python reference | Python port (not the Rust engine) | 100.0% | 0.0% | `~0.06 ms` |
+| CRS-style anomaly stand-in | Python reimplementation | 97.3% | 0.0% | `~0.24 ms` |
+| Semantic-ruleset stand-in | Python reimplementation | 94.4% | 0.0% | `~0.06 ms` |
+| Token-weight stand-in | Python heuristic | 77.3% | 24.6% | `~0.07 ms` |
+| Unnormalized regex stand-in | Python reimplementation | 76.5% | 0.0% | `~0.04 ms` |
+
+Both the payload list and the stand-ins were written in this repository, so
+these are in-sample results over a small hand-written set. They show that the
+harness runs end to end. They do not support any claim about real products, and
+they do not establish production readiness.
+
+### 2.4 Engineering Takeaways
+
+1. **Normalization drives the detection gap.** The first-run misses were
+   concentrated in MySQL executable comments, `||` tautologies, HTML-entity
+   schemes, overlong UTF-8, `\u`-escaped keys and nested Log4Shell lookups. The
+   fixes were lexical: additional decoding passes and normalization rules, not a
+   larger rule table.
+2. **Structural conjunctions avoid keyword false positives in the pinned set.**
+   The three first-run false positives were a `<script src>` include, a `data:`
+   URI and a `localhost` URL in prose. Requiring co-occurring structural tokens
+   removed them without deleting the cases.
+3. **Per-request cost is dominated by normalization, not rule matching.** The
+   bitmask test is one `AND` plus one comparison per rule; the decode loop runs
+   first and sets the floor. This ordering is why the in-memory figure is tens of
+   microseconds rather than single digits.
+4. **None of this is an independent evaluation.** The corpus is small and
+   hand-written, and it has been used to drive fixes. A defensible quality claim
+   needs a held-out corpus built and labelled by someone who has not seen the
+   engine, plus a production soak. Neither exists yet. See [STATUS.md](STATUS.md).
 
 ---
 

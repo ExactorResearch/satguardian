@@ -6,7 +6,7 @@
 ===============================================================================
  Specialized Agent Architecture:
    1. TrafficPatternAgent   : Forensic analysis and trace clustering (SQLite / audit_log)
-   2. SimulationAgent       : Digital twin simulation and <0.1% FP formal verification
+   2. SimulationAgent       : Digital twin replay against the ledger; reports collisions
    3. RuleSynthesizerAgent  : O(1) rule synthesis and hardware optimization
    4. HumanApprovalAgent    : Interactive governance and hot rule application
    5. ForensicReportAgent   : Executive HTML and Markdown report generator
@@ -314,7 +314,7 @@ class TrafficPatternAgent:
 
 
 # =============================================================================
-# AGENT 2: SimulationAgent (Digital Twin & 0% False Positive Verification)
+# AGENT 2: SimulationAgent (Digital Twin collision replay)
 # =============================================================================
 class SimulationAgent:
     def __init__(self, db_path):
@@ -322,8 +322,10 @@ class SimulationAgent:
 
     def simulate_rule(self, rule_payload):
         """
-        Re-evaluates the candidate rule across all recorded historical traces.
-        Demonstrates certified 0% false positives and calculates attacks mitigated at perimeter.
+        Re-evaluates the candidate rule across all recorded historical traces and
+        reports collisions with records the engine allowed. A clean replay only
+        means no collision in this ledger; it is not a certified false-positive
+        rate.
         """
         if not os.path.exists(self.db_path):
             return {"error": "Database not found"}
@@ -381,18 +383,13 @@ class SimulationAgent:
 
         conn.close()
 
-        is_certified = (len(false_positives) == 0)
-        saved_us = round(prevented_attacks * 1174.7, 1)
-
         return {
-            "certified_zero_false_positives": is_certified,
+            "zero_collisions_in_ledger": not false_positives,
             "benign_tested": benign_tested,
             "false_positives_count": len(false_positives),
             "false_positives": false_positives[:3],
             "attacks_intercepted_at_perimeter": prevented_attacks,
             "attacks_tested": attacks_tested,
-            "saved_latency_us": saved_us,
-            "saved_latency_ms": round(saved_us / 1000.0, 2),
         }
 
 
@@ -509,9 +506,9 @@ class RuleSynthesizerAgent:
                 "type": "cloud_synthesis",
                 "action_name": "EXACTOR GXOR Cloud Boolean Minimization (AND, OR, NOT, XOR up to 128 vars)",
                 "island_key": "cloud_sync_pending_anomalies",
-                "evidence": f"Detected {p_cnt} novel unobserved u128 minterm anomalies across {tot_occ} production occurrences pending EXACTOR GXOR cloud synthesis.",
-                "risk_assessment": "Zero risk. Deterministic GXOR algebraic compilation over {AND, OR, NOT, XOR} that compresses up to 128 variables without altering security logic.",
-                "impact": f"Compiles u128 minterms via EXACTOR GXOR into minimal boolean invariants, reducing gate count by up to 80%. Estimated consumption: 1 Security Unit (SU).",
+                "evidence": f"Detected {p_cnt} novel unobserved u128 minterm anomalies across {tot_occ} recorded ledger occurrences pending EXACTOR GXOR cloud synthesis.",
+                "risk_assessment": "Requires review. The synthesized equation must be replayed against the ledger before it is applied; a smaller equation is not automatically a safer one.",
+                "impact": f"Compiles u128 minterms via EXACTOR GXOR into boolean invariants over {{AND, OR, NOT, XOR}}. Estimated consumption: 1 Security Unit (SU); size reduction is not measured in this repository.",
             })
 
         return suggestions
@@ -550,13 +547,11 @@ class HumanApprovalAgent:
             # Display Digital Twin verdict (SimulationAgent)
             sim = sug.get("simulation")
             if sim and not sim.get("error"):
-                if sim["certified_zero_false_positives"]:
-                    badge = f"\033[1;32m[✓ CERTIFIED 0% FALSE POSITIVES]\033[0m {sim['benign_tested']} benign requests tested (0 collisions)"
+                if sim["zero_collisions_in_ledger"]:
+                    badge = f"\033[1;32m[NO COLLISIONS IN LEDGER]\033[0m {sim['benign_tested']} allowed records tested (demo ledger)"
                 else:
-                    badge = f"\033[1;31m[REGRESSION ALERT]\033[0m {sim['false_positives_count']} collisions detected"
-                print(f"\033[1;34m│\033[0m Simulation   : {badge}")
-                if sim["attacks_intercepted_at_perimeter"] > 0:
-                    print(f"\033[1;34m│\033[0m CPU Savings  : {sim['attacks_intercepted_at_perimeter']} attacks dropped in O(1) (~{sim['saved_latency_ms']} ms saved)")
+                    badge = f"\033[1;31m[COLLISION FOUND]\033[0m {sim['false_positives_count']} allowed records would be blocked"
+                print(f"\033[1;34m│\033[0m Replay       : {badge}")
 
             if sug["type"] == "business_rule":
                 payload = sug["rule_payload"]
@@ -697,12 +692,20 @@ class ForensicReportAgent:
             </tr>
         """ for cat, cnt in cats.items())
 
+        def _twin_cell(sug):
+            sim = sug.get("simulation")
+            if not sim or sim.get("error"):
+                return '<span class="badge badge-secondary">Not replayed</span>'
+            if not sim["zero_collisions_in_ledger"]:
+                return f'<span class="badge badge-danger">{sim["false_positives_count"]} collisions</span>'
+            return f'<span class="badge badge-success">No collisions / {sim["benign_tested"]} allowed</span>'
+
         sug_rows = "".join(f"""
             <tr>
                 <td><span class="badge badge-primary">{sug.get('type', 'rule')}</span></td>
                 <td><code>{sug.get('rule_id', sug.get('island_key'))}</code></td>
                 <td>{sug['evidence']}</td>
-                <td><span class="badge badge-success">✓ <0.1% FP Verified</span></td>
+                <td>{_twin_cell(sug)}</td>
                 <td>{sug['impact']}</td>
             </tr>
         """ for sug in self.suggestions)
@@ -808,7 +811,7 @@ class ForensicReportAgent:
                 <div class="timestamp">Generated by GUARDIAN-ADVISOR Multi-Agent Pipeline | {time.strftime('%Y-%m-%d %H:%M:%S UTC')}</div>
             </div>
             <div>
-                <span class="badge badge-success" style="font-size:14px;padding:6px 12px;">SOC 2 CC6.6 & PCI-DSS 6.6 ATTESTATION</span>
+                <span class="badge badge-warning" style="font-size:14px;padding:6px 12px;">RESEARCH PROTOTYPE — DEMO LEDGER, NOT A COMPLIANCE ATTESTATION</span>
             </div>
         </header>
 
@@ -859,11 +862,11 @@ class ForensicReportAgent:
             </table>
         </div>
 
-        <div class="section-title">3. Rules Synthesized by Multi-Agent Pipeline (Verified with Digital Twin)</div>
+        <div class="section-title">3. Rules Synthesized by Multi-Agent Pipeline (Replayed against Local Ledger)</div>
         <div class="card" style="padding:0;overflow:hidden;">
             <table>
                 <thead>
-                    <tr><th>Type</th><th>Identifier</th><th>Forensic Evidence</th><th>Digital Twin Verdict</th><th>Operational Impact</th></tr>
+                    <tr><th>Type</th><th>Identifier</th><th>Forensic Evidence</th><th>Ledger Replay</th><th>Operational Impact</th></tr>
                 </thead>
                 <tbody>
                     {sug_rows if sug_rows else '<tr><td colspan="5" style="text-align:center;padding:20px;">No pending suggestions for approval. Perimeter traffic is fully optimized.</td></tr>'}
@@ -891,7 +894,7 @@ class ForensicReportAgent:
         lines = [
             "# GUARDIAN WAF — Forensic & Security Audit Report",
             f"*Generation Date:* {time.strftime('%Y-%m-%d %H:%M:%S UTC')}  ",
-            f"*Attestation:* SOC 2 CC6.6 & PCI-DSS 6.6 (Empirically Tested High Accuracy (<0.1% FPR))  ",
+            "*Scope:* Local demo ledger. This report is not a compliance attestation and this repository has not been independently audited.  ",
             "",
             "## 1. Executive Traffic Summary",
             f"- **Total Requests:** {total:,}",
@@ -918,11 +921,18 @@ class ForensicReportAgent:
         lines.extend([
             "",
             "## 4. Rules Synthesized by the Multi-Agent Advisor",
-            "| Rule ID | Forensic Evidence | Digital Twin Verification | WAF Impact |",
+            "| Rule ID | Forensic Evidence | Ledger Replay | WAF Impact |",
             "| :--- | :--- | :--- | :--- |",
         ])
         for sug in self.suggestions:
-            lines.append(f"| `{sug.get('rule_id', sug.get('island_key'))}` | {sug['evidence']} | **✓ <0.1% FP Verified** | {sug['impact']} |")
+            sim = sug.get("simulation")
+            if not sim or sim.get("error"):
+                verdict = "Not replayed"
+            elif not sim["zero_collisions_in_ledger"]:
+                verdict = f"{sim['false_positives_count']} collisions"
+            else:
+                verdict = f"No collisions / {sim['benign_tested']} allowed"
+            lines.append(f"| `{sug.get('rule_id', sug.get('island_key'))}` | {sug['evidence']} | {verdict} | {sug['impact']} |")
 
         with open(output_path, "w", encoding="utf-8") as f:
             f.write("\n".join(lines) + "\n")
@@ -1072,14 +1082,19 @@ def main():
     if nov.get("pending_count", 0) > 0:
         print(f"  • Pending anomalies  : {nov['pending_count']} minterms ({nov['total_occurrences']} occurrences) ready for Cloud synthesis")
 
-    print("\n\033[1;34m[2/3] Executing RuleSynthesizerAgent with Digital Twin...\033[0m")
-    print(f"  • Rules synthesized  : {len(suggestions)} suggestion(s) generated and verified with 0 False Positives")
+    print("\n\033[1;34m[2/3] Executing RuleSynthesizerAgent with ledger replay...\033[0m")
+    print(f"  • Rules synthesized  : {len(suggestions)} suggestion(s) generated and replayed against the local ledger")
 
     if args.dry_run:
         print(f"\n\033[1;33m[DRY-RUN] Informational mode: Found {len(suggestions)} candidate rules.\033[0m")
         for s in suggestions:
             sim = s.get("simulation")
-            sim_badge = f" [<0.1% FP, {sim['attacks_intercepted_at_perimeter']} attacks prevented]" if sim else ""
+            if not sim or sim.get("error"):
+                sim_badge = ""
+            elif sim["zero_collisions_in_ledger"]:
+                sim_badge = f" [no ledger collisions, {sim['benign_tested']} allowed tested]"
+            else:
+                sim_badge = f" [{sim['false_positives_count']} ledger collisions]"
             print(f"  • [{s['type'].upper()}] {s['action_name']} -> {s.get('rule_id', s.get('island_key'))}{sim_badge}")
         return
 

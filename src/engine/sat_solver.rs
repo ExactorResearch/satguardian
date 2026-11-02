@@ -38,6 +38,26 @@ impl Default for SatguardianSatEngine {
     }
 }
 
+/// Lower rank wins when a request matches multiple certainty islands.
+fn category_specificity(category: AttackCategory) -> u8 {
+    match category {
+        AttackCategory::FrameworkExploitProbe => 0,
+        AttackCategory::CmsWordpressProbe => 1,
+        AttackCategory::SensitiveExposureProbe => 2,
+        AttackCategory::JwtTampering => 3,
+        AttackCategory::GrpcSmuggling => 4,
+        AttackCategory::GraphqlAbuse => 5,
+        AttackCategory::PrototypePollution => 6,
+        AttackCategory::BusinessRuleViolation => 7,
+        AttackCategory::Ssrf => 8,
+        AttackCategory::CommandInjection => 9,
+        AttackCategory::PathTraversal => 10,
+        AttackCategory::Xss => 11,
+        AttackCategory::SqlInjection => 12,
+        _ => 13,
+    }
+}
+
 impl SatguardianSatEngine {
     pub fn new() -> Self {
         Self::with_config(IslandsConfig::default(), BusinessRulesConfig::default())
@@ -677,9 +697,28 @@ impl SatguardianSatEngine {
     }
 
     /// Hot-compiles a newly simplified rule into the active Fast-Path in-memory table.
-    pub fn register_dynamic_clause(&self, clause: DynamicCompiledClause) {
+    /// Returns false when the clause is a duplicate or the safety cap is reached.
+    pub fn register_dynamic_clause(&self, clause: DynamicCompiledClause) -> bool {
+        const MAX_DYNAMIC_CLAUSES: usize = 4096;
+
         let mut w = self.dynamic_clauses.write().unwrap();
+        if w.iter().any(|existing| {
+            existing.required_mask == clause.required_mask
+                && existing.expected_bits == clause.expected_bits
+        }) {
+            return false;
+        }
+        if w.len() >= MAX_DYNAMIC_CLAUSES {
+            tracing::warn!(
+                target: "satguardian::engine",
+                "Dynamic clause cap ({}) reached; ignoring clause {}",
+                MAX_DYNAMIC_CLAUSES,
+                clause.clause_id
+            );
+            return false;
+        }
         w.push(clause);
+        true
     }
 
     pub fn get_rules(&self) -> Vec<DeductionRule> {
@@ -940,7 +979,7 @@ impl SatguardianSatEngine {
         let islands_cfg = self.islands_config.read().unwrap().clone();
         let full_inspectable = req.full_inspectable_string();
         if islands_cfg.wordpress_shield && tokens.has_wordpress_probe {
-            if full_inspectable.contains("wp-admin") || full_inspectable.contains("wp-login.php") || full_inspectable.contains("xmlrpc.php") || full_inspectable.contains("index.php") {
+            if full_inspectable.contains("wp-admin") || full_inspectable.contains("wp-login.php") || full_inspectable.contains("xmlrpc.php") {
                 if let Some(r) = self.rules.get("SAT-WP-01") {
                     matched_rules.push(r.clone());
                     active_islands.push("ISLAND-WORDPRESS".to_string());
@@ -1121,7 +1160,13 @@ impl SatguardianSatEngine {
 
         let is_violation = !matched_rules.is_empty();
         let category = if is_violation {
-            matched_rules[0].category
+            // A payload can match several islands (SpEL is also RCE, `;cat /etc/passwd`
+            // is also LFI). Classify by the most specific island, not evaluation order.
+            matched_rules
+                .iter()
+                .map(|r| r.category)
+                .min_by_key(|c| category_specificity(*c))
+                .unwrap_or(AttackCategory::Unknown)
         } else {
             AttackCategory::Benign
         };

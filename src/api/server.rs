@@ -4,8 +4,9 @@ use crate::config::{CustomBusinessRule, IslandsConfig};
 use crate::proxy::ProxyState;
 use crate::types::{HttpRequestPayload, ProofChain, WafMetricsSnapshot};
 use axum::{
-    extract::{Path, State},
-    http::StatusCode,
+    extract::{Path, Request, State},
+    http::{header, HeaderValue, StatusCode},
+    middleware::{self, Next},
     response::{IntoResponse, Response},
     routing::{delete, get, post},
     Json, Router,
@@ -38,10 +39,8 @@ fn default_path() -> String {
     "/".to_string()
 }
 
-pub fn create_api_router() -> Router<Arc<ProxyState>> {
-    Router::new()
-        .route("/health", get(health_check))
-        .route("/livez", get(health_check))
+pub fn create_api_router(state: Arc<ProxyState>) -> Router {
+    let protected = Router::new()
         .route("/api/waf/inspect", post(inspect_payload))
         .route("/api/waf/metrics", get(get_metrics))
         .route("/api/waf/rules", get(get_rules))
@@ -56,6 +55,72 @@ pub fn create_api_router() -> Router<Arc<ProxyState>> {
         )
         .route("/api/waf/rules/customer/:id", delete(delete_customer_rule))
         .route("/api/waf/sync-simplify", post(trigger_sync_simplify))
+        .route_layer(middleware::from_fn_with_state(
+            state.clone(),
+            require_admin_token,
+        ));
+
+    Router::new()
+        .route("/health", get(health_check))
+        .route("/livez", get(health_check))
+        .merge(protected)
+        .with_state(state)
+}
+
+async fn require_admin_token(
+    State(state): State<Arc<ProxyState>>,
+    req: Request,
+    next: Next,
+) -> Response {
+    let Some(expected) = state
+        .config
+        .admin_token
+        .as_deref()
+        .filter(|token| !token.is_empty())
+    else {
+        return (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(serde_json::json!({
+                "error": "management_api_disabled",
+                "message": "Set SATGUARDIAN_ADMIN_TOKEN (or WAF_ADMIN_TOKEN) to enable the management API"
+            })),
+        )
+            .into_response();
+    };
+
+    let provided = req
+        .headers()
+        .get(header::AUTHORIZATION)
+        .and_then(|v| v.to_str().ok())
+        .and_then(|v| v.strip_prefix("Bearer "))
+        .map(str::trim);
+
+    match provided {
+        Some(token) if constant_time_eq(token.as_bytes(), expected.as_bytes()) => {
+            next.run(req).await
+        }
+        _ => {
+            let mut res = (
+                StatusCode::UNAUTHORIZED,
+                Json(serde_json::json!({ "error": "admin_auth_required" })),
+            )
+                .into_response();
+            res.headers_mut()
+                .insert(header::WWW_AUTHENTICATE, HeaderValue::from_static("Bearer"));
+            res
+        }
+    }
+}
+
+fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {
+    if a.len() != b.len() {
+        return false;
+    }
+    let mut diff = 0u8;
+    for (left, right) in a.iter().zip(b) {
+        diff |= left ^ right;
+    }
+    diff == 0
 }
 
 async fn health_check() -> impl IntoResponse {
@@ -89,13 +154,6 @@ async fn get_metrics(State(state): State<Arc<ProxyState>>) -> impl IntoResponse 
     let total = state.counter_total.load(Ordering::Relaxed);
     let blocked = state.counter_blocked.load(Ordering::Relaxed);
     let allowed = state.counter_allowed.load(Ordering::Relaxed);
-    let sum_lat = state.sum_latency_us.load(Ordering::Relaxed);
-
-    let avg_latency = if total > 0 {
-        (sum_lat as f64) / (total as f64)
-    } else {
-        0.0
-    };
 
     let pending = state.ledger.count_pending_anomalies().await;
 
@@ -103,8 +161,8 @@ async fn get_metrics(State(state): State<Arc<ProxyState>>) -> impl IntoResponse 
         total_requests: total,
         blocked_requests: blocked,
         allowed_requests: allowed,
-        avg_latency_us: (avg_latency * 100.0).round() / 100.0,
-        p99_latency_us: (avg_latency * 1.5).round(), // estimated p99
+        avg_latency_us: (state.latency_histogram.avg_us() * 100.0).round() / 100.0,
+        p99_latency_us: state.latency_histogram.percentile_us(0.99).round(),
         uptime_seconds: state.start_time.elapsed().as_secs(),
         active_rules_count: state.engine.get_rules().len(),
         hot_compiled_rules_count: state.engine.dynamic_clauses_count(),
@@ -218,7 +276,7 @@ async fn trigger_sync_simplify(State(state): State<Arc<ProxyState>>) -> Response
         .into_response();
     }
 
-    let variables = FeatureBinarizer::get_variable_catalog(24);
+    let variables = FeatureBinarizer::get_variable_catalog(40);
     let req = SimplifyRequest {
         variables: variables.clone(),
         minterms: pending_minterms.clone(),
@@ -228,20 +286,80 @@ async fn trigger_sync_simplify(State(state): State<Arc<ProxyState>>) -> Response
 
     match state.cloud_client.simplify(&req).await {
         Ok(resp) => {
-            let clauses = state.cloud_client.compile_equation_to_clauses(&resp.result, &variables);
-            let clauses_count = clauses.len();
+            let clauses = match state
+                .cloud_client
+                .compile_equation_to_clauses(&resp.result, &variables)
+            {
+                Ok(clauses) if !clauses.is_empty() => clauses,
+                Ok(_) => {
+                    error!(
+                        target: "satguardian::sync",
+                        equation = %resp.result,
+                        "Cloud returned an equation with no usable clauses; ledger left unchanged"
+                    );
+                    return (
+                        StatusCode::BAD_GATEWAY,
+                        Json(serde_json::json!({
+                            "status": "rejected",
+                            "error": "cloud_returned_no_usable_clauses",
+                            "minimized_equation": resp.result
+                        })),
+                    )
+                        .into_response();
+                }
+                Err(e) => {
+                    error!(
+                        target: "satguardian::sync",
+                        equation = %resp.result,
+                        error = %e,
+                        "Cloud returned an invalid equation; refusing to hot-load clauses"
+                    );
+                    return (
+                        StatusCode::BAD_GATEWAY,
+                        Json(serde_json::json!({
+                            "status": "rejected",
+                            "error": "invalid_cloud_equation",
+                            "details": e,
+                            "minimized_equation": resp.result
+                        })),
+                    )
+                        .into_response();
+                }
+            };
 
-            for c in clauses {
-                state.engine.register_dynamic_clause(c);
+            let mut added = 0usize;
+            let mut duplicates = 0usize;
+            for clause in clauses {
+                if state.engine.register_dynamic_clause(clause.clone()) {
+                    if let Err(e) = state.ledger.save_dynamic_clause(&clause).await {
+                        error!(target: "satguardian::ledger", "Failed to persist dynamic clause: {}", e);
+                    }
+                    added += 1;
+                } else {
+                    duplicates += 1;
+                }
             }
 
-            let _ = state.ledger.record_simplification(&resp, variables.len(), pending_minterms.len()).await;
-            let _ = state.ledger.mark_anomalies_simplified(&pending_minterms).await;
+            if let Err(e) = state
+                .ledger
+                .record_simplification(&resp, variables.len(), pending_minterms.len())
+                .await
+            {
+                error!(target: "satguardian::ledger", "Failed to record simplification history: {}", e);
+            }
+            if let Err(e) = state
+                .ledger
+                .mark_anomalies_simplified(&pending_minterms)
+                .await
+            {
+                error!(target: "satguardian::ledger", "Failed to mark anomalies as simplified: {}", e);
+            }
 
             info!(
                 target: "satguardian::sync",
                 reduction = %format!("{:.1}%", resp.reduction_percent),
-                hot_rules_added = clauses_count,
+                hot_rules_added = added,
+                duplicates,
                 "Hot minimization complete. Dynamic clauses registered into in-memory Fast-Path."
             );
 
@@ -253,7 +371,8 @@ async fn trigger_sync_simplify(State(state): State<Arc<ProxyState>>) -> Response
                 "reduction_percent": resp.reduction_percent,
                 "minimized_equation": resp.result,
                 "execution_time_ms": resp.execution_time_ms,
-                "dynamic_clauses_added": clauses_count,
+                "dynamic_clauses_added": added,
+                "duplicate_clauses_skipped": duplicates,
                 "su_used": resp.su_used
             }))
             .into_response()

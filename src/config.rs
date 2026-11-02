@@ -16,11 +16,29 @@ pub struct WafConfig {
 
     /// Stealth mode: when enabled, blocked responses return a minimal standard 403 Forbidden
     /// without revealing mathematical causal proofs, violated rule names, or LaTeX formulas to attackers.
-    #[serde(default = "default_false")]
+    #[serde(default = "default_true")]
     pub stealth_mode: bool,
 
     /// Custom stealth body message (optional, e.g. "Forbidden" or HTML).
     pub stealth_block_body: Option<String>,
+
+    /// Dedicated listener for the management API. Defaults to loopback so management
+    /// routes are never exposed on the public data-plane port. Set to "off" to disable.
+    #[serde(default = "default_admin_listen_addr")]
+    pub admin_listen_addr: Option<String>,
+
+    /// Bearer token required by every management API route. When unset, management
+    /// routes return 503 instead of running unauthenticated.
+    pub admin_token: Option<String>,
+
+    /// Maximum accepted inbound request body in bytes.
+    #[serde(default = "default_max_body_bytes")]
+    pub max_body_bytes: usize,
+
+    /// Exact IPs or CIDR ranges of upstream proxies allowed to supply forwarding headers.
+    /// Loopback is always trusted. Empty means only the TCP peer and loopback.
+    #[serde(default)]
+    pub trusted_proxies: Vec<String>,
 
     /// SATGuardian Cloud Optimization API URL (defaults to https://satguardian.tech/api/simplify).
     #[serde(default = "default_satguardian_api_url", alias = "exactor_api_url")]
@@ -162,6 +180,14 @@ fn default_upstream_url() -> String {
     "http://127.0.0.1:3000".to_string()
 }
 
+fn default_admin_listen_addr() -> Option<String> {
+    Some("127.0.0.1:10001".to_string())
+}
+
+fn default_max_body_bytes() -> usize {
+    2 * 1024 * 1024
+}
+
 fn default_mode() -> String {
     "block".to_string()
 }
@@ -208,8 +234,12 @@ impl Default for WafConfig {
             listen_addr: "0.0.0.0:8080".to_string(),
             upstream_url: "http://127.0.0.1:3000".to_string(),
             mode: default_mode(),
-            stealth_mode: false,
+            stealth_mode: true,
             stealth_block_body: None,
+            admin_listen_addr: default_admin_listen_addr(),
+            admin_token: None,
+            max_body_bytes: default_max_body_bytes(),
+            trusted_proxies: Vec::new(),
             satguardian_api_url: default_satguardian_api_url(),
             satguardian_api_token: None,
             database_path: default_database_path(),
@@ -256,6 +286,16 @@ impl WafConfig {
             WafConfig::default()
         };
 
+        // Allow TOML to disable the admin listener with "off" / "none" / "".
+        let disable_admin = cfg
+            .admin_listen_addr
+            .as_deref()
+            .map(|v| v.is_empty() || v.eq_ignore_ascii_case("off") || v.eq_ignore_ascii_case("none"))
+            .unwrap_or(false);
+        if disable_admin {
+            cfg.admin_listen_addr = None;
+        }
+
         // Override with environment variables if present
         if let Ok(v) = std::env::var("WAF_LISTEN_ADDR") {
             cfg.listen_addr = v;
@@ -271,6 +311,33 @@ impl WafConfig {
         }
         if let Ok(v) = std::env::var("WAF_STEALTH_BLOCK_BODY") {
             cfg.stealth_block_body = Some(v);
+        }
+        if let Ok(v) = std::env::var("WAF_ADMIN_LISTEN_ADDR") {
+            cfg.admin_listen_addr = if v.is_empty()
+                || v.eq_ignore_ascii_case("off")
+                || v.eq_ignore_ascii_case("none")
+            {
+                None
+            } else {
+                Some(v)
+            };
+        }
+        if let Ok(v) = std::env::var("SATGUARDIAN_ADMIN_TOKEN")
+            .or_else(|_| std::env::var("WAF_ADMIN_TOKEN"))
+        {
+            cfg.admin_token = if v.trim().is_empty() { None } else { Some(v) };
+        }
+        if let Ok(v) = std::env::var("WAF_MAX_BODY_BYTES") {
+            if let Ok(n) = v.parse::<usize>() {
+                cfg.max_body_bytes = n;
+            }
+        }
+        if let Ok(v) = std::env::var("WAF_TRUSTED_PROXIES") {
+            cfg.trusted_proxies = v
+                .split(',')
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .collect();
         }
         if let Ok(v) = std::env::var("SATGUARDIAN_API_URL").or_else(|_| std::env::var("EXACTOR_API_URL")) {
             cfg.satguardian_api_url = v;

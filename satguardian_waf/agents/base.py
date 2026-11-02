@@ -31,11 +31,17 @@ class WAFAgentDecision:
 
 
 class BaseWAFAgent(ABC):
-    """Abstract Base Class for WAF Agents."""
+    """Abstract Base Class for WAF Agents.
 
-    def __init__(self, name: str, description: str):
+    ``provenance`` records what a benchmark row actually measures. Python
+    reimplementations of third-party techniques must say so, so that reported
+    numbers cannot be mistaken for vendor benchmarks.
+    """
+
+    def __init__(self, name: str, description: str, provenance: str = "in-repo implementation"):
         self.name = name
         self.description = description
+        self.provenance = provenance
 
     @abstractmethod
     def inspect(self, request: HTTPRequestPayload) -> WAFAgentDecision:

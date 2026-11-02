@@ -1,4 +1,4 @@
-"""SafeLine WAF Agent - Semantic Grammar & Token Stream Engine Execution."""
+"""Python stand-in for a semantic-grammar WAF (NOT the SafeLine engine)."""
 
 from __future__ import annotations
 
@@ -11,17 +11,19 @@ from satguardian_waf.core.payload import HTTPRequestPayload, AttackCategory, Att
 
 
 class SafeLineWAFAgent(BaseWAFAgent):
-    """SafeLine WAF Agent (Chaitin T1K Semantic Grammar Execution).
+    """Illustrative Python approximation of a semantic tokenizer WAF.
 
-    Executes single-pass URL/HTML decoding followed by semantic grammar
-    token classification across URI, query parameters, and body.
-    Measures true CPU execution time with zero artificial delays.
+    This is a small hand-written pattern list over single-pass decoded input.
+    It is not SafeLine, not Chaitin's T1K engine, and does not model that
+    engine's actual rule set or tokenizer. Its numbers must never be reported
+    as SafeLine or vendor results.
     """
 
     def __init__(self):
         super().__init__(
-            name="SafeLine WAF (Chaitin T1K Ruleset)",
-            description="Semantic lexical grammar and token pattern analysis across decoded HTTP fields."
+            name="SafeLine stand-in (Python, not SafeLine)",
+            description="Illustrative Python semantic-token pattern approximation.",
+            provenance="python stand-in: not the Chaitin SafeLine engine",
         )
         self._tokenizer_re = re.compile(r"[a-zA-Z_][a-zA-Z0-9_]*|\d+|==|!=|<=|>=|\.\./|\.\.\\|<script|</script|[^\s\w]")
         self.semantic_patterns = [
@@ -82,7 +84,7 @@ class SafeLineWAFAgent(BaseWAFAgent):
             proof_latex=None,
             is_correct=is_correct,
             extra_metadata={
-                "engine": "SafeLine T1K Semantic Grammar",
+                "engine": "Python semantic stand-in (not SafeLine)",
                 "token_count": len(tokens),
                 "measurement_type": "Empirical CPU Timing"
             }

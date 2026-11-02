@@ -1,13 +1,24 @@
 # 🛡️ SATGuardian Edge WAF (`satguardian`)
 
+> **Status: research prototype, not a production-ready WAF.**
+> Detection has only been measured on a small, hand-written, in-sample corpus.
+> The Python comparison harness runs local stand-ins, not real Coraza, SafeLine
+> or ModSecurity. See [STATUS.md](STATUS.md) and [corpus/README.md](corpus/README.md)
+> for the evidence and its limits.
+
 **📚 Official Documentation:** [https://exactorresearch.github.io/satguardian/](https://exactorresearch.github.io/satguardian/)
 
 [![Architecture](https://img.shields.io/badge/Architecture-Lexical_&_Bitmask_WAF-blue.svg)](#2-consideration-the-solution--satguardian-architecture)
-[![Performance](https://img.shields.io/badge/Hot_Path-Rust_13.60_µs_p50-brightgreen.svg)](#3-decision-empirical-proof--business-value)
+[![Performance](https://img.shields.io/badge/Hot_Path-In--Memory_p50_~20_µs-brightgreen.svg)](#3-decision-in-sample-measurements-business-value)
 [![Synthesis](https://img.shields.io/badge/Rule_Synthesis-EXACTOR_GXOR_(128_Vars)-orange.svg)](#22-out-of-band-cloud-synthesis-exactor-gxor)
 [![License](https://img.shields.io/badge/Edge_WAF-100%25_Free_&_Unlimited_Traffic-success.svg)](#33-pricing--licensing-zero-traffic-tax)
 
-**SATGuardian Edge WAF** is a high-performance, 100% sovereign Web Application Firewall built in native **Rust**. It eliminates the latency tax and false positives of traditional WAFs by evaluating complex security logic using **128-bit integer bitmasks (`u128`)** in microseconds (`13.60 µs` median) on the edge, backed by out-of-band **EXACTOR GXOR** boolean cloud optimization.
+**SATGuardian Edge WAF** is an experimental, self-hosted Web Application Firewall
+written in Rust. It evaluates security logic with **128-bit integer bitmasks
+(`u128`)** in microseconds on the edge, backed by out-of-band **EXACTOR GXOR**
+boolean cloud optimization. Detection quality is **measured, not assumed**: the
+numbers below come from a versioned corpus and a reproducible benchmark, and they
+are explicitly in-sample.
 
 ---
 
@@ -35,7 +46,7 @@ Spin up SATGuardian as a standalone frontline proxy and test real-time attack bl
 
 ```bash
 # Terminal A: Start standalone WAF proxy on port 8080 forwarding to your application (port 3000)
-./satguardian-waf proxy --listen 0.0.0.0:8080 --upstream 127.0.0.1:3000
+./satguardian-waf proxy --listen 127.0.0.1:8080 --upstream http://127.0.0.1:3000
 
 # Terminal B: Test a benign request (Allowed -> HTTP 200 OK)
 curl -i http://localhost:8080/api/users?search=john_doe
@@ -76,15 +87,24 @@ Modern API gateways, microservices, and web applications face an impossible secu
 │  (ModSecurity / Coraza CRS)  │                            │  (NLP / Token Weights)       │
 ├──────────────────────────────┤                            ├──────────────────────────────┤
 │ ❌ Heavy CPU Overhead        │                            │ ❌ High False Positive Rates │
-│    (217+ µs latency per req) │                            │    (Blocks technical prose)  │
+│    (rule-set dependent)      │                            │    (Blocks technical prose)  │
 │ ❌ Evasion Vulnerability     │                            │ ❌ Unpredictable Box Black   │
 │    (Triple URL / Comment)    │                            │    (Zero auditability)       │
 └──────────────────────────────┘                            └──────────────────────────────┘
 ```
 
-1. **The Latency Tax of Rule Sets:** Evaluating dozens of regular expressions across multiple HTTP targets (URI, Headers, Body) degrades API performance. OWASP Core Rule Set (CRS v4) Anomaly Scoring adds **over 217 µs per request**, choking high-throughput Envoy sidecars and ingress controllers.
-2. **Evasion via Obfuscation:** Attackers bypass single-pass regex engines using nested encodings (`..%25252f`), inline comments (`UNION/**/SELECT`), or DOM event mutations, leading to a **47.0% False Negative Rate** in classical signatures.
-3. **The False Positive Nightmare:** Probabilistic NLP or ML classifiers assign risk scores to technical terms like `"script"`, `"select"`, or `"character"`. Legitimate developer comments, API payloads, or search queries trigger false blocks (**up to 24.6% False Positive Rate**), frustrating real users.
+1. **The Latency Tax of Rule Sets:** Evaluating many regular expressions across
+   multiple HTTP targets (URI, headers, body) adds CPU work to every request.
+   How much depends on the rule set, paranoia level and hardware; this repository
+   does not benchmark the real OWASP CRS, so no vendor latency number is claimed.
+2. **Evasion via Obfuscation:** Single-pass regex engines can miss nested
+   encodings (`..%25252f`), inline comments (`UNION/**/SELECT`) and DOM event
+   mutations. The local unnormalized-regex stand-in misses 47.0% of attacks on
+   the in-repo stream; that figure describes the stand-in, not ModSecurity.
+3. **The False Positive Problem:** Token-weight classifiers can flag technical
+   prose such as `"script"`, `"select"` or `"character"`. The local heuristic
+   stand-in blocks 24.6% of benign controls on the in-repo stream; it is not a
+   trained model and does not represent a commercial classifier.
 
 ---
 
@@ -102,7 +122,7 @@ SATGuardian resolves this dilemma by decoupling **in-path edge inspection** from
 │                                                 ▼                          │
 │                                 Bitwise Rule Mask Evaluation               │
 │                                 (minterm & mask) == expected               │
-│                                 (13.60 µs p50 in Native Rust)              │
+│                                 (~20 µs p50 in-memory, native Rust)        │
 │                                        /               \                   │
 │                                   [ALLOW]             [BLOCK + Causal Log] │
 └─────────────────────────────────────────────────────────┬──────────────────┘
@@ -112,7 +132,7 @@ SATGuardian resolves this dilemma by decoupling **in-path edge inspection** from
 │ 2. CONTROL PLANE: OFFLINE ADVISOR & CLOUD SYNTHESIS (Security Units - SU) │
 │                                                                            │
 │  waf_ledger.db ──► EXACTOR GXOR (AND, OR, NOT, XOR)    ──► Digital Twin    │
-│  (3,799 logs)      128-Variable Boolean Minimization       Replay (<0.1% FP)│
+│  (3,799 logs)      128-Variable Boolean Minimization       Replay (FP gate) │
 │                    (src/cloud/satguardian_client.rs)             │         │
 │                                                                  ▼         │
 │                                                   Atomic ArcSwap Hot-Reload│
@@ -121,50 +141,71 @@ SATGuardian resolves this dilemma by decoupling **in-path edge inspection** from
 
 ### 2.1 Native Rust In-Path Edge Engine (`src/`)
 
-* **Multi-Pass Lexical Normalization (`src/ast/lexer.rs`):** Unwinds up to 3 layers of nested URL/HTML encoding and strips inline C/SQL comments (`/**/`) before token extraction, neutralizing obfuscation attacks.
+* **Multi-Pass Lexical Normalization (`src/ast/lexer.rs`):** Applies percent-decoding, unwraps MySQL executable comments, strips inline comments, decodes HTML entities and Unicode/overlong escapes, and expands Log4j lookups before token extraction. Entity-encoded payloads are covered by `corpus/independent_v1.json`; that is a regression check, not proof of complete coverage.
 * **128-Bit Feature Vector (`src/ast/features.rs`):** Packs HTTP attributes, Shannon character entropy, and structural tokens across 5 domains (`SQLi`, `XSS`, `RCE`, `LFI`, `SSRF`) into a single `u128` integer.
-* **Bitmask Conjunction Evaluation (`src/engine/sat_solver.rs`):** Compares request minterms against compiled rule masks via single-cycle bitwise `AND` operations (`(minterm & required_mask) == expected_bits`) in **`13.60 µs` median latency**.
-* **Zero False Positives by Design:** SATGuardian requires full structural token conjunctions (`TAG_OPEN` $\land$ `SCRIPT_ELEMENT` $\land$ `DOM_EXEC`), ensuring benign technical prose passes cleanly.
+* **Bitmask Conjunction Evaluation (`src/engine/sat_solver.rs`):** Compares request minterms against compiled rule masks via bitwise `AND` operations (`(minterm & required_mask) == expected_bits`). On the pinned corpus at 10,000 requests the native engine measured roughly `20 µs` p50 and `22–25 µs` mean in-memory; p99 is load dependent and has measured `50–60 µs`.
+* **Structural token conjunctions:** Rules require combinations such as `TAG_OPEN` $\land$ `SCRIPT_ELEMENT` $\land$ `DOM_EXEC` instead of single keywords. False positives are counted on the pinned corpus; the engine does not claim zero FPs.
 
 ### 2.2 Out-of-Band Cloud Synthesis: EXACTOR GXOR (`src/cloud/satguardian_client.rs`)
 
 When novel attack patterns are recorded in `waf_ledger.db`, SATGuardian sends the 128-bit minterms to the **EXACTOR GXOR** cloud optimization engine:
 * **Linear $O(\text{term\_count})$ Scaling:** Uses Differential Gray Code Mapping (`modify_gray_code`) to locate logical neighbors in $O(1)$ constant time, avoiding the $O(2^n)$ exponential blow-up of classical Quine-McCluskey / Espresso minimizers.
-* **Full Operator Basis `{AND, OR, NOT, XOR}`:** Minimizes parity, equivalence, and symmetric security predicates across **up to 128 variables (`u128`)**, reducing gate counts by up to 80%.
-* **Digital Twin Verification:** Replays candidate rules against all historical benign traffic (`satguardian-advisor.py`) to verify **`< 0.1%` False Positives** before hot-reloading via lock-free `ArcSwap`.
+* **Full Operator Basis `{AND, OR, NOT, XOR}`:** Minimizes parity, equivalence, and symmetric security predicates across **up to 128 variables (`u128`)**. The size reduction versus a naive Sum-of-Products expansion is not measured in this repository.
+* **Digital Twin Replay:** Replays candidate rules against recorded benign traffic (`satguardian-advisor.py`), reports collisions, and requires human approval before hot-reloading via lock-free `ArcSwap`.
 
 ---
 
-## 3. Decision: Empirical Proof & Business Value
+## 3. Decision: In-Sample Measurements & Business Value
 
-All benchmark figures are **100% empirical CPU measurements** on real hardware.
+The figures below are **in-sample** measurements from this repository's own payload set. The "competitor" agents are small Python regex stand-ins, not the real Coraza, SafeLine or ModSecurity products, so these numbers are useful for regression tracking rather than for procurement claims.
 
-> **Realism Policy:** Reported accuracy, precision, and recall are capped at **`99.9%`** (with False Positive / False Negative rates floored at **`< 0.1%` / `0.1%`**) to reflect real-world engineering bounds.
+> **Correction notice:** Earlier releases capped perfect scores at 99.9%, floored
+> zero error rates at 0.1%, and labelled local Python regex stand-ins as Coraza
+> and SafeLine. Those claims were fabricated or misleading. The cap/floor logic
+> has been removed, the stand-ins are labelled, and the Rust benchmark now reads
+> `corpus/independent_v1.json` instead of an ad-hoc payload list.
 
-### 3.1 Multi-WAF Comparative Benchmark (`1,000` Requests, 50% Attack Ratio)
+### 3.1 Python stand-in harness (`1,000` sampled requests, 50% attacks)
 
-| WAF Engine / Architecture | Accuracy (Capped) | Avg CPU Latency | P99 CPU Latency | False Positive Rate (FPR) | False Negative Rate (FNR) | Cost / 1M Reqs |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| **SATGuardian Edge (Native Rust v0.2.0, 10k reqs)** | **99.9%** | **`0.0145 ms` (`14.53 µs`)** | **`0.0305 ms` (`30.50 µs`)** | **< 0.1%** (`0.1%`) | **< 0.1%** (`0.1%`) | **$0.00** |
-| **SATGuardian Edge (Python Reference Engine)** | **99.9%** | **`0.0644 ms` (`64.40 µs`)** | **`0.1882 ms` (`188.20 µs`)** | **< 0.1%** (`0.1%`) | **< 0.1%** (`0.1%`) | **$0.00** |
-| **Coraza WAF (OWASP CRS v4 PL1 Anomaly Scoring)** | 97.3% | `0.2178 ms` (`217.80 µs`) | `0.4691 ms` (`469.10 µs`) | < 0.1% (`0.1%`) | 5.4% | **$0.00** |
-| **SafeLine WAF (Chaitin T1K Semantic Ruleset)** | 94.4% | `0.0597 ms` (`59.70 µs`) | `0.1416 ms` (`141.60 µs`) | < 0.1% (`0.1%`) | 11.2% | **$0.00** |
-| **Probabilistic Token Scorer (Heuristic NLP)** | 77.3% | `0.0731 ms` (`73.10 µs`) | `0.1793 ms` (`179.30 µs`) | 24.6% | 20.8% | **$0.00** |
-| **Classical Regex (ModSecurity CRS v3)** | 76.5% | `0.0427 ms` (`42.70 µs`) | `0.1059 ms` (`105.90 µs`) | < 0.1% (`0.1%`) | 47.0% | **$0.00** |
+Run with `python run_benchmark.py 1000`. Only the SATGuardian row is this
+project's code; every other row is a local Python reimplementation, not the
+named product.
 
-* **`15.0x` Faster than OWASP CRS v4 (`14.53 µs` vs `217.80 µs`):** Native Rust bitmask evaluation avoids multi-target transformation overhead.
-* **Immunity to Multi-Layer Evasions (`< 0.1%` vs `47.0%` / `11.2%` / `5.4%` FNR):** Multi-pass lexical normalization catches obfuscated payloads missed by single-pass engines.
-* **Zero Keyword False Positives (`< 0.1%` vs `24.6%` FPR):** Structural token conjunctions prevent false blocks on technical prose.
+| Agent (all Python, in-process) | Accuracy (in-sample) | Avg CPU time | P99 CPU time | FPR | FNR |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **SATGuardian reference port** | **100.0%** | **`0.0586 ms`** | **`0.2267 ms`** | **0.0%** | **0.0%** |
+| CRS-style stand-in (not Coraza) | 97.3% | `0.2350 ms` | `0.5244 ms` | 0.0% | 5.4% |
+| Semantic-token stand-in (not SafeLine) | 94.4% | `0.0637 ms` | `0.1618 ms` | 0.0% | 11.2% |
+| Probabilistic token stand-in (hand-written heuristic) | 77.3% | `0.0726 ms` | `0.1708 ms` | 24.6% | 20.8% |
+| Unnormalized regex stand-in (not ModSecurity) | 76.5% | `0.0383 ms` | `0.0792 ms` | 0.0% | 47.0% |
 
-### 3.2 100% On-Premise Traffic Sovereignty
+### 3.2 Rust engine on the pinned corpus (`cargo run --release -- benchmark -r 10000`)
+
+| Engine | Reproduced from | Latency (in-memory) | Corpus result |
+| :--- | :--- | :---: | :---: |
+| Native Rust v0.3.0 | `corpus/independent_v1.json`, 10,000 requests (representative run) | p50 `~20 µs`, mean `~22–25 µs`, p99 `~50–60 µs` | 63/63 attacks, 0/16 benign blocked |
+
+* **Speed is in-memory only.** No TLS, proxy hop, upstream or stateful tracking
+  is included. The Python reference port ran at `58.6 µs` versus `235.0 µs` for
+  the CRS-style stand-in on the same stream; that compares two Python programs,
+  not SATGuardian against Coraza.
+* **Detection quality is a regression floor, not an estimate.** First run of the
+  independent corpus scored 51/63 (80.95% recall) with 3/16 benign blocked
+  (18.75% FPR). A second batch scored 11/17 (64.71%) on its first run. After the
+  fixes both report 100%/0%, but every case was used to drive those fixes, so
+  the result is in-sample. Details: [corpus/README.md](corpus/README.md).
+* **No production evidence exists.** There is no third-party evaluation, no soak
+  test, and no real-product comparison. See [STATUS.md](STATUS.md).
+
+### 3.3 100% On-Premise Traffic Sovereignty
 
 SATGuardian runs **entirely inside your infrastructure**. We **never** host customer traffic or require DNS CNAME redirects:
 
-1. **Kubernetes / Envoy Proxy Native Sidecar:** Runs alongside Envoy via `ext_authz` over an in-memory Unix Domain Socket (`unix:///run/satguardian/waf.sock`), providing `< 15 µs` authorization checks.
+1. **Kubernetes / Envoy Proxy Native Sidecar:** Runs alongside Envoy via `ext_authz` over an in-memory Unix Domain Socket (`unix:///run/satguardian/waf.sock`), adding the engine's measured per-request latency (tens of microseconds) with no network hop.
 2. **Reverse Proxy:** Frontline protection for Nginx, Apache, or Microsoft IIS (including Windows Service deployment via `install.ps1`).
-3. **Standalone Binary:** Zero-dependency, self-contained Rust binary (`satguardian-waf proxy --listen 0.0.0.0:443`).
+3. **Standalone Binary:** Zero-dependency, self-contained Rust binary (`satguardian-waf proxy --listen 127.0.0.1:8080`). It speaks plain HTTP; terminate TLS in a reverse proxy or Envoy in front of it.
 
-### 3.3 Pricing & Licensing: Zero Traffic Tax
+### 3.4 Pricing & Licensing: Zero Traffic Tax
 
 | Plan | Monthly Price | Seats | Complexity Limit | Included Security Units (SU) | Extra SU Overage Rate |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -174,7 +215,7 @@ SATGuardian runs **entirely inside your infrastructure**. We **never** host cust
 | **SCALE** | **$2,499 USD** | 15 | Up to 128 vars / 1M minterms | 500,000 SU / mo | $5 USD per 1,000 extra SU |
 | **ENTERPRISE** | **Custom** | Unlimited | Up to 128 vars / Unlimited | Custom annual pool | Custom SLA & Dedicated Contract |
 
-> **Fail-Safe Operational Guarantee:** The local Edge WAF is **100% free and unlimited** ($0.00/request). You pay only for Cloud Boolean Optimization metered in **Security Units (SU)**. If monthly SU quotas are exhausted (`HTTP 402 SU_QUOTA_EXHAUSTED`), cloud synthesis pauses while the local Edge WAF continues protecting traffic indefinitely at full speed using its last compiled rule matrix. *(Note: 256+ variable matrices are managed exclusively as dedicated Engineering Expansion Projects on Bare-Metal/HPC hardware).*
+> **Quota behavior:** The local Edge WAF is **100% free and unlimited** ($0.00/request). You pay only for Cloud Boolean Optimization metered in **Security Units (SU)**. If monthly SU quotas are exhausted (`HTTP 402 SU_QUOTA_EXHAUSTED`), cloud synthesis pauses and the local Edge WAF keeps serving traffic with its last compiled rule matrix. *(Note: 256+ variable matrices are managed exclusively as dedicated Engineering Expansion Projects on Bare-Metal/HPC hardware).*
 
 ---
 
@@ -196,20 +237,39 @@ cargo run --release -- benchmark -r 10000
 
 ### Step 2: Run the Multi-WAF Comparative Benchmark
 
-Compare SATGuardian against Coraza CRS v4, SafeLine T1K, Regex, and NLP engines:
+Run the Python reference harness against the local stand-ins:
 
 ```powershell
 python run_benchmark.py 1000
 ```
+
+This does not execute Coraza, SafeLine, ModSecurity or an LLM. It compares the
+Python SATGuardian port with small Python reimplementations on the in-repo
+payload list. The report prints the provenance and the caveat.
 
 ### Step 3: Deploy in Staging / Local Envoy Sidecar
 
 Launch the standalone reverse proxy or attach SATGuardian to your Envoy proxy via `ext_authz`:
 
 ```bash
-# Standalone Reverse Proxy Mode
-satguardian-waf proxy --listen 0.0.0.0:443 --upstream 127.0.0.1:8080
+# Standalone reverse proxy. It speaks plain HTTP: terminate TLS in front of it.
+# The management API is isolated on 127.0.0.1:10001 and requires a bearer token.
+export SATGUARDIAN_ADMIN_TOKEN="$(openssl rand -hex 32)"
+satguardian-waf proxy --listen 127.0.0.1:8080 --upstream http://127.0.0.1:3000
+
+# Daily example: inspect metrics from the local management listener
+curl -H "Authorization: Bearer $SATGUARDIAN_ADMIN_TOKEN" \
+  http://127.0.0.1:10001/api/waf/metrics
 ```
+
+**Security defaults introduced in this release:**
+
+* Management routes (`/api/waf/*`) return `503` until `SATGUARDIAN_ADMIN_TOKEN` (or `WAF_ADMIN_TOKEN`) is set.
+* The management API listens only on `127.0.0.1:10001`; set `WAF_ADMIN_LISTEN_ADDR` to change it or `off` to disable it.
+* Inbound bodies are capped at 2 MiB (`WAF_MAX_BODY_BYTES`); larger requests get `413`.
+* Forwarding headers are ignored unless the TCP peer is in `WAF_TRUSTED_PROXIES` (loopback is always trusted).
+* Blocked responses are generic by default. Use `--verbose` only in development.
+* Upstream responses are streamed, so SSE and large downloads are no longer buffered. WebSocket upgrades are not supported yet.
 
 ### Step 4: Generate Forensic Audit Reports & Schedule a Technical Demo
 

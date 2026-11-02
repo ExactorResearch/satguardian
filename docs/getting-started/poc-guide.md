@@ -1,70 +1,99 @@
 # Proof of Concept (PoC) Guide: SATGuardian Edge WAF
 
-This guide provides step-by-step instructions to run, test, and benchmark the **SATGuardian Edge WAF** (`satguardian`) on your local machine using both the compiled Rust binary and the Python benchmark and advisor suite.
+This guide provides step-by-step instructions to run and test the **SATGuardian
+Edge WAF** (`satguardian`) locally using the Rust binary and the Python benchmark
+and advisor suite.
+
+> **Status: research prototype.** The PoC measures in-memory rule evaluation on a
+> small in-sample corpus. It is not a production validation. See
+> [STATUS.md](../status.md).
 
 ---
 
 ## 1. What This PoC Demonstrates
 
-1. **Deterministic Lexical & Bitmask Inspection:** How HTTP requests are decoded across multiple obfuscation layers, mapped to a 128-bit `FeatureVector` (`u128`), and evaluated via bitwise `AND` operations (`(minterm & required_mask) == expected_bits`) with causal rule traces.
-2. **Real-Time Multi-WAF Benchmarking:** Empirical CPU timing and accuracy comparison against **Coraza WAF (OWASP CRS v4 Anomaly Scoring)**, **SafeLine WAF (Chaitin T1K Semantic Grammar)**, **Probabilistic Token Scoring (NLP Heuristic)**, and **Classical ModSecurity Regex**.
-3. **Offline EXACTOR GXOR Rule Synthesis & Digital Twin Verification:** How `satguardian-advisor.py` and `SatguardianCloudClient` (`src/cloud/satguardian_client.rs`) mine `waf_ledger.db`, invoke **EXACTOR GXOR** (`{AND, OR, NOT, XOR}` minimization up to 128 variables), verify candidate rules against historical benign traffic (`< 0.1%` FPR), and generate compliance reports (`audit_report.html` and `audit_report.md`).
+1. **Deterministic Lexical & Bitmask Inspection:** How HTTP requests are decoded
+   across multiple obfuscation layers, mapped to a 128-bit `FeatureVector`
+   (`u128`), and evaluated via bitwise `AND` operations
+   (`(minterm & required_mask) == expected_bits`) with causal rule traces.
+2. **Python stand-in harness:** CPU timing and detection on the in-repo payload
+   list, comparing the Python reference port against local reimplementations.
+   It does not execute Coraza, SafeLine, ModSecurity or a trained model.
+3. **Offline EXACTOR GXOR Rule Synthesis & Replay:** How
+   `satguardian-advisor.py` and `SatguardianCloudClient` mine `waf_ledger.db`,
+   invoke EXACTOR GXOR (`{AND, OR, NOT, XOR}` up to 128 variables), replay
+   candidate rules against recorded benign traffic to find collisions, and
+   generate reports (`audit_report.html`, `audit_report.md`).
 
 ---
 
-## 2. Running the Native Rust Benchmark (`satguardian-waf-v0.2.0.exe`)
+## 2. Running the Native Rust Benchmark
 
-Execute the native Rust multi-vector benchmark across 10,000 requests:
+The benchmark reads `corpus/independent_v1.json`. Build and run:
 
 ```powershell
-.\releases\download\v0.2.0\satguardian-waf-v0.2.0.exe benchmark -r 10000
+cargo run --release -- benchmark -r 10000
 ```
 
-### Empirical Output (10,000 Requests)
+### Example output (one run on this machine; rerun to reproduce)
+
 ```text
-📊 Benchmark Results Summary:
-   ---------------------------------------------
-   Total Requests       : 10000
-   Total Execution Time : 0.1528 s
-   Throughput           :   65441.13 req/sec
-   Blocked Attacks      : 8096
-   Allowed Benign       : 1904
-   ---------------------------------------------
-⏱️  Latency Distribution (Microseconds):
-   Min Latency          :     8.20 µs (0.0082 ms)
-   Average Latency      :    14.53 µs (0.0145 ms)
-   p50 (Median)         :    13.60 µs (0.0136 ms)
-   p90                  :    19.10 µs (0.0191 ms)
-   p99                  :    30.50 µs (0.0305 ms)
-   Max Latency          :   529.80 µs (0.5298 ms)
+SATGuardian Edge WAF: In-Memory Engine Benchmark
+   Corpus        : corpus/independent_v1.json (independent-v1)
+   Cases         : 79 (63 labelled attacks, 16 benign)
+   Requests      : 10000 (corpus cycled)
+   Scope: in-memory rule evaluation only. No network, proxy,
+   TLS, upstream or stateful tracking is included.
+   Accuracy is in-sample regression, not a held-out estimate.
+
+Detection on the labelled corpus (in-sample regression):
+   True positives       : 63 / 63
+   False negatives      : 0
+   True negatives       : 16 / 16
+   False positives      : 0
+
+Latency distribution (microseconds, in-memory only):
+   Min                  :      11.90 µs
+   Average              :      21.64 µs
+   p50 (median)         :      19.80 µs
+   p90                  :      29.10 µs
+   p99                  :      49.30 µs
+   Max                  :     311.10 µs
+   Throughput           :   44491.88 req/sec (single thread)
 ```
 
 ---
 
-## 3. Running the Multi-WAF Comparative Benchmark (`run_benchmark.py`)
-
-Execute the Python comparative benchmark suite across 1,000 requests:
+## 3. Running the Python Stand-In Harness (`run_benchmark.py`)
 
 ```powershell
 python run_benchmark.py 1000
 ```
 
-### Empirical Results (1,000 Requests, 50% Attack Ratio)
+### Example results (1,000 sampled requests, 50% attacks)
 
-> *Note: Accuracy, precision, and recall metrics are capped at `99.9%` and False Positive / False Negative rates are floored at `0.1%` (`< 0.1%`) to reflect realistic operational bounds.*
+Only the SATGuardian row is this project's code. All other rows are local Python
+stand-ins, not the named products.
 
-| Agent / Architecture | Accuracy | Avg Latency | P99 Latency | False Positive Rate | False Negative Rate | Cost / 1M Requests |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| **SATGuardian-Edge (SAT / Neuro-Symbolic)** | **99.9%** | `0.0644 ms` | `0.1882 ms` | **0.1%** | **0.1%** | **$0.00** |
-| **Coraza WAF (OWASP CRS v4 Ruleset)** | 97.3% | `0.2178 ms` | `0.4691 ms` | 0.1% | 5.4% | **$0.00** |
-| **SafeLine WAF (Chaitin T1K Ruleset)** | 94.4% | `0.0597 ms` | `0.1416 ms` | 0.1% | 11.2% | **$0.00** |
-| **Probabilistic Token Scorer (Heuristic NLP Baseline)** | 77.3% | `0.0731 ms` | `0.1793 ms` | 24.6% | 20.8% | **$0.00** |
-| **Classical Regex (ModSecurity CRS Baseline)** | 76.5% | `0.0427 ms` | `0.1059 ms` | 0.1% | 47.0% | **$0.00** |
+| Agent (Python, in-process) | Accuracy (in-sample) | Avg CPU time | P99 CPU time | FPR | FNR |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| SATGuardian reference port | 100.0% | `0.0586 ms` | `0.2267 ms` | 0.0% | 0.0% |
+| CRS-style stand-in (not Coraza) | 97.3% | `0.2350 ms` | `0.5244 ms` | 0.0% | 5.4% |
+| Semantic-token stand-in (not SafeLine) | 94.4% | `0.0637 ms` | `0.1618 ms` | 0.0% | 11.2% |
+| Probabilistic token stand-in (heuristic) | 77.3% | `0.0726 ms` | `0.1708 ms` | 24.6% | 20.8% |
+| Unnormalized regex stand-in (not ModSecurity) | 76.5% | `0.0383 ms` | `0.0792 ms` | 0.0% | 47.0% |
 
-### Key Benchmark Takeaways
-- **3.38x Faster than Coraza CRS v4 in Python (15.0x Faster in Native Rust):** Coraza's OWASP CRS v4 Anomaly Scoring evaluates 20 rules across 5+ transformed targets per request (`0.2178 ms` avg), whereas SATGuardian uses single-pass lexical normalization and `O(1)` token surface guards (`0.0644 ms` in Python; `0.0145 ms` in Rust).
-- **Multi-Layer Obfuscation Detection:** Classical Regex misses `47.0%` of attacks (inline SQL comments `/**/`, URL-encoded XSS, SVG `onload`, and double-encoded path traversal), SafeLine misses `11.2%`, and single-pass Coraza PL1 misses `5.4%` (triple-encoded LFI `..%25252f`). SATGuardian catches all tested obfuscation variants (`99.9%` capped accuracy).
-- **Immunity to Keyword False Positives:** Probabilistic token scoring blocks `24.6%` of benign requests because developer comments containing words like `"script"` and `"character"` exceed its log-odds threshold. SATGuardian requires full structural token conjunctions (`< 0.1%` FPR).
+### What the numbers do and do not show
+
+- The Rust engine's in-memory evaluation is tens of microseconds per payload.
+  That excludes network and proxy overhead and says nothing about end-to-end
+  throughput.
+- Detection on the pinned corpus is 100%/0% only because the same cases were
+  used to drive the fixes. First-run baselines were 80.95% recall / 18.75% FPR
+  (`independent_v1`) and 64.71% recall / 0% FPR (`heldout_v1`). See
+  [corpus/README.md](../corpus.md).
+- The harness does not show that SATGuardian is faster or more accurate than a
+  real vendor WAF. That comparison has not been run.
 
 ---
 
@@ -77,12 +106,14 @@ python satguardian-advisor.py --report audit_report.html
 python satguardian-advisor.py --report-md audit_report.md
 ```
 
-### Summary of `waf_ledger.db` Forensic Audit
-- **Total Audited Requests:** `3,799`
-- **Mitigated Attacks:** `2,136` (`56.2%` — `951` SQLi, `477` XSS, `472` Path Traversal, `234` Rate-Limit DDoS, `2` SSRF)
-- **Approved Benign Traffic:** `1,663` (`43.8%`)
-- **Median Ledger Latency (`p50`):** `856.7 µs` (`0.857 ms`)
-- **Pending Novel Anomalies for Cloud Synthesis:** `14` unobserved minterms (`1 SU` estimated optimization cost)
+### Summary of the bundled `waf_ledger.db` (demo data)
+- **Total recorded requests:** `3,799`
+- **Blocked:** `2,136` (`951` SQLi, `477` XSS, `472` path traversal, `234` rate-limit bursts, `2` SSRF)
+- **Allowed benign:** `1,663`
+- **Pending novel anomalies:** reported by the advisor for the current ledger snapshot
+
+These counts describe the demo ledger, not a customer tenant and not
+independently labelled ground truth.
 
 ---
 

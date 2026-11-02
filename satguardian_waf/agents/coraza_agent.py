@@ -1,4 +1,4 @@
-"""Coraza WAF Agent - OWASP CRS v4 Anomaly Scoring Engine Execution."""
+"""Python stand-in for a CRS-style anomaly-scoring WAF (NOT the Coraza engine)."""
 
 from __future__ import annotations
 
@@ -11,19 +11,20 @@ from satguardian_waf.core.payload import HTTPRequestPayload, AttackCategory, Att
 
 
 class CorazaWAFAgent(BaseWAFAgent):
-    """Coraza WAF Agent (OWASP CRS v4 Paranoia Level 1 Anomaly Scoring Execution).
+    """Illustrative Python approximation of OWASP CRS anomaly scoring.
 
-    Executes multi-variable request transformation pipelines (t:urlDecodeUni,
-    t:htmlEntityDecode, t:replaceComments, t:compressWhitespace, t:lowercase)
-    and evaluates OWASP CRS v4 anomaly scoring rules across all request targets
-    without early exit, matching production OWASP CRS Anomaly Scoring behavior.
-    Measures true CPU execution time with zero artificial delays.
+    This is roughly twenty hand-written regex rules applied to decoded request
+    targets. It is not Coraza, not ModSecurity, and not the OWASP CRS ruleset:
+    the real engine ships hundreds of rules with operators, paranoia levels and
+    exclusion tuning that this class does not model. Its numbers must never be
+    reported as Coraza or vendor results.
     """
 
     def __init__(self, anomaly_threshold: int = 5):
         super().__init__(
-            name="Coraza WAF (OWASP CRS v4 Ruleset)",
-            description="OWASP Core Rule Set v4 multi-target transformation and anomaly scoring evaluation."
+            name="Coraza CRS stand-in (Python, not Coraza)",
+            description="Illustrative Python regex/anomaly-scoring approximation of OWASP CRS behavior.",
+            provenance="python stand-in: not the Coraza engine and not the OWASP CRS ruleset",
         )
         self.anomaly_threshold = anomaly_threshold
         self._comment_re = re.compile(r"/\*.*?\*/|--[^\r\n]*", re.DOTALL)
@@ -124,7 +125,7 @@ class CorazaWAFAgent(BaseWAFAgent):
             proof_latex=None,
             is_correct=is_correct,
             extra_metadata={
-                "engine": "Coraza CRS v4 (PL1 Anomaly Scoring)",
+                "engine": "Python CRS-style stand-in (not Coraza)",
                 "anomaly_score": anomaly_score,
                 "rules_evaluated": len(self.crs_rules) * len(targets),
                 "measurement_type": "Empirical CPU Timing"

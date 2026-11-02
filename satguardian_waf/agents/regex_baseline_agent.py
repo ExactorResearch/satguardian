@@ -1,4 +1,4 @@
-"""Regex Baseline Agent - Classical ModSecurity CRS v3 Signature Execution."""
+"""Python stand-in for naive signature matching (NOT ModSecurity)."""
 
 from __future__ import annotations
 
@@ -9,17 +9,18 @@ from satguardian_waf.core.payload import HTTPRequestPayload, AttackCategory, Att
 
 
 class RegexBaselineAgent(BaseWAFAgent):
-    """Regex Baseline Agent (Classical ModSecurity CRS Signature Scanning).
-    
-    Executes traditional regular expression signatures over raw HTTP fields
-    without deep multi-pass AST normalization.
-    Measures true CPU execution time with zero artificial delays.
+    """Illustrative unnormalized regex baseline.
+
+    A deliberately naive list of signatures over raw fields. It is not
+    ModSecurity and not the CRS; it exists only to show what skipping
+    normalization costs on the in-repo dataset.
     """
 
     def __init__(self):
         super().__init__(
-            name="Classical Regex (ModSecurity CRS Baseline)",
-            description="Traditional unnormalized regular expression signature matching."
+            name="Unnormalized Regex stand-in (Python, not ModSecurity)",
+            description="Illustrative unnormalized regex signature matching.",
+            provenance="python stand-in: illustrative baseline, not ModSecurity or the CRS",
         )
         self.rules = [
             ("REGEX-SQLI-01", AttackCategory.SQL_INJECTION, re.compile(r"(\bor\b|\band\b)\s+['\"]?\d+['\"]?\s*=\s*['\"]?\d+", re.IGNORECASE)),

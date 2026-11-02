@@ -227,6 +227,9 @@ def run_benchmark_endpoint(req: BenchmarkRunRequest):
         "attack_ratio": res.attack_ratio,
         "metrics": serialized_metrics,
         "summary_insights": res.summary_insights,
+        "dataset_provenance": res.dataset_provenance,
+        "agent_provenance": res.agent_provenance,
+        "disclaimer": res.disclaimer,
     }
 
 
