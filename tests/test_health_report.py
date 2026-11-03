@@ -115,6 +115,45 @@ def build_ledger(tmp_path):
     return path
 
 
+def build_attacker_ledger(tmp_path):
+    """Ledger shaped like a week of commodity scanning: one loud IP, plus sensitive paths allowed."""
+    path = tmp_path / "attackers.db"
+    connection = sqlite3.connect(path)
+    connection.executescript(
+        """
+        CREATE TABLE audit_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            request_id TEXT NOT NULL,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+            client_ip TEXT,
+            method TEXT,
+            path TEXT,
+            query_string TEXT,
+            action TEXT,
+            category TEXT,
+            execution_path TEXT,
+            latency_us REAL,
+            matched_rules TEXT,
+            active_tokens TEXT,
+            causal_proof TEXT,
+            is_violation INTEGER
+        );
+        INSERT INTO audit_log (request_id, client_ip, action, category, path, matched_rules)
+            VALUES ('a1', '203.0.113.9',  'Block', 'sql_injection', '/search', 'SAT-SQLI-01'),
+                   ('a2', '203.0.113.9',  'Block', 'xss', '/comment', 'SAT-XSS-01'),
+                   ('a3', '203.0.113.9',  'Block', 'exposure', '/.env', 'SAT-EXP-01'),
+                   ('a4', '203.0.113.9',  'Allow', 'benign', '/home', NULL),
+                   ('a5', '203.0.113.9',  'Allow', 'benign', '/old/.env', NULL),
+                   ('a6', '198.51.100.7', 'Allow', 'benign', '/settings.php', NULL),
+                   ('a7', '198.51.100.7', 'Allow', 'benign', '/phpinfo.php', NULL),
+                   ('a8', '198.51.100.7', 'Allow', 'benign', '/vendor/composer/installed.json', NULL);
+        """
+    )
+    connection.commit()
+    connection.close()
+    return path
+
+
 def test_subset_parser_matches_the_stdlib_parser():
     text = CONFIG
     parsed = health._parse_toml_subset(text)
@@ -172,3 +211,31 @@ def test_missing_ledger_is_reported_not_crashed(tmp_path):
     traffic = health.analyse_ledger(health.open_ledger(str(tmp_path / "absent.db")), rules["rules"], findings, 5)
     assert traffic is None
     assert any(finding["code"] == "ledger_missing" for finding in findings)
+
+
+def test_ledger_report_ranks_offenders_and_flags_sensitive_allows(tmp_path):
+    ledger = build_attacker_ledger(tmp_path)
+    connection = health.open_ledger(str(ledger))
+    findings = []
+    rules = health.analyse_rules(health._parse_toml_subset(CONFIG), findings)
+    traffic = health.analyse_ledger(connection, rules["rules"], findings, 5)
+    connection.close()
+
+    assert traffic["top_offenders"][0]["ip"] == "203.0.113.9"
+    assert traffic["top_offenders"][0]["requests"] == 5
+    assert traffic["top_offenders"][0]["blocked"] == 3
+    assert traffic["top_offenders"][1]["ip"] == "198.51.100.7"
+    assert traffic["top_offenders"][1]["blocked"] == 0
+
+    flagged = {item["path"]: item for item in traffic["sensitive_paths_allowed"]}
+    assert "/old/.env" in flagged
+    assert "/settings.php" in flagged
+    assert "/phpinfo.php" in flagged
+    assert "/vendor/composer/installed.json" in flagged
+    assert flagged["/old/.env"]["ips"] == ["203.0.113.9"]
+    assert flagged["/settings.php"]["count"] == 1
+    assert "/home" not in flagged
+
+    warning = next(f for f in findings if f["code"] == "sensitive_paths_allowed")
+    assert warning["severity"] == "warn"
+    assert "404 vs 200" in warning["message"]
