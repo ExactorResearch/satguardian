@@ -110,7 +110,7 @@ install -m 755 "${BINARY_PATH}" "${INSTALL_DIR}/satguardian-waf"
 ln -sf "${INSTALL_DIR}/satguardian-waf" "${INSTALL_DIR}/satguardian"
 echo -e "${GREEN}✓ Binary installed at ${INSTALL_DIR}/satguardian-waf (alias: satguardian)${NC}"
 
-for tool in satguardian-top satguardian-advisor satguardian-rules; do
+for tool in satguardian-top satguardian-advisor satguardian-rules satguardian-health; do
     if [[ -f "${SCRIPT_DIR}/${tool}.py" ]]; then
         install -m 755 "${SCRIPT_DIR}/${tool}.py" "${INSTALL_DIR}/${tool}"
         echo -e "${GREEN}✓ ${tool} installed at ${INSTALL_DIR}/${tool}${NC}"
@@ -210,6 +210,7 @@ echo -e "   Status command   : systemctl status satguardian-waf"
 echo -e "   Logs command     : journalctl -u satguardian-waf -f"
 echo -e "   Config file      : /etc/satguardian/waf_config.toml"
 echo -e "   Entitlement check: satguardian-waf entitlement"
+echo -e "   Rule-set health  : satguardian-health   (local, no cloud, no telemetry)"
 echo -e "   CLI inspection   : satguardian-waf inspect --query \"id=1' OR 1=1--\""
 echo -e "   Benchmark        : satguardian-waf benchmark"
 echo -e "${GREEN}============================================================${NC}"
