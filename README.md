@@ -280,6 +280,22 @@ python satguardian-advisor.py --report audit_report.html
 python satguardian-advisor.py --report-md audit_report.md
 ```
 
+### Step 5: Check the rule set without the cloud
+
+`satguardian-health` reads `waf_config.toml` and `waf_ledger.db` in place and reports rule
+inventory, duplicate or contradictory rules, observed traffic and rules that never matched.
+It never opens a network socket, never uploads anything and has no telemetry; the ledger is
+opened read-only (`mode=ro`). This is part of the free Edge binary, not a cloud feature.
+
+```bash
+satguardian-health
+satguardian-health --json
+satguardian-health --strict   # exit 1 if a WARN finding is present, useful in cron
+```
+
+A rule that never matched in a given ledger is reported as a prompt to check it, not as proof
+that it is dead: the sample may not contain a request that rule governs.
+
 * **Full Operations & Configuration Guide:** Read the [Official Documentation](https://exactorresearch.github.io/satguardian/) for detailed configuration, customization, and tool usages.
 * **Explore the Interactive Dashboard:** `streamlit run app.py`
 * **Schedule a Technical Demo & Architecture Review:** Contact our engineering team at [satguardian.tech](https://satguardian.tech) or open an issue on GitHub.
