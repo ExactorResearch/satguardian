@@ -9,8 +9,10 @@ free user still has: *is the rule set I wrote doing what I think it does?* It re
   * inventory: business rules and certainty islands, enabled vs disabled;
   * structural findings: duplicate ids, rules that allow and block the same method, duplicate
     rule bodies, and overlapping path prefixes whose method lists contradict each other;
-  * observed traffic: decisions, block rate, blocked paths/categories, business rules that have
-    not matched anything in this ledger, and novel-anomaly candidates waiting for review;
+  * observed traffic: decisions, block rate, blocked paths/categories, the client IPs that
+    generated the most traffic, business rules that have not matched anything in this ledger,
+    novel-anomaly candidates waiting for review, and sensitive-looking paths the WAF allowed
+    (a prompt to check what the upstream answered, not proof of exposure);
   * cloud compression history recorded in the local ledger, if any.
 
 It never opens a network socket and never uploads anything. The cloud service is not called, no
@@ -241,6 +243,46 @@ def add(findings, severity, code, message):
     findings.append({"severity": severity, "code": code, "message": message})
 
 
+# Substrings credential-harvesting scanners probe for. Matching is deliberately conservative
+# about *path shape*: it flags requests whose path looks like an exposed secret or installer,
+# regardless of which rule (if any) evaluated them. It says nothing about whether the upstream
+# actually served the file — that check belongs to the operator.
+SENSITIVE_PATH_MARKERS = (
+    "/.env",
+    "wp-config.php",
+    "wp-admin/install.php",
+    "wp-content/debug.log",
+    "phpinfo.php",
+    "info.php",
+    "settings.php",
+    "settings.json",
+    "secrets.json",
+    "sendgrid.env",
+    "sentry.properties",
+    "runtime-config.js",
+    "vendor/composer/installed.json",
+    "/server-status",
+    "/server-info",
+    "/elmah.axd",
+    "/.git/",
+    "/.svn/",
+    "/.ssh/",
+    "/.aws/credentials",
+    "id_rsa",
+    "config.yml",
+    "config.yaml",
+    "database.yml",
+    "credentials",
+)
+
+
+def is_sensitive_path(path):
+    if not path:
+        return False
+    lowered = str(path).lower()
+    return any(marker in lowered for marker in SENSITIVE_PATH_MARKERS)
+
+
 def analyse_rules(config, findings):
     section = config.get("business_rules") or {}
     globally_enabled = bool(section.get("enabled", True))
@@ -422,6 +464,39 @@ def analyse_ledger(connection, rules, findings, top_limit):
         (top_limit,),
     ).fetchall()
 
+    offenders = connection.execute(
+        "SELECT COALESCE(NULLIF(client_ip, ''), '(unknown)'), COUNT(*), "
+        "SUM(CASE WHEN LOWER(COALESCE(action, '')) = 'block' THEN 1 ELSE 0 END) "
+        "FROM audit_log GROUP BY 1 ORDER BY 2 DESC LIMIT ?",
+        (top_limit,),
+    ).fetchall()
+
+    sensitive = defaultdict(lambda: {"count": 0, "ips": set()})
+    for path, client_ip in connection.execute(
+        "SELECT COALESCE(path, '(none)'), COALESCE(NULLIF(client_ip, ''), '(unknown)') "
+        "FROM audit_log WHERE LOWER(COALESCE(action, '')) = 'allow'"
+    ):
+        if not is_sensitive_path(path):
+            continue
+        entry = sensitive[path]
+        entry["count"] += 1
+        entry["ips"].add(client_ip)
+    sensitive_paths = [
+        {"path": path, "count": value["count"], "ips": sorted(value["ips"])}
+        for path, value in sorted(sensitive.items(), key=lambda kv: (-kv[1]["count"], kv[0]))
+    ][:top_limit]
+    if sensitive_paths:
+        shown = ", ".join(f"{item['path']} ({item['count']})" for item in sensitive_paths[:5])
+        total_sensitive = sum(value["count"] for value in sensitive.values())
+        add(
+            findings,
+            "warn",
+            "sensitive_paths_allowed",
+            f"{total_sensitive} allowed request(s) hit sensitive-looking paths that no rule "
+            f"blocked: {shown}. 'Allowed' only means the WAF passed them on; check what the "
+            "upstream answered (404 vs 200) and whether these probes should be blocked.",
+        )
+
     matched = set()
     for (value,) in connection.execute(
         "SELECT matched_rules FROM audit_log WHERE matched_rules IS NOT NULL AND matched_rules != ''"
@@ -482,6 +557,16 @@ def analyse_ledger(connection, rules, findings, top_limit):
         "top_blocked_categories": [
             {"category": category, "count": count} for category, count in categories
         ],
+        "top_offenders": [
+            {
+                "ip": ip,
+                "requests": requests,
+                "blocked": blocked_count,
+                "blocked_pct": round(blocked_count * 100.0 / requests, 1) if requests else 0.0,
+            }
+            for ip, requests, blocked_count in offenders
+        ],
+        "sensitive_paths_allowed": sensitive_paths,
         "business_rules_matched": sorted(set(enabled_ids) & matched),
         "business_rules_without_match": unmatched,
         "novel_anomalies_pending": novel_pending,
@@ -543,6 +628,18 @@ def print_report(config_path, db_path, rules, traffic, findings):
             f"{item['path']} {item['count']:,}" for item in traffic["top_blocked_paths"]
         )
         print(f"  Top blocked paths: {summary}")
+    if traffic["top_offenders"]:
+        print("  Top offenders (client IPs, most requests first)")
+        for item in traffic["top_offenders"]:
+            print(
+                f"    {item['ip']:<16} {item['requests']:,} requests "
+                f"({item['blocked']:,} blocked, {item['blocked_pct']}%)"
+            )
+    if traffic["sensitive_paths_allowed"]:
+        print("  Sensitive paths allowed (verify what the upstream answered)")
+        for item in traffic["sensitive_paths_allowed"]:
+            ips = ", ".join(item["ips"][:3]) + (" …" if len(item["ips"]) > 3 else "")
+            print(f"    {item['path']} — {item['count']:,} request(s) from {ips}")
     if traffic["novel_anomalies_pending"] is not None:
         print(f"  Novel anomalies pending: {traffic['novel_anomalies_pending']}")
     cloud = traffic["cloud_compression"]
