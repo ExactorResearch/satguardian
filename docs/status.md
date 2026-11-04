@@ -13,14 +13,20 @@ document contradicts it, this file wins and the other document is stale.
 | Same, on a second batch built to vary the first | `corpus/heldout_v1.json`: 17/17 attacks, 0/4 benign blocked after fixes; the **first** run before fixes was 11/17 (64.71% recall) | 2026-11-01 |
 | In-memory latency over the corpus | `satguardian-waf benchmark -r 10000`: tens of microseconds per payload, single-threaded, excluding network, TLS, proxy and upstream | 2026-11-01 |
 | First-run baseline before the fix pass | `independent_v1`: 51/63 recall (80.95%), 3/16 benign blocked (18.75% FPR) | 2026-11-01 |
+| **Held-out estimate — the only one that exists** | `corpus/heldout_v2.json` in one run before any fix: 55/98 attacks detected (**56.1% recall**, 95% CI 46.3–65.5%), 4/57 controls blocked (**7.0% FPR**, 95% CI 2.8–16.7%). Report: `corpus/heldout_v2_report.json` | 2026-11-04 |
 
-`corpus/README.md` records how the corpus was assembled, why both files are now
-in-sample, and the rules for adding cases.
+`corpus/README.md` records how each batch was assembled, why the first two are
+now in-sample, and the rules for adding cases.
 
 ## What is not measured
 
-- **No independent or third-party evaluation.** The corpus is hand-written in
-  this repository. There is no held-out estimate after the second fix pass.
+- **No independent or third-party evaluation.** Every batch, including the
+  held-out one, is hand-written in this repository by the same author as the
+  engine. `heldout_v2` is a real out-of-sample estimate of *those* payloads —
+  its 56.1% recall and 7.0% false-positive rate are the honest numbers to quote,
+  and the in-sample 100%/0% rows above are not. Neither number says anything
+  about traffic that was not imagined: no customer access log has ever been
+  measured against this engine.
 - **No comparison against real WAF products.** The Python harness
   (`run_benchmark.py`) runs local stand-ins written for this repository. Rows
   named Coraza, SafeLine, ModSecurity or "probabilistic NLP" are reimplementations,

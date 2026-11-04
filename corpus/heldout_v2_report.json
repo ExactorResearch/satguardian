@@ -1,0 +1,171 @@
+{
+  "categories_the_engine_does_not_name": [
+    "host_header_injection",
+    "http_response_splitting",
+    "malicious_upload",
+    "nosql_injection",
+    "ssti",
+    "xxe"
+  ],
+  "counts": {
+    "attacks": 98,
+    "blocked_controls": 4,
+    "cleared": 53,
+    "controls": 57,
+    "detected": 55,
+    "missed": 43
+  },
+  "engine": "SatguardianSatEngine::new() with default configuration, one request per evaluation",
+  "false_positive_rate": {
+    "ci95": [
+      0.027626420235772553,
+      0.16700170092560773
+    ],
+    "value": 0.07017543859649122
+  },
+  "false_positives": [
+    "benign-v2-inline-svg-css: blocked as xss via (JS_URI_SCHEME) violates [SAT-XSS-03] -> ACTION_BLOCK [xss]",
+    "benign-v2-login-normal: blocked as command_injection via (SHELL_METACHAR AND SYSTEM_BINARY_INVOCATION) violates [SAT-RCE-01] -> ACTION_BLOCK [command_injection]",
+    "benign-v2-wp-rest-posts: blocked as cms_wordpress_probe via (WORDPRESS_RECON_PROBE) violates [SAT-WP-02] -> ACTION_BLOCK [cms_wordpress_probe]",
+    "benign-v2-wp-admin-ajax-heartbeat: blocked as cms_wordpress_probe via (WORDPRESS_RECON_PROBE) violates [SAT-WP-01] -> ACTION_BLOCK [cms_wordpress_probe]"
+  ],
+  "measured_on": "2026-11-04",
+  "missed": [
+    "sqli-v2-extractvalue-error (sql_injection)",
+    "sqli-v2-mssql-waitfor (sql_injection)",
+    "sqli-v2-hex-literal (sql_injection)",
+    "sqli-v2-procedure-analyse (sql_injection)",
+    "nosql-v2-ne-auth-bypass (nosql_injection)",
+    "nosql-v2-gt-regex (nosql_injection)",
+    "nosql-v2-query-string-operator (nosql_injection)",
+    "rce-v2-amp-amp-windows (command_injection)",
+    "rce-v2-shellshock-user-agent (command_injection)",
+    "rce-v2-busybox-telnet (command_injection)",
+    "lfi-v2-expect-wrapper (path_traversal)",
+    "lfi-v2-log-poison-include (path_traversal)",
+    "ssrf-v2-octal-loopback (ssrf)",
+    "ssrf-v2-zero-host (ssrf)",
+    "ssrf-v2-nip-io (ssrf)",
+    "ssrf-v2-cluster-dns (ssrf)",
+    "ssrf-v2-ftp-scheme (ssrf)",
+    "ssrf-v2-gopher-smtp (ssrf)",
+    "ssrf-v2-portscan-list (ssrf)",
+    "jwt-v2-crit-extension (jwt_tampering)",
+    "log4j-v2-default-expansion (framework_exploit_probe)",
+    "ognl-v2-confluence-url (framework_exploit_probe)",
+    "spel-v2-function-routing-header (framework_exploit_probe)",
+    "drupal-v2-drupalgeddon-array (framework_exploit_probe)",
+    "php-v2-cgi-arg-injection (framework_exploit_probe)",
+    "exposure-v2-apache-status (sensitive_exposure_probe)",
+    "exposure-v2-phpinfo (sensitive_exposure_probe)",
+    "exposure-v2-eval-stdin (sensitive_exposure_probe)",
+    "exposure-v2-ssh-key (sensitive_exposure_probe)",
+    "wp-v2-rest-route-param (cms_wordpress_probe)",
+    "xxe-v2-parameter-entity-outofband (xxe)",
+    "ssti-v2-twig-tuple (ssti)",
+    "ssti-v2-freemarker-read (ssti)",
+    "ssti-v2-velocity-in-path (ssti)",
+    "crlf-v2-redirect-param (http_response_splitting)",
+    "crlf-v2-encoded-newline (http_response_splitting)",
+    "crlf-v2-header-value (http_response_splitting)",
+    "host-v2-poisoned-password-reset (host_header_injection)",
+    "host-v2-x-forwarded-host (host_header_injection)",
+    "host-v2-server-side-portscan (host_header_injection)",
+    "upload-v2-double-extension (malicious_upload)",
+    "upload-v2-htaccess (malicious_upload)",
+    "upload-v2-phtml (malicious_upload)"
+  ],
+  "note": "First run of a batch labelled before any engine call. Tuning against these cases invalidates this file and requires heldout_v3.",
+  "per_category": {
+    "benign": {
+      "detected": 0,
+      "total": 57
+    },
+    "cms_wordpress_probe": {
+      "detected": 5,
+      "total": 6
+    },
+    "command_injection": {
+      "detected": 5,
+      "total": 8
+    },
+    "framework_exploit_probe": {
+      "detected": 3,
+      "total": 8
+    },
+    "graphql_abuse": {
+      "detected": 4,
+      "total": 4
+    },
+    "host_header_injection": {
+      "detected": 0,
+      "total": 3
+    },
+    "http_response_splitting": {
+      "detected": 0,
+      "total": 3
+    },
+    "jwt_tampering": {
+      "detected": 3,
+      "total": 4
+    },
+    "malicious_upload": {
+      "detected": 0,
+      "total": 3
+    },
+    "nosql_injection": {
+      "detected": 0,
+      "total": 3
+    },
+    "path_traversal": {
+      "detected": 6,
+      "total": 8
+    },
+    "prototype_pollution": {
+      "detected": 4,
+      "total": 4
+    },
+    "sensitive_exposure_probe": {
+      "detected": 3,
+      "total": 7
+    },
+    "sql_injection": {
+      "detected": 8,
+      "total": 12
+    },
+    "ssrf": {
+      "detected": 1,
+      "total": 8
+    },
+    "ssti": {
+      "detected": 0,
+      "total": 3
+    },
+    "xss": {
+      "detected": 12,
+      "total": 12
+    },
+    "xxe": {
+      "detected": 1,
+      "total": 2
+    }
+  },
+  "provenance": {
+    "authorship": "Drafted by an AI assistant at the owner's request on 2026-11-04. Payloads are hand-written from publicly documented catalogues that the assistant recalled (OWASP CRS rules and WSTG, PortSwigger Web Security Academy, PayloadsAllTheThings, Log4Shell obfuscation notes, CVE write-ups for Confluence/Drupal/Struts/Spring/PHP-CGI, RFC 7519 for JWT, WordPress and WooCommerce developer docs for the probes and the benign shapes). They were NOT copied from a fetched file, so each note names the documented technique rather than a URL; treat the catalogue attribution as approximate.",
+    "benign_set": "The 57 controls are plausible traffic for a small Chilean e-commerce site (Spanish product and search text, WooCommerce and payment callbacks, invoices and CSV uploads, config forms that legitimately contain paths, IPs and shell-looking strings). They are written by hand, not sampled from a customer's access log, so this measures false positives against imagined traffic, not against real traffic.",
+    "known_limitations": [
+      "155 hand-written cases are a floor, not a certification.",
+      "Attack payloads are single-request signatures; nothing here measures multi-request or stateful evasion, payload encodings a specific upstream would decode, or traffic that arrives over HTTP/2 binary framing.",
+      "The benign set cannot contain the shapes its author did not think of, which is exactly where production false positives come from.",
+      "Detection here runs on the SAT engine with default configuration and one request as the only input; no upstream, no rule sync, no verdict state."
+    ]
+  },
+  "recall": {
+    "ci95": [
+      0.4625100211185266,
+      0.6553201841751453
+    ],
+    "value": 0.5612244897959183
+  },
+  "version": "heldout-v2"
+}

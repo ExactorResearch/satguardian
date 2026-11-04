@@ -181,6 +181,7 @@ fn corpus_files_are_versioned_and_labelled() {
     for (name, min_cases) in [
         ("corpus/independent_v1.json", 79usize),
         ("corpus/heldout_v1.json", 21usize),
+        ("corpus/heldout_v2.json", 155usize),
     ] {
         let raw = read(&repo_root().join(name));
         let corpus: serde_json::Value =
@@ -213,6 +214,36 @@ fn corpus_files_are_versioned_and_labelled() {
                 "{name} case {id} needs a request with a method"
             );
         }
+    }
+}
+
+/// The held-out numbers may only be written down the way the committed report says them.
+///
+/// Rewriting a published percentage is how a measurement turns into marketing. This recomputes
+/// recall and the false-positive rate from `corpus/heldout_v2_report.json` and requires every
+/// document that quotes them to carry the same figures.
+#[test]
+fn published_heldout_numbers_match_the_committed_report() {
+    let root = repo_root();
+    let report: serde_json::Value = serde_json::from_str(&read(&root.join("corpus/heldout_v2_report.json")))
+        .expect("corpus/heldout_v2_report.json must be valid JSON");
+    let counts = &report["counts"];
+    let detected = counts["detected"].as_u64().expect("counts.detected");
+    let attacks = counts["attacks"].as_u64().expect("counts.attacks");
+    let blocked = counts["blocked_controls"].as_u64().expect("counts.blocked_controls");
+    let controls = counts["controls"].as_u64().expect("counts.controls");
+
+    let recall = format!("{:.1}", detected as f64 / attacks as f64 * 100.0);
+    let fpr = format!("{:.1}", blocked as f64 / controls as f64 * 100.0);
+
+    for name in ["STATUS.md", "docs/status.md", "corpus/README.md"] {
+        let text = read(&root.join(name));
+        assert!(text.contains(&format!("{recall}%")), "{name} does not carry the measured recall ({recall}%)");
+        assert!(text.contains(&format!("{fpr}%")), "{name} does not carry the measured false-positive rate ({fpr}%)");
+        assert!(
+            text.to_lowercase().contains("held-out") && text.to_lowercase().contains("in-sample"),
+            "{name} must keep both the held-out and the in-sample numbers, and say which is which"
+        );
     }
 }
 
