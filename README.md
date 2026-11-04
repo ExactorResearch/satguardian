@@ -20,6 +20,8 @@ boolean cloud optimization. Detection quality is **measured, not assumed**: the
 numbers below come from a versioned corpus and a reproducible benchmark, and they
 are explicitly in-sample.
 
+The product promise: **free, you get local protection; paying, you get ongoing review, update proposals and explanations — without ever giving up control of your WAF.** The local client and `satguardian-health` stay free, read-only and offline. The advisor (`satguardian-advisor.py`) analyses and proposes; applied changes require approval, and the planned messaging bot (Telegram/WhatsApp) is announced, not available yet.
+
 ---
 
 ## ⚡ Quick Start: Standalone Binary Test Drive (60 Seconds)
@@ -206,6 +208,8 @@ SATGuardian runs **entirely inside your infrastructure**. We **never** host cust
 3. **Standalone Binary:** Zero-dependency, self-contained Rust binary (`satguardian-waf proxy --listen 127.0.0.1:8080`). It speaks plain HTTP; terminate TLS in a reverse proxy or Envoy in front of it.
 
 ### 3.4 Pricing & Licensing: Zero Traffic Tax
+
+The direction of the paid product is the approved narrative — ongoing review, update proposals and explanations under the customer's control — with server-count and workload limits replacing customer-facing credits once costs are measured. That packaging is **not implemented or approved**; the table below reflects what the cloud service enforces today (SU metering stays internal accounting).
 
 | Plan | Monthly Price | Seats | Complexity Limit | Included Security Units (SU) | Extra SU Overage Rate |
 | :--- | :--- | :--- | :--- | :--- | :--- |
