@@ -209,7 +209,7 @@ SATGuardian runs **entirely inside your infrastructure**. We **never** host cust
 
 ### 3.4 Pricing & Licensing: Zero Traffic Tax
 
-The direction of the paid product is the approved narrative — ongoing review, update proposals and explanations under the customer's control — with server-count and workload limits replacing customer-facing credits once costs are measured. That packaging is **not implemented or approved**; the table below reflects what the cloud service enforces today (SU metering stays internal accounting).
+The paid product follows the approved narrative — ongoing review, update proposals and explanations under the customer's control. On 2026-11-03 the owner approved packaging the plans by **servers covered and new rule patterns reviewed each month**, published on the site at the existing prices, with SU kept as internal accounting. Server caps stay at the API-key ceiling the service enforces (Scout 1 srv / 5,000 patterns · Pro 5 / 25,000 · Startup 10 / 125,000 · Scale 30 / 500,000). Hard enforcement by server/pattern count is **not implemented yet**: the table below reflects what the cloud service enforces today through the SU pools.
 
 | Plan | Monthly Price | Seats | Complexity Limit | Included Security Units (SU) | Extra SU Overage Rate |
 | :--- | :--- | :--- | :--- | :--- | :--- |
