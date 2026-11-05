@@ -1,0 +1,138 @@
+{
+  "schema": "satguardian-real-comparative/provenance-v1",
+  "generated_on": "2026-11-05",
+  "generated_by": "owner's workstation (Windows 10 build 19045) + WSL Ubuntu-20.04",
+  "purpose": "Pin every third-party input of the comparison so a stranger can rebuild the same corpus and the same engines.",
+  "vendor_sources": [
+    {
+      "name": "OWASP Core Rule Set (CRS)",
+      "repository": "https://github.com/coreruleset/coreruleset",
+      "ref": "v4.30.0",
+      "commit": "e03a4f6dabc7a30ebd8c52c97d28a154f590a48f",
+      "acquired": "git clone --depth 1 --branch v4.30.0",
+      "acquired_on": "2026-11-05",
+      "used_for": [
+        "tests/regression/tests/*/*.yaml -> corpus/crs_v430.jsonl (vendor-labelled expectations)",
+        "rules/*.conf (27 files) -> the rule set loaded by Coraza and ModSecurity"
+      ],
+      "license": "Apache-2.0",
+      "verified": {
+        "conf_files": 27,
+        "yaml_files": 326,
+        "sample_rule_sha256": {
+          "file": "rules/REQUEST-942-APPLICATION-ATTACK-SQLI.conf",
+          "sha256": "8dadc742af2bb6b7e5b48570cb0201930cd9cfe9e3de94776e736605ea7be228"
+        }
+      }
+    },
+    {
+      "name": "Coraza WAF",
+      "repository": "https://github.com/corazawaf/coraza",
+      "ref": "v3.8.1",
+      "commit": "9f8521398d1ff023b958fad0b944cac265763866",
+      "acquired": "git clone --depth 1 --branch v3.8.1",
+      "acquired_on": "2026-11-05",
+      "constraint": "go.mod declares go 1.25.0; the apt Go in Ubuntu 20.04 tops out at 1.21.1, so building from source needs an official Go toolchain installed under ~/.local (no root).",
+      "preferred_path": "run the vendor's published CRS image instead of building from source, so the binary is reproducible by digest",
+      "license": "Apache-2.0",
+      "verified": {}
+    },
+    {
+      "name": "ModSecurity v3",
+      "source": "Ubuntu 20.04 universe: libmodsecurity3 / libmodsecurity-dev 3.0.4-1build1",
+      "status": "NOT INSTALLED - apt needs sudo and this session has no password",
+      "license": "Apache-2.0",
+      "verified": {}
+    }
+  ],
+  "own_sources": [
+    {
+      "name": "SATGuardian edge engine",
+      "repository": "https://github.com/ExactorResearch/satguardian",
+      "version": "0.3.0",
+      "entry_point": "src/bin/satbench.rs",
+      "note": "detection behaviour unchanged since the 2026-11-04 held-out measurement; the only later edit to src/engine was island-description and comment wording (checked with git show 9609a8f on 2026-11-05)"
+    },
+    {
+      "name": "corpus/unified_v1.jsonl",
+      "generator": "tools/normalize_corpus.py",
+      "cases": 255,
+      "splits": {
+        "held_out": 155,
+        "in_sample_regression": 79,
+        "consumed_for_tuning": 21
+      },
+      "source_files": {
+        "corpus/heldout_v2.json": "76cdb3896938 (sha256 prefix, see the JSONL for the full digest per record)",
+        "corpus/independent_v1.json": "ac29a17a6907",
+        "corpus/heldout_v1.json": "d9995c14dc6d"
+      }
+    },
+    {
+      "name": "corpus/crs_v430.jsonl",
+      "generator": "tools/ingest_crs_tests.py",
+      "sha256": "5ad9575548bbe3e89935617741dc55731319c337434692600c6f3bd6e960f3fc",
+      "records": 5088,
+      "vendor_labelled_attacks": 4050,
+      "unlabelled_excluded_from_every_rate": 1038,
+      "dropped_encoded_requests": 10,
+      "location": "NOT committed: it is 5 MB of attack payloads derived from a pinned public commit. Regenerate with the tool; keeping it out of the repo also avoids shipping a payload archive to every clone.",
+      "environment_excluded_files": [
+        "REQUEST-933-APPLICATION-ATTACK-PHP/933100.yaml",
+        "REQUEST-933-APPLICATION-ATTACK-PHP/933111.yaml",
+        "REQUEST-933-APPLICATION-ATTACK-PHP/933190.yaml",
+        "RESPONSE-955-WEB-SHELLS/955260.yaml"
+      ]
+    }
+  ],
+  "environment_blockers": [
+    {
+      "id": "defender-refuses-crs-payload-files",
+      "finding": "CONFIRMED by Microsoft Defender's own detection history (Get-MpThreatDetection / Get-MpThreat, queried read-only on 2026-11-05). Four OWASP CRS test files are classified as real PHP backdoors - 2147742152 Backdoor:PHP/Remoteshell.A, 2147761236 Backdoor:PHP/Dirtelti.MTJ, 2147891541 Backdoor:PHP/Chopper.E!dha - and the logged resource paths are exactly REQUEST-933-APPLICATION-ATTACK-PHP/933100.yaml, 933111.yaml, 933190.yaml and RESPONSE-955-WEB-SHELLS/955260.yaml, plus every copy attempt (crs-4.30.0.tar.gz under D:\\linux\\...\\vendor_cache and .bench_cache, /tmp/crs*.tar.gz inside the WSL rootfs, orig_955260.yaml). Detection timestamps match the probe runs (08:46-08:53). Ubuntu-20.04 is a WSL 1 distro (wsl -l -v), so its rootfs is a directory of NTFS files under ...\\CanonicalGroupLimited.Ubuntu20.04onWindows_...\\LocalState\\rootfs and the real-time filter inspects every read by every Linux process: reads return EINVAL, copies are quarantined after cp reports success, and one file came back with 25 lines stripped.",
+      "impact": "322 of 326 CRS test files usable. Rules 933100, 933111, 933190 (PHP) and 955260 (webshells) have zero coverage in the vendor corpus, so every score derived from it is computed on a slightly easier subset than the full CRS suite and must say so.",
+      "not_worked_around": "Restoring the bytes through the git object database, or staging them somewhere the scanner does not look, would route payload bytes past the scanner. Deliberately not done. The fix is an environment where the vendor tree lives inside a Linux-native filesystem the Windows scanner does not file-scan (Docker Desktop on WSL 2, or a WSL 2 distro), or an explicit owner-owned Defender exclusion. Note that any future user of this benchmark hits the same wall, so the README must state it before they lose an hour like we did.",
+      "also_revealed": "the 623 KB crs-4.30.0.tar.gz that 'existed but could not be opened' for hours was the same detections, not a corrupt download or a filesystem bug"
+    },
+    {
+      "id": "docker-daemon-down",
+      "finding": "the docker CLI resolves through the Windows mount but `docker info` fails; Docker Desktop is Stopped (wsl -l -v) and no WSL 2 distro is running for it",
+      "impact": "blocks the container route for ModSecurity+CRS, Coraza+CRS and SafeLine until Docker Desktop is started"
+    },
+    {
+      "id": "no-sudo-in-wsl",
+      "finding": "sudo -n true -> SUDO_NEEDS_PASSWORD",
+      "impact": "libmodsecurity3 3.0.4, libmodsecurity-dev and golang-1.21 are all available from apt but cannot be installed from this session"
+    },
+    {
+      "id": "wsl1-memory",
+      "finding": "free -m shows 6061 MB total with ~526 MB available on a WSL 1 distro",
+      "impact": "even with a modern Go, compiling Coraza here would be marginal; the container route or a WSL 2 distro is the reliable path"
+    }
+  ],
+  "first_real_measurement": {
+    "date": "2026-11-05",
+    "corpus": "crs_v430.jsonl (vendor-labelled, in-sample for CRS)",
+    "corpus_sha256": "5ad9575548bbe3e89935617741dc55731319c337434692600c6f3bd6e960f3fc",
+    "engine_binary": "satguardian-waf v0.3.0, stable-x86_64-pc-windows-msvc, --release",
+    "detected": 385,
+    "attacks": 4050,
+    "unlabelled_stages_excluded": 1038,
+    "recall": 0.0951,
+    "ci95": [0.086409, 0.104482],
+    "false_positives": "not computable - the usable CRS stages carry no vendor-labelled benign controls",
+    "reproduced_by": "tests/comparative_corpus_test.rs::vendor_crs_batch_is_measured_only_never_asserted and src/bin/satbench.rs, both in-process, both 385/4050 from the digest above",
+    "latency_us": {
+      "caveat": "Latency belongs to the machine and the build, not to the engine alone. The environment of the first run could not be verified after the fact, so its figures are kept only as a superseded note and must not be quoted.",
+      "superseded_unverified_environment": { "p50": 134.3, "p99": 583.1, "mean": 165.8 },
+      "windows_msvc_release_2026_11_05": {
+        "p50": 19.1,
+        "p90": 36.7,
+        "p99": 97.7,
+        "cases": 4050,
+        "command": "cargo test --release --test comparative_corpus_test -- --nocapture",
+        "scope": "in-process evaluate_payload only; excludes HTTP, TLS, proxy and upstream"
+      }
+    },
+    "reading": "SATGuardian fires on roughly one in ten of the payloads the CRS project labels as attacks. The number is not a head-to-head result - Coraza and ModSecurity have not been run on this corpus yet - but it is the first vendor-authored yardstick the engine has been measured against, and it is far from the 100% the in-sample regression corpus shows."
+  }
+}

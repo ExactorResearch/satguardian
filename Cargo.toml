@@ -2,6 +2,7 @@
 name = "satguardian-waf"
 version = "0.3.0"
 edition = "2021"
+default-run = "satguardian-waf"
 authors = ["Satguardian Research"]
 license = "MIT OR Apache-2.0"
 description = "SATGuardian Edge WAF: research prototype for multi-pass lexical normalization and u128 bitmask rule evaluation, with opt-in cloud rule synthesis that returns proposals for approval"
