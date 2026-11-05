@@ -1,0 +1,5 @@
+# Digests of the corpora are recorded in provenance.json and inside each record,
+# so the bytes must not vary by platform.
+*.jsonl text eol=lf
+*.json  text eol=lf
+*.py    text eol=lf

@@ -1479,23 +1479,70 @@ now in-sample, and the rules for adding cases.</p>
   long-running memory or rule-update testing.</li>
 <li><strong>No TLS or WebSocket handling in the standalone proxy.</strong> TLS terminates in
   front of it; WebSocket upgrades are rejected.</li>
-<li><strong>No ESP32/embedded port.</strong> Embedded deployment is a research direction only.</li>
 <li><strong>Prebuilt artifacts under <code>dist/</code> and <code>releases/</code> are stale.</strong> They were built
   before the claims were corrected and still contain the old banner text. Rebuild
   or delete them before publishing; do not ship them as current.</li>
 </ul>
 <h2 id="how-to-reproduce">How to reproduce</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Detection regression (both corpora)</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>cargo<span class="w"> </span><span class="nb">test</span><span class="w"> </span>--test<span class="w"> </span>independent_corpus_test<span class="w"> </span>--<span class="w"> </span>--nocapture
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># Full Rust suite</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>cargo<span class="w"> </span><span class="nb">test</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="c1"># In-memory benchmark over the corpus</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>cargo<span class="w"> </span>run<span class="w"> </span>--release<span class="w"> </span>--<span class="w"> </span>benchmark<span class="w"> </span>-r<span class="w"> </span><span class="m">10000</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="c1"># Python reference harness (local stand-ins, in-sample)</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>python<span class="w"> </span>run_benchmark.py<span class="w"> </span><span class="m">1000</span>
+<p>Two different numbers get quoted in these documents and they come from two
+different corpora. Do not expect one command to print the other one:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">what you run</th>
+<th style="text-align: left;">corpus</th>
+<th style="text-align: center;">benign controls</th>
+<th style="text-align: left;">what it prints</th>
+<th style="text-align: left;">status of that corpus</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>cargo run --release -- benchmark -r 10000</code></td>
+<td style="text-align: left;"><code>corpus/independent_v1.json</code></td>
+<td style="text-align: center;">16</td>
+<td style="text-align: left;">100% recall, <strong>0.0% FPR</strong></td>
+<td style="text-align: left;">in-sample regression floor: every miss in it was used to fix the engine</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>cargo run --release --bin satbench -- --corpus benchmarks/real_comparative/corpus/unified_v1.jsonl</code></td>
+<td style="text-align: left;"><code>corpus/heldout_v2.json</code> (plus the two floors, reported separately)</td>
+<td style="text-align: center;">57</td>
+<td style="text-align: left;"><strong>56.1% recall, 7.0% FPR</strong> in the <code>HELD-OUT</code> block</td>
+<td style="text-align: left;">the only held-out estimate; publishable</td>
+</tr>
+</tbody>
+</table>
+<p>So the <strong>7.0% false-positive rate on 57 controls</strong> in the table above is the
+held-out measurement, and the <code>benchmark</code> subcommand cannot reproduce it — it
+does not load <code>heldout_v2.json</code>. Re-running the held-out batch read-only
+reproduces 55/98 and 4/57 exactly (checked 2026-11-05 with both commands); what
+spends the batch is fixing the engine against its misses, which is why
+<code>tests/heldout_v2_measurement_test.rs</code> is gated behind an environment variable.</p>
+<p><code>tests/comparative_corpus_test.rs</code> calls the engine in-process — no HTTP, no
+proxy, no deployed host — and pins all three numbers as unit tests. Its held-out
+test asserts the <em>reproduction</em>, not the quality: if the engine ever blocks a
+different set of held-out cases, the test fails and says the batch is spent,
+which is the only way a held-out estimate can stay trustworthy.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Held-out estimate (56.1% recall / 7.0% FPR on 57 controls)</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>python3<span class="w"> </span>benchmarks/real_comparative/tools/normalize_corpus.py
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>cargo<span class="w"> </span>run<span class="w"> </span>--release<span class="w"> </span>--bin<span class="w"> </span>satbench<span class="w"> </span>--<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">    </span>--corpus<span class="w"> </span>benchmarks/real_comparative/corpus/unified_v1.jsonl
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="c1"># Detection regression (both in-sample corpora)</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>cargo<span class="w"> </span><span class="nb">test</span><span class="w"> </span>--test<span class="w"> </span>independent_corpus_test<span class="w"> </span>--<span class="w"> </span>--nocapture
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="c1"># The same measurements as in-process unit tests: no HTTP, no proxy, no deployed host</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>cargo<span class="w"> </span><span class="nb">test</span><span class="w"> </span>--test<span class="w"> </span>comparative_corpus_test<span class="w"> </span>--<span class="w"> </span>--nocapture
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="c1"># Full Rust suite</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>cargo<span class="w"> </span><span class="nb">test</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="c1"># In-memory benchmark over the in-sample corpus</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>cargo<span class="w"> </span>run<span class="w"> </span>--release<span class="w"> </span>--<span class="w"> </span>benchmark<span class="w"> </span>-r<span class="w"> </span><span class="m">10000</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="c1"># Python reference harness (local stand-ins, in-sample)</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>python<span class="w"> </span>run_benchmark.py<span class="w"> </span><span class="m">1000</span>
 </code></pre></div>
 <h2 id="control-boundary-what-the-paid-tier-actually-does">Control boundary (what the paid tier actually does)</h2>
 <p>The product promise is: free, local protection; paid, ongoing review, update

@@ -35,21 +35,49 @@ now in-sample, and the rules for adding cases.
   long-running memory or rule-update testing.
 - **No TLS or WebSocket handling in the standalone proxy.** TLS terminates in
   front of it; WebSocket upgrades are rejected.
-- **No ESP32/embedded port.** Embedded deployment is a research direction only.
 - **Prebuilt artifacts under `dist/` and `releases/` are stale.** They were built
   before the claims were corrected and still contain the old banner text. Rebuild
   or delete them before publishing; do not ship them as current.
 
 ## How to reproduce
 
+Two different numbers get quoted in these documents and they come from two
+different corpora. Do not expect one command to print the other one:
+
+| what you run | corpus | benign controls | what it prints | status of that corpus |
+| :--- | :--- | :---: | :--- | :--- |
+| `cargo run --release -- benchmark -r 10000` | `corpus/independent_v1.json` | 16 | 100% recall, **0.0% FPR** | in-sample regression floor: every miss in it was used to fix the engine |
+| `cargo run --release --bin satbench -- --corpus benchmarks/real_comparative/corpus/unified_v1.jsonl` | `corpus/heldout_v2.json` (plus the two floors, reported separately) | 57 | **56.1% recall, 7.0% FPR** in the `HELD-OUT` block | the only held-out estimate; publishable |
+
+So the **7.0% false-positive rate on 57 controls** in the table above is the
+held-out measurement, and the `benchmark` subcommand cannot reproduce it — it
+does not load `heldout_v2.json`. Re-running the held-out batch read-only
+reproduces 55/98 and 4/57 exactly (checked 2026-11-05 with both commands); what
+spends the batch is fixing the engine against its misses, which is why
+`tests/heldout_v2_measurement_test.rs` is gated behind an environment variable.
+
+`tests/comparative_corpus_test.rs` calls the engine in-process — no HTTP, no
+proxy, no deployed host — and pins all three numbers as unit tests. Its held-out
+test asserts the *reproduction*, not the quality: if the engine ever blocks a
+different set of held-out cases, the test fails and says the batch is spent,
+which is the only way a held-out estimate can stay trustworthy.
+
 ```bash
-# Detection regression (both corpora)
+# Held-out estimate (56.1% recall / 7.0% FPR on 57 controls)
+python3 benchmarks/real_comparative/tools/normalize_corpus.py
+cargo run --release --bin satbench -- \
+    --corpus benchmarks/real_comparative/corpus/unified_v1.jsonl
+
+# Detection regression (both in-sample corpora)
 cargo test --test independent_corpus_test -- --nocapture
+
+# The same measurements as in-process unit tests: no HTTP, no proxy, no deployed host
+cargo test --test comparative_corpus_test -- --nocapture
 
 # Full Rust suite
 cargo test
 
-# In-memory benchmark over the corpus
+# In-memory benchmark over the in-sample corpus
 cargo run --release -- benchmark -r 10000
 
 # Python reference harness (local stand-ins, in-sample)
