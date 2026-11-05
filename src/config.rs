@@ -52,11 +52,13 @@ pub struct WafConfig {
     #[serde(default = "default_database_path")]
     pub database_path: String,
 
-    /// Autonomous background sync interval in seconds.
+    /// Seconds between background cloud review runs. Only used when `auto_sync_enabled` is on.
     #[serde(default = "default_sync_interval")]
     pub autonomous_sync_interval_secs: u64,
 
-    /// Enable automatic hot minimization sync with https://satguardian.tech.
+    /// Send observed anomalies to the cloud for review on a timer. Off by default: nothing leaves
+    /// the node unless the operator turns this on, and even then results arrive as proposals that
+    /// have to be approved separately before they affect the running rule set.
     #[serde(default = "default_auto_sync")]
     pub auto_sync_enabled: bool,
 
@@ -205,7 +207,7 @@ fn default_sync_interval() -> u64 {
 }
 
 fn default_auto_sync() -> bool {
-    true
+    false
 }
 
 fn default_stateful_enabled() -> bool {

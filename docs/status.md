@@ -56,6 +56,31 @@ cargo run --release -- benchmark -r 10000
 python run_benchmark.py 1000
 ```
 
+## Control boundary (what the paid tier actually does)
+
+The product promise is: free, local protection; paid, ongoing review, update
+proposals and explanations — without giving up control of the WAF. As of
+2026-11-04 the code matches that:
+
+- `auto_sync_enabled` defaults to `false` (`src/config.rs`), and the shipped
+  `waf_config.toml` leaves it off. Cloud review runs only if you turn it on or
+  invoke `satguardian-waf sync-simplify` / `POST /api/waf/sync-simplify`.
+- A review uploads recorded `u128` feature vectors, not raw requests, and what
+  comes back is stored in `dynamic_clauses` with `applied = 0`. Startup loads
+  `applied = 1` rows only.
+- A clause enters the engine after an explicit approval
+  (`satguardian-waf clauses apply <id>`, or `POST /api/waf/clauses/{id}/apply`
+  behind the admin token). `reject` deletes only unapplied proposals. Approved
+  clauses are registered in an `RwLock`-guarded table capped at 4,096; there is
+  no lock-free swap and no automatic apply anywhere in the client.
+- The Boolean minimizer (`exactor-core-v128`) is not a dependency of this crate
+  and is not in any client artefact; minimization happens on the service side.
+- `satguardian-advisor.py` has no batch-approval option. Every proposal is
+  decided one at a time by the operator running it.
+
+`tests/docs_claims_test.rs::cloud_review_stays_opt_in_and_never_applies_by_itself`
+and `tests/clause_approval_test.rs` fail if any of that regresses.
+
 ## Why this file exists
 
 Earlier versions of this repository published a benchmark that:

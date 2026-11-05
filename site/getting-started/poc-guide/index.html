@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Sub-Millisecond Lexical Normalization, 128-Bit Integer Mask Evaluation, and EXACTOR GXOR Boolean Cloud Optimization">
+        <meta name="description" content="Research-prototype Rust edge WAF with u128 bitmask inspection and opt-in SATGuardian cloud rule synthesis that returns proposals you approve">
       
       
         <meta name="author" content="SATGuardian Cyber-Defense Systems">
@@ -597,7 +597,7 @@
   <span class="md-ellipsis">
     
   
-    Complete Configuration Guide
+    Configuration Reference
   
 
     
@@ -625,7 +625,7 @@
   <span class="md-ellipsis">
     
   
-    Configuration & Operations
+    Operations & Tooling Guide
   
 
     
@@ -1554,7 +1554,8 @@ Edge WAF</strong> (<code>satguardian</code>) locally using the Rust binary and t
 and advisor suite.</p>
 <blockquote>
 <p><strong>Status: research prototype.</strong> The PoC measures in-memory rule evaluation on a
-small in-sample corpus. It is not a production validation. See
+small in-sample corpus plus one held-out run of hand-written payloads. It is
+not a production validation and there is no third-party evaluation. See
 <a href="../../status/">STATUS.md</a>.</p>
 </blockquote>
 <hr />
@@ -1563,15 +1564,19 @@ small in-sample corpus. It is not a production validation. See
 <li><strong>Deterministic Lexical &amp; Bitmask Inspection:</strong> How HTTP requests are decoded
    across multiple obfuscation layers, mapped to a 128-bit <code>FeatureVector</code>
    (<code>u128</code>), and evaluated via bitwise <code>AND</code> operations
-   (<code>(minterm &amp; required_mask) == expected_bits</code>) with causal rule traces.</li>
+   (<code>(fv.bits &amp; required_mask) == expected_bits</code>) with causal rule traces.</li>
 <li><strong>Python stand-in harness:</strong> CPU timing and detection on the in-repo payload
    list, comparing the Python reference port against local reimplementations.
    It does not execute Coraza, SafeLine, ModSecurity or a trained model.</li>
-<li><strong>Offline EXACTOR GXOR Rule Synthesis &amp; Replay:</strong> How
-   <code>satguardian-advisor.py</code> and <code>SatguardianCloudClient</code> mine <code>waf_ledger.db</code>,
-   invoke EXACTOR GXOR (<code>{AND, OR, NOT, XOR}</code> up to 128 variables), replay
-   candidate rules against recorded benign traffic to find collisions, and
-   generate reports (<code>audit_report.html</code>, <code>audit_report.md</code>).</li>
+<li><strong>Offline rule proposals and replay:</strong> How <code>satguardian-advisor.py</code> mines
+   <code>waf_ledger.db</code>, replays candidate rules against recorded benign traffic to
+   find collisions, and writes evidence-backed audit reports
+   (<code>audit_report.html</code>, <code>audit_report.md</code>).</li>
+<li><strong>The approval gate:</strong> How a cloud review run leaves its results as proposals
+   (<code>dynamic_clauses.applied = 0</code>) that enforce only after you approve them:
+   <code>satguardian-waf clauses list</code>, <code>clauses apply &lt;id&gt;</code>, <code>clauses reject &lt;id&gt;</code>.
+   The minimization that produced a proposal happens on the SATGuardian cloud
+   service (<code>satguardian.tech</code>) and is not part of this repository.</li>
 </ol>
 <hr />
 <h2 id="2-running-the-native-rust-benchmark">2. Running the Native Rust Benchmark</h2>
@@ -1669,15 +1674,21 @@ stand-ins, not the named products.</p>
   That excludes network and proxy overhead and says nothing about end-to-end
   throughput.</li>
 <li>Detection on the pinned corpus is 100%/0% only because the same cases were
-  used to drive the fixes. First-run baselines were 80.95% recall / 18.75% FPR
-  (<code>independent_v1</code>) and 64.71% recall / 0% FPR (<code>heldout_v1</code>). See
-  <a href="../../corpus/">corpus/README.md</a>.</li>
+  used to drive the fixes; those rows are in-sample regression floors.
+  First-run baselines were 80.95% recall / 18.75% FPR (<code>independent_v1</code>) and
+  64.71% recall / 0% FPR (<code>heldout_v1</code>). The only out-of-sample run is
+  <code>corpus/heldout_v2.json</code>, executed once on 2026-11-04: <strong>56.1% recall</strong> on 98
+  attacks (95% CI 46.3–65.5%) and a <strong>7.0% false-positive rate</strong> on 57 controls
+  (95% CI 2.8–16.7%). See <a href="../../corpus/">corpus/README.md</a>.</li>
 <li>The harness does not show that SATGuardian is faster or more accurate than a
-  real vendor WAF. That comparison has not been run.</li>
+  real vendor WAF. That comparison has not been run, and no part of this PoC has
+  been evaluated by a third party.</li>
 </ul>
 <hr />
 <h2 id="4-generating-the-forensic-audit-reports-satguardian-advisorpy">4. Generating the Forensic Audit Reports (<code>satguardian-advisor.py</code>)</h2>
-<p>To analyze the 3,799 recorded transactions in <code>waf_ledger.db</code>, verify synthesized rules against the Digital Twin, and generate HTML and Markdown compliance reports:</p>
+<p>To analyze the 3,799 recorded transactions in <code>waf_ledger.db</code>, verify candidate
+rules against the Digital Twin replay of recorded benign traffic, and generate
+HTML and Markdown evidence-backed audit reports:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">python</span> <span class="n">satguardian-advisor</span><span class="p">.</span><span class="n">py</span> <span class="p">-</span><span class="n">-report</span> <span class="n">audit_report</span><span class="p">.</span><span class="n">html</span>
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">python</span> <span class="n">satguardian-advisor</span><span class="p">.</span><span class="n">py</span> <span class="p">-</span><span class="n">-report-md</span> <span class="n">audit_report</span><span class="p">.</span><span class="nb">md</span>
 </code></pre></div>

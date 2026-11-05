@@ -1,6 +1,6 @@
 # ==============================================================================
 # SATGUARDIAN EDGE WAF + ENVOY PROXY (TCP LOOPBACK CONFIGURATION)
-# Sub-Millisecond AST Boolean SAT Verification via ext_authz HTTP Filter
+# In-memory u128 bitmask verification via the ext_authz HTTP filter (research prototype)
 # Port: 10000 (Envoy Ingress), 9002 (SATGuardian ext_authz), 3000 (Backend)
 # ==============================================================================
 admin:

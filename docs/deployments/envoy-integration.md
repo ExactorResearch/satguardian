@@ -1,18 +1,19 @@
-# Kubernetes & Envoy Proxy Integration Guide (Native Sidecar Pattern)
+# Kubernetes & Envoy Proxy Integration Guide (Native Sidecar Pattern, Lab Configuration)
 
-**Deployment Architecture:** On-premise edge inspection (lab configuration)  
-**Codebase Reference:** `src/proxy/envoy_grpc.rs`, `k8s/envoy-sidecar-deployment.yaml`
+**Deployment Architecture:** self-hosted edge inspection (lab configuration)  
+**Codebase Reference:** `src/envoy/ext_authz.rs`, `envoy/envoy-uds.yaml`, `envoy/kubernetes-sidecar.yaml`
 
-> **Status: research prototype.** This guide describes an integration that has
-> been exercised in a lab, not a production rollout. See [STATUS.md](../status.md).
+> **Status: research prototype.** This integration has been exercised in a lab on
+> our own machine. It has not been run under real traffic, and nothing here is
+> production evidence. See [STATUS.md](../status.md).
 
 ---
 
-## 1. Overview: Sub-Millisecond Sidecar Inspection
+## 1. Overview: Sidecar Authorization in a Lab Pod
 
-For high-throughput Kubernetes microservices and service meshes (Istio / Envoy), **SATGuardian Edge WAF** deploys as a lightweight, 100% self-contained native Rust sidecar container alongside each Envoy proxy pod.
+For Kubernetes workloads and service meshes (Istio / Envoy), **SATGuardian Edge WAF** can run as a small self-contained Rust sidecar container next to the Envoy proxy in the same pod.
 
- Envoy delegates incoming HTTP request authorization to the local SATGuardian daemon via the `ext_authz` filter over an in-memory **Unix Domain Socket** (`unix:///run/satguardian/waf.sock`) or loopback gRPC/HTTP socket, avoiding external network hops.
+Envoy delegates incoming HTTP request authorization to the local SATGuardian daemon via the `ext_authz` filter over an in-memory **Unix Domain Socket** (`/var/run/satguardian/waf.sock`) or a loopback HTTP socket, avoiding a network hop.
 
 ```
                       ┌─────────────────────────── Kubernetes Pod ───────────────────────────┐
@@ -25,110 +26,123 @@ Incoming Traffic ────►│  [ Envoy Proxy ] ──(ext_authz UDS)──
                       └──────────────────────────────────────────────────────────────────────┘
 ```
 
-### Why the Native Rust Sidecar Pattern Excels
-1. **Microsecond-Scale Engine Evaluation:** `satguardian-waf benchmark -r 10000`
+### Why the Sidecar Shape Is Interesting
+1. **Microsecond-scale engine evaluation (in memory only):** `satguardian-waf benchmark -r 10000`
    measures in-memory lexical and bitmask evaluation at roughly `20 µs` p50 and
    `22 µs` mean, with p99 fluctuating around `50 µs` depending on load. These
    numbers exclude the UDS hop, Envoy itself and the upstream service; end-to-end
    sidecar latency has not been characterized.
-2. **100% Traffic Sovereignty & Zero Per-Request Cost:** All HTTP payloads stay strictly inside your Kubernetes cluster. There is zero external DNS CNAME routing, zero third-party traffic inspection, and **$0.00 cost per request**.
-3. **Lock-Free Atomic Rule Updates (`ArcSwap`):** When the offline advisor or SATGuardian Cloud synthesizes a minimized `u128` rule matrix (consuming Security Units, SU), the sidecar hot-reloads the compiled bitmasks in memory via `ArcSwap` without restarting pods or dropping connections.
-4. **Fail-Safe Continuity:** If the organization's monthly Security Units (SU) balance is exhausted (`HTTP 402 SU_QUOTA_EXHAUSTED`), cloud rule synthesis pauses while every Kubernetes sidecar continues inspecting and blocking attacks indefinitely using its last compiled rule matrix.
+2. **Traffic stays inside your cluster, and the edge costs nothing per request:** all HTTP payloads are inspected locally, with no external DNS CNAME routing and no per-request fee. With the shipped defaults (`auto_sync_enabled = false` in `waf_config.toml`) the sidecar makes no outbound call at all.
+3. **Rule updates are an operator decision, not a sync side effect:** cloud review returns clauses that are stored in the ledger as proposals (`dynamic_clauses.applied = 0`); the sync never touches the running engine. Approval is a separate action — `satguardian-waf clauses apply <id>` against the ledger, or an admin-token `POST /api/waf/clauses/{id}/apply` on the management API, which additionally registers the clause in the live process so subsequent requests see it without restarting the pod or dropping connections.
+4. **Continuity if the cloud is not there:** if the monthly Security Units (SU) quota is exhausted (`HTTP 402 SU_QUOTA_EXHAUSTED`) or `satguardian.tech` is unreachable, no new proposals arrive. Every sidecar keeps inspecting and blocking with the rule set it already has, because enforcement is entirely local.
 
 ---
 
-## 2. Envoy `ext_authz` Configuration (`envoy.yaml`)
+## 2. Envoy `ext_authz` Configuration (`envoy/envoy-uds.yaml`)
 
-Configure Envoy's `envoy.filters.http.ext_authz` filter to forward request headers and bounded body payloads to the local SATGuardian sidecar:
+The daemon in `src/envoy/ext_authz.rs` serves the ext_authz **HTTP** service (it answers a plain HTTP check request with `200` or `403`), so Envoy is configured with `http_service`, not `grpc_service`. The snippet below is the configuration shipped in this repository:
 
 ```yaml
-http_filters:
-  - name: envoy.filters.http.ext_authz
-    typed_config:
-      "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
-      transport_api_version: V3
-      with_request_body:
-        max_request_bytes: 8192
-        allow_partial_message: true
-        pack_as_bytes: true
-      failure_mode_allow: false
-      grpc_service:
-        envoy_grpc:
-          cluster_name: satguardian_ext_authz_cluster
-        timeout: 0.05s
+          - name: envoy.filters.http.ext_authz
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+              http_service:
+                server_uri:
+                  uri: "http://unix/ext_authz"
+                  cluster: satguardian_waf_uds
+                  timeout: 0.25s
+                authorization_request:
+                  allowed_headers:
+                    patterns:
+                    - exact: "authorization"
+                    - exact: "cookie"
+                    - exact: "x-forwarded-for"
+                    - exact: "user-agent"
+                    - exact: "content-type"
+                    - prefix: "x-"
+              with_request_body:
+                max_request_bytes: 65536
+                pack_as_bytes: false
+                allow_partial_message: true
 
 clusters:
-  - name: satguardian_ext_authz_cluster
-    type: STATIC
-    connect_timeout: 0.01s
-    typed_extension_protocol_options:
-      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
-        "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
-        explicit_http_config:
-          http2_protocol_options: {}
+  - name: satguardian_waf_uds
+    connect_timeout: 0.25s
     load_assignment:
-      cluster_name: satguardian_ext_authz_cluster
+      cluster_name: satguardian_waf_uds
       endpoints:
         - lb_endpoints:
             - endpoint:
                 address:
                   pipe:
-                    path: /run/satguardian/waf.sock
+                    path: /var/run/satguardian/waf.sock
 ```
+
+> The sidecar terminates nothing: TLS is expected to end at Envoy. `src/envoy/ext_authz.rs` reads the original method and path from `x-envoy-original-method` / `x-envoy-original-path` when Envoy forwards them, and only trusts `X-Forwarded-For` from proxies listed in `trusted_proxies`.
 
 ---
 
-## 3. Kubernetes Deployment Manifest (`k8s/envoy-sidecar-deployment.yaml`)
+## 3. Kubernetes Sidecar Manifest (`envoy/kubernetes-sidecar.yaml`)
 
-Mount an in-memory `emptyDir` (`medium: Memory`) at `/run/satguardian` so Envoy and the `satguardian-waf` sidecar communicate over a shared RAM-backed Unix Domain Socket:
+The committed manifest mounts an `emptyDir` with `medium: Memory` so Envoy and the sidecar share one Unix Domain Socket, and starts the daemon in `ext_authz` mode:
 
 ```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: payment-api-protected
-  labels:
-    app: payment-api
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: payment-api
-  template:
-    metadata:
-      labels:
-        app: payment-api
-    spec:
       volumes:
-        - name: satguardian-uds
+        - name: satguardian-ipc
           emptyDir:
             medium: Memory
+            sizeLimit: 64Mi
+        - name: satguardian-ledger
+          emptyDir: {}
+
       containers:
+        - name: envoy-proxy
+          image: envoyproxy/envoy:v1.30-latest
+          args: ["-c", "/etc/envoy/envoy.yaml"]
+          volumeMounts:
+            - name: envoy-config-vol
+              mountPath: /etc/envoy
+            - name: satguardian-ipc
+              mountPath: /var/run/satguardian
+
         - name: satguardian-waf-sidecar
-          image: ghcr.io/satguardian/satguardian-waf:v0.2.0
+          image: satguardian/satguardian-waf:v0.3.0
+          command: ["/usr/local/bin/satguardian-waf"]
           args:
-            - "proxy"
-            - "--uds"
-            - "/run/satguardian/waf.sock"
+            - "envoy-authz"
+            - "--socket"
+            - "/var/run/satguardian/waf.sock"
+          env:
+            - name: WAF_MODE
+              value: "block"
+            - name: SATGUARDIAN_API_URL
+              value: "https://satguardian.tech/api/simplify"
+            - name: SATGUARDIAN_API_KEY            # optional; only needed for cloud review
+              valueFrom:
+                secretKeyRef:
+                  name: satguardian-cloud-credentials
+                  key: api-token
+                  optional: true
+            - name: WAF_DATABASE_PATH
+              value: "/var/lib/satguardian/waf_ledger.db"
           resources:
             requests:
               cpu: "100m"
-              memory: "64Mi"
-            limits:
-              cpu: "500m"
               memory: "128Mi"
+            limits:
+              cpu: "1"
+              memory: "512Mi"
           volumeMounts:
-            - name: satguardian-uds
-              mountPath: /run/satguardian
-
-        - name: envoy-front-proxy
-          image: envoyproxy/envoy:v1.29-latest
-          ports:
-            - containerPort: 8080
-          volumeMounts:
-            - name: satguardian-uds
-              mountPath: /run/satguardian
+            - name: satguardian-ipc
+              mountPath: /var/run/satguardian
+            - name: satguardian-ledger
+              mountPath: /var/lib/satguardian
 ```
+
+Two operational notes, both read straight off `src/main.rs`:
+
+- **The ledger volume is `emptyDir` in the shipped manifest**, so recorded traffic, patterns awaiting analysis and open proposals disappear with the pod. Persist `/var/lib/satguardian` on a real volume before treating the ledger as an audit record.
+- **`envoy-authz` is a pure verifier.** It mounts only the `ext_authz` router: no management API, and it starts from the compiled-in rule matrix rather than calling `load_applied_clauses()`, so a proposal you approve against that ledger does not silently become policy in the sidecar. If you want approved dynamic clauses *and* the approval API in one process, run the `proxy` command with `envoy_ext_authz_addr` (TCP, e.g. loopback) and `admin_listen_addr` set: `run_server` loads approved clauses (`applied = 1`) at startup and serves `POST /api/waf/clauses/{id}/apply` for live registration. The Unix Domain Socket path (`--socket`) exists only in `envoy-authz` today. Treat that split as a known limitation of the lab wiring, not as a hot-reload feature.
 
 ---
 
@@ -136,11 +150,14 @@ spec:
 
 | Measurement | Source | Result |
 | :--- | :--- | :--- |
-| In-memory rule latency | `benchmark -r 10000` | p50 `~20 µs`, mean `~22 µs`, p99 near `50 µs` depending on load |
-| Detection, pinned corpus | `corpus/independent_v1.json` | 63/63 attacks, 0/16 benign blocked (in-sample regression) |
+| In-memory rule latency | `benchmark -r 10000` | p50 `~20 µs`, mean `~22 µs`, p99 near `50 µs` depending on load; in-memory only |
+| Detection, pinned corpus | `corpus/independent_v1.json` | 63/63 attacks, 0/16 benign blocked (**in-sample regression floor**) |
 | Detection, first run before fixes | same corpus | 51/63 recall (80.95%), 3/16 benign blocked (18.75% FPR) |
+| **Held-out detection (the only one)** | `corpus/heldout_v2.json`, one run on 2026-11-04 | **56.1% recall** on 98 attacks (95% CI 46.3–65.5%), **7.0% false-positive rate** on 57 controls (95% CI 2.8–16.7%) |
+| End-to-end sidecar latency | not measured in this repository | — |
 | Memory footprint | not measured in this repository | — |
 
 No sidecar-to-vendor comparison is reported. Coraza, SafeLine and ModSecurity
 have not been run in this environment; the Python harness agents that resemble
-them are local stand-ins. See [STATUS.md](../status.md).
+them are local stand-ins. There is no third-party evaluation of any of these
+numbers. See [STATUS.md](../status.md).

@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Sub-Millisecond Lexical Normalization, 128-Bit Integer Mask Evaluation, and EXACTOR GXOR Boolean Cloud Optimization">
+        <meta name="description" content="Research-prototype Rust edge WAF with u128 bitmask inspection and opt-in SATGuardian cloud rule synthesis that returns proposals you approve">
       
       
         <meta name="author" content="SATGuardian Cyber-Defense Systems">
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#satguardian-methodology-lexical-tokenization-bitmask-evaluation-offline-rule-minimization" class="md-skip">
+        <a href="#satguardian-methodology-lexical-tokenization-bitmask-evaluation-out-of-band-cloud-rule-review" class="md-skip">
           Skip to content
         </a>
       
@@ -592,7 +592,7 @@
   <span class="md-ellipsis">
     
   
-    Complete Configuration Guide
+    Configuration Reference
   
 
     
@@ -620,7 +620,7 @@
   <span class="md-ellipsis">
     
   
-    Configuration & Operations
+    Operations & Tooling Guide
   
 
     
@@ -849,10 +849,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#1-architectural-separation-hot-path-vs-offline-control-plane" class="md-nav__link">
+  <a href="#1-architectural-separation-hot-path-vs-opt-in-control-plane" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Architectural Separation: Hot Path vs. Offline Control Plane
+        1. Architectural Separation: Hot Path vs. Opt-In Control Plane
       
     </span>
   </a>
@@ -899,10 +899,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#4-stage-3-out-of-band-exactor-gxor-boolean-minimization-srccloudsatguardian_clientrs-exactor-core-v128" class="md-nav__link">
+  <a href="#4-stage-3-out-of-band-cloud-review-replay-and-approval-srccloudsatguardian_clientrs-srcledgersqlite_ledgerrs-satguardian-advisorpy-srcapiserverrs" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. Stage 3: Out-of-Band EXACTOR GXOR Boolean Minimization (src/cloud/satguardian_client.rs, exactor-core-v128)
+        4. Stage 3: Out-of-Band Cloud Review, Replay and Approval (src/cloud/satguardian_client.rs, src/ledger/sqlite_ledger.rs, satguardian-advisor.py, src/api/server.rs)
       
     </span>
   </a>
@@ -1356,10 +1356,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#1-architectural-separation-hot-path-vs-offline-control-plane" class="md-nav__link">
+  <a href="#1-architectural-separation-hot-path-vs-opt-in-control-plane" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Architectural Separation: Hot Path vs. Offline Control Plane
+        1. Architectural Separation: Hot Path vs. Opt-In Control Plane
       
     </span>
   </a>
@@ -1406,10 +1406,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#4-stage-3-out-of-band-exactor-gxor-boolean-minimization-srccloudsatguardian_clientrs-exactor-core-v128" class="md-nav__link">
+  <a href="#4-stage-3-out-of-band-cloud-review-replay-and-approval-srccloudsatguardian_clientrs-srcledgersqlite_ledgerrs-satguardian-advisorpy-srcapiserverrs" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. Stage 3: Out-of-Band EXACTOR GXOR Boolean Minimization (src/cloud/satguardian_client.rs, exactor-core-v128)
+        4. Stage 3: Out-of-Band Cloud Review, Replay and Approval (src/cloud/satguardian_client.rs, src/ledger/sqlite_ledger.rs, satguardian-advisor.py, src/api/server.rs)
       
     </span>
   </a>
@@ -1436,16 +1436,17 @@
   
 
 
-<h1 id="satguardian-methodology-lexical-tokenization-bitmask-evaluation-offline-rule-minimization">SATGuardian Methodology: Lexical Tokenization, Bitmask Evaluation &amp; Offline Rule Minimization</h1>
+<h1 id="satguardian-methodology-lexical-tokenization-bitmask-evaluation-out-of-band-cloud-rule-review">SATGuardian Methodology: Lexical Tokenization, Bitmask Evaluation &amp; Out-of-Band Cloud Rule Review</h1>
 <p><strong>Technical Architecture Specification</strong><br />
-<strong>Codebase Reference:</strong> <code>src/ast/lexer.rs</code>, <code>src/ast/features.rs</code>, <code>src/engine/sat_solver.rs</code>, <code>src/cloud/satguardian_client.rs</code>, <code>exactor-core-v128</code></p>
+<strong>Codebase Reference:</strong> <code>src/ast/lexer.rs</code>, <code>src/ast/features.rs</code>, <code>src/engine/sat_solver.rs</code>, <code>src/cloud/satguardian_client.rs</code>, <code>src/ledger/sqlite_ledger.rs</code>, <code>src/api/server.rs</code></p>
 <blockquote>
 <p><strong>Status: research prototype.</strong> Detection evidence is limited to a small
-in-sample corpus; see <a href="../../status/">STATUS.md</a>.</p>
+in-sample corpus plus one held-out run of hand-written payloads, and there is
+no third-party evaluation; see <a href="../../status/">STATUS.md</a>.</p>
 </blockquote>
 <hr />
-<h2 id="1-architectural-separation-hot-path-vs-offline-control-plane">1. Architectural Separation: Hot Path vs. Offline Control Plane</h2>
-<p>A core engineering principle of <strong>SATGuardian Edge WAF</strong> is the strict separation between <strong>in-path request evaluation</strong> (which must execute in microseconds with predictable latency) and <strong>out-of-band rule optimization</strong> (which performs 128-variable algebraic boolean minimization asynchronously via <strong>EXACTOR GXOR</strong>).</p>
+<h2 id="1-architectural-separation-hot-path-vs-opt-in-control-plane">1. Architectural Separation: Hot Path vs. Opt-In Control Plane</h2>
+<p>A core engineering principle of <strong>SATGuardian Edge WAF</strong> is the strict separation between <strong>in-path request evaluation</strong> (which must execute in microseconds with predictable latency) and <strong>out-of-band rule review</strong> (which is opt-in, runs against the SATGuardian cloud service, and ends in a proposal the operator approves).</p>
 <table>
 <thead>
 <tr>
@@ -1462,14 +1463,14 @@ in-sample corpus; see <a href="../../status/">STATUS.md</a>.</p>
 <td style="text-align: left;">In-Path (Edge WAF)</td>
 <td style="text-align: left;">Iterative URL/HTML decoding + comment stripping + token scan (<code>src/ast/lexer.rs</code>)</td>
 <td style="text-align: left;"><span class="arithmatex">\(O(L)\)</span> where <span class="arithmatex">\(L\)</span> is payload byte length</td>
-<td style="text-align: left;"><code>~6–10 µs</code> (Rust)</td>
+<td style="text-align: left;"><code>~6–10 µs</code> (Rust, in-memory)</td>
 </tr>
 <tr>
 <td style="text-align: left;"><strong>Bitmask Rule Evaluator</strong></td>
 <td style="text-align: left;">In-Path (Edge WAF)</td>
 <td style="text-align: left;">128-bit <code>FeatureVector</code> bitwise comparison (<code>src/engine/sat_solver.rs</code>)</td>
 <td style="text-align: left;"><span class="arithmatex">\(O(R)\)</span> bitwise operations (<span class="arithmatex">\(R \le 64\)</span> rules)</td>
-<td style="text-align: left;"><code>~4–6 µs</code> (Rust)</td>
+<td style="text-align: left;"><code>~4–6 µs</code> (Rust, in-memory)</td>
 </tr>
 <tr>
 <td style="text-align: left;"><strong>Total Edge Hot Path</strong></td>
@@ -1479,28 +1480,35 @@ in-sample corpus; see <a href="../../status/">STATUS.md</a>.</p>
 <td style="text-align: left;"><strong><code>~20 µs</code> p50 / <code>~22 µs</code> avg (in-memory)</strong></td>
 </tr>
 <tr>
-<td style="text-align: left;"><strong>EXACTOR GXOR Boolean Minimizer</strong></td>
-<td style="text-align: left;">Out-of-Band (Cloud / Advisor)</td>
-<td style="text-align: left;">Differential Gray Code Mapping + <code>{AND, OR, NOT, XOR}</code> reduction (<code>exactor-core-v128</code>)</td>
-<td style="text-align: left;"><span class="arithmatex">\(O(\text{term\_count})\)</span> linear scaling up to 128 vars</td>
-<td style="text-align: left;"><code>10–250 ms</code> (Background)</td>
+<td style="text-align: left;"><strong>SATGuardian cloud synthesis</strong></td>
+<td style="text-align: left;"><strong>Outside this repository</strong> (the service at <code>satguardian.tech</code>)</td>
+<td style="text-align: left;">Boolean minimization over the <code>{AND, OR, NOT, XOR}</code> basis</td>
+<td style="text-align: left;">Not characterized here; the client does not ship or run a minimizer</td>
+<td style="text-align: left;">Not measured in this repository</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Clause compiler (client side)</strong></td>
+<td style="text-align: left;">Out-of-Band (<code>src/cloud/satguardian_client.rs</code>)</td>
+<td style="text-align: left;"><code>compile_equation_to_clauses()</code> parses the returned equation into <code>(required_mask, expected_bits)</code> pairs</td>
+<td style="text-align: left;">Linear in the number of literals</td>
+<td style="text-align: left;">Not measured in this repository</td>
 </tr>
 <tr>
 <td style="text-align: left;"><strong>Digital Twin Verifier</strong></td>
 <td style="text-align: left;">Out-of-Band (<code>satguardian-advisor.py</code>)</td>
 <td style="text-align: left;">Historical replay over benign SQLite ledger (<code>waf_ledger.db</code>)</td>
 <td style="text-align: left;"><span class="arithmatex">\(O(N_{\text{benign}})\)</span></td>
-<td style="text-align: left;"><code>~50 ms</code> for <code>1,663</code> benign logs</td>
+<td style="text-align: left;"><code>~50 ms</code> for <code>1,663</code> benign logs in the bundled demo ledger</td>
 </tr>
 </tbody>
 </table>
 <blockquote>
-<p><strong>Important Clarification:</strong> SATGuardian does <strong>not</strong> execute an NP-complete backtracking SAT solver (such as DPLL or CDCL) on the live HTTP request path, nor is it limited by the 20–30 variable exponential ceiling of classical Quine-McCluskey. Out-of-band logic minimization is powered by <strong>EXACTOR GXOR</strong>, which simplifies up to <strong>128 Boolean variables (<code>u128</code>)</strong> over <code>{AND, OR, NOT, XOR}</code> and compiles the reduced invariants into <code>u128</code> bitmasks for single-cycle bitwise evaluation on the edge.</p>
+<p><strong>Important Clarification:</strong> SATGuardian does <strong>not</strong> execute an NP-complete backtracking SAT solver (such as DPLL or CDCL) on the live HTTP request path. The request path is a bitwise conjunction test over a fixed-width <code>u128</code> feature vector. The algebraic minimization that turns recorded minterms into compact clauses is a property of the <strong>SATGuardian cloud synthesis</strong> service: it runs server-side, it is not distributed to customers, and this repository contains only the client that calls it, the code that compiles its answer into bitmasks, and the code that evaluates those bitmasks after an operator approves them.</p>
 </blockquote>
 <hr />
 <h2 id="2-stage-1-multi-pass-lexical-normalization-srcastlexerrs">2. Stage 1: Multi-Pass Lexical Normalization (<code>src/ast/lexer.rs</code>)</h2>
 <p>Attackers frequently evade traditional signature WAFs by nesting encodings (e.g., double or triple URL encoding <code>..%25252f</code>, HTML entity encoding, or inline SQL comments <code>/**/</code>).</p>
-<p>SATGuardian's lexer (<code>Lexer::normalize_and_tokenize</code>) applies a bounded, deterministic normalization pipeline before extracting grammatical tokens:
+<p>SATGuardian's lexer (<code>AstLexer</code>, with <code>normalize_string</code> for the decode passes and <code>tokenize_request</code> for the request path) applies a bounded, deterministic normalization pipeline before extracting grammatical tokens:
 1. <strong>Iterative Percent-Decoding:</strong> Unwinds nested URL encodings up to a fixed recursion bound so obfuscated sequences resolve to their canonical ASCII characters.
 2. <strong>Comment &amp; Whitespace Canonicalization:</strong> Strips inline C/SQL comments (<code>/* ... */</code>) and collapses redundant whitespace so <code>UNION/**/ALL/**/SELECT</code> normalizes cleanly.
 3. <strong>Contextual Token Extraction:</strong> Scans the normalized stream to identify structural tokens across five security domains ("Certainty Islands"):
@@ -1511,27 +1519,35 @@ in-sample corpus; see <a href="../../status/">STATUS.md</a>.</p>
    - <code>ISLAND-SSRF</code>: Internal cloud metadata targets (<code>169.254.169.254</code>), loopback addresses (<code>127.0.0.1</code>, <code>localhost</code>), and non-HTTP proxy schemes (<code>gopher://</code>, <code>dict://</code>, <code>file://</code>).</p>
 <hr />
 <h2 id="3-stage-2-128-bit-feature-vector-bitmask-evaluation-srcastfeaturesrs-srcenginesat_solverrs">3. Stage 2: 128-Bit Feature Vector &amp; Bitmask Evaluation (<code>src/ast/features.rs</code>, <code>src/engine/sat_solver.rs</code>)</h2>
-<p>During inspection, extracted lexical properties and HTTP metadata are packed into a 128-bit integer (<code>FeatureVector(pub u128)</code>):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1">// Fast O(1) bitwise evaluation of a compiled rule cube against the request minterm</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="cp">#[inline(always)]</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="k">pub</span><span class="w"> </span><span class="k">fn</span><span class="w"> </span><span class="nf">matches_minterm</span><span class="p">(</span><span class="n">minterm</span><span class="p">:</span><span class="w"> </span><span class="kt">u128</span><span class="p">,</span><span class="w"> </span><span class="n">required_mask</span><span class="p">:</span><span class="w"> </span><span class="kt">u128</span><span class="p">,</span><span class="w"> </span><span class="n">expected_bits</span><span class="p">:</span><span class="w"> </span><span class="kt">u128</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">    </span><span class="p">(</span><span class="n">minterm</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">required_mask</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">expected_bits</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="p">}</span>
+<p>During inspection, extracted lexical properties and HTTP metadata are packed into a 128-bit integer (<code>FeatureVector { bits: u128 }</code>; the current catalogue names 40 of those bits):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1">// src/engine/sat_solver.rs — conjunction test for an approved compiled clause</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kd">let</span><span class="w"> </span><span class="n">dyn_rules</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="bp">self</span><span class="p">.</span><span class="n">dynamic_clauses</span><span class="p">.</span><span class="n">read</span><span class="p">().</span><span class="n">unwrap</span><span class="p">();</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="k">for</span><span class="w"> </span><span class="n">clause</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">dyn_rules</span><span class="p">.</span><span class="n">iter</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">fv</span><span class="p">.</span><span class="n">bits</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">clause</span><span class="p">.</span><span class="n">required_mask</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">clause</span><span class="p">.</span><span class="n">expected_bits</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">        </span><span class="c1">// the request violates this clause: record the rule id, the active token</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">        </span><span class="c1">// set and the boolean formula in the causal proof trace</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="p">}</span>
 </code></pre></div>
 <h3 id="why-satguardian-uses-bitmask-conjunctions">Why SATGuardian Uses Bitmask Conjunctions</h3>
 <ol>
-<li><strong>Structural Context vs. Substring Matching:</strong> A benign user comment containing the words <code>"script"</code> and <code>"character"</code> activates isolated keyword flags, which causes the local token-weight stand-in to produce false positives (<code>24.6%</code> on the in-repo stream). In SATGuardian, rule <code>SAT-XSS-01</code> requires the simultaneous presence of <code>TAG_OPEN</code> <span class="arithmatex">\(\land\)</span> <code>SCRIPT_ELEMENT</code> <span class="arithmatex">\(\land\)</span> <code>DOM_EXEC</code>; the pinned corpus records no benign collision for it, which is a regression observation and too small a sample to generalize.</li>
-<li><strong>Predictable CPU Execution:</strong> Bitwise operations on a <code>u128</code> register execute in a few CPU clock cycles without backtracking, preventing Regular Expression Denial of Service (ReDoS).</li>
+<li><strong>Structural Context vs. Substring Matching:</strong> A benign user comment containing the words <code>"script"</code> and <code>"character"</code> activates isolated keyword flags, which causes the local token-weight stand-in to produce false positives (<code>24.6%</code> on the in-repo stream). In SATGuardian, rule <code>SAT-XSS-01</code> requires the simultaneous presence of <code>TAG_OPEN</code> <span class="arithmatex">\(\land\)</span> <code>SCRIPT_ELEMENT</code> <span class="arithmatex">\(\land\)</span> <code>DOM_EXEC</code>; the pinned corpus records no benign collision for it, which is an in-sample regression observation. The one held-out batch (<code>corpus/heldout_v2.json</code>, run once on 2026-11-04) still measured <strong>56.1% recall on 98 attacks</strong> (95% CI 46.3–65.5%) and a <strong>7.0% false-positive rate on 57 controls</strong> (95% CI 2.8–16.7%), and no third-party evaluation exists.</li>
+<li><strong>Predictable CPU Execution:</strong> Bitwise operations on a <code>u128</code> register execute in a few CPU clock cycles without backtracking, which is why the hot path has no ReDoS-style blow-up on the corpus payloads.</li>
 <li><strong>Human-Auditable Causal Traces:</strong> Every blocked request records the exact rule ID, active token set, and boolean clause in <code>waf_ledger.db</code> (e.g., <code>(SELECT_PROJECTION AND UNION_CLAUSE) violates [SAT-SQLI-02] -&gt; ACTION_BLOCK [sql_injection]</code>).</li>
 </ol>
 <hr />
-<h2 id="4-stage-3-out-of-band-exactor-gxor-boolean-minimization-srccloudsatguardian_clientrs-exactor-core-v128">4. Stage 3: Out-of-Band EXACTOR GXOR Boolean Minimization (<code>src/cloud/satguardian_client.rs</code>, <code>exactor-core-v128</code>)</h2>
-<p>When the Edge WAF encounters anomalous high-entropy requests or repeated hostile bursts that do not match an existing compiled cube, it logs the observed 128-bit minterm in the <code>novel_anomalies</code> table of <code>waf_ledger.db</code>.</p>
-<p>Out of band, <code>SatguardianCloudClient</code> (<code>src/cloud/satguardian_client.rs</code>) and the <strong>Multi-Agent Advisor</strong> (<code>satguardian-advisor.py</code>) invoke the <strong>EXACTOR GXOR</strong> engine (<code>procesar_gxor</code> in <code>exactor-core-v128</code>) to compress these <code>u128</code> minterms across up to <strong>128 variables</strong>:
-1. <strong>Differential Gray Code Mapping (<code>modify_gray_code</code>):</strong> Rather than performing exhaustive <span class="arithmatex">\(O(m^2)\)</span> pairwise comparisons like classical Quine-McCluskey, EXACTOR projects <code>u128</code> minterms into Gray Code space and locates logical neighbors in <span class="arithmatex">\(O(1)\)</span> constant time via <code>BTreeMap</code>/<code>HashMap</code> lookups, achieving <span class="arithmatex">\(O(\text{term\_count})\)</span> linear scaling.
-2. <strong>GXOR / NXOR Algebraic Reduction over <code>{AND, OR, NOT, XOR}</code>:</strong> Classical <code>{AND, OR, NOT}</code> minimizers suffer from exponential clause explosion when simplifying symmetric, parity, or cross-dependent security predicates. <strong>EXACTOR GXOR</strong> detects exclusive-OR (<code>XOR</code> / <code>NXOR</code>) parity structures natively and reduces them into compact algebraic invariants over <code>{AND, OR, NOT, XOR}</code> up to 128 variables.
-3. <strong>Digital Twin Replay (<code>SimulationAgent</code>):</strong> Before a synthesized rule is applied, <code>satguardian-advisor.py</code> replays the candidate bitmask against the benign requests stored in <code>waf_ledger.db</code> and reports collisions. The gate is only as good as the recorded benign traffic; it does not establish a fixed false-positive rate.
-4. <strong>Atomic Hot-Reload (<code>ArcSwap</code>):</strong> Validated rules are compiled via <code>compile_equation_to_clauses</code> and hot-swapped into the running Rust Edge WAF via lock-free pointer replacement (<code>ArcSwap</code>) without dropping active TCP connections.</p>
+<h2 id="4-stage-3-out-of-band-cloud-review-replay-and-approval-srccloudsatguardian_clientrs-srcledgersqlite_ledgerrs-satguardian-advisorpy-srcapiserverrs">4. Stage 3: Out-of-Band Cloud Review, Replay and Approval (<code>src/cloud/satguardian_client.rs</code>, <code>src/ledger/sqlite_ledger.rs</code>, <code>satguardian-advisor.py</code>, <code>src/api/server.rs</code>)</h2>
+<p>When the Edge WAF encounters anomalous high-entropy requests or repeated hostile bursts that do not match an existing compiled cube, it logs the observed 128-bit minterm in the <code>novel_anomalies</code> table of <code>waf_ledger.db</code>. Those rows are <strong>patterns awaiting analysis</strong>: they say the engine did not recognize the shape, not that the shape got through.</p>
+<p>Review is <strong>opt-in</strong>. <code>auto_sync_enabled</code> defaults to <code>false</code> in <code>src/config.rs</code> and in <code>waf_config.toml</code>, so with the shipped configuration no minterm ever leaves the node. When an operator enables it, runs <code>satguardian-waf sync-simplify</code>, or calls the token-authenticated <code>POST /api/waf/sync-simplify</code>, the client bundles the variable catalogue plus the pending minterms and <code>POST</code>s them to the SATGuardian cloud synthesis service at <code>https://satguardian.tech/api/simplify</code>.</p>
+<p>What happens next is deliberately split in two:</p>
+<ol>
+<li><strong>Minimization on the service.</strong> The reduction of those minterms into a compact equation over the <code>{AND, OR, NOT, XOR}</code> basis is performed by the SATGuardian cloud synthesizer. It is server-side code: it is not in this repository, it is not distributed to customers, and its internal algorithm and clause-count behaviour are not characterized by anything in this codebase.</li>
+<li><strong>Compilation on the client.</strong> <code>SatguardianCloudClient::compile_equation_to_clauses</code> (<code>src/cloud/satguardian_client.rs</code>) parses the returned equation into <code>(required_mask, expected_bits)</code> pairs — the same representation the built-in rules use, so evaluation stays a single <code>AND</code> plus a comparison. A response the client cannot parse is rejected with <code>invalid_cloud_equation</code>; nothing is loaded on a parse failure.</li>
+<li><strong>Storage as proposals.</strong> Each compiled clause is written to <code>dynamic_clauses</code> with <code>applied = 0</code> (<code>SqliteLedger::propose_dynamic_clause</code>). It does not enter the running engine, and startup ignores it: <code>load_applied_clauses()</code> selects <code>applied = 1</code> only. The sync response states this — <code>"status": "proposed"</code>, "Nothing was applied to the running rule set".</li>
+<li><strong>Replay evidence for the operator.</strong> The advisor (<code>satguardian-advisor.py</code>) replays candidate bitmasks against the benign requests recorded in <code>waf_ledger.db</code> and reports collisions per run, so the person deciding can see what the candidate would have blocked. The gate is only as good as the recorded benign traffic; it does not establish a fixed false-positive rate.</li>
+<li><strong>Approval, the only step that changes enforcement.</strong> <code>satguardian-waf clauses apply &lt;id&gt;</code> marks a proposal approved (it registers when the proxy starts); <code>POST /api/waf/clauses/{id}/apply</code> additionally calls <code>engine.register_dynamic_clause()</code> on the live process, so new requests see it without restarting the proxy or dropping connections. <code>clauses reject &lt;id&gt;</code> / <code>DELETE /api/waf/clauses/{id}</code> deletes only a proposal — a rule already enforcing is never removed by it. All of these sit behind the existing admin token.</li>
+</ol>
+<p>The practical consequence is the product promise: the node protects itself for free and offline; the paid service contributes continuous review of new patterns, proposals and explanations; and the operator stays in control of what the WAF actually enforces.</p>
 
 
 

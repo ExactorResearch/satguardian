@@ -86,6 +86,7 @@ impl SqliteLedger {
                 required_mask TEXT NOT NULL,
                 expected_bits TEXT NOT NULL,
                 category TEXT NOT NULL,
+                applied INTEGER NOT NULL DEFAULT 1,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
 
@@ -95,6 +96,14 @@ impl SqliteLedger {
         )
         .execute(&pool)
         .await?;
+
+        // Ledgers written before the approval gate have no `applied` column. Every clause they
+        // hold was already enforcing, so the default keeps those nodes protected after the update.
+        let _ = sqlx::query(
+            "ALTER TABLE dynamic_clauses ADD COLUMN applied INTEGER NOT NULL DEFAULT 1",
+        )
+        .execute(&pool)
+        .await;
 
         let (tx, mut rx) = unbounded_channel::<AuditRecord>();
         let pool_bg = pool.clone();
@@ -280,7 +289,7 @@ impl SqliteLedger {
         Ok(())
     }
 
-    /// Records successful simplification statistics from https://exactor.tech.
+    /// Records cloud synthesis statistics returned by the configured SATGuardian endpoint.
     pub async fn record_simplification(
         &self,
         resp: &SimplifyResponse,
@@ -308,15 +317,16 @@ impl SqliteLedger {
         Ok(())
     }
 
-    /// Persists a validated dynamic clause so it survives process restarts.
-    pub async fn save_dynamic_clause(
+    /// Stores a cloud-synthesized clause as a pending proposal. It is not evaluated by the engine
+    /// and is not loaded on restart until an operator approves it.
+    pub async fn propose_dynamic_clause(
         &self,
         clause: &DynamicCompiledClause,
-    ) -> Result<(), sqlx::Error> {
-        sqlx::query(
+    ) -> Result<bool, sqlx::Error> {
+        let result = sqlx::query(
             r#"
-            INSERT INTO dynamic_clauses (clause_id, description, required_mask, expected_bits, category)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO dynamic_clauses (clause_id, description, required_mask, expected_bits, category, applied)
+            VALUES (?, ?, ?, ?, ?, 0)
             ON CONFLICT(clause_id) DO NOTHING
             "#,
         )
@@ -327,29 +337,88 @@ impl SqliteLedger {
         .bind(clause.category.as_str())
         .execute(&self.pool)
         .await?;
-        Ok(())
+        Ok(result.rows_affected() > 0)
     }
 
-    /// Loads previously validated dynamic clauses at startup.
-    pub async fn load_dynamic_clauses(&self) -> Result<Vec<DynamicCompiledClause>, sqlx::Error> {
+    /// Loads the clauses an operator has approved; pending proposals are deliberately excluded.
+    pub async fn load_applied_clauses(&self) -> Result<Vec<DynamicCompiledClause>, sqlx::Error> {
         let rows = sqlx::query_as::<_, (String, String, String, String, String)>(
-            "SELECT clause_id, description, required_mask, expected_bits, category FROM dynamic_clauses ORDER BY created_at ASC",
+            "SELECT clause_id, description, required_mask, expected_bits, category \
+             FROM dynamic_clauses WHERE applied = 1 ORDER BY created_at ASC",
         )
         .fetch_all(&self.pool)
         .await?;
 
         Ok(rows
             .into_iter()
-            .filter_map(|(clause_id, description, required_mask, expected_bits, category)| {
-                Some(DynamicCompiledClause {
-                    clause_id,
-                    description,
-                    required_mask: required_mask.parse().ok()?,
-                    expected_bits: expected_bits.parse().ok()?,
-                    category: AttackCategory::parse(&category),
-                })
+            .filter_map(Self::decode_clause_row)
+            .collect())
+    }
+
+    /// Proposals waiting for a decision, newest last.
+    pub async fn load_pending_clauses(&self) -> Result<Vec<(DynamicCompiledClause, String)>, sqlx::Error> {
+        let rows = sqlx::query_as::<_, (String, String, String, String, String, String)>(
+            "SELECT clause_id, description, required_mask, expected_bits, category, \
+             CAST(created_at AS TEXT) FROM dynamic_clauses WHERE applied = 0 ORDER BY created_at ASC",
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(rows
+            .into_iter()
+            .filter_map(|(id, desc, mask, expected, category, created_at)| {
+                Self::decode_clause_row((id, desc, mask, expected, category))
+                    .map(|clause| (clause, created_at))
             })
             .collect())
+    }
+
+    /// Marks one proposal as approved and returns it so the caller can register it in the engine.
+    pub async fn approve_dynamic_clause(
+        &self,
+        clause_id: &str,
+    ) -> Result<Option<DynamicCompiledClause>, sqlx::Error> {
+        let row = sqlx::query_as::<_, (String, String, String, String, String)>(
+            "SELECT clause_id, description, required_mask, expected_bits, category \
+             FROM dynamic_clauses WHERE clause_id = ? AND applied = 0",
+        )
+        .bind(clause_id)
+        .fetch_optional(&self.pool)
+        .await?;
+
+        let Some(clause) = row.and_then(Self::decode_clause_row) else {
+            return Ok(None);
+        };
+
+        sqlx::query("UPDATE dynamic_clauses SET applied = 1 WHERE clause_id = ?")
+            .bind(clause_id)
+            .execute(&self.pool)
+            .await?;
+
+        Ok(Some(clause))
+    }
+
+    /// Discards a proposal. Enforced clauses are never deleted here: rejecting an update has to
+    /// leave the protection that is already running untouched.
+    pub async fn reject_dynamic_clause(&self, clause_id: &str) -> Result<bool, sqlx::Error> {
+        let result = sqlx::query("DELETE FROM dynamic_clauses WHERE clause_id = ? AND applied = 0")
+            .bind(clause_id)
+            .execute(&self.pool)
+            .await?;
+        Ok(result.rows_affected() > 0)
+    }
+
+    fn decode_clause_row(
+        row: (String, String, String, String, String),
+    ) -> Option<DynamicCompiledClause> {
+        let (clause_id, description, required_mask, expected_bits, category) = row;
+        Some(DynamicCompiledClause {
+            required_mask: required_mask.parse().ok()?,
+            expected_bits: expected_bits.parse().ok()?,
+            clause_id,
+            description,
+            category: AttackCategory::parse(&category),
+        })
     }
 
     pub async fn count_pending_anomalies(&self) -> usize {

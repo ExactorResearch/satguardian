@@ -1,8 +1,18 @@
-# ⚙️ SATGuardian Edge WAF — Complete Configuration Guide
+# ⚙️ SATGuardian Edge WAF — Configuration Reference
 
-> **Status: research prototype, not a production-ready WAF.** See [Project Status](../status.md).
+> **Status: research prototype, not a production-ready WAF.** Detection has one held-out
+> measurement (**56.1% recall on 98 attacks**, 95% CI 46.3–65.5%, and **7.0% false
+> positives on 57 controls**, 95% CI 2.8–16.7%, `corpus/heldout_v2.json`, run once
+> 2026-11-04, same-author payloads, no third-party evaluation). The in-sample 100% / 0%
+> rows in `corpus/independent_v1.json` are regression floors, not generalization estimates.
+> See [Project Status](../status.md) and the [Detection Corpus](../corpus.md).
 
-This guide provides a detailed field-by-field reference and step-by-step instructions for configuring **SATGuardian Edge WAF** via `waf_config.toml` and environment variables.
+This guide provides a field-by-field reference for configuring **SATGuardian Edge WAF** via
+`waf_config.toml` and environment variables.
+
+**The control rule in one line:** free, you get local protection on your own node; paying,
+you get continuous review of new patterns, update proposals and explanations — without ever
+giving up control of your WAF. Every cloud result below is a proposal until you approve it.
 
 ---
 
@@ -32,11 +42,15 @@ listen_addr = "0.0.0.0:8080"
 # Target upstream backend application (Nginx, Node.js, Python, Go, Java, PHP, IIS, etc.)
 upstream_url = "http://127.0.0.1:3000"
 
-# Active perimeter defense mode:
-#   "block"   - Active Defense: Instantly drops attacks with HTTP 403 Forbidden.
-#   "monitor" - Passive/Dry-Run Mode: Logs attack violations to the ledger but passes traffic upstream.
+# Defense mode:
+#   "block"   - Detected requests are rejected with HTTP 403 Forbidden.
+#   "monitor" - Dry-run mode: violations are logged to the ledger, traffic passes upstream.
 mode = "block"
 ```
+
+`upstream_url` must start with `http://` or `https://` — the client refuses to start
+otherwise. The listener itself is plain HTTP: this build does not terminate TLS and does
+not proxy WebSocket upgrades, so TLS belongs to an nginx/Envoy hop in front of it.
 
 ---
 
@@ -46,44 +60,113 @@ Prevents attackers from identifying your security stack through diagnostic respo
 
 ```toml
 # Enable clean web-standard responses
-# true  -> Returns clean HTTP 403 Forbidden without leaking rules, proofs, or server signatures.
-# false -> Returns diagnostic JSON payloads containing formal causal proofs (useful for debugging).
+# true  -> Returns a generic HTTP 403 Forbidden without leaking rules, proofs, or server signatures.
+# false -> Returns diagnostic JSON containing the causal trace (useful for debugging).
 stealth_mode = true
 
-# (Optional) Custom HTML or plain text body returned during blocked requests when stealth_mode = true
+# (Optional) Custom HTML or plain text body returned for blocked requests when stealth_mode = true
 stealth_block_body = "<html><head><title>403 Forbidden</title></head><body><center><h1>403 Forbidden</h1><p>Access Denied by Security Policy</p></center></body></html>"
 ```
 
+Per launch you can override the file: `satguardian-waf proxy --verbose` emits the
+diagnostic JSON, `satguardian-waf proxy --stealth` forces the generic block response.
+
 ---
 
-## ☁️ 3. Cloud Optimization (Security Units - SU) & SQLite Ledger
+## 🎛️ 3. Management API & Request Limits
 
-Manages asynchronous boolean rule synthesis via **satguardian.tech** and local forensic audit logging.
+The management API is what you use to look at and approve cloud proposals. It never runs
+on the public data-plane port.
 
 ```toml
-# SATGuardian Cloud Optimization API URL for EXACTOR GXOR boolean rule minimization
+# Dedicated listener for /api/waf/*. Set to "off" to disable the management API entirely.
+admin_listen_addr = "127.0.0.1:10001"
+
+# Bearer token required by every management route. Prefer the SATGUARDIAN_ADMIN_TOKEN
+# environment variable over storing it in the file.
+# admin_token = "change-me"
+
+# Maximum accepted inbound request body (2 MiB).
+max_body_bytes = 2097152
+
+# Exact IPs or CIDR ranges of upstream proxies allowed to supply X-Forwarded-For /
+# X-Real-IP / CF-Connecting-IP / True-Client-IP. Loopback is always trusted.
+trusted_proxies = []
+```
+
+| Route | Purpose |
+| :--- | :--- |
+| `GET /health`, `GET /livez` | Liveness; the only routes that are not token-protected. |
+| `POST /api/waf/inspect` | Evaluate one request payload and print the causal trace. |
+| `GET /api/waf/metrics`, `/api/waf/rules`, `/api/waf/islands` | Read engine state. |
+| `GET`/`POST /api/waf/islands/config` | Read or change the islands switches. |
+| `GET`/`POST /api/waf/rules/customer`, `DELETE /api/waf/rules/customer/{id}` | Manage declarative business rules. |
+| `POST /api/waf/sync-simplify` | One opt-in cloud review batch; the result is stored as proposals. |
+| `GET /api/waf/clauses/pending` | List proposals waiting for a decision. |
+| `POST /api/waf/clauses/{id}/apply` | **The approval step** — register the clause in the running engine. |
+| `DELETE /api/waf/clauses/{id}` | Discard a proposal. Never removes a clause already enforcing. |
+
+With no admin token configured these routes answer `503 management_api_disabled`. The
+listener is plain HTTP on loopback by default — if you expose it anywhere, put a
+TLS-terminating authenticated proxy in front.
+
+---
+
+## ☁️ 4. Cloud Review (Security Units - SU) & SQLite Ledger
+
+Optional contact with **satguardian.tech** for Boolean rule synthesis, plus local forensic
+audit logging.
+
+Boolean minimization is **server-side only**. This client normalizes a request into a
+128-bit `FeatureVector` (`u128`), evaluates compiled clauses locally, and — only when you
+opt in — sends recorded minterms to the cloud endpoint and stores what comes back as
+proposals. No minimizer ships in the client binary or lives in this repository.
+
+```toml
+# SATGuardian cloud endpoint for Boolean rule synthesis
 satguardian_api_url = "https://satguardian.tech/api/simplify"
 
 # Cloud API Key (or configure via SATGUARDIAN_API_KEY environment variable)
 satguardian_api_key = "ek_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
-# SQLite WAL Ledger database path for audit logging, anomaly clustering, and digital twin replay
+# SQLite WAL Ledger database path: audit log, anomaly clustering and update proposals
 database_path = "waf_ledger.db"
 
-# Autonomous background minimization sync interval in seconds (default: 300s / 5 minutes)
+# Seconds between background cloud review runs. Only used when auto_sync_enabled is on.
 autonomous_sync_interval_secs = 300
 
-# Enable automatic hot-reload minimization sync with satguardian.tech
-auto_sync_enabled = true
+# Opt-in switch. False by default: nothing leaves the node unless you turn this on.
+auto_sync_enabled = false
 ```
 
-> **Quota behavior:** If your monthly Security Units (SU) quota is exhausted (`HTTP 402 SU_QUOTA_EXHAUSTED`), cloud synthesis pauses and the local Edge WAF keeps serving traffic with its last compiled rule matrix ($0.00 traffic cost).
+**What `auto_sync_enabled = true` does and does not do.** It only uploads the `u128`
+feature vectors recorded as novel anomalies (patterns awaiting analysis) on that timer —
+not raw traffic, headers, bodies or client IPs. Results are stored with
+`dynamic_clauses.applied = 0`: they do not enter the running engine and are not loaded at
+startup. Making one enforce is a separate action you take:
+
+```bash
+./satguardian-waf clauses list
+./satguardian-waf clauses apply <id>
+./satguardian-waf clauses reject <id>
+```
+
+Review on demand instead of on a timer with `./satguardian-waf sync-simplify --limit 100`
+or `POST /api/waf/sync-simplify`.
+
+> **Quota behavior:** cloud synthesis is metered in Security Units (SU) per job and the
+> balance is readable with `satguardian-waf entitlement`. A failed review call — including
+> one rejected for an exhausted SU balance — is logged and simply produces no proposals;
+> the Edge WAF keeps enforcing the last rule matrix you approved. The client treats every
+> non-2xx answer as a generic cloud error today; there is no dedicated `402
+> SU_QUOTA_EXHAUSTED` branch in this build. Local inspection is never metered.
 
 ---
 
-## 🛡️ 4. Layer-7 Behavioral Defense & Rate Limiting
+## 🛡️ 5. Layer-7 Behavioral Defense & Rate Limiting
 
-Protects against credential stuffing, brute force login floods, and Layer-7 HTTP DDoS attacks using sliding window ring buffers.
+Protects against credential stuffing, brute force login floods, and Layer-7 HTTP floods
+using sliding window ring buffers.
 
 ```toml
 # Enable stateful temporal ring buffer analysis
@@ -107,18 +190,27 @@ stateful_ban_secs = 180
 
 ---
 
-## 🔗 5. Envoy Proxy Native Integration (`ext_authz`)
+## 🔗 6. Envoy Proxy Native Integration (`ext_authz`)
 
-Enables SATGuardian to serve as a sub-millisecond external authorization sidecar for Envoy Proxy and Kubernetes Ingress Controllers.
+Runs SATGuardian as an external authorization service for the `envoy.filters.http.ext_authz`
+filter.
 
 ```toml
-# Inbound gRPC/HTTP listener for Envoy's envoy.filters.http.ext_authz filter
+# Inbound HTTP listener for Envoy's envoy.filters.http.ext_authz filter
 envoy_ext_authz_addr = "0.0.0.0:9002"
 ```
 
+This is the HTTP form of `ext_authz`: the service reads `x-envoy-original-method` and
+`x-envoy-original-path` and answers the check itself. The gRPC `ext_authz` protocol is not
+implemented in this build, and a Unix socket alternative is available via
+`satguardian-waf envoy-authz --socket /var/run/waf.sock`.
+
+The check itself costs tens of microseconds in memory; the end-to-end latency your clients
+see still includes TLS, Envoy and your upstream, which this project does not measure.
+
 ---
 
-## 🏝️ 6. Modular Certainty Islands (`[islands]`)
+## 🏝️ 7. Modular Certainty Islands (`[islands]`)
 
 Enable or disable pre-compiled domain-specific exploit shields.
 
@@ -140,7 +232,7 @@ framework_shield = true
 
 ---
 
-## 🎯 7. Customer Business Access Rules (`[business_rules]`)
+## 🎯 8. Customer Business Access Rules (`[business_rules]`)
 
 Declarative access control policies for specific route prefixes, HTTP methods, IP whitelists, blacklists, and mandatory headers.
 
@@ -185,22 +277,34 @@ enabled = true
 | `allowed_methods` | Array | Allowed HTTP methods (e.g. `["GET", "POST"]`). |
 | `blocked_methods` | Array | Blocked HTTP methods (e.g. `["TRACE", "PATCH"]`). |
 | `allowed_ips` | Array | Client IP whitelist (if non-empty, unlisted IPs are blocked). |
-| `blocked_ips` | Array | Client IP blacklist (listed IPs are instantly dropped). |
+| `blocked_ips` | Array | Client IP blacklist (listed IPs are dropped). |
 | `required_headers` | Array | Mandatory HTTP headers required for request approval. |
 | `max_body_bytes` | Integer | Maximum permitted HTTP body size in bytes. |
 | `enabled` | Boolean | `true` to activate rule, `false` to disable. |
 
+These rules are yours and live in your file. They are separate from cloud proposals: a
+proposal you approve is stored in the ledger as a dynamic clause, not written into
+`[business_rules]`.
+
 ---
 
-## 🔑 8. Environment Variables Reference
+## 🔑 9. Environment Variables Reference
 
 | Variable | Description | Example |
 | :--- | :--- | :--- |
 | `SATGUARDIAN_CONFIG` | Overrides path to configuration file | `export SATGUARDIAN_CONFIG="/etc/waf_config.toml"` |
-| `SATGUARDIAN_API_KEY` | Overrides Cloud Optimization API Key | `export SATGUARDIAN_API_KEY="ek_live_12345"` |
+| `SATGUARDIAN_API_KEY` | Overrides the cloud API key (SU metering) | `export SATGUARDIAN_API_KEY="ek_live_12345"` |
+| `SATGUARDIAN_ADMIN_TOKEN` | Bearer token for every management API route; without it the routes return `503` | `export SATGUARDIAN_ADMIN_TOKEN="$(openssl rand -hex 32)"` |
 | `RUST_LOG` | Configures logging verbosity | `export RUST_LOG="info"` or `export RUST_LOG="satguardian_waf=debug"` |
+
+Most TOML fields also accept a `WAF_*` override (`WAF_LISTEN_ADDR`, `WAF_UPSTREAM_URL`,
+`WAF_MODE`, `WAF_STEALTH_MODE`, `WAF_ADMIN_LISTEN_ADDR`, `WAF_MAX_BODY_BYTES`,
+`WAF_TRUSTED_PROXIES`, `WAF_DATABASE_PATH`, `ENVOY_EXT_AUTHZ_ADDR`,
+`SATGUARDIAN_API_URL`), which wins over the file.
 
 ---
 
-*© 2026 SATGuardian Cyber-Defense Systems. Sovereign Edge Security Powered by Native Rust & EXACTOR GXOR.*
+For the update loop (opt-in upload → proposals → your approval) and the CLI/Python
+tooling, see [Operations & Tooling Guide](operations.md).
 
+*© 2026 SATGuardian Cyber-Defense Systems. Edge enforcement is local and yours; SATGuardian cloud synthesis is opt-in and proposes, you approve.*

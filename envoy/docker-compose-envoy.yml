@@ -22,7 +22,7 @@ services:
       backend:
         condition: service_started
 
-  # SATGuardian Edge WAF: Sub-Millisecond Boolean SAT Filter Daemon
+  # SATGuardian Edge WAF: in-memory u128 bitmask filter daemon (research prototype)
   satguardian-waf:
     build:
       context: ..

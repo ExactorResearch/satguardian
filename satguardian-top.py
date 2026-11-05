@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 ===============================================================================
- GUARDIAN-TOP: Real-Time Interactive Monitor for Guardian WAF
- Inspired by htop/btop — Metrics, Sub-Millisecond Latency, and Forensic Ledger
+ SATGUARDIAN-TOP: Real-Time Interactive Monitor for SATGuardian Edge WAF
+ Inspired by htop/btop — Metrics, In-Memory Evaluation Latency, and Forensic Ledger
 ===============================================================================
 """
 
@@ -258,7 +258,7 @@ class SatguardianTop:
                 continue
 
             # --- TOP HEADER ---
-            title = " GUARDIAN-TOP :: HIGH-PERFORMANCE WAF MONITOR & FORMAL PROOF AUDITOR "
+            title = " SATGUARDIAN-TOP :: LEDGER-BACKED WAF MONITOR & CAUSAL PROOF AUDITOR "
             safe_addstr(stdscr, 0, 0, title, curses.color_pair(7) | curses.A_BOLD)
             status_line = f" [DB: {os.path.basename(self.db_path)}] [Filter: {self.filter_mode}] [Rate: {self.refresh_rate:.1f}s] {'[PAUSED]' if self.paused else '[LIVE]'}"
             if len(title) + len(status_line) < max_x:
@@ -489,7 +489,7 @@ class SatguardianTop:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="GUARDIAN-TOP: Real-Time Interactive Monitor for Guardian WAF",
+        description="SATGUARDIAN-TOP: Real-Time Interactive Monitor for SATGuardian Edge WAF",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
@@ -515,7 +515,7 @@ def main():
 
     db_path = find_database(args.db)
     if not db_path:
-        print("\n❌ Error: Guardian WAF audit ledger database (waf_ledger.db) not found.")
+        print("\n❌ Error: SATGuardian Edge WAF audit ledger database (waf_ledger.db) not found.")
         print("   Searched paths:")
         for p in DEFAULT_DB_PATHS:
             print(f"     • {p}")
@@ -532,7 +532,7 @@ def main():
     except KeyboardInterrupt:
         pass
     finally:
-        print("\n[GUARDIAN-TOP] Monitor terminated. Guardian WAF continues running in the background.")
+        print("\n[SATGUARDIAN-TOP] Monitor terminated. SATGuardian Edge WAF continues running in the background.")
 
 if __name__ == "__main__":
     main()

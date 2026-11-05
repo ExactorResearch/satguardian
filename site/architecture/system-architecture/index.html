@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Sub-Millisecond Lexical Normalization, 128-Bit Integer Mask Evaluation, and EXACTOR GXOR Boolean Cloud Optimization">
+        <meta name="description" content="Research-prototype Rust edge WAF with u128 bitmask inspection and opt-in SATGuardian cloud rule synthesis that returns proposals you approve">
       
       
         <meta name="author" content="SATGuardian Cyber-Defense Systems">
@@ -592,7 +592,7 @@
   <span class="md-ellipsis">
     
   
-    Complete Configuration Guide
+    Configuration Reference
   
 
     
@@ -620,7 +620,7 @@
   <span class="md-ellipsis">
     
   
-    Configuration & Operations
+    Operations & Tooling Guide
   
 
     
@@ -827,10 +827,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#22-python-benchmark-advisor-cloud-control-plane" class="md-nav__link">
+  <a href="#22-python-benchmark-advisor-suite" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2.2 Python Benchmark, Advisor &amp; Cloud Control Plane
+        2.2 Python Benchmark &amp; Advisor Suite
       
     </span>
   </a>
@@ -843,22 +843,33 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-measurements-and-their-limits" class="md-nav__link">
+  <a href="#3-cloud-review-and-the-operator-approval-gate" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. Measurements and Their Limits
+        3. Cloud Review and the Operator Approval Gate
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="3. Measurements and Their Limits">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-measurements-and-their-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Measurements and Their Limits
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Measurements and Their Limits">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#31-detection-quality" class="md-nav__link">
+  <a href="#41-detection-quality" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3.1 Detection quality
+        4.1 Detection quality
       
     </span>
   </a>
@@ -866,10 +877,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#32-latency" class="md-nav__link">
+  <a href="#42-latency" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3.2 Latency
+        4.2 Latency
       
     </span>
   </a>
@@ -1418,10 +1429,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#22-python-benchmark-advisor-cloud-control-plane" class="md-nav__link">
+  <a href="#22-python-benchmark-advisor-suite" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2.2 Python Benchmark, Advisor &amp; Cloud Control Plane
+        2.2 Python Benchmark &amp; Advisor Suite
       
     </span>
   </a>
@@ -1434,22 +1445,33 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-measurements-and-their-limits" class="md-nav__link">
+  <a href="#3-cloud-review-and-the-operator-approval-gate" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. Measurements and Their Limits
+        3. Cloud Review and the Operator Approval Gate
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="3. Measurements and Their Limits">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-measurements-and-their-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Measurements and Their Limits
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Measurements and Their Limits">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#31-detection-quality" class="md-nav__link">
+  <a href="#41-detection-quality" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3.1 Detection quality
+        4.1 Detection quality
       
     </span>
   </a>
@@ -1457,10 +1479,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#32-latency" class="md-nav__link">
+  <a href="#42-latency" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3.2 Latency
+        4.2 Latency
       
     </span>
   </a>
@@ -1498,16 +1520,17 @@
 <strong>Scope:</strong> Implementation architecture (Rust hot path &amp; Python control plane)</p>
 <blockquote>
 <p><strong>Status: research prototype, not a production-ready WAF.</strong> Metrics in this
-document are in-sample measurements on a hand-written corpus. The Python
-comparison harness runs local stand-ins, not real vendor products. See
-<a href="../../status/">STATUS.md</a> and <a href="../../corpus/">corpus/README.md</a>.</p>
+document are in-sample measurements on a hand-written corpus, plus one
+held-out run on the same author's payloads. The Python comparison harness runs
+local stand-ins, not real vendor products, and no third-party evaluation
+exists. See <a href="../../status/">STATUS.md</a> and <a href="../../corpus/">corpus/README.md</a>.</p>
 </blockquote>
 <hr />
 <h2 id="1-architectural-overview">1. Architectural Overview</h2>
 <p><code>satguardian</code> is a hybrid Web Application Firewall (WAF) divided into two strictly decoupled execution planes:</p>
 <ol>
-<li><strong>In-Path Edge Data Plane (Native Rust — <code>src/</code>):</strong> Evaluates HTTP requests in memory (tens of microseconds per payload; no network hop included) using multi-pass lexical normalization, a 128-bit feature bitmask (<code>FeatureVector(pub u128)</code>), and bitwise rule comparisons (<code>(minterm &amp; required_mask) == expected_bits</code>).</li>
-<li><strong>Out-of-Band Control &amp; GXOR Synthesis Plane (Rust &amp; Python — <code>src/cloud/satguardian_client.rs</code>, <code>exactor-core-v128</code>, <code>satguardian-advisor.py</code>):</strong> Asynchronously reads the SQLite forensic audit ledger (<code>waf_ledger.db</code>), simplifies up to <strong>128 Boolean variables (<code>u128</code> minterms)</strong> using the <strong>EXACTOR GXOR</strong> engine over the complete <strong><code>{AND, OR, NOT, XOR}</code></strong> operator basis via Differential Gray Code Mapping, validates candidate rules against historical benign traffic in a <strong>Digital Twin</strong>, and hot-reloads validated rules into the Edge WAF via <code>ArcSwap</code>.</li>
+<li><strong>In-Path Edge Data Plane (Native Rust — <code>src/</code>):</strong> Evaluates HTTP requests in memory (tens of microseconds per payload; no network hop included) using multi-pass lexical normalization, a 128-bit feature bitmask (<code>FeatureVector { bits: u128 }</code>, 40 named variables in the current catalogue), and bitwise rule comparisons (<code>(minterm &amp; required_mask) == expected_bits</code>). This plane is self-contained: it enforces the rules already in the process and needs no network access to do so.</li>
+<li><strong>Out-of-Band Control &amp; Cloud Review Plane (Rust &amp; Python — <code>src/cloud/satguardian_client.rs</code>, <code>src/ledger/sqlite_ledger.rs</code>, <code>satguardian-advisor.py</code>):</strong> Reads the SQLite forensic audit ledger (<code>waf_ledger.db</code>) and, <strong>only when the operator turns cloud review on</strong> (<code>auto_sync_enabled</code>, <code>false</code> by default in <code>src/config.rs</code> and <code>waf_config.toml</code>), sends collected <code>u128</code> anomaly minterms to the <strong>SATGuardian cloud synthesis</strong> service at <code>satguardian.tech</code>. Boolean minimization runs on that service, not in this repository: the client receives a reduced equation, compiles it into bitmask clauses, and stores them as <strong>proposals</strong> (<code>dynamic_clauses.applied = 0</code>). Proposals do not enter the running engine and are not loaded at startup. A separate explicit action — <code>satguardian-waf clauses apply &lt;id&gt;</code> or <code>POST /api/waf/clauses/{id}/apply</code> — registers one clause in the engine.</li>
 </ol>
 <pre class="mermaid"><code>flowchart TD
     A["Incoming HTTP Request"] --&gt; B["Multi-Pass Lexical Decoder &amp; Tokenizer (src/ast/lexer.rs)"]
@@ -1517,10 +1540,12 @@ comparison harness runs local stand-ins, not real vendor products. See
     D -- "Satisfies All Rules" --&gt; F["Forward to Upstream / Envoy 200 OK"]
     E --&gt; G[("SQLite Audit Ledger: waf_ledger.db")]
     F --&gt; G
-    G --&gt; H["Offline Advisor &amp; EXACTOR GXOR Synthesizer (satguardian_client.rs / exactor-core-v128)"]
-    H --&gt; I["Digital Twin Benign Traffic Replay (collision check)"]
-    I -- "Verified Safe" --&gt; J["Atomic Hot-Reload via ArcSwap"]
-    J -.-&gt; D</code></pre>
+    G --&gt; H["Opt-in cloud review client (src/cloud/satguardian_client.rs)"]
+    H --&gt; K["SATGuardian cloud synthesis at satguardian.tech (not part of this repository)"]
+    K --&gt; L["Stored as proposals: dynamic_clauses.applied = 0"]
+    L --&gt; M["Operator approval: clauses apply / POST /api/waf/clauses/{id}/apply"]
+    M -- "approved clauses only" --&gt; N["Registered in the running engine"]
+    N -.-&gt; D</code></pre>
 <hr />
 <h2 id="2-verified-module-map">2. Verified Module Map</h2>
 <h3 id="21-rust-native-edge-engine-src">2.1 Rust Native Edge Engine (<code>src/</code>)</h3>
@@ -1535,37 +1560,42 @@ comparison harness runs local stand-ins, not real vendor products. See
 <tbody>
 <tr>
 <td style="text-align: left;"><code>src/ast/lexer.rs</code></td>
-<td style="text-align: left;"><code>AstLexer</code>, <code>FeatureBinarizer</code></td>
+<td style="text-align: left;"><code>AstLexer</code></td>
 <td style="text-align: left;">Performs bounded multi-pass URL/HTML decoding, strips inline SQL/C comments (<code>/*...*/</code>), and extracts structural tokens across 5 attack domains (<code>SQLi</code>, <code>XSS</code>, <code>RCE</code>, <code>LFI</code>, <code>SSRF</code>).</td>
 </tr>
 <tr>
 <td style="text-align: left;"><code>src/ast/features.rs</code></td>
-<td style="text-align: left;"><code>FeatureVector(pub u128)</code></td>
+<td style="text-align: left;"><code>FeatureVector(pub u128)</code>, <code>FeatureBinarizer</code></td>
 <td style="text-align: left;">Maps HTTP methods, path attributes, Shannon character entropy thresholds, and lexical token presence into 128 discrete bit positions (<code>0..127</code>).</td>
 </tr>
 <tr>
 <td style="text-align: left;"><code>src/engine/sat_solver.rs</code></td>
 <td style="text-align: left;"><code>SatguardianSatEngine</code>, <code>DynamicCompiledClause</code>, <code>evaluate_payload()</code></td>
-<td style="text-align: left;">Evaluates rules via bitwise masking <code>(minterm &amp; required_mask) == expected_bits</code>, enforces per-IP token-bucket rate limits (<code>DashMap</code>), and formats human-readable causal proof traces.</td>
+<td style="text-align: left;">Evaluates rules via bitwise masking <code>(fv.bits &amp; required_mask) == expected_bits</code>, consumes the per-IP sliding-window verdict computed by <code>src/stateful/limiter.rs</code> (<code>SAT-STATE-01</code>), and formats human-readable causal proof traces.</td>
 </tr>
 <tr>
 <td style="text-align: left;"><code>src/cloud/satguardian_client.rs</code></td>
 <td style="text-align: left;"><code>SatguardianCloudClient</code>, <code>SimplifyRequest</code>, <code>compile_equation_to_clauses()</code></td>
-<td style="text-align: left;">Invokes the <strong>EXACTOR GXOR</strong> Cloud Optimization API (<code>POST /api/simplify</code> backed by <code>exactor-core-v128</code>) to simplify up to 128 variables (<code>u128</code> minterms) over <code>{AND, OR, NOT, XOR}</code>, and compiles the reduced formula into runtime bitmask clauses.</td>
+<td style="text-align: left;">Client-side HTTP caller for the <strong>SATGuardian cloud synthesis</strong> service (<code>POST https://satguardian.tech/api/simplify</code>). It bundles the variable catalogue and the pending <code>u128</code> minterms, receives a reduced equation over <code>{AND, OR, NOT, XOR}</code>, and compiles that equation into runtime bitmask clauses. The minimization itself runs on the service; no minimizer ships in this repository.</td>
 </tr>
 <tr>
-<td style="text-align: left;"><code>src/proxy/http_proxy.rs</code></td>
-<td style="text-align: left;"><code>start_reverse_proxy()</code></td>
-<td style="text-align: left;">Asynchronous Tokio/Hyper reverse proxy with <code>ArcSwap</code> lock-free rule hot-reloading and background SQLite audit logging.</td>
+<td style="text-align: left;"><code>src/ledger/sqlite_ledger.rs</code></td>
+<td style="text-align: left;"><code>SqliteLedger</code>, <code>propose_dynamic_clause()</code>, <code>load_applied_clauses()</code>, <code>load_pending_clauses()</code>, <code>approve_dynamic_clause()</code>, <code>reject_dynamic_clause()</code></td>
+<td style="text-align: left;">Persists cloud results with <code>applied = 0</code> (proposal) or <code>applied = 1</code> (approved). Startup loads approved clauses only; rejecting deletes a proposal and never removes a rule that is already enforcing.</td>
 </tr>
 <tr>
-<td style="text-align: left;"><code>src/proxy/envoy_grpc.rs</code></td>
-<td style="text-align: left;"><code>EnvoyExtAuthzServer</code></td>
-<td style="text-align: left;">High-speed Envoy <code>ext_authz</code> authorization daemon supporting Unix Domain Sockets (<code>unix:///run/satguardian/waf.sock</code>).</td>
+<td style="text-align: left;"><code>src/proxy/reverse_proxy.rs</code></td>
+<td style="text-align: left;"><code>ProxyState</code>, <code>proxy_handler()</code></td>
+<td style="text-align: left;">Asynchronous Tokio/Hyper reverse proxy sharing one <code>Arc&lt;SatguardianSatEngine&gt;</code> across requests, with background SQLite audit logging. A clause approved through the API is registered on that shared engine and applies to subsequent requests without restarting the process or dropping connections.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>src/envoy/ext_authz.rs</code></td>
+<td style="text-align: left;"><code>EnvoyAuthzState</code>, <code>create_envoy_authz_router()</code>, <code>serve_uds()</code></td>
+<td style="text-align: left;">Envoy <code>ext_authz</code> <strong>HTTP</strong> authorization daemon (<code>/ext_authz</code>), served over TCP or a Unix Domain Socket (<code>/var/run/satguardian/waf.sock</code>).</td>
 </tr>
 </tbody>
 </table>
-<h3 id="22-python-benchmark-advisor-cloud-control-plane">2.2 Python Benchmark, Advisor &amp; Cloud Control Plane</h3>
+<h3 id="22-python-benchmark-advisor-suite">2.2 Python Benchmark &amp; Advisor Suite</h3>
 <table>
 <thead>
 <tr>
@@ -1578,7 +1608,7 @@ comparison harness runs local stand-ins, not real vendor products. See
 <tr>
 <td style="text-align: left;"><code>satguardian_waf/core/solver_sat.py</code></td>
 <td style="text-align: left;"><code>SatguardianWAFSATEngine</code></td>
-<td style="text-align: left;">Python reference port of the lexical normalizer and rule evaluator. It is not the production engine and its latency says nothing about the Rust binary.</td>
+<td style="text-align: left;">Python reference port of the lexical normalizer and rule evaluator. It is not the native Rust engine and its latency says nothing about the binary.</td>
 </tr>
 <tr>
 <td style="text-align: left;"><code>satguardian_waf/agents/</code></td>
@@ -1587,28 +1617,91 @@ comparison harness runs local stand-ins, not real vendor products. See
 </tr>
 <tr>
 <td style="text-align: left;"><code>satguardian-advisor.py</code></td>
-<td style="text-align: left;"><code>PatternAnalysisAgent</code>, <code>SimulationAgent</code>, <code>SynthesisAgent</code>, <code>ReportGenerator</code></td>
-<td style="text-align: left;">Reads <code>waf_ledger.db</code>, synthesizes candidate rules, replays them against recorded benign logs to find collisions, and generates <code>audit_report.html</code> and <code>audit_report.md</code>. Collision counts are recorded per run; no fixed FPR floor is claimed.</td>
-</tr>
-<tr>
-<td style="text-align: left;"><code>satguardian-cloud-server.py</code></td>
-<td style="text-align: left;"><code>SATGuardianCloudHandler</code></td>
-<td style="text-align: left;">Reference cloud optimization API implementing Security Units (SU) metering, plan tier enforcement (128-variable SaaS cap), and <code>HTTP 402 SU_QUOTA_EXHAUSTED</code> fail-safe behavior.</td>
+<td style="text-align: left;"><code>TrafficPatternAgent</code>, <code>SimulationAgent</code>, <code>RuleSynthesizerAgent</code>, <code>HumanApprovalAgent</code>, <code>ForensicReportAgent</code></td>
+<td style="text-align: left;">Reads <code>waf_ledger.db</code>, proposes candidate rules, replays them against recorded benign logs to find collisions, presents each proposal for the operator's approval (<code>--dry-run</code> lists without applying; there is no batch-approval option), and writes <code>audit_report.html</code> / <code>audit_report.md</code>. Collision counts are recorded per run; no fixed FPR floor is claimed.</td>
 </tr>
 </tbody>
 </table>
+<blockquote>
+<p><strong>What is <em>not</em> in this repository:</strong> the SATGuardian cloud service behind
+<code>POST https://satguardian.tech/api/simplify</code>. The Boolean minimizer, the
+variable-reduction heuristics and the Security Units (SU) accounting run
+server-side and are not distributed to customers. This codebase contains only
+the client that calls the service, the code that compiles the returned
+equation into bitmask clauses, and the code that evaluates those clauses.</p>
+</blockquote>
 <hr />
-<h2 id="3-measurements-and-their-limits">3. Measurements and Their Limits</h2>
+<h2 id="3-cloud-review-and-the-operator-approval-gate">3. Cloud Review and the Operator Approval Gate</h2>
+<p>The edge node is the default; the cloud is an opt-in review service. Free, you
+get local protection on your own node. Paying, you get continuous review of new
+patterns, update proposals and explanations — without ever giving up control of
+your WAF.</p>
+<ol>
+<li><strong>Nothing leaves the node unless you say so.</strong> <code>auto_sync_enabled</code> defaults
+   to <code>false</code> in <code>src/config.rs</code> and in <code>waf_config.toml</code>. With the default
+   configuration the process never uploads observed anomalies.</li>
+<li><strong>Three entry points, one behaviour.</strong> The opt-in timer worker (every
+   <code>autonomous_sync_interval_secs</code>, default 300 s), the CLI
+   <code>satguardian-waf sync-simplify</code> and <code>POST /api/waf/sync-simplify</code> all send the
+   pending minterms of <code>novel_anomalies</code> to the cloud and store what comes back
+   as <strong>proposals</strong>: rows in <code>dynamic_clauses</code> with <code>applied = 0</code>.</li>
+<li><strong>Proposals do not enforce.</strong> A proposal is not registered in the running
+   engine and is not loaded at startup — <code>main.rs</code> calls
+   <code>ledger.load_applied_clauses()</code>, which selects <code>applied = 1</code> only. The sync
+   response says so explicitly (<code>"status": "proposed"</code>, "Nothing was applied to
+   the running rule set").</li>
+<li><strong>Approval is a separate, explicit action</strong>, always behind the existing admin
+   token (<code>require_admin_token</code> in <code>src/api/server.rs</code>):</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Decision</th>
+<th style="text-align: left;">CLI</th>
+<th style="text-align: left;">HTTP API</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">List open proposals</td>
+<td style="text-align: left;"><code>satguardian-waf clauses list</code></td>
+<td style="text-align: left;"><code>GET /api/waf/clauses/pending</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Approve one</td>
+<td style="text-align: left;"><code>satguardian-waf clauses apply &lt;id&gt;</code></td>
+<td style="text-align: left;"><code>POST /api/waf/clauses/{id}/apply</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Discard one</td>
+<td style="text-align: left;"><code>satguardian-waf clauses reject &lt;id&gt;</code></td>
+<td style="text-align: left;"><code>DELETE /api/waf/clauses/{id}</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>clauses apply</code> marks the row approved, so the clause enforces from the next
+   start; approving through the HTTP API on a running process additionally calls
+   <code>engine.register_dynamic_clause()</code>, and the response reports
+   <code>enforcing_now</code>. Registering on the shared in-memory rule set is what makes an
+   <strong>approved</strong> clause take effect for subsequent requests without restarting the
+   proxy or dropping connections.
+5. <strong>Rejecting cannot weaken you.</strong> <code>reject_dynamic_clause</code> deletes a row where
+   <code>applied = 0</code>. A rule already enforcing is never removed by it.
+6. <strong><code>pending_anomalies</code> are patterns awaiting analysis.</strong> They are logged
+   minterms the engine did not recognize, not unprotected threats and not a
+   coverage gap.</p>
+<hr />
+<h2 id="4-measurements-and-their-limits">4. Measurements and Their Limits</h2>
 <p>No value is capped or floored. The engine reports whatever the corpus produces,
 including failures.</p>
-<h3 id="31-detection-quality">3.1 Detection quality</h3>
+<h3 id="41-detection-quality">4.1 Detection quality</h3>
 <table>
 <thead>
 <tr>
 <th style="text-align: left;">Corpus</th>
 <th style="text-align: center;">First run (before fixes)</th>
 <th style="text-align: center;">Current regression run</th>
-<th style="text-align: left;">Status</th>
+<th style="text-align: left;">Nature of the number</th>
 </tr>
 </thead>
 <tbody>
@@ -1616,20 +1709,30 @@ including failures.</p>
 <td style="text-align: left;"><code>corpus/independent_v1.json</code> (63 attacks, 16 benign)</td>
 <td style="text-align: center;">51/63 recall (80.95%), 3/16 benign blocked (18.75% FPR)</td>
 <td style="text-align: center;">63/63, 0/16 blocked</td>
-<td style="text-align: left;">In-sample regression</td>
+<td style="text-align: left;">In-sample regression floor</td>
 </tr>
 <tr>
 <td style="text-align: left;"><code>corpus/heldout_v1.json</code> (17 attacks, 4 benign)</td>
 <td style="text-align: center;">11/17 recall (64.71%), 0/4 benign blocked</td>
 <td style="text-align: center;">17/17, 0/4 blocked</td>
-<td style="text-align: left;">Consumed held-out batch</td>
+<td style="text-align: left;">Batch consumed by the fix pass; in-sample regression floor</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>corpus/heldout_v2.json</code> (98 attacks, 57 controls)</td>
+<td style="text-align: center;">55/98 detected (<strong>56.1% recall</strong>, 95% CI 46.3–65.5%), 4/57 controls blocked (<strong>7.0% FPR</strong>, 95% CI 2.8–16.7%)</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: left;">The only held-out measurement, run once on 2026-11-04</td>
 </tr>
 </tbody>
 </table>
-<p>Every corpus case was used to drive the fixes, so the current 100%/0% is a
-regression floor, not a held-out quality estimate. The protocol and rules for
-adding cases are in <a href="../../corpus/">corpus/README.md</a>.</p>
-<h3 id="32-latency">3.2 Latency</h3>
+<p>Every case in the first two corpora was used to drive the fixes, so their
+100%/0% rows are regression floors, not quality estimates. The held-out row is
+the honest number to quote, and it is still a single run over payloads written
+inside this project from public catalogues, with imagined benign controls:
+<strong>there is no third-party or independent evaluation.</strong> The protocol and rules
+for adding cases are in <a href="../../corpus/">corpus/README.md</a>;
+<code>corpus/heldout_v2_report.json</code> lists every miss and every false positive.</p>
+<h3 id="42-latency">4.2 Latency</h3>
 <p><code>cargo run --release -- benchmark -r 10000</code> measures in-memory rule evaluation
 over the pinned corpus: roughly <code>20 µs</code> p50 and <code>22 µs</code> mean on a desktop CPU,
 with p99 fluctuating around the <code>50 µs</code> target depending on machine load. It

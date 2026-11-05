@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Sub-Millisecond Lexical Normalization, 128-Bit Integer Mask Evaluation, and EXACTOR GXOR Boolean Cloud Optimization">
+        <meta name="description" content="Research-prototype Rust edge WAF with u128 bitmask inspection and opt-in SATGuardian cloud rule synthesis that returns proposals you approve">
       
       
         <meta name="author" content="SATGuardian Cyber-Defense Systems">
@@ -572,6 +572,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#control-boundary-what-the-paid-tier-actually-does" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Control boundary (what the paid tier actually does)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#why-this-file-exists" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -683,7 +694,7 @@
   <span class="md-ellipsis">
     
   
-    Complete Configuration Guide
+    Configuration Reference
   
 
     
@@ -711,7 +722,7 @@
   <span class="md-ellipsis">
     
   
-    Configuration & Operations
+    Operations & Tooling Guide
   
 
     
@@ -1367,6 +1378,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#control-boundary-what-the-paid-tier-actually-does" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Control boundary (what the paid tier actually does)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#why-this-file-exists" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1431,14 +1453,24 @@ document contradicts it, this file wins and the other document is stale.</p>
 <td><code>independent_v1</code>: 51/63 recall (80.95%), 3/16 benign blocked (18.75% FPR)</td>
 <td>2026-11-01</td>
 </tr>
+<tr>
+<td><strong>Held-out estimate — the only one that exists</strong></td>
+<td><code>corpus/heldout_v2.json</code> in one run before any fix: 55/98 attacks detected (<strong>56.1% recall</strong>, 95% CI 46.3–65.5%), 4/57 controls blocked (<strong>7.0% FPR</strong>, 95% CI 2.8–16.7%). Report: <code>corpus/heldout_v2_report.json</code></td>
+<td>2026-11-04</td>
+</tr>
 </tbody>
 </table>
-<p><code>corpus/README.md</code> records how the corpus was assembled, why both files are now
-in-sample, and the rules for adding cases.</p>
+<p><code>corpus/README.md</code> records how each batch was assembled, why the first two are
+now in-sample, and the rules for adding cases.</p>
 <h2 id="what-is-not-measured">What is not measured</h2>
 <ul>
-<li><strong>No independent or third-party evaluation.</strong> The corpus is hand-written in
-  this repository. There is no held-out estimate after the second fix pass.</li>
+<li><strong>No independent or third-party evaluation.</strong> Every batch, including the
+  held-out one, is hand-written in this repository by the same author as the
+  engine. <code>heldout_v2</code> is a real out-of-sample estimate of <em>those</em> payloads —
+  its 56.1% recall and 7.0% false-positive rate are the honest numbers to quote,
+  and the in-sample 100%/0% rows above are not. Neither number says anything
+  about traffic that was not imagined: no customer access log has ever been
+  measured against this engine.</li>
 <li><strong>No comparison against real WAF products.</strong> The Python harness
   (<code>run_benchmark.py</code>) runs local stand-ins written for this repository. Rows
   named Coraza, SafeLine, ModSecurity or "probabilistic NLP" are reimplementations,
@@ -1465,6 +1497,29 @@ in-sample, and the rules for adding cases.</p>
 <a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="c1"># Python reference harness (local stand-ins, in-sample)</span>
 <a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>python<span class="w"> </span>run_benchmark.py<span class="w"> </span><span class="m">1000</span>
 </code></pre></div>
+<h2 id="control-boundary-what-the-paid-tier-actually-does">Control boundary (what the paid tier actually does)</h2>
+<p>The product promise is: free, local protection; paid, ongoing review, update
+proposals and explanations — without giving up control of the WAF. As of
+2026-11-04 the code matches that:</p>
+<ul>
+<li><code>auto_sync_enabled</code> defaults to <code>false</code> (<code>src/config.rs</code>), and the shipped
+  <code>waf_config.toml</code> leaves it off. Cloud review runs only if you turn it on or
+  invoke <code>satguardian-waf sync-simplify</code> / <code>POST /api/waf/sync-simplify</code>.</li>
+<li>A review uploads recorded <code>u128</code> feature vectors, not raw requests, and what
+  comes back is stored in <code>dynamic_clauses</code> with <code>applied = 0</code>. Startup loads
+  <code>applied = 1</code> rows only.</li>
+<li>A clause enters the engine after an explicit approval
+  (<code>satguardian-waf clauses apply &lt;id&gt;</code>, or <code>POST /api/waf/clauses/{id}/apply</code>
+  behind the admin token). <code>reject</code> deletes only unapplied proposals. Approved
+  clauses are registered in an <code>RwLock</code>-guarded table capped at 4,096; there is
+  no lock-free swap and no automatic apply anywhere in the client.</li>
+<li>The Boolean minimizer (<code>exactor-core-v128</code>) is not a dependency of this crate
+  and is not in any client artefact; minimization happens on the service side.</li>
+<li><code>satguardian-advisor.py</code> has no batch-approval option. Every proposal is
+  decided one at a time by the operator running it.</li>
+</ul>
+<p><code>tests/docs_claims_test.rs::cloud_review_stays_opt_in_and_never_applies_by_itself</code>
+and <code>tests/clause_approval_test.rs</code> fail if any of that regresses.</p>
 <h2 id="why-this-file-exists">Why this file exists</h2>
 <p>Earlier versions of this repository published a benchmark that:</p>
 <ul>

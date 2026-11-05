@@ -82,11 +82,21 @@ enum Commands {
         body: String,
     },
 
-    /// Force immediate exact Boolean simplification with https://satguardian.tech
+    /// Send pending anomalies to https://satguardian.tech and store the result as proposals
     SyncSimplify {
         /// Number of pending anomaly minterms to batch-simplify
         #[arg(short, long, default_value_t = 100)]
         limit: i64,
+    },
+
+    /// List, approve or discard the cloud update proposals waiting in the ledger
+    Clauses {
+        /// list | apply | reject
+        #[arg(default_value = "list")]
+        action: String,
+
+        /// Clause id, required for apply and reject
+        id: Option<String>,
     },
 
     /// Run the multi-vector SAT engine performance benchmark
@@ -158,6 +168,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         Some(Commands::SyncSimplify { limit }) => {
             run_sync_simplify(&config, limit).await
         }
+        Some(Commands::Clauses { action, id }) => run_clauses(&config, &action, id).await,
         Some(Commands::T1kServer {
             listen,
             downstream,
@@ -214,7 +225,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     }
 }
 
-/// Runs the server with Reverse Proxy, Management API, and Autonomous Minimization Loop.
+/// Runs the server with Reverse Proxy, Management API, and the opt-in Cloud Review worker.
 async fn run_server(config: WafConfig) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     println!(
         r#"
@@ -266,16 +277,24 @@ async fn run_server(config: WafConfig) -> Result<(), Box<dyn std::error::Error +
         config.business_rules.clone(),
     ));
     let ledger = SqliteLedger::init(&config.database_path).await?;
-    match ledger.load_dynamic_clauses().await {
+    match ledger.load_applied_clauses().await {
         Ok(clauses) if !clauses.is_empty() => {
             let loaded = clauses.len();
             for clause in clauses {
                 engine.register_dynamic_clause(clause);
             }
-            info!(target: "satguardian::server", "Loaded {} persisted dynamic clauses", loaded);
+            info!(target: "satguardian::server", "Loaded {} approved dynamic clauses", loaded);
         }
         Ok(_) => {}
         Err(e) => warn!(target: "satguardian::server", "Could not load persisted dynamic clauses: {}", e),
+    }
+    match ledger.load_pending_clauses().await {
+        Ok(pending) if !pending.is_empty() => info!(
+            target: "satguardian::server",
+            count = pending.len(),
+            "Propuestas de actualización esperando aprobación (satguardian-waf clauses list)"
+        ),
+        _ => {}
     }
     let cloud_client = SatguardianCloudClient::new(
         config.satguardian_api_url.clone(),
@@ -302,10 +321,11 @@ async fn run_server(config: WafConfig) -> Result<(), Box<dyn std::error::Error +
         sum_latency_us: AtomicU64::new(0),
     });
 
-    // Autonomous background minimization sync worker
+    // Opt-in cloud review worker. It uploads observed anomaly minterms and stores whatever the
+    // service returns as proposals; it never touches the running engine. Approval is a separate,
+    // explicit action by the operator.
     if config.auto_sync_enabled && config.autonomous_sync_interval_secs > 0 {
         let bg_ledger = ledger.clone();
-        let bg_engine = engine.clone();
         let bg_cloud = cloud_client.clone();
         let interval_secs = config.autonomous_sync_interval_secs;
 
@@ -318,7 +338,7 @@ async fn run_server(config: WafConfig) -> Result<(), Box<dyn std::error::Error +
                         info!(
                             target: "satguardian::sync",
                             count = pending.len(),
-                            "Autonomous worker: Syncing novel anomaly minterms with https://satguardian.tech"
+                            "Cloud review worker: sending novel anomaly minterms to the configured endpoint"
                         );
                         let vars = FeatureBinarizer::get_variable_catalog(40);
                         let req = SimplifyRequest {
@@ -331,18 +351,15 @@ async fn run_server(config: WafConfig) -> Result<(), Box<dyn std::error::Error +
                             Ok(resp) => {
                                 match bg_cloud.compile_equation_to_clauses(&resp.result, &vars) {
                                     Ok(clauses) if !clauses.is_empty() => {
-                                        let mut added = 0usize;
+                                        let mut proposed = 0usize;
                                         for clause in clauses {
-                                            if bg_engine.register_dynamic_clause(clause.clone()) {
-                                                if let Err(e) =
-                                                    bg_ledger.save_dynamic_clause(&clause).await
-                                                {
-                                                    error!(
-                                                        target: "satguardian::ledger",
-                                                        "Failed to persist dynamic clause: {}", e
-                                                    );
-                                                }
-                                                added += 1;
+                                            match bg_ledger.propose_dynamic_clause(&clause).await {
+                                                Ok(true) => proposed += 1,
+                                                Ok(false) => {}
+                                                Err(e) => error!(
+                                                    target: "satguardian::ledger",
+                                                    "Failed to store proposed dynamic clause: {}", e
+                                                ),
                                             }
                                         }
                                         if let Err(e) = bg_ledger
@@ -370,8 +387,8 @@ async fn run_server(config: WafConfig) -> Result<(), Box<dyn std::error::Error +
                                         info!(
                                             target: "satguardian::sync",
                                             reduction = %format!("{:.1}%", resp.reduction_percent),
-                                            clauses_added = added,
-                                            "Autonomous worker: Hot Boolean Minimization complete. Invariants updated."
+                                            proposals = proposed,
+                                            "Cloud review complete. Clauses stored as proposals; the running rule set is unchanged until you approve them."
                                         );
                                     }
                                     Ok(_) => warn!(
@@ -387,7 +404,7 @@ async fn run_server(config: WafConfig) -> Result<(), Box<dyn std::error::Error +
                                 }
                             }
                             Err(e) => {
-                                warn!(target: "satguardian::sync", "Autonomous sync skipped or failed: {}", e);
+                                warn!(target: "satguardian::sync", "Cloud review skipped or failed: {}", e);
                             }
                         }
                     }
@@ -710,10 +727,11 @@ async fn run_sync_simplify(
         }
     };
 
-    let mut persisted = 0usize;
+    let mut proposed = 0usize;
     for clause in &clauses {
-        ledger.save_dynamic_clause(clause).await?;
-        persisted += 1;
+        if ledger.propose_dynamic_clause(clause).await? {
+            proposed += 1;
+        }
     }
 
     ledger
@@ -721,9 +739,67 @@ async fn run_sync_simplify(
         .await?;
     ledger.mark_anomalies_simplified(&pending).await?;
     println!(
-        "💾 Ledger updated. Anomalies marked as SIMPLIFIED and {} dynamic clauses persisted.",
-        persisted
+        "📋 Anomalies marked as SIMPLIFIED and {} update proposals stored.",
+        proposed
     );
+    println!("   Nothing changed in the running rule set. Review with `satguardian-waf clauses`,");
+    println!("   then approve or reject each proposal.");
+
+    Ok(())
+}
+
+/// Lists, approves or discards the cloud update proposals held in the ledger.
+async fn run_clauses(
+    config: &WafConfig,
+    action: &str,
+    id: Option<String>,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let ledger = SqliteLedger::init(&config.database_path).await?;
+
+    match action {
+        "list" => {
+            let pending = ledger.load_pending_clauses().await?;
+            if pending.is_empty() {
+                println!("No update proposals are waiting for a decision.");
+                return Ok(());
+            }
+            println!(
+                "{} proposal(s) waiting for approval. Active rules are unaffected until approved.",
+                pending.len()
+            );
+            for (clause, created_at) in pending {
+                println!(
+                    "  {}  [{}]  proposed {}  {}",
+                    clause.clause_id, clause.category.as_str(), created_at, clause.description
+                );
+            }
+            println!("Apply with `satguardian-waf clauses apply <id>`.");
+        }
+        "apply" => {
+            let Some(id) = id else {
+                return Err("clauses apply needs a clause id".into());
+            };
+            match ledger.approve_dynamic_clause(&id).await? {
+                Some(clause) => println!(
+                    "✅ Approved {}. It enforces when the proxy starts; while it is running, \
+                     approve through POST /api/waf/clauses/{}/apply to apply immediately.",
+                    clause.description, id
+                ),
+                None => println!("ℹ️  No pending proposal with id {}. Active rules are not changed here.", id),
+            }
+        }
+        "reject" => {
+            let Some(id) = id else {
+                return Err("clauses reject needs a clause id".into());
+            };
+            if ledger.reject_dynamic_clause(&id).await? {
+                println!("🗑️  Proposal {} discarded. Protection already in force is untouched.", id);
+            } else {
+                println!("ℹ️  No pending proposal with id {}. Only proposals can be rejected.", id);
+            }
+        }
+        other => return Err(format!("Unknown clauses action '{}'. Use list, apply or reject.", other).into()),
+    }
 
     Ok(())
 }

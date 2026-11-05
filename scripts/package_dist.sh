@@ -90,9 +90,9 @@ done
 # 4. Generate README_INSTALL.txt
 cat << EOF > "${STAGING_DIR}/README_INSTALL.txt"
 ================================================================================
-  SATGUARDIAN EDGE WAF - ZERO-DEPENDENCY CLIENT INSTALLATION PACKAGE
-  Deterministic SAT Cyber-Defense & Sub-millisecond Reverse Proxy
-  100% Free Edge Traffic | Cloud Synthesis at https://satguardian.tech
+  SATGUARDIAN EDGE WAF - SELF-CONTAINED CLIENT INSTALLATION PACKAGE
+  Deterministic u128 bitmask evaluation - research prototype, not production-ready
+  Free edge traffic | opt-in cloud review at https://satguardian.tech
 ================================================================================
 
 This package is 100% self-contained. The client does NOT need Rust,

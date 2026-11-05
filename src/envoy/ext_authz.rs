@@ -1,5 +1,5 @@
 //! Envoy External Authorization (ext_authz) HTTP Filter Service.
-//! Implements sub-millisecond AST SAT verification and formal causal proof generation
+//! Implements deterministic bitmask verification and causal proof generation
 //! compatible with Envoy's envoy.filters.http.ext_authz filter.
 
 use crate::ast::features::FeatureBinarizer;
@@ -136,7 +136,7 @@ async fn handle_envoy_authz_check(
     // 5. Stateful & Behavioral Sliding Window Inspection
     let stateful_verdict = state.rate_limiter.check_and_update(&payload);
 
-    // 6. Sub-millisecond SAT Invariant Evaluation (< 0.05 ms)
+    // 6. Bitmask invariant evaluation (in-memory p50 ~20 µs on the pinned corpus)
     let proof: ProofChain = state
         .sat_engine
         .evaluate_payload_with_verdict(&payload, Some(&stateful_verdict));

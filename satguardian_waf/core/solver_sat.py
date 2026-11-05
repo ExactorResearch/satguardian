@@ -1,8 +1,10 @@
-"""Guardian WAF SAT & Constraint Propagation Engine - Certainty Islands Architecture.
+"""SATGuardian Python reference port of the rule evaluator - Certainty Islands architecture.
 
-Deterministic, sub-millisecond Boolean rule evaluator with formal Certainty Islands.
-Evaluates structured grammar invariants and outputs structured deduction traces in
-LaTeX. Accuracy is measured on the pinned in-repo corpus only; see STATUS.md.
+Deterministic Boolean rule evaluator with Certainty Islands. This is the Python
+reference implementation used by the benchmark harness; it is not the native Rust
+engine and its timings say nothing about the binary. It evaluates structured
+grammar invariants and emits deduction traces in LaTeX. Accuracy is measured on
+the pinned in-repo corpus only; see STATUS.md.
 """
 
 from __future__ import annotations

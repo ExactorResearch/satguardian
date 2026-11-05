@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Sub-Millisecond Lexical Normalization, 128-Bit Integer Mask Evaluation, and EXACTOR GXOR Boolean Cloud Optimization">
+        <meta name="description" content="Research-prototype Rust edge WAF with u128 bitmask inspection and opt-in SATGuardian cloud rule synthesis that returns proposals you approve">
       
       
         <meta name="author" content="SATGuardian Cyber-Defense Systems">
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#guardian-waf-forensic-security-audit-report" class="md-skip">
+        <a href="#satguardian-edge-waf-forensic-security-audit-report" class="md-skip">
           Skip to content
         </a>
       
@@ -592,7 +592,7 @@
   <span class="md-ellipsis">
     
   
-    Complete Configuration Guide
+    Configuration Reference
   
 
     
@@ -620,7 +620,7 @@
   <span class="md-ellipsis">
     
   
-    Configuration & Operations
+    Operations & Tooling Guide
   
 
     
@@ -1199,10 +1199,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#4-rules-synthesized-by-the-multi-agent-advisor" class="md-nav__link">
+  <a href="#4-proposals-awaiting-your-approval" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. Rules Synthesized by the Multi-Agent Advisor
+        4. Proposals awaiting your approval
       
     </span>
   </a>
@@ -1372,10 +1372,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#4-rules-synthesized-by-the-multi-agent-advisor" class="md-nav__link">
+  <a href="#4-proposals-awaiting-your-approval" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. Rules Synthesized by the Multi-Agent Advisor
+        4. Proposals awaiting your approval
       
     </span>
   </a>
@@ -1402,9 +1402,9 @@
   
 
 
-<h1 id="guardian-waf-forensic-security-audit-report">GUARDIAN WAF — Forensic &amp; Security Audit Report</h1>
-<p><em>Generation Date:</em> 2026-11-01 21:38:55 UTC<br />
-<em>Scope:</em> Local demo ledger. This report is not a compliance attestation and this repository has not been independently audited.  </p>
+<h1 id="satguardian-edge-waf-forensic-security-audit-report">SATGuardian Edge WAF — Forensic &amp; Security Audit Report</h1>
+<p><em>Generation Date:</em> 2026-11-04 21:14:22 UTC<br />
+<em>Scope:</em> This client's own ledger, read locally. Not a compliance attestation; this repository has not been independently audited.  </p>
 <h2 id="1-executive-traffic-summary">1. Executive Traffic Summary</h2>
 <ul>
 <li><strong>Total Requests:</strong> 3,799</li>
@@ -1480,7 +1480,7 @@
 <tr>
 <td style="text-align: left;"><code>path_traversal</code></td>
 <td style="text-align: left;"><code>SAT-PATH-01,SAT-PATH-02</code></td>
-<td style="text-align: left;"><code>(DIRECT_SYSTEM_FILE_TARGET AND DIR_TRAVERSAL_DOT_DOT) violates [SAT-PATH-01 | SAT-PATH-02] -&gt; ACTION_BLOCK [path_traversal]</code></td>
+<td style="text-align: left;"><code>(DIRECT_SYSTEM_FILE_TARGET AND DIR_TRAVERSAL_DOT_DOT) violates [SAT-PATH-01 \| SAT-PATH-02] -&gt; ACTION_BLOCK [path_traversal]</code></td>
 <td style="text-align: center;">412</td>
 </tr>
 <tr>
@@ -1498,12 +1498,12 @@
 <tr>
 <td style="text-align: left;"><code>path_traversal</code></td>
 <td style="text-align: left;"><code>SAT-PATH-01,SAT-PATH-02,SAT-STATE-01</code></td>
-<td style="text-align: left;"><code>(DIRECT_SYSTEM_FILE_TARGET AND DIR_TRAVERSAL_DOT_DOT AND STATEFUL_BURST_RATE_LIMIT_EXCEEDED) violates [SAT-PATH-01 | SAT-PATH-02 | SAT-STATE-01] -&gt; ACTION_BLOCK [path_traversal]</code></td>
+<td style="text-align: left;"><code>(DIRECT_SYSTEM_FILE_TARGET AND DIR_TRAVERSAL_DOT_DOT AND STATEFUL_BURST_RATE_LIMIT_EXCEEDED) violates [SAT-PATH-01 \| SAT-PATH-02 \| SAT-STATE-01] -&gt; ACTION_BLOCK [path_traversal]</code></td>
 <td style="text-align: center;">60</td>
 </tr>
 </tbody>
 </table>
-<h2 id="4-rules-synthesized-by-the-multi-agent-advisor">4. Rules Synthesized by the Multi-Agent Advisor</h2>
+<h2 id="4-proposals-awaiting-your-approval">4. Proposals awaiting your approval</h2>
 <table>
 <thead>
 <tr>
@@ -1546,9 +1546,9 @@
 </tr>
 <tr>
 <td style="text-align: left;"><code>cloud_sync_pending_anomalies</code></td>
-<td style="text-align: left;">Detected 14 novel unobserved u128 minterm anomalies across 2136 recorded ledger occurrences pending EXACTOR GXOR cloud synthesis.</td>
+<td style="text-align: left;">Detected 14 novel unobserved u128 minterm anomalies across 2136 recorded ledger occurrences waiting for cloud review.</td>
 <td style="text-align: left;">Not replayed</td>
-<td style="text-align: left;">Compiles u128 minterms via EXACTOR GXOR into boolean invariants over {AND, OR, NOT, XOR}. Estimated consumption: 1 Security Unit (SU); size reduction is not measured in this repository.</td>
+<td style="text-align: left;">Sends the recorded u128 minterms to the SATGuardian service, which returns a Boolean invariant over {AND, OR, NOT, XOR} as a proposal — never as an applied rule. Estimated consumption: 1 Security Unit (SU); size reduction is not measured in this repository.</td>
 </tr>
 </tbody>
 </table>

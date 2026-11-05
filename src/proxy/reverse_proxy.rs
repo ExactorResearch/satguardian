@@ -95,7 +95,7 @@ pub async fn proxy_handler(
     // 1. Stateful Behavioral & Sliding Window Rate Limiting
     let stateful_verdict = state.stateful_limiter.check_and_update(&payload);
 
-    // 2. Sub-millisecond Fast-Path Evaluation (< 0.05 ms)
+    // 2. Fast-path bitmask evaluation (in-memory p50 ~20 µs on the pinned corpus)
     let proof: ProofChain = state
         .engine
         .evaluate_payload_with_verdict(&payload, Some(&stateful_verdict));

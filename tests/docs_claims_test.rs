@@ -34,6 +34,20 @@ const BANNED_VENDOR_LABELS: &[&str] = &[
     "ModSecurity CRS v3",
 ];
 
+// Framings the 2026-11-03 product narrative retired. Unlike BANNED_METRICS these have no
+// legitimate use, so they may not appear anywhere in the repo, retraction notes included.
+const BANNED_NARRATIVE: &[&str] = &[
+    "exactor gxor",
+    "sub-millisecond",
+    "submillisecond",
+    "fully optimized",
+    "zero risk",
+    "zero-risk",
+    "custom sla",
+    "24/7",
+    "--auto-approve",
+];
+
 const RETRACTION_MARKERS: &[&str] = &[
     "fabricated",
     "correction notice",
@@ -288,4 +302,84 @@ fn crate_metadata_does_not_claim_production_readiness() {
     let manifest = read(&repo_root().join("Cargo.toml")).to_ascii_lowercase();
     assert!(!manifest.contains("production-grade"));
     assert!(manifest.contains("research prototype"));
+}
+
+/// The framings the product narrative retired must not come back through any file.
+///
+/// These are phrasings, not numbers, so there is no version of them that becomes true later;
+/// a doc that needs to talk about the old copy can say "the unscoped latency claim".
+#[test]
+fn retired_narrative_phrases_do_not_reappear() {
+    let root = repo_root();
+    let mut files = Vec::new();
+    collect_scannable(&root, &mut files);
+    assert!(files.len() >= 50, "expected to scan docs and source, found only {} files", files.len());
+
+    let mut violations = Vec::new();
+    for file in &files {
+        let rel = file.strip_prefix(&root).unwrap_or(file).display().to_string();
+        for (idx, line) in read(file).to_ascii_lowercase().lines().enumerate() {
+            for phrase in BANNED_NARRATIVE {
+                if line.contains(phrase) {
+                    violations.push(format!("{}:{}: retired framing {:?} -> {}", rel, idx + 1, phrase, line.trim()));
+                }
+            }
+        }
+    }
+
+    assert!(
+        violations.is_empty(),
+        "the documentation reverted to a framing retired by the 2026-11-03 narrative:\n{}",
+        violations.join("\n")
+    );
+}
+
+/// The control boundary is the product promise; if the code moves, the docs must move first.
+#[test]
+fn cloud_review_stays_opt_in_and_never_applies_by_itself() {
+    let root = repo_root();
+
+    let config = read(&root.join("src/config.rs"));
+    let default_body = config
+        .split("fn default_auto_sync() -> bool {")
+        .nth(1)
+        .and_then(|rest| rest.split('}').next())
+        .unwrap_or("")
+        .trim()
+        .to_string();
+    assert_eq!(default_body, "false", "cloud auto-sync must stay off by default");
+
+    let shipped_config = read(&root.join("waf_config.toml"));
+    assert!(
+        shipped_config.contains("auto_sync_enabled = false"),
+        "the shipped waf_config.toml must not enable cloud sync"
+    );
+
+    let ledger = read(&root.join("src/ledger/sqlite_ledger.rs"));
+    for method in [
+        "propose_dynamic_clause",
+        "load_applied_clauses",
+        "approve_dynamic_clause",
+        "reject_dynamic_clause",
+    ] {
+        assert!(ledger.contains(method), "ledger lost the {method} approval boundary");
+    }
+    assert!(
+        !ledger.contains("pub async fn save_dynamic_clause"),
+        "an unconditional save is back: cloud output would reach the engine without approval"
+    );
+
+    let advisor = read(&root.join("satguardian-advisor.py"));
+    assert!(
+        !advisor.contains("auto_approve"),
+        "the advisor must keep asking; there is no batch approval"
+    );
+
+    let readme = read(&root.join("README.md")).to_ascii_lowercase();
+    for marker in ["proposal", "defaults to `false`", "until you approve"] {
+        assert!(
+            readme.contains(marker),
+            "README.md must document the approval gate ({marker:?})"
+        );
+    }
 }

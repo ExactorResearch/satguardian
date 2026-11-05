@@ -1,6 +1,6 @@
-# GUARDIAN WAF — Forensic & Security Audit Report
-*Generation Date:* 2026-11-01 21:38:55 UTC  
-*Scope:* Local demo ledger. This report is not a compliance attestation and this repository has not been independently audited.  
+# SATGuardian Edge WAF — Forensic & Security Audit Report
+*Generation Date:* 2026-11-04 21:14:22 UTC  
+*Scope:* This client's own ledger, read locally. Not a compliance attestation; this repository has not been independently audited.  
 
 ## 1. Executive Traffic Summary
 - **Total Requests:** 3,799
@@ -23,12 +23,12 @@
 | :--- | :--- | :--- | :---: |
 | `sql_injection` | `SAT-SQLI-01` | `(TAUTOLOGY_EQUALS) violates [SAT-SQLI-01] -> ACTION_BLOCK [sql_injection]` | 419 |
 | `xss` | `SAT-XSS-01` | `(SCRIPT_ELEMENT) violates [SAT-XSS-01] -> ACTION_BLOCK [xss]` | 417 |
-| `path_traversal` | `SAT-PATH-01,SAT-PATH-02` | `(DIRECT_SYSTEM_FILE_TARGET AND DIR_TRAVERSAL_DOT_DOT) violates [SAT-PATH-01 | SAT-PATH-02] -> ACTION_BLOCK [path_traversal]` | 412 |
+| `path_traversal` | `SAT-PATH-01,SAT-PATH-02` | `(DIRECT_SYSTEM_FILE_TARGET AND DIR_TRAVERSAL_DOT_DOT) violates [SAT-PATH-01 \| SAT-PATH-02] -> ACTION_BLOCK [path_traversal]` | 412 |
 | `sql_injection` | `SAT-SQLI-02` | `(SELECT_PROJECTION AND UNION_CLAUSE) violates [SAT-SQLI-02] -> ACTION_BLOCK [sql_injection]` | 412 |
 | `rate_limit_ddos` | `SAT-STATE-01` | `(STATEFUL_BURST_RATE_LIMIT_EXCEEDED) violates [SAT-STATE-01] -> ACTION_BLOCK [rate_limit_ddos]` | 234 |
-| `path_traversal` | `SAT-PATH-01,SAT-PATH-02,SAT-STATE-01` | `(DIRECT_SYSTEM_FILE_TARGET AND DIR_TRAVERSAL_DOT_DOT AND STATEFUL_BURST_RATE_LIMIT_EXCEEDED) violates [SAT-PATH-01 | SAT-PATH-02 | SAT-STATE-01] -> ACTION_BLOCK [path_traversal]` | 60 |
+| `path_traversal` | `SAT-PATH-01,SAT-PATH-02,SAT-STATE-01` | `(DIRECT_SYSTEM_FILE_TARGET AND DIR_TRAVERSAL_DOT_DOT AND STATEFUL_BURST_RATE_LIMIT_EXCEEDED) violates [SAT-PATH-01 \| SAT-PATH-02 \| SAT-STATE-01] -> ACTION_BLOCK [path_traversal]` | 60 |
 
-## 4. Rules Synthesized by the Multi-Agent Advisor
+## 4. Proposals awaiting your approval
 | Rule ID | Forensic Evidence | Ledger Replay | WAF Impact |
 | :--- | :--- | :--- | :--- |
 | `biz-ban-ip-169-254-54-10` | IP detected with 625 recorded attacks (benign, sql_injection, path_traversal, xss, rate_limit_ddos) and 80.2% verified hostility rate. | 154 collisions | Saves deep SAT evaluation by immediately dropping this IP in Fast-Path via SAT-BIZ-02. |
@@ -36,4 +36,4 @@
 | `biz-method-api-v1-search` | Route /api/v1/search exhibits legitimate traffic restricted to methods ['GET']. Hostile probing or unconstrained attack surface detected. | No collisions / 1663 allowed | Closes attack surface by dropping unsupported methods (DELETE, PUT, PATCH, TRACE, CONNECT) via SAT-BIZ-01. |
 | `biz-method-api-v1-users-profile` | Route /api/v1/users/profile exhibits legitimate traffic restricted to methods ['GET']. Hostile probing or unconstrained attack surface detected. | No collisions / 1663 allowed | Closes attack surface by dropping unsupported methods (DELETE, PUT, PATCH, TRACE, CONNECT) via SAT-BIZ-01. |
 | `biz-method-api-waf-metrics` | Route /api/waf/metrics exhibits legitimate traffic restricted to methods ['GET']. Hostile probing or unconstrained attack surface detected. | No collisions / 1663 allowed | Closes attack surface by dropping unsupported methods (DELETE, PUT, PATCH, TRACE, CONNECT) via SAT-BIZ-01. |
-| `cloud_sync_pending_anomalies` | Detected 14 novel unobserved u128 minterm anomalies across 2136 recorded ledger occurrences pending EXACTOR GXOR cloud synthesis. | Not replayed | Compiles u128 minterms via EXACTOR GXOR into boolean invariants over {AND, OR, NOT, XOR}. Estimated consumption: 1 Security Unit (SU); size reduction is not measured in this repository. |
+| `cloud_sync_pending_anomalies` | Detected 14 novel unobserved u128 minterm anomalies across 2136 recorded ledger occurrences waiting for cloud review. | Not replayed | Sends the recorded u128 minterms to the SATGuardian service, which returns a Boolean invariant over {AND, OR, NOT, XOR} as a proposal — never as an applied rule. Estimated consumption: 1 Security Unit (SU); size reduction is not measured in this repository. |
