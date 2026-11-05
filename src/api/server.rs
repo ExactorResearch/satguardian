@@ -55,6 +55,12 @@ pub fn create_api_router(state: Arc<ProxyState>) -> Router {
         )
         .route("/api/waf/rules/customer/:id", delete(delete_customer_rule))
         .route("/api/waf/sync-simplify", post(trigger_sync_simplify))
+        .route("/api/waf/clauses/pending", get(get_pending_clauses))
+        .route(
+            "/api/waf/clauses/:id/apply",
+            post(apply_pending_clause),
+        )
+        .route("/api/waf/clauses/:id", delete(reject_pending_clause))
         .route_layer(middleware::from_fn_with_state(
             state.clone(),
             require_admin_token,
@@ -256,7 +262,7 @@ async fn delete_customer_rule(
     }
 }
 
-/// Triggers autonomous Exact Boolean Minimization using https://satguardian.tech/api/simplify.
+/// Requests cloud review of the recorded anomalies and stores the result as proposals.
 async fn trigger_sync_simplify(State(state): State<Arc<ProxyState>>) -> Response {
     info!(target: "satguardian::sync", "Received request to synchronize novel anomalies with https://satguardian.tech");
 
@@ -327,16 +333,20 @@ async fn trigger_sync_simplify(State(state): State<Arc<ProxyState>>) -> Response
                 }
             };
 
-            let mut added = 0usize;
+            let mut proposed = Vec::new();
             let mut duplicates = 0usize;
             for clause in clauses {
-                if state.engine.register_dynamic_clause(clause.clone()) {
-                    if let Err(e) = state.ledger.save_dynamic_clause(&clause).await {
-                        error!(target: "satguardian::ledger", "Failed to persist dynamic clause: {}", e);
+                match state.ledger.propose_dynamic_clause(&clause).await {
+                    Ok(true) => proposed.push(serde_json::json!({
+                        "clause_id": clause.clause_id,
+                        "description": clause.description,
+                        "category": clause.category.as_str(),
+                    })),
+                    Ok(false) => duplicates += 1,
+                    Err(e) => {
+                        error!(target: "satguardian::ledger", "Failed to store proposed dynamic clause: {}", e);
+                        duplicates += 1;
                     }
-                    added += 1;
-                } else {
-                    duplicates += 1;
                 }
             }
 
@@ -358,20 +368,20 @@ async fn trigger_sync_simplify(State(state): State<Arc<ProxyState>>) -> Response
             info!(
                 target: "satguardian::sync",
                 reduction = %format!("{:.1}%", resp.reduction_percent),
-                hot_rules_added = added,
+                proposals = proposed.len(),
                 duplicates,
-                "Hot minimization complete. Dynamic clauses registered into in-memory Fast-Path."
+                "Cloud review complete. Clauses stored as proposals; the running rule set is unchanged."
             );
 
             Json(serde_json::json!({
-                "status": "success",
-                "message": "Exact Boolean Simplification completed via https://satguardian.tech",
+                "status": "proposed",
+                "message": "Cloud synthesis returned update proposals. Nothing was applied to the running rule set; approve each one with POST /api/waf/clauses/{clause_id}/apply.",
                 "minterms_processed": pending_minterms.len(),
                 "variables_count": variables.len(),
                 "reduction_percent": resp.reduction_percent,
                 "minimized_equation": resp.result,
                 "execution_time_ms": resp.execution_time_ms,
-                "dynamic_clauses_added": added,
+                "proposals": proposed,
                 "duplicate_clauses_skipped": duplicates,
                 "su_used": resp.su_used
             }))
@@ -384,6 +394,100 @@ async fn trigger_sync_simplify(State(state): State<Arc<ProxyState>>) -> Response
                 format!("Failed to reach SATGuardian Cloud at https://satguardian.tech: {}", err),
             )
                 .into_response()
+        }
+    }
+}
+
+/// Lists the cloud-synthesized clauses waiting for a decision.
+async fn get_pending_clauses(State(state): State<Arc<ProxyState>>) -> Response {
+    match state.ledger.load_pending_clauses().await {
+        Ok(pending) => Json(serde_json::json!({
+            "count": pending.len(),
+            "proposals": pending
+                .iter()
+                .map(|(clause, created_at)| serde_json::json!({
+                    "clause_id": clause.clause_id,
+                    "description": clause.description,
+                    "category": clause.category.as_str(),
+                    "required_mask": clause.required_mask.to_string(),
+                    "expected_bits": clause.expected_bits.to_string(),
+                    "proposed_at": created_at,
+                }))
+                .collect::<Vec<_>>(),
+        }))
+        .into_response(),
+        Err(e) => {
+            error!(target: "satguardian::ledger", "Failed to read pending clauses: {}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, format!("DB error: {}", e)).into_response()
+        }
+    }
+}
+
+/// The approval step: registers one proposal in the running engine and marks it applied.
+async fn apply_pending_clause(
+    State(state): State<Arc<ProxyState>>,
+    Path(id): Path<String>,
+) -> Response {
+    match state.ledger.approve_dynamic_clause(&id).await {
+        Ok(Some(clause)) => {
+            let enforcing = state.engine.register_dynamic_clause(clause.clone());
+            info!(
+                target: "satguardian::sync",
+                clause_id = %id,
+                enforcing,
+                "Proposal approved by operator"
+            );
+            Json(serde_json::json!({
+                "status": "approved",
+                "clause_id": id,
+                "description": clause.description,
+                "enforcing_now": enforcing,
+                "note": if enforcing {
+                    "Clause is active for new requests."
+                } else {
+                    "Clause is saved and will load on restart; it duplicates an active rule or the clause cap was reached."
+                }
+            }))
+            .into_response()
+        }
+        Ok(None) => (
+            StatusCode::NOT_FOUND,
+            Json(serde_json::json!({
+                "error": "no_pending_proposal",
+                "clause_id": id,
+                "hint": "GET /api/waf/clauses/pending lists the proposals waiting for a decision."
+            })),
+        )
+            .into_response(),
+        Err(e) => {
+            error!(target: "satguardian::ledger", "Failed to approve clause {}: {}", id, e);
+            (StatusCode::INTERNAL_SERVER_ERROR, format!("DB error: {}", e)).into_response()
+        }
+    }
+}
+
+/// Discards a proposal. Rules already enforcing are never removed by this endpoint.
+async fn reject_pending_clause(
+    State(state): State<Arc<ProxyState>>,
+    Path(id): Path<String>,
+) -> Response {
+    match state.ledger.reject_dynamic_clause(&id).await {
+        Ok(true) => {
+            info!(target: "satguardian::sync", clause_id = %id, "Proposal rejected by operator");
+            Json(serde_json::json!({ "status": "rejected", "clause_id": id })).into_response()
+        }
+        Ok(false) => (
+            StatusCode::NOT_FOUND,
+            Json(serde_json::json!({
+                "error": "no_pending_proposal",
+                "clause_id": id,
+                "note": "Only proposals awaiting a decision can be rejected; active rules are not deleted here."
+            })),
+        )
+            .into_response(),
+        Err(e) => {
+            error!(target: "satguardian::ledger", "Failed to reject clause {}: {}", id, e);
+            (StatusCode::INTERNAL_SERVER_ERROR, format!("DB error: {}", e)).into_response()
         }
     }
 }

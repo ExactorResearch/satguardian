@@ -67,9 +67,9 @@ Copy-Item -Path "$ProjectRoot\uninstall.ps1" -Destination "$StagingDir\uninstall
 # 4. Generate README_INSTALL.txt for End Clients
 $ReadmeLines = @(
     "================================================================================",
-    "  SATGUARDIAN EDGE WAF - ZERO-DEPENDENCY CLIENT INSTALLATION PACKAGE",
-    "  Deterministic SAT Cyber-Defense and Sub-millisecond Reverse Proxy",
-    "  100% Free Edge Traffic | Cloud Synthesis at https://satguardian.tech",
+    "  SATGUARDIAN EDGE WAF - SELF-CONTAINED CLIENT INSTALLATION PACKAGE",
+    "  Deterministic u128 bitmask evaluation — research prototype, not production-ready",
+    "  Free edge traffic | opt-in cloud review at https://satguardian.tech",
     "================================================================================",
     "",
     "This package is 100% self-contained. The client does NOT need Rust,",

@@ -6,8 +6,9 @@ use serde::{Deserialize, Serialize};
 use std::time::Duration;
 use tracing::{error, info};
 
-/// Request format matching SATGuardian / EXACTOR GXOR Cloud Optimization API endpoint: `POST /api/simplify`.
-/// Simplifies up to 128 Boolean variables (`u128` minterms) using the `{AND, OR, NOT, XOR}` operator basis.
+/// Request format for the SATGuardian cloud synthesis endpoint: `POST /api/simplify`.
+/// The minimization itself runs server-side; the client only sends minterms and evaluates what
+/// comes back after an operator approves it. Up to 128 variables (`u128` minterms).
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SimplifyRequest {
     pub variables: Vec<String>,

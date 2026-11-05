@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Sub-Millisecond Lexical Normalization, 128-Bit Integer Mask Evaluation, and EXACTOR GXOR Boolean Cloud Optimization">
+        <meta name="description" content="Research-prototype Rust edge WAF with u128 bitmask inspection and opt-in SATGuardian cloud rule synthesis that returns proposals you approve">
       
       
         <meta name="author" content="SATGuardian Cyber-Defense Systems">
@@ -510,22 +510,22 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#quick-start-standalone-binary-test-drive-60-seconds" class="md-nav__link">
+  <a href="#quick-start-build-and-test-drive" class="md-nav__link">
     <span class="md-ellipsis">
       
-        ⚡ Quick Start: Standalone Binary Test Drive (60 Seconds)
+        ⚡ Quick Start: Build and Test Drive
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="⚡ Quick Start: Standalone Binary Test Drive (60 Seconds)">
+    <nav class="md-nav" aria-label="⚡ Quick Start: Build and Test Drive">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#1-download-the-pre-compiled-standalone-binary" class="md-nav__link">
+  <a href="#1-build-the-standalone-binary" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1️⃣ Download the Pre-Compiled Standalone Binary
+        1️⃣ Build the standalone binary
       
     </span>
   </a>
@@ -544,10 +544,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#3-run-the-built-in-standalone-benchmark-10000-requests" class="md-nav__link">
+  <a href="#3-run-the-built-in-benchmark-10000-requests" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3️⃣ Run the Built-In Standalone Benchmark (10,000 Requests)
+        3️⃣ Run the Built-In Benchmark (10,000 Requests)
       
     </span>
   </a>
@@ -594,10 +594,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#22-out-of-band-cloud-synthesis-exactor-gxor-srccloudsatguardian_clientrs" class="md-nav__link">
+  <a href="#22-opt-in-cloud-synthesis-srccloudsatguardian_clientrs" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2.2 Out-of-Band Cloud Synthesis: EXACTOR GXOR (src/cloud/satguardian_client.rs)
+        2.2 Opt-in Cloud Synthesis (src/cloud/satguardian_client.rs)
       
     </span>
   </a>
@@ -610,15 +610,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-decision-in-sample-measurements-business-value" class="md-nav__link">
+  <a href="#3-decision-what-has-been-measured" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. Decision: In-Sample Measurements &amp; Business Value
+        3. Decision: What Has Been Measured
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="3. Decision: In-Sample Measurements &amp; Business Value">
+    <nav class="md-nav" aria-label="3. Decision: What Has Been Measured">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -644,10 +644,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#33-100-on-premise-traffic-sovereignty" class="md-nav__link">
+  <a href="#33-the-held-out-measurement-corpusheldout_v2json" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3.3 100% On-Premise Traffic Sovereignty
+        3.3 The held-out measurement (corpus/heldout_v2.json)
       
     </span>
   </a>
@@ -655,10 +655,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#34-pricing-licensing-zero-traffic-tax" class="md-nav__link">
+  <a href="#34-100-on-premise-traffic-sovereignty" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3.4 Pricing &amp; Licensing: Zero Traffic Tax
+        3.4 100% On-Premise Traffic Sovereignty
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#35-pricing-licensing-zero-traffic-tax" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.5 Pricing &amp; Licensing: Zero Traffic Tax
       
     </span>
   </a>
@@ -671,22 +682,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#4-action-getting-started-in-4-easy-steps" class="md-nav__link">
+  <a href="#4-action-getting-started-in-six-steps" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. Action: Getting Started in 4 Easy Steps
+        4. Action: Getting Started in Six Steps
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="4. Action: Getting Started in 4 Easy Steps">
+    <nav class="md-nav" aria-label="4. Action: Getting Started in Six Steps">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#step-1-download-run-the-standalone-binary-benchmark-30-seconds" class="md-nav__link">
+  <a href="#step-1-build-and-run-the-benchmark" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 1: Download &amp; Run the Standalone Binary Benchmark (30 Seconds)
+        Step 1: Build and run the benchmark
       
     </span>
   </a>
@@ -716,10 +727,32 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#step-4-generate-forensic-audit-reports-schedule-a-technical-demo" class="md-nav__link">
+  <a href="#step-4-turn-on-cloud-review-and-decide-what-reaches-the-waf" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 4: Generate Forensic Audit Reports &amp; Schedule a Technical Demo
+        Step 4: Turn on cloud review and decide what reaches the WAF
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-5-generate-forensic-audit-reports" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5: Generate Forensic Audit Reports
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-6-check-the-rule-set-without-the-cloud" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 6: Check the rule set without the cloud
       
     </span>
   </a>
@@ -859,7 +892,7 @@
   <span class="md-ellipsis">
     
   
-    Complete Configuration Guide
+    Configuration Reference
   
 
     
@@ -887,7 +920,7 @@
   <span class="md-ellipsis">
     
   
-    Configuration & Operations
+    Operations & Tooling Guide
   
 
     
@@ -1510,22 +1543,22 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#quick-start-standalone-binary-test-drive-60-seconds" class="md-nav__link">
+  <a href="#quick-start-build-and-test-drive" class="md-nav__link">
     <span class="md-ellipsis">
       
-        ⚡ Quick Start: Standalone Binary Test Drive (60 Seconds)
+        ⚡ Quick Start: Build and Test Drive
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="⚡ Quick Start: Standalone Binary Test Drive (60 Seconds)">
+    <nav class="md-nav" aria-label="⚡ Quick Start: Build and Test Drive">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#1-download-the-pre-compiled-standalone-binary" class="md-nav__link">
+  <a href="#1-build-the-standalone-binary" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1️⃣ Download the Pre-Compiled Standalone Binary
+        1️⃣ Build the standalone binary
       
     </span>
   </a>
@@ -1544,10 +1577,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#3-run-the-built-in-standalone-benchmark-10000-requests" class="md-nav__link">
+  <a href="#3-run-the-built-in-benchmark-10000-requests" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3️⃣ Run the Built-In Standalone Benchmark (10,000 Requests)
+        3️⃣ Run the Built-In Benchmark (10,000 Requests)
       
     </span>
   </a>
@@ -1594,10 +1627,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#22-out-of-band-cloud-synthesis-exactor-gxor-srccloudsatguardian_clientrs" class="md-nav__link">
+  <a href="#22-opt-in-cloud-synthesis-srccloudsatguardian_clientrs" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2.2 Out-of-Band Cloud Synthesis: EXACTOR GXOR (src/cloud/satguardian_client.rs)
+        2.2 Opt-in Cloud Synthesis (src/cloud/satguardian_client.rs)
       
     </span>
   </a>
@@ -1610,15 +1643,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-decision-in-sample-measurements-business-value" class="md-nav__link">
+  <a href="#3-decision-what-has-been-measured" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. Decision: In-Sample Measurements &amp; Business Value
+        3. Decision: What Has Been Measured
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="3. Decision: In-Sample Measurements &amp; Business Value">
+    <nav class="md-nav" aria-label="3. Decision: What Has Been Measured">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1644,10 +1677,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#33-100-on-premise-traffic-sovereignty" class="md-nav__link">
+  <a href="#33-the-held-out-measurement-corpusheldout_v2json" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3.3 100% On-Premise Traffic Sovereignty
+        3.3 The held-out measurement (corpus/heldout_v2.json)
       
     </span>
   </a>
@@ -1655,10 +1688,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#34-pricing-licensing-zero-traffic-tax" class="md-nav__link">
+  <a href="#34-100-on-premise-traffic-sovereignty" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3.4 Pricing &amp; Licensing: Zero Traffic Tax
+        3.4 100% On-Premise Traffic Sovereignty
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#35-pricing-licensing-zero-traffic-tax" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.5 Pricing &amp; Licensing: Zero Traffic Tax
       
     </span>
   </a>
@@ -1671,22 +1715,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#4-action-getting-started-in-4-easy-steps" class="md-nav__link">
+  <a href="#4-action-getting-started-in-six-steps" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. Action: Getting Started in 4 Easy Steps
+        4. Action: Getting Started in Six Steps
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="4. Action: Getting Started in 4 Easy Steps">
+    <nav class="md-nav" aria-label="4. Action: Getting Started in Six Steps">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#step-1-download-run-the-standalone-binary-benchmark-30-seconds" class="md-nav__link">
+  <a href="#step-1-build-and-run-the-benchmark" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 1: Download &amp; Run the Standalone Binary Benchmark (30 Seconds)
+        Step 1: Build and run the benchmark
       
     </span>
   </a>
@@ -1716,10 +1760,32 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#step-4-generate-forensic-audit-reports-schedule-a-technical-demo" class="md-nav__link">
+  <a href="#step-4-turn-on-cloud-review-and-decide-what-reaches-the-waf" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 4: Generate Forensic Audit Reports &amp; Schedule a Technical Demo
+        Step 4: Turn on cloud review and decide what reaches the WAF
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-5-generate-forensic-audit-reports" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5: Generate Forensic Audit Reports
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-6-check-the-rule-set-without-the-cloud" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 6: Check the rule set without the cloud
       
     </span>
   </a>
@@ -1760,68 +1826,71 @@ or ModSecurity. See <a href="status/">STATUS.md</a> and <a href="corpus/">corpus
 for the evidence and its limits.</p>
 </blockquote>
 <p><strong>📚 Official Documentation:</strong> <a href="https://exactorresearch.github.io/satguardian/">https://exactorresearch.github.io/satguardian/</a></p>
-<p><a href="#2-consideration-the-solution--satguardian-architecture"><img alt="Architecture" src="https://img.shields.io/badge/Architecture-Lexical_&amp;_Bitmask_WAF-blue.svg" /></a>
-<a href="#3-decision-in-sample-measurements-business-value"><img alt="Performance" src="https://img.shields.io/badge/Hot_Path-In--Memory_p50_~20_µs-brightgreen.svg" /></a>
-<a href="#22-out-of-band-cloud-synthesis-exactor-gxor"><img alt="Synthesis" src="https://img.shields.io/badge/Rule_Synthesis-EXACTOR_GXOR_(128_Vars)-orange.svg" /></a>
-<a href="#33-pricing--licensing-zero-traffic-tax"><img alt="License" src="https://img.shields.io/badge/Edge_WAF-100%25_Free_&amp;_Unlimited_Traffic-success.svg" /></a></p>
+<p><a href="#2-consideration-the-solution-satguardian-architecture"><img alt="Architecture" src="https://img.shields.io/badge/Architecture-Lexical_&amp;_Bitmask_WAF-blue.svg" /></a>
+<a href="#3-decision-what-has-been-measured"><img alt="Performance" src="https://img.shields.io/badge/Hot_Path-In--Memory_p50_~20_µs-brightgreen.svg" /></a>
+<a href="#22-opt-in-cloud-synthesis-srccloudsatguardian_clientrs"><img alt="Synthesis" src="https://img.shields.io/badge/Rule_Synthesis-Opt--in_Cloud%2C_Approved_locally-orange.svg" /></a>
+<a href="#35-pricing-licensing-zero-traffic-tax"><img alt="License" src="https://img.shields.io/badge/Edge_WAF-100%25_Free_&amp;_Unlimited_Traffic-success.svg" /></a></p>
 <p><strong>SATGuardian Edge WAF</strong> is an experimental, self-hosted Web Application Firewall
 written in Rust. It evaluates security logic with <strong>128-bit integer bitmasks
-(<code>u128</code>)</strong> in microseconds on the edge, backed by out-of-band <strong>EXACTOR GXOR</strong>
-boolean cloud optimization. Detection quality is <strong>measured, not assumed</strong>: the
-numbers below come from a versioned corpus and a reproducible benchmark, and they
-are explicitly in-sample.</p>
+(<code>u128</code>)</strong> in microseconds on the edge, and can — only if you turn it on — send
+recorded anomalies to <strong>SATGuardian cloud synthesis</strong> for review. Detection quality
+is <strong>measured, not assumed</strong>: the numbers below come from a versioned corpus and a
+reproducible benchmark, one held-out batch of them included.</p>
+<p>The product promise: <strong>free, you get local protection; paying, you get ongoing review, update proposals and explanations — without ever giving up control of your WAF.</strong> The local client and <code>satguardian-health</code> stay free, read-only and offline. Cloud review is opt-in (<code>auto_sync_enabled</code> defaults to <code>false</code>) and what it returns is stored as a <strong>proposal</strong>: nothing enters the running rule set until you approve it with <code>satguardian-waf clauses apply &lt;id&gt;</code> or <code>POST /api/waf/clauses/{id}/apply</code>. The messaging bot (Telegram/WhatsApp) is announced on the site, not available yet.</p>
 <hr />
-<h2 id="quick-start-standalone-binary-test-drive-60-seconds">⚡ Quick Start: Standalone Binary Test Drive (60 Seconds)</h2>
-<p>Evaluate SATGuardian Edge WAF in <strong>Standalone Mode</strong> with <strong>zero external dependencies</strong> using the pre-compiled binary:</p>
-<h3 id="1-download-the-pre-compiled-standalone-binary">1️⃣ Download the Pre-Compiled Standalone Binary</h3>
-<p>Download the self-contained binary for your platform (no Rust runtime, Node, or compilers required):</p>
-<ul>
-<li><strong>Linux (x86_64 / glibc):</strong>
-  <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>curl<span class="w"> </span>-L<span class="w"> </span>-O<span class="w"> </span>https://github.com/SATGuardian/satguardian/releases/download/v0.3.0/satguardian-waf-linux-amd64
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>chmod<span class="w"> </span>+x<span class="w"> </span>satguardian-waf-linux-amd64
-</code></pre></div></li>
-<li><strong>Windows (x64 PowerShell):</strong>
-  <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nb">Invoke-WebRequest</span> <span class="n">-Uri</span> <span class="s2">&quot;https://github.com/SATGuardian/satguardian/releases/download/v0.3.0/satguardian-waf-v0.3.0.exe&quot;</span> <span class="n">-OutFile</span> <span class="s2">&quot;satguardian-waf.exe&quot;</span>
-</code></pre></div></li>
-</ul>
+<h2 id="quick-start-build-and-test-drive">⚡ Quick Start: Build and Test Drive</h2>
+<p>Evaluate SATGuardian Edge WAF in <strong>Standalone Mode</strong> with no database, broker or sidecar — the only
+requirement is a Rust toolchain.</p>
+<h3 id="1-build-the-standalone-binary">1️⃣ Build the standalone binary</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/ExactorResearch/satguardian.git
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nb">cd</span><span class="w"> </span>satguardian
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>cargo<span class="w"> </span>build<span class="w"> </span>--release
+</code></pre></div>
+<blockquote>
+<p><strong>Do not use the archived <code>dist/</code> and <code>releases/</code> artefacts.</strong> They were cut on 2026-10-14/17,
+before the claim corrections and before the cloud-review approval gate existed. Those binaries
+still print the old banner text and apply cloud clauses to the running engine without asking;
+they are kept only as build history.</p>
+</blockquote>
 <h3 id="2-launch-the-standalone-reverse-proxy-test-live-threat-detection">2️⃣ Launch the Standalone Reverse Proxy &amp; Test Live Threat Detection</h3>
-<p>Spin up SATGuardian as a standalone frontline proxy and test real-time attack blocking with <code>curl</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Terminal A: Start standalone WAF proxy on port 8080 forwarding to your application (port 3000)</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>./satguardian-waf<span class="w"> </span>proxy<span class="w"> </span>--listen<span class="w"> </span><span class="m">127</span>.0.0.1:8080<span class="w"> </span>--upstream<span class="w"> </span>http://127.0.0.1:3000
+<p>Spin up SATGuardian as a standalone frontline proxy and test attack blocking with <code>curl</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Terminal A: Start standalone WAF proxy on port 8080 forwarding to your application (port 3000)</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="c1"># Linux/macOS: ./target/release/satguardian-waf   Windows: .\target\release\satguardian-waf.exe</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>./target/release/satguardian-waf<span class="w"> </span>proxy<span class="w"> </span>--listen<span class="w"> </span><span class="m">127</span>.0.0.1:8080<span class="w"> </span>--upstream<span class="w"> </span>http://127.0.0.1:3000
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="c1"># Terminal B: Test a benign request (Allowed -&gt; HTTP 200 OK)</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>curl<span class="w"> </span>-i<span class="w"> </span>http://localhost:8080/api/users?search<span class="o">=</span>john_doe
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="c1"># Terminal B: Test a SQLi + XSS multi-vector attack (Blocked -&gt; HTTP 403 Forbidden)</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>curl<span class="w"> </span>-i<span class="w"> </span><span class="s2">&quot;http://localhost:8080/api/users?search=1%27%20UNION%20SELECT%20*%20FROM%20users--%20%3Cscript%3Ealert(1)%3C/script%3E&quot;</span>
+</code></pre></div>
+<h3 id="3-run-the-built-in-benchmark-10000-requests">3️⃣ Run the Built-In Benchmark (10,000 Requests)</h3>
+<p>Measure single-core CPU throughput and in-memory bitmask evaluation latency:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Windows</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>.<span class="se">\t</span>arget<span class="se">\r</span>elease<span class="se">\s</span>atguardian-waf.exe<span class="w"> </span>benchmark<span class="w"> </span>-r<span class="w"> </span><span class="m">10000</span>
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># Terminal B: Test a benign request (Allowed -&gt; HTTP 200 OK)</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>curl<span class="w"> </span>-i<span class="w"> </span>http://localhost:8080/api/users?search<span class="o">=</span>john_doe
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="c1"># Terminal B: Test a SQLi + XSS multi-vector attack (Blocked -&gt; HTTP 403 Forbidden)</span>
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>curl<span class="w"> </span>-i<span class="w"> </span><span class="s2">&quot;http://localhost:8080/api/users?search=1%27%20UNION%20SELECT%20*%20FROM%20users--%20%3Cscript%3Ealert(1)%3C/script%3E&quot;</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># Linux</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>./target/release/satguardian-waf<span class="w"> </span>benchmark<span class="w"> </span>-r<span class="w"> </span><span class="m">10000</span>
 </code></pre></div>
-<h3 id="3-run-the-built-in-standalone-benchmark-10000-requests">3️⃣ Run the Built-In Standalone Benchmark (10,000 Requests)</h3>
-<p>Measure real single-core CPU throughput and sub-millisecond bitmask evaluation latency directly with the standalone binary:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Windows</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>.<span class="se">\s</span>atguardian-waf.exe<span class="w"> </span>benchmark<span class="w"> </span>-r<span class="w"> </span><span class="m">10000</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># Linux</span>
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>./satguardian-waf<span class="w"> </span>benchmark<span class="w"> </span>-r<span class="w"> </span><span class="m">10000</span>
-</code></pre></div>
-<p><em>(Note: Developers can also build directly from source using <code>cargo run --release -- benchmark -r 10000</code>)</em></p>
+<p><em>(Or skip the build step and run either command with <code>cargo run --release -- &lt;subcommand&gt;</code>)</em></p>
 <hr />
 <h2 id="1-awareness-the-problem-with-traditional-wafs">1. Awareness: The Problem with Traditional WAFs</h2>
 <p>Modern API gateways, microservices, and web applications face an impossible security trade-off:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>                  ┌─────────────────────────────────────────┐
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>                  │ THE TRADITIONAL WAF DILEMMA             │
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>                  └─────────────────────────────────────────┘
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>                                       │
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>        ┌──────────────────────────────┴──────────────────────────────┐
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>        ▼                                                             ▼
-<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>┌──────────────────────────────┐                            ┌──────────────────────────────┐
-<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>│  Regex &amp; Anomaly Scoring     │                            │  Probabilistic &quot;AI/ML&quot; WAFs  │
-<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>│  (ModSecurity / Coraza CRS)  │                            │  (NLP / Token Weights)       │
-<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>├──────────────────────────────┤                            ├──────────────────────────────┤
-<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>│ ❌ Heavy CPU Overhead        │                            │ ❌ High False Positive Rates │
-<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>│    (rule-set dependent)      │                            │    (Blocks technical prose)  │
-<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>│ ❌ Evasion Vulnerability     │                            │ ❌ Unpredictable Box Black   │
-<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>│    (Triple URL / Comment)    │                            │    (Zero auditability)       │
-<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>└──────────────────────────────┘                            └──────────────────────────────┘
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>                  ┌─────────────────────────────────────────┐
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>                  │ THE TRADITIONAL WAF DILEMMA             │
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>                  └─────────────────────────────────────────┘
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>                                       │
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>        ┌──────────────────────────────┴──────────────────────────────┐
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>        ▼                                                             ▼
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>┌──────────────────────────────┐                            ┌──────────────────────────────┐
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>│  Regex &amp; Anomaly Scoring     │                            │  Probabilistic &quot;AI/ML&quot; WAFs  │
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>│  (ModSecurity / Coraza CRS)  │                            │  (NLP / Token Weights)       │
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>├──────────────────────────────┤                            ├──────────────────────────────┤
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>│ ❌ Heavy CPU Overhead        │                            │ ❌ High False Positive Rates │
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>│    (rule-set dependent)      │                            │    (Blocks technical prose)  │
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>│ ❌ Evasion Vulnerability     │                            │ ❌ Unpredictable Box Black   │
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>│    (Triple URL / Comment)    │                            │    (Zero auditability)       │
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>└──────────────────────────────┘                            └──────────────────────────────┘
 </code></pre></div>
 <ol>
 <li><strong>The Latency Tax of Rule Sets:</strong> Evaluating many regular expressions across
@@ -1839,31 +1908,36 @@ are explicitly in-sample.</p>
 </ol>
 <hr />
 <h2 id="2-consideration-the-solution-satguardian-architecture">2. Consideration: The Solution — SATGuardian Architecture</h2>
-<p>SATGuardian resolves this dilemma by decoupling <strong>in-path edge inspection</strong> from <strong>out-of-band boolean rule synthesis</strong>.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>┌────────────────────────────────────────────────────────────────────────────┐
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>│ 1. HOT PATH: SOVEREIGN EDGE WAF (100% On-Premise, Unlimited Free Traffic)  │
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>│                                                                            │
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>│  HTTP Request ──► Multi-Pass Lexer ──► 128-Bit FeatureVector (u128)        │
-<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>│                   (src/ast/lexer.rs)   (src/ast/features.rs)               │
-<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>│                                                 │                          │
-<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>│                                                 ▼                          │
-<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>│                                 Bitwise Rule Mask Evaluation               │
-<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>│                                 (minterm &amp; mask) == expected               │
-<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>│                                 (~20 µs p50 in-memory, native Rust)        │
-<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>│                                        /               \                   │
-<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>│                                   [ALLOW]             [BLOCK + Causal Log] │
-<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a>└─────────────────────────────────────────────────────────┬──────────────────┘
-<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>                                                          │ Async SQLite
-<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>                                                          ▼
-<a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a>┌────────────────────────────────────────────────────────────────────────────┐
-<a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a>│ 2. CONTROL PLANE: OFFLINE ADVISOR &amp; CLOUD SYNTHESIS (Security Units - SU) │
-<a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a>│                                                                            │
-<a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a>│  waf_ledger.db ──► EXACTOR GXOR (AND, OR, NOT, XOR)    ──► Digital Twin    │
-<a id="__codelineno-5-20" name="__codelineno-5-20" href="#__codelineno-5-20"></a>│  (3,799 logs)      128-Variable Boolean Minimization       Replay (FP gate) │
-<a id="__codelineno-5-21" name="__codelineno-5-21" href="#__codelineno-5-21"></a>│                    (src/cloud/satguardian_client.rs)             │         │
-<a id="__codelineno-5-22" name="__codelineno-5-22" href="#__codelineno-5-22"></a>│                                                                  ▼         │
-<a id="__codelineno-5-23" name="__codelineno-5-23" href="#__codelineno-5-23"></a>│                                                   Atomic ArcSwap Hot-Reload│
-<a id="__codelineno-5-24" name="__codelineno-5-24" href="#__codelineno-5-24"></a>└────────────────────────────────────────────────────────────────────────────┘
+<p>SATGuardian resolves this dilemma by decoupling <strong>in-path edge inspection</strong> from <strong>opt-in cloud rule synthesis</strong>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>┌────────────────────────────────────────────────────────────────────────────┐
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>│ 1. HOT PATH: SOVEREIGN EDGE WAF (100% On-Premise, Unlimited Free Traffic)  │
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>│                                                                            │
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>│  HTTP Request ──► Multi-Pass Lexer ──► 128-Bit FeatureVector (u128)        │
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>│                   (src/ast/lexer.rs)   (src/ast/features.rs)               │
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>│                                                 │                          │
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>│                                                 ▼                          │
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>│                                 Bitwise Rule Mask Evaluation               │
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>│                                 (minterm &amp; mask) == expected               │
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>│                                 (~20 µs p50 in-memory, native Rust)        │
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>│                                        /               \                   │
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>│                                   [ALLOW]             [BLOCK + Causal Log] │
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>└─────────────────────────────────────────────────────────┬──────────────────┘
+<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>                                                          │ Async SQLite
+<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>                                                          ▼
+<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a>┌────────────────────────────────────────────────────────────────────────────┐
+<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a>│ 2. CONTROL PLANE: OPT-IN CLOUD REVIEW (Security Units - SU)                │
+<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a>│                                                                            │
+<a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a>│  waf_ledger.db ──► SATGuardian cloud synthesis ──► Digital Twin Replay     │
+<a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a>│  (novel anomalies)  (runs on satguardian.tech,     (collision check on     │
+<a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a>│                      not in this binary)            recorded traffic)      │
+<a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a>│                                       │                                    │
+<a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a>│                                       ▼                                    │
+<a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a>│                          PROPOSAL in the ledger (applied = 0)              │
+<a id="__codelineno-4-25" name="__codelineno-4-25" href="#__codelineno-4-25"></a>│                                       │  operator approves:                │
+<a id="__codelineno-4-26" name="__codelineno-4-26" href="#__codelineno-4-26"></a>│                                       │  clauses apply / POST .../apply    │
+<a id="__codelineno-4-27" name="__codelineno-4-27" href="#__codelineno-4-27"></a>│                                       ▼                                    │
+<a id="__codelineno-4-28" name="__codelineno-4-28" href="#__codelineno-4-28"></a>│                     Approved clause registered in the live engine          │
+<a id="__codelineno-4-29" name="__codelineno-4-29" href="#__codelineno-4-29"></a>└────────────────────────────────────────────────────────────────────────────┘
 </code></pre></div>
 <h3 id="21-native-rust-in-path-edge-engine-src">2.1 Native Rust In-Path Edge Engine (<code>src/</code>)</h3>
 <ul>
@@ -1872,14 +1946,22 @@ are explicitly in-sample.</p>
 <li><strong>Bitmask Conjunction Evaluation (<code>src/engine/sat_solver.rs</code>):</strong> Compares request minterms against compiled rule masks via bitwise <code>AND</code> operations (<code>(minterm &amp; required_mask) == expected_bits</code>). On the pinned corpus at 10,000 requests the native engine measured roughly <code>20 µs</code> p50 and <code>22–25 µs</code> mean in-memory; p99 is load dependent and has measured <code>50–60 µs</code>.</li>
 <li><strong>Structural token conjunctions:</strong> Rules require combinations such as <code>TAG_OPEN</code> <span class="arithmatex">\(\land\)</span> <code>SCRIPT_ELEMENT</code> <span class="arithmatex">\(\land\)</span> <code>DOM_EXEC</code> instead of single keywords. False positives are counted on the pinned corpus; the engine does not claim zero FPs.</li>
 </ul>
-<h3 id="22-out-of-band-cloud-synthesis-exactor-gxor-srccloudsatguardian_clientrs">2.2 Out-of-Band Cloud Synthesis: EXACTOR GXOR (<code>src/cloud/satguardian_client.rs</code>)</h3>
-<p>When novel attack patterns are recorded in <code>waf_ledger.db</code>, SATGuardian sends the 128-bit minterms to the <strong>EXACTOR GXOR</strong> cloud optimization engine:
-* <strong>Linear <span class="arithmatex">\(O(\text{term\_count})\)</span> Scaling:</strong> Uses Differential Gray Code Mapping (<code>modify_gray_code</code>) to locate logical neighbors in <span class="arithmatex">\(O(1)\)</span> constant time, avoiding the <span class="arithmatex">\(O(2^n)\)</span> exponential blow-up of classical Quine-McCluskey / Espresso minimizers.
-* <strong>Full Operator Basis <code>{AND, OR, NOT, XOR}</code>:</strong> Minimizes parity, equivalence, and symmetric security predicates across <strong>up to 128 variables (<code>u128</code>)</strong>. The size reduction versus a naive Sum-of-Products expansion is not measured in this repository.
-* <strong>Digital Twin Replay:</strong> Replays candidate rules against recorded benign traffic (<code>satguardian-advisor.py</code>), reports collisions, and requires human approval before hot-reloading via lock-free <code>ArcSwap</code>.</p>
+<h3 id="22-opt-in-cloud-synthesis-srccloudsatguardian_clientrs">2.2 Opt-in Cloud Synthesis (<code>src/cloud/satguardian_client.rs</code>)</h3>
+<p>Nothing leaves the node unless you enable it: <code>auto_sync_enabled</code> defaults to <code>false</code>. When cloud review runs (the timer worker, <code>satguardian-waf sync-simplify</code>, or <code>POST /api/waf/sync-simplify</code>), the client posts the <code>u128</code> feature vectors it recorded as novel anomalies — not raw requests, headers, bodies or client IPs — and the service answers with a minimized Boolean equation. Minimization runs on the SATGuardian service; it is not compiled into this binary and is not distributed to customers.</p>
+<p>What the client does with that answer:</p>
+<ul>
+<li><strong>Validates it.</strong> The equation is parsed into <code>(mask, expected)</code> clauses. A malformed equation, or one that yields no usable clause, is refused and the ledger is left untouched.</li>
+<li><strong>Stores it as a proposal</strong> (<code>dynamic_clauses.applied = 0</code>). A proposal is not evaluated by the engine and is not loaded at startup.</li>
+<li><strong>Waits for your decision.</strong> <code>satguardian-waf clauses list | apply &lt;id&gt; | reject &lt;id&gt;</code>, or <code>GET /api/waf/clauses/pending</code>, <code>POST /api/waf/clauses/{id}/apply</code>, <code>DELETE /api/waf/clauses/{id}</code> behind the admin token. Only an approved clause is registered in the live engine — an <code>RwLock</code>-guarded dynamic clause table capped at 4,096 entries, deduplicated on <code>(mask, bits)</code> — and it starts applying on the next request without restarting the process. Rejecting discards the proposal and never removes a rule already enforcing.</li>
+<li><strong>Optionally rehearses it.</strong> <code>python satguardian-advisor.py</code> replays a candidate clause against the allowed records already present in the local ledger and reports collisions. "No collisions in the ledger" is not a false-positive rate; the held-out measurement in §3.3 is.</li>
+</ul>
 <hr />
-<h2 id="3-decision-in-sample-measurements-business-value">3. Decision: In-Sample Measurements &amp; Business Value</h2>
-<p>The figures below are <strong>in-sample</strong> measurements from this repository's own payload set. The "competitor" agents are small Python regex stand-ins, not the real Coraza, SafeLine or ModSecurity products, so these numbers are useful for regression tracking rather than for procurement claims.</p>
+<h2 id="3-decision-what-has-been-measured">3. Decision: What Has Been Measured</h2>
+<p>Most of the figures below are <strong>in-sample</strong>: they come from payloads written in this
+repository and used to drive fixes, so they track regressions rather than predict
+behaviour. One batch is held out (§3.3) and it is the only accuracy number worth
+quoting. The "competitor" agents are small Python regex stand-ins, not the real Coraza,
+SafeLine or ModSecurity products, so no row here supports a procurement claim.</p>
 <blockquote>
 <p><strong>Correction notice:</strong> Earlier releases capped perfect scores at 99.9%, floored
 zero error rates at 0.1%, and labelled local Python regex stand-ins as Coraza
@@ -1977,99 +2059,175 @@ named product.</p>
 <li><strong>No production evidence exists.</strong> There is no third-party evaluation, no soak
   test, and no real-product comparison. See <a href="status/">STATUS.md</a>.</li>
 </ul>
-<h3 id="33-100-on-premise-traffic-sovereignty">3.3 100% On-Premise Traffic Sovereignty</h3>
-<p>SATGuardian runs <strong>entirely inside your infrastructure</strong>. We <strong>never</strong> host customer traffic or require DNS CNAME redirects:</p>
+<h3 id="33-the-held-out-measurement-corpusheldout_v2json">3.3 The held-out measurement (<code>corpus/heldout_v2.json</code>)</h3>
+<p>On 2026-11-04 a third batch — 98 attacks and 57 benign controls — was labelled in the
+file <strong>before the engine ran against it</strong>, measured once, and committed
+(<code>corpus/heldout_v2_report.json</code>). That is the only estimate here that is not
+in-sample:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Metric</th>
+<th style="text-align: center;">Value</th>
+<th style="text-align: center;">95% Wilson CI</th>
+<th style="text-align: left;">Basis</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">Recall on held-out attacks</td>
+<td style="text-align: center;"><strong>56.1%</strong></td>
+<td style="text-align: center;">46.3 – 65.5%</td>
+<td style="text-align: left;">55 of 98 detected</td>
+</tr>
+<tr>
+<td style="text-align: left;">False-positive rate on held-out controls</td>
+<td style="text-align: center;"><strong>7.0%</strong></td>
+<td style="text-align: center;">2.8 – 16.7%</td>
+<td style="text-align: left;">4 of 57 blocked</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>What works:</strong> the families that already had rules — XSS 12/12, GraphQL 4/4,
+  prototype pollution 4/4, CMS probes 5/6, path traversal 6/8.</li>
+<li><strong>What does not:</strong> six families the engine has no category for — SSTI, NoSQL
+  injection, XXE, host-header injection, HTTP response splitting and malicious
+  upload — score 0 of 3 or 0 of 2 each, and SSRF detects 1 of 8.</li>
+<li><strong>The four false positives</strong> were inline SVG/CSS with a <code>data:</code> URI, a login form
+  whose values contain shell metacharacters, and two ordinary WordPress requests.</li>
+<li><strong>Limits.</strong> Same author wrote the attacks and the controls; the controls are
+  imagined traffic, not a sample from a customer's access log; the intervals are
+  wide because the batch is small. The batch is now spent: tuning a rule against any
+  miss listed in the report turns it into a third regression suite, and the next
+  honest estimate has to come from <code>heldout_v3</code>.</li>
+</ul>
+<h3 id="34-100-on-premise-traffic-sovereignty">3.4 100% On-Premise Traffic Sovereignty</h3>
+<p>SATGuardian runs <strong>entirely inside your infrastructure</strong>. We <strong>never</strong> host customer
+traffic, and no request is forwarded to us: inspection happens in the local process.
+The only thing that can leave the node is the optional cloud review of §2.2, which
+sends recorded <code>u128</code> feature vectors, is disabled by default, and never changes the
+rule set by itself. No DNS or CNAME redirection is required:</p>
 <ol>
-<li><strong>Kubernetes / Envoy Proxy Native Sidecar:</strong> Runs alongside Envoy via <code>ext_authz</code> over an in-memory Unix Domain Socket (<code>unix:///run/satguardian/waf.sock</code>), adding the engine's measured per-request latency (tens of microseconds) with no network hop.</li>
+<li><strong>Kubernetes / Envoy Proxy Native Sidecar:</strong> Runs alongside Envoy via <code>ext_authz</code> over an in-memory Unix Domain Socket (<code>unix:///run/satguardian/waf.sock</code>), adding the engine's measured in-memory cost (tens of microseconds) with no network hop.</li>
 <li><strong>Reverse Proxy:</strong> Frontline protection for Nginx, Apache, or Microsoft IIS (including Windows Service deployment via <code>install.ps1</code>).</li>
-<li><strong>Standalone Binary:</strong> Zero-dependency, self-contained Rust binary (<code>satguardian-waf proxy --listen 127.0.0.1:8080</code>). It speaks plain HTTP; terminate TLS in a reverse proxy or Envoy in front of it.</li>
+<li><strong>Standalone Binary:</strong> Self-contained Rust binary built with <code>cargo build --release</code> (<code>satguardian-waf proxy --listen 127.0.0.1:8080</code>). It speaks plain HTTP; terminate TLS in a reverse proxy or Envoy in front of it.</li>
 </ol>
-<h3 id="34-pricing-licensing-zero-traffic-tax">3.4 Pricing &amp; Licensing: Zero Traffic Tax</h3>
+<h3 id="35-pricing-licensing-zero-traffic-tax">3.5 Pricing &amp; Licensing: Zero Traffic Tax</h3>
+<p>The paid product is the narrative in one line: ongoing review, update proposals and
+explanations, with you approving every change. On 2026-11-03 the owner approved
+packaging the plans by <strong>servers covered and new rule patterns reviewed each month</strong>,
+published on the site at the existing prices, with SU kept as internal accounting.
+The monthly pattern allowance (Scout 5,000 · Pro 25,000 · Startup 125,000 · Scale
+500,000) is enforced in the service source since 2026-11-04 and <strong>not yet on the
+running host</strong>: on the live service today the limit that actually bites is the SU
+pool.</p>
 <table>
 <thead>
 <tr>
 <th style="text-align: left;">Plan</th>
 <th style="text-align: left;">Monthly Price</th>
-<th style="text-align: left;">Seats</th>
-<th style="text-align: left;">Complexity Limit</th>
-<th style="text-align: left;">Included Security Units (SU)</th>
-<th style="text-align: left;">Extra SU Overage Rate</th>
+<th style="text-align: left;">Servers covered</th>
+<th style="text-align: left;">New rule patterns reviewed / mo</th>
+<th style="text-align: left;">SU pool (internal)</th>
+<th style="text-align: left;">Job ceiling</th>
+<th style="text-align: center;">Certificate</th>
 </tr>
 </thead>
 <tbody>
 <tr>
+<td style="text-align: left;"><strong>Community</strong></td>
+<td style="text-align: left;"><strong>$0</strong></td>
+<td style="text-align: left;">1</td>
+<td style="text-align: left;">—</td>
+<td style="text-align: left;">5 SU / mo</td>
+<td style="text-align: left;">12 vars / 200 minterms</td>
+<td style="text-align: center;">No</td>
+</tr>
+<tr>
 <td style="text-align: left;"><strong>SCOUT</strong></td>
 <td style="text-align: left;"><strong>$20 USD</strong></td>
 <td style="text-align: left;">1</td>
-<td style="text-align: left;">Up to 20 vars / 2.5K minterms</td>
+<td style="text-align: left;">5,000</td>
 <td style="text-align: left;">1,000 SU / mo</td>
-<td style="text-align: left;">Cloud synthesis pauses on quota exhaustion</td>
+<td style="text-align: left;">20 vars / 2,500 minterms</td>
+<td style="text-align: center;">Yes</td>
 </tr>
 <tr>
-<td style="text-align: left;"><strong>PRO / DEV</strong></td>
+<td style="text-align: left;"><strong>PRO</strong></td>
 <td style="text-align: left;"><strong>$49 USD</strong></td>
-<td style="text-align: left;">1</td>
-<td style="text-align: left;">Up to 64 vars / 10K minterms</td>
+<td style="text-align: left;">5</td>
+<td style="text-align: left;">25,000</td>
 <td style="text-align: left;">5,000 SU / mo</td>
-<td style="text-align: left;">$10 USD per 1,000 extra SU</td>
+<td style="text-align: left;">64 vars / 10,000 minterms</td>
+<td style="text-align: center;">Yes</td>
 </tr>
 <tr>
 <td style="text-align: left;"><strong>STARTUP</strong></td>
 <td style="text-align: left;"><strong>$499 USD</strong></td>
-<td style="text-align: left;">5</td>
-<td style="text-align: left;">Up to 128 vars / 100K minterms</td>
+<td style="text-align: left;">10</td>
+<td style="text-align: left;">125,000</td>
 <td style="text-align: left;">50,000 SU / mo</td>
-<td style="text-align: left;">$8 USD per 1,000 extra SU</td>
+<td style="text-align: left;">128 vars / 100,000 minterms</td>
+<td style="text-align: center;">Yes</td>
 </tr>
 <tr>
-<td style="text-align: left;"><strong>SCALE</strong></td>
+<td style="text-align: left;"><strong>ESCALA (Scale)</strong></td>
 <td style="text-align: left;"><strong>$2,499 USD</strong></td>
-<td style="text-align: left;">15</td>
-<td style="text-align: left;">Up to 128 vars / 1M minterms</td>
+<td style="text-align: left;">30</td>
+<td style="text-align: left;">500,000</td>
 <td style="text-align: left;">500,000 SU / mo</td>
-<td style="text-align: left;">$5 USD per 1,000 extra SU</td>
+<td style="text-align: left;">128 vars / 1,000,000 minterms</td>
+<td style="text-align: center;">Yes</td>
 </tr>
 <tr>
-<td style="text-align: left;"><strong>ENTERPRISE</strong></td>
+<td style="text-align: left;"><strong>EMPRESARIAL</strong></td>
 <td style="text-align: left;"><strong>Custom</strong></td>
-<td style="text-align: left;">Unlimited</td>
-<td style="text-align: left;">Up to 128 vars / Unlimited</td>
-<td style="text-align: left;">Custom annual pool</td>
-<td style="text-align: left;">Custom SLA &amp; Dedicated Contract</td>
+<td style="text-align: left;">Above 30</td>
+<td style="text-align: left;">Negotiated</td>
+<td style="text-align: left;">Negotiated annual pool</td>
+<td style="text-align: left;">Negotiated in writing</td>
+<td style="text-align: center;">Yes</td>
 </tr>
 </tbody>
 </table>
+<p>Prices, server counts and pattern allowances are the ones published on
+<a href="https://satguardian.tech/pricing.html">pricing.html</a>; <code>plans.js</code> in the service
+repository mirrors them and is what the backend enforces. There are no automatic
+overage charges: extra SU is requested manually from the Token Manager and is
+approved by hand. Community gets one cloud compression per rolling 30 days and no
+certificate.</p>
 <blockquote>
-<p><strong>Quota behavior:</strong> The local Edge WAF is <strong>100% free and unlimited</strong> ($0.00/request). You pay only for Cloud Boolean Optimization metered in <strong>Security Units (SU)</strong>. If monthly SU quotas are exhausted (<code>HTTP 402 SU_QUOTA_EXHAUSTED</code>), cloud synthesis pauses and the local Edge WAF keeps serving traffic with its last compiled rule matrix. <em>(Note: 256+ variable matrices are managed exclusively as dedicated Engineering Expansion Projects on Bare-Metal/HPC hardware).</em></p>
+<p><strong>Quota behavior:</strong> The local Edge WAF is <strong>100% free and unlimited</strong> ($0.00/request). You pay only for cloud synthesis, metered in <strong>Security Units (SU)</strong>. If the monthly allowance is exhausted (<code>HTTP 402</code>), cloud synthesis pauses and the local Edge WAF keeps serving traffic with the last rule matrix you approved. <em>(256+ variable matrices are handled as individual engineering projects, not as a plan.)</em></p>
 </blockquote>
 <hr />
-<h2 id="4-action-getting-started-in-4-easy-steps">4. Action: Getting Started in 4 Easy Steps</h2>
+<h2 id="4-action-getting-started-in-six-steps">4. Action: Getting Started in Six Steps</h2>
 <p>Follow this step-by-step onboarding journey to evaluate SATGuardian in your environment:</p>
-<h3 id="step-1-download-run-the-standalone-binary-benchmark-30-seconds">Step 1: Download &amp; Run the Standalone Binary Benchmark (30 Seconds)</h3>
-<p>Test the self-contained standalone binary directly on your machine across 10,000 HTTP requests with zero dependencies:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c"># Using pre-compiled standalone binary</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="p">.\</span><span class="n">satguardian-waf</span><span class="p">.</span><span class="n">exe</span> <span class="n">benchmark</span> <span class="n">-r</span> <span class="n">10000</span>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="c"># Or building directly from source via cargo</span>
-<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="n">cargo</span> <span class="n">run</span> <span class="p">-</span><span class="n">-release</span> <span class="p">--</span> <span class="n">benchmark</span> <span class="n">-r</span> <span class="n">10000</span>
+<h3 id="step-1-build-and-run-the-benchmark">Step 1: Build and run the benchmark</h3>
+<p>Run the benchmark on your machine across 10,000 HTTP requests:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c"># From a git clone, after `cargo build --release`</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="p">.\</span><span class="n">target</span><span class="p">\</span><span class="n">release</span><span class="p">\</span><span class="n">satguardian-waf</span><span class="p">.</span><span class="n">exe</span> <span class="n">benchmark</span> <span class="n">-r</span> <span class="n">10000</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="c"># Or in one step, straight from source</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="n">cargo</span> <span class="n">run</span> <span class="p">-</span><span class="n">-release</span> <span class="p">--</span> <span class="n">benchmark</span> <span class="n">-r</span> <span class="n">10000</span>
 </code></pre></div>
 <h3 id="step-2-run-the-multi-waf-comparative-benchmark">Step 2: Run the Multi-WAF Comparative Benchmark</h3>
 <p>Run the Python reference harness against the local stand-ins:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">python</span> <span class="n">run_benchmark</span><span class="p">.</span><span class="n">py</span> <span class="n">1000</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">python</span> <span class="n">run_benchmark</span><span class="p">.</span><span class="n">py</span> <span class="n">1000</span>
 </code></pre></div>
 <p>This does not execute Coraza, SafeLine, ModSecurity or an LLM. It compares the
 Python SATGuardian port with small Python reimplementations on the in-repo
 payload list. The report prints the provenance and the caveat.</p>
 <h3 id="step-3-deploy-in-staging-local-envoy-sidecar">Step 3: Deploy in Staging / Local Envoy Sidecar</h3>
 <p>Launch the standalone reverse proxy or attach SATGuardian to your Envoy proxy via <code>ext_authz</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># Standalone reverse proxy. It speaks plain HTTP: terminate TLS in front of it.</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="c1"># The management API is isolated on 127.0.0.1:10001 and requires a bearer token.</span>
-<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="nb">export</span><span class="w"> </span><span class="nv">SATGUARDIAN_ADMIN_TOKEN</span><span class="o">=</span><span class="s2">&quot;</span><span class="k">$(</span>openssl<span class="w"> </span>rand<span class="w"> </span>-hex<span class="w"> </span><span class="m">32</span><span class="k">)</span><span class="s2">&quot;</span>
-<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>satguardian-waf<span class="w"> </span>proxy<span class="w"> </span>--listen<span class="w"> </span><span class="m">127</span>.0.0.1:8080<span class="w"> </span>--upstream<span class="w"> </span>http://127.0.0.1:3000
-<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>
-<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="c1"># Daily example: inspect metrics from the local management listener</span>
-<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>curl<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$SATGUARDIAN_ADMIN_TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="w">  </span>http://127.0.0.1:10001/api/waf/metrics
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># Standalone reverse proxy. It speaks plain HTTP: terminate TLS in front of it.</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="c1"># The management API is isolated on 127.0.0.1:10001 and requires a bearer token.</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="nb">export</span><span class="w"> </span><span class="nv">SATGUARDIAN_ADMIN_TOKEN</span><span class="o">=</span><span class="s2">&quot;</span><span class="k">$(</span>openssl<span class="w"> </span>rand<span class="w"> </span>-hex<span class="w"> </span><span class="m">32</span><span class="k">)</span><span class="s2">&quot;</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>./target/release/satguardian-waf<span class="w"> </span>proxy<span class="w"> </span>--listen<span class="w"> </span><span class="m">127</span>.0.0.1:8080<span class="w"> </span>--upstream<span class="w"> </span>http://127.0.0.1:3000
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="c1"># Daily example: inspect metrics from the local management listener</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>curl<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$SATGUARDIAN_ADMIN_TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="w">  </span>http://127.0.0.1:10001/api/waf/metrics
 </code></pre></div>
 <p><strong>Security defaults introduced in this release:</strong></p>
 <ul>
@@ -2080,18 +2238,50 @@ payload list. The report prints the provenance and the caveat.</p>
 <li>Blocked responses are generic by default. Use <code>--verbose</code> only in development.</li>
 <li>Upstream responses are streamed, so SSE and large downloads are no longer buffered. WebSocket upgrades are not supported yet.</li>
 </ul>
-<h3 id="step-4-generate-forensic-audit-reports-schedule-a-technical-demo">Step 4: Generate Forensic Audit Reports &amp; Schedule a Technical Demo</h3>
-<p>Analyze recorded transactions in <code>waf_ledger.db</code>, verify synthesized rules with the Digital Twin, and generate executive HTML/Markdown compliance reports:</p>
+<h3 id="step-4-turn-on-cloud-review-and-decide-what-reaches-the-waf">Step 4: Turn on cloud review and decide what reaches the WAF</h3>
+<p>This is the paid loop in practice, and it is opt-in at both ends: the node only uploads
+if <code>auto_sync_enabled = true</code>, and what comes back is a proposal, not a change.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># 1. Ask for a review of the anomalies recorded so far (nothing is applied here)</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>satguardian-waf<span class="w"> </span>sync-simplify<span class="w"> </span>--limit<span class="w"> </span><span class="m">100</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="c1"># 2. Read what arrived</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>satguardian-waf<span class="w"> </span>clauses<span class="w"> </span>list
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>curl<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$SATGUARDIAN_ADMIN_TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="w">  </span>http://127.0.0.1:10001/api/waf/clauses/pending
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="c1"># 3. Approve or discard, one at a time</span>
+<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a>satguardian-waf<span class="w"> </span>clauses<span class="w"> </span>apply<span class="w"> </span>&lt;clause-id&gt;
+<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a>satguardian-waf<span class="w"> </span>clauses<span class="w"> </span>reject<span class="w"> </span>&lt;clause-id&gt;
+</code></pre></div>
+<p>A proposal that is never approved has no effect: the engine keeps enforcing the last
+matrix you accepted. While the proxy is running, approving through
+<code>POST /api/waf/clauses/{id}/apply</code> also hot-swaps the clause into the live engine;
+approving from the CLI takes effect the next time it starts.</p>
+<h3 id="step-5-generate-forensic-audit-reports">Step 5: Generate Forensic Audit Reports</h3>
+<p>Analyze recorded transactions in <code>waf_ledger.db</code>, replay candidate clauses against the
+allowed records already in the ledger, and generate evidence-backed HTML/Markdown audit
+reports. They are forensic reports about your own traffic, not a compliance attestation:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="n">python</span> <span class="n">satguardian-advisor</span><span class="p">.</span><span class="n">py</span> <span class="p">-</span><span class="n">-report</span> <span class="n">audit_report</span><span class="p">.</span><span class="n">html</span>
 <a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">python</span> <span class="n">satguardian-advisor</span><span class="p">.</span><span class="n">py</span> <span class="p">-</span><span class="n">-report-md</span> <span class="n">audit_report</span><span class="p">.</span><span class="nb">md</span>
 </code></pre></div>
+<h3 id="step-6-check-the-rule-set-without-the-cloud">Step 6: Check the rule set without the cloud</h3>
+<p><code>satguardian-health</code> reads <code>waf_config.toml</code> and <code>waf_ledger.db</code> in place and reports rule
+inventory, duplicate or contradictory rules, observed traffic and rules that never matched.
+It never opens a network socket, never uploads anything and has no telemetry; the ledger is
+opened read-only (<code>mode=ro</code>). This is part of the free Edge binary, not a cloud feature.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>satguardian-health
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>satguardian-health<span class="w"> </span>--json
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>satguardian-health<span class="w"> </span>--strict<span class="w">   </span><span class="c1"># exit 1 if a WARN finding is present, useful in cron</span>
+</code></pre></div>
+<p>A rule that never matched in a given ledger is reported as a prompt to check it, not as proof
+that it is dead: the sample may not contain a request that rule governs.</p>
 <ul>
-<li><strong>Full Operations &amp; Configuration Guide:</strong> Read the <a href="https://exactorresearch.github.io/satguardian/">Official Documentation</a> for detailed configuration, customization, and tool usages.</li>
-<li><strong>Explore the Interactive Dashboard:</strong> <code>streamlit run app.py</code></li>
-<li><strong>Schedule a Technical Demo &amp; Architecture Review:</strong> Contact our engineering team at <a href="https://satguardian.tech">satguardian.tech</a> or open an issue on GitHub.</li>
+<li><strong>Full Operations &amp; Configuration Guide:</strong> Read the <a href="https://exactorresearch.github.io/satguardian/">Official Documentation</a> for detailed configuration, customization, and tool usage.</li>
+<li><strong>Watch it live in a terminal:</strong> <code>python satguardian-top.py</code> reads the same ledger the proxy writes.</li>
+<li><strong>Talk to us:</strong> the audit and design-partner offer is at <a href="https://satguardian.tech">satguardian.tech</a>; issues go to GitHub.</li>
 </ul>
 <hr />
-<p><em>© 2026 SATGuardian Cyber-Defense Systems. Sovereign Edge Security Powered by Native Rust &amp; EXACTOR GXOR.</em></p>
+<p><em>© 2026 SATGuardian. Edge WAF released under Apache-2.0; detection improvements come from the cloud service, which is not part of this binary.</em></p>
 
 
 

@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Sub-Millisecond Lexical Normalization, 128-Bit Integer Mask Evaluation, and EXACTOR GXOR Boolean Cloud Optimization">
+        <meta name="description" content="Research-prototype Rust edge WAF with u128 bitmask inspection and opt-in SATGuardian cloud rule synthesis that returns proposals you approve">
       
       
         <meta name="author" content="SATGuardian Cyber-Defense Systems">
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#kubernetes-envoy-proxy-integration-guide-native-sidecar-pattern" class="md-skip">
+        <a href="#kubernetes-envoy-proxy-integration-guide-native-sidecar-pattern-lab-configuration" class="md-skip">
           Skip to content
         </a>
       
@@ -592,7 +592,7 @@
   <span class="md-ellipsis">
     
   
-    Complete Configuration Guide
+    Configuration Reference
   
 
     
@@ -620,7 +620,7 @@
   <span class="md-ellipsis">
     
   
-    Configuration & Operations
+    Operations & Tooling Guide
   
 
     
@@ -936,22 +936,22 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#1-overview-sub-millisecond-sidecar-inspection" class="md-nav__link">
+  <a href="#1-overview-sidecar-authorization-in-a-lab-pod" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Overview: Sub-Millisecond Sidecar Inspection
+        1. Overview: Sidecar Authorization in a Lab Pod
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="1. Overview: Sub-Millisecond Sidecar Inspection">
+    <nav class="md-nav" aria-label="1. Overview: Sidecar Authorization in a Lab Pod">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#why-the-native-rust-sidecar-pattern-excels" class="md-nav__link">
+  <a href="#why-the-sidecar-shape-is-interesting" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Why the Native Rust Sidecar Pattern Excels
+        Why the Sidecar Shape Is Interesting
       
     </span>
   </a>
@@ -964,10 +964,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-envoy-ext_authz-configuration-envoyyaml" class="md-nav__link">
+  <a href="#2-envoy-ext_authz-configuration-envoyenvoy-udsyaml" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Envoy ext_authz Configuration (envoy.yaml)
+        2. Envoy ext_authz Configuration (envoy/envoy-uds.yaml)
       
     </span>
   </a>
@@ -975,10 +975,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-kubernetes-deployment-manifest-k8senvoy-sidecar-deploymentyaml" class="md-nav__link">
+  <a href="#3-kubernetes-sidecar-manifest-envoykubernetes-sidecaryaml" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. Kubernetes Deployment Manifest (k8s/envoy-sidecar-deployment.yaml)
+        3. Kubernetes Sidecar Manifest (envoy/kubernetes-sidecar.yaml)
       
     </span>
   </a>
@@ -1356,22 +1356,22 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#1-overview-sub-millisecond-sidecar-inspection" class="md-nav__link">
+  <a href="#1-overview-sidecar-authorization-in-a-lab-pod" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Overview: Sub-Millisecond Sidecar Inspection
+        1. Overview: Sidecar Authorization in a Lab Pod
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="1. Overview: Sub-Millisecond Sidecar Inspection">
+    <nav class="md-nav" aria-label="1. Overview: Sidecar Authorization in a Lab Pod">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#why-the-native-rust-sidecar-pattern-excels" class="md-nav__link">
+  <a href="#why-the-sidecar-shape-is-interesting" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Why the Native Rust Sidecar Pattern Excels
+        Why the Sidecar Shape Is Interesting
       
     </span>
   </a>
@@ -1384,10 +1384,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-envoy-ext_authz-configuration-envoyyaml" class="md-nav__link">
+  <a href="#2-envoy-ext_authz-configuration-envoyenvoy-udsyaml" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Envoy ext_authz Configuration (envoy.yaml)
+        2. Envoy ext_authz Configuration (envoy/envoy-uds.yaml)
       
     </span>
   </a>
@@ -1395,10 +1395,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-kubernetes-deployment-manifest-k8senvoy-sidecar-deploymentyaml" class="md-nav__link">
+  <a href="#3-kubernetes-sidecar-manifest-envoykubernetes-sidecaryaml" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. Kubernetes Deployment Manifest (k8s/envoy-sidecar-deployment.yaml)
+        3. Kubernetes Sidecar Manifest (envoy/kubernetes-sidecar.yaml)
       
     </span>
   </a>
@@ -1436,17 +1436,18 @@
   
 
 
-<h1 id="kubernetes-envoy-proxy-integration-guide-native-sidecar-pattern">Kubernetes &amp; Envoy Proxy Integration Guide (Native Sidecar Pattern)</h1>
-<p><strong>Deployment Architecture:</strong> On-premise edge inspection (lab configuration)<br />
-<strong>Codebase Reference:</strong> <code>src/proxy/envoy_grpc.rs</code>, <code>k8s/envoy-sidecar-deployment.yaml</code></p>
+<h1 id="kubernetes-envoy-proxy-integration-guide-native-sidecar-pattern-lab-configuration">Kubernetes &amp; Envoy Proxy Integration Guide (Native Sidecar Pattern, Lab Configuration)</h1>
+<p><strong>Deployment Architecture:</strong> self-hosted edge inspection (lab configuration)<br />
+<strong>Codebase Reference:</strong> <code>src/envoy/ext_authz.rs</code>, <code>envoy/envoy-uds.yaml</code>, <code>envoy/kubernetes-sidecar.yaml</code></p>
 <blockquote>
-<p><strong>Status: research prototype.</strong> This guide describes an integration that has
-been exercised in a lab, not a production rollout. See <a href="../../status/">STATUS.md</a>.</p>
+<p><strong>Status: research prototype.</strong> This integration has been exercised in a lab on
+our own machine. It has not been run under real traffic, and nothing here is
+production evidence. See <a href="../../status/">STATUS.md</a>.</p>
 </blockquote>
 <hr />
-<h2 id="1-overview-sub-millisecond-sidecar-inspection">1. Overview: Sub-Millisecond Sidecar Inspection</h2>
-<p>For high-throughput Kubernetes microservices and service meshes (Istio / Envoy), <strong>SATGuardian Edge WAF</strong> deploys as a lightweight, 100% self-contained native Rust sidecar container alongside each Envoy proxy pod.</p>
-<p>Envoy delegates incoming HTTP request authorization to the local SATGuardian daemon via the <code>ext_authz</code> filter over an in-memory <strong>Unix Domain Socket</strong> (<code>unix:///run/satguardian/waf.sock</code>) or loopback gRPC/HTTP socket, avoiding external network hops.</p>
+<h2 id="1-overview-sidecar-authorization-in-a-lab-pod">1. Overview: Sidecar Authorization in a Lab Pod</h2>
+<p>For Kubernetes workloads and service meshes (Istio / Envoy), <strong>SATGuardian Edge WAF</strong> can run as a small self-contained Rust sidecar container next to the Envoy proxy in the same pod.</p>
+<p>Envoy delegates incoming HTTP request authorization to the local SATGuardian daemon via the <code>ext_authz</code> filter over an in-memory <strong>Unix Domain Socket</strong> (<code>/var/run/satguardian/waf.sock</code>) or a loopback HTTP socket, avoiding a network hop.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>                      ┌─────────────────────────── Kubernetes Pod ───────────────────────────┐
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>                      │                                                                      │
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>Incoming Traffic ────►│  [ Envoy Proxy ] ──(ext_authz UDS)──► [ SATGuardian Rust Sidecar ]   │
@@ -1456,102 +1457,116 @@ been exercised in a lab, not a production rollout. See <a href="../../status/">S
 <a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>                      │  [ Upstream App Container ]              [ Local waf_ledger.db ]     │
 <a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>                      └──────────────────────────────────────────────────────────────────────┘
 </code></pre></div>
-<h3 id="why-the-native-rust-sidecar-pattern-excels">Why the Native Rust Sidecar Pattern Excels</h3>
+<h3 id="why-the-sidecar-shape-is-interesting">Why the Sidecar Shape Is Interesting</h3>
 <ol>
-<li><strong>Microsecond-Scale Engine Evaluation:</strong> <code>satguardian-waf benchmark -r 10000</code>
+<li><strong>Microsecond-scale engine evaluation (in memory only):</strong> <code>satguardian-waf benchmark -r 10000</code>
    measures in-memory lexical and bitmask evaluation at roughly <code>20 µs</code> p50 and
    <code>22 µs</code> mean, with p99 fluctuating around <code>50 µs</code> depending on load. These
    numbers exclude the UDS hop, Envoy itself and the upstream service; end-to-end
    sidecar latency has not been characterized.</li>
-<li><strong>100% Traffic Sovereignty &amp; Zero Per-Request Cost:</strong> All HTTP payloads stay strictly inside your Kubernetes cluster. There is zero external DNS CNAME routing, zero third-party traffic inspection, and <strong>$0.00 cost per request</strong>.</li>
-<li><strong>Lock-Free Atomic Rule Updates (<code>ArcSwap</code>):</strong> When the offline advisor or SATGuardian Cloud synthesizes a minimized <code>u128</code> rule matrix (consuming Security Units, SU), the sidecar hot-reloads the compiled bitmasks in memory via <code>ArcSwap</code> without restarting pods or dropping connections.</li>
-<li><strong>Fail-Safe Continuity:</strong> If the organization's monthly Security Units (SU) balance is exhausted (<code>HTTP 402 SU_QUOTA_EXHAUSTED</code>), cloud rule synthesis pauses while every Kubernetes sidecar continues inspecting and blocking attacks indefinitely using its last compiled rule matrix.</li>
+<li><strong>Traffic stays inside your cluster, and the edge costs nothing per request:</strong> all HTTP payloads are inspected locally, with no external DNS CNAME routing and no per-request fee. With the shipped defaults (<code>auto_sync_enabled = false</code> in <code>waf_config.toml</code>) the sidecar makes no outbound call at all.</li>
+<li><strong>Rule updates are an operator decision, not a sync side effect:</strong> cloud review returns clauses that are stored in the ledger as proposals (<code>dynamic_clauses.applied = 0</code>); the sync never touches the running engine. Approval is a separate action — <code>satguardian-waf clauses apply &lt;id&gt;</code> against the ledger, or an admin-token <code>POST /api/waf/clauses/{id}/apply</code> on the management API, which additionally registers the clause in the live process so subsequent requests see it without restarting the pod or dropping connections.</li>
+<li><strong>Continuity if the cloud is not there:</strong> if the monthly Security Units (SU) quota is exhausted (<code>HTTP 402 SU_QUOTA_EXHAUSTED</code>) or <code>satguardian.tech</code> is unreachable, no new proposals arrive. Every sidecar keeps inspecting and blocking with the rule set it already has, because enforcement is entirely local.</li>
 </ol>
 <hr />
-<h2 id="2-envoy-ext_authz-configuration-envoyyaml">2. Envoy <code>ext_authz</code> Configuration (<code>envoy.yaml</code>)</h2>
-<p>Configure Envoy's <code>envoy.filters.http.ext_authz</code> filter to forward request headers and bounded body payloads to the local SATGuardian sidecar:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">http_filters</span><span class="p">:</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">envoy.filters.http.ext_authz</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span><span class="nt">typed_config</span><span class="p">:</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">      </span><span class="s">&quot;@type&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">      </span><span class="nt">transport_api_version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">V3</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">      </span><span class="nt">with_request_body</span><span class="p">:</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">        </span><span class="nt">max_request_bytes</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8192</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">        </span><span class="nt">allow_partial_message</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">        </span><span class="nt">pack_as_bytes</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">      </span><span class="nt">failure_mode_allow</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">      </span><span class="nt">grpc_service</span><span class="p">:</span>
-<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="w">        </span><span class="nt">envoy_grpc</span><span class="p">:</span>
-<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="w">          </span><span class="nt">cluster_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">satguardian_ext_authz_cluster</span>
-<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="w">        </span><span class="nt">timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.05s</span>
-<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>
-<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="nt">clusters</span><span class="p">:</span>
-<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">satguardian_ext_authz_cluster</span>
-<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">STATIC</span>
-<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="w">    </span><span class="nt">connect_timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.01s</span>
-<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="w">    </span><span class="nt">typed_extension_protocol_options</span><span class="p">:</span>
-<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="w">      </span><span class="nt">envoy.extensions.upstreams.http.v3.HttpProtocolOptions</span><span class="p">:</span>
-<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a><span class="w">        </span><span class="s">&quot;@type&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions</span>
-<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a><span class="w">        </span><span class="nt">explicit_http_config</span><span class="p">:</span>
-<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="w">          </span><span class="nt">http2_protocol_options</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
-<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a><span class="w">    </span><span class="nt">load_assignment</span><span class="p">:</span>
-<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a><span class="w">      </span><span class="nt">cluster_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">satguardian_ext_authz_cluster</span>
-<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a><span class="w">      </span><span class="nt">endpoints</span><span class="p">:</span>
-<a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">lb_endpoints</span><span class="p">:</span>
-<a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">endpoint</span><span class="p">:</span>
-<a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a><span class="w">                </span><span class="nt">address</span><span class="p">:</span>
-<a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a><span class="w">                  </span><span class="nt">pipe</span><span class="p">:</span>
-<a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a><span class="w">                    </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/run/satguardian/waf.sock</span>
+<h2 id="2-envoy-ext_authz-configuration-envoyenvoy-udsyaml">2. Envoy <code>ext_authz</code> Configuration (<code>envoy/envoy-uds.yaml</code>)</h2>
+<p>The daemon in <code>src/envoy/ext_authz.rs</code> serves the ext_authz <strong>HTTP</strong> service (it answers a plain HTTP check request with <code>200</code> or <code>403</code>), so Envoy is configured with <code>http_service</code>, not <code>grpc_service</code>. The snippet below is the configuration shipped in this repository:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">envoy.filters.http.ext_authz</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">            </span><span class="nt">typed_config</span><span class="p">:</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">              </span><span class="s">&quot;@type&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">              </span><span class="nt">http_service</span><span class="p">:</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">                </span><span class="nt">server_uri</span><span class="p">:</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">                  </span><span class="nt">uri</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;http://unix/ext_authz&quot;</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">                  </span><span class="nt">cluster</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">satguardian_waf_uds</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">                  </span><span class="nt">timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.25s</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">                </span><span class="nt">authorization_request</span><span class="p">:</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">                  </span><span class="nt">allowed_headers</span><span class="p">:</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">                    </span><span class="nt">patterns</span><span class="p">:</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="w">                    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">exact</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;authorization&quot;</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="w">                    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">exact</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;cookie&quot;</span>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="w">                    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">exact</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;x-forwarded-for&quot;</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="w">                    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">exact</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;user-agent&quot;</span>
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="w">                    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">exact</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;content-type&quot;</span>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="w">                    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">prefix</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;x-&quot;</span>
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="w">              </span><span class="nt">with_request_body</span><span class="p">:</span>
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="w">                </span><span class="nt">max_request_bytes</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">65536</span>
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="w">                </span><span class="nt">pack_as_bytes</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="w">                </span><span class="nt">allow_partial_message</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>
+<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a><span class="nt">clusters</span><span class="p">:</span>
+<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">satguardian_waf_uds</span>
+<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a><span class="w">    </span><span class="nt">connect_timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.25s</span>
+<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a><span class="w">    </span><span class="nt">load_assignment</span><span class="p">:</span>
+<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a><span class="w">      </span><span class="nt">cluster_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">satguardian_waf_uds</span>
+<a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a><span class="w">      </span><span class="nt">endpoints</span><span class="p">:</span>
+<a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">lb_endpoints</span><span class="p">:</span>
+<a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">endpoint</span><span class="p">:</span>
+<a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a><span class="w">                </span><span class="nt">address</span><span class="p">:</span>
+<a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a><span class="w">                  </span><span class="nt">pipe</span><span class="p">:</span>
+<a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a><span class="w">                    </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/var/run/satguardian/waf.sock</span>
 </code></pre></div>
+<blockquote>
+<p>The sidecar terminates nothing: TLS is expected to end at Envoy. <code>src/envoy/ext_authz.rs</code> reads the original method and path from <code>x-envoy-original-method</code> / <code>x-envoy-original-path</code> when Envoy forwards them, and only trusts <code>X-Forwarded-For</code> from proxies listed in <code>trusted_proxies</code>.</p>
+</blockquote>
 <hr />
-<h2 id="3-kubernetes-deployment-manifest-k8senvoy-sidecar-deploymentyaml">3. Kubernetes Deployment Manifest (<code>k8s/envoy-sidecar-deployment.yaml</code>)</h2>
-<p>Mount an in-memory <code>emptyDir</code> (<code>medium: Memory</code>) at <code>/run/satguardian</code> so Envoy and the <code>satguardian-waf</code> sidecar communicate over a shared RAM-backed Unix Domain Socket:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apps/v1</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deployment</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="nt">metadata</span><span class="p">:</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">payment-api-protected</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">  </span><span class="nt">labels</span><span class="p">:</span>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">    </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">payment-api</span>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="nt">spec</span><span class="p">:</span>
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
-<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
-<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">      </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">payment-api</span>
-<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="w">  </span><span class="nt">template</span><span class="p">:</span>
-<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="w">    </span><span class="nt">metadata</span><span class="p">:</span>
-<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="w">      </span><span class="nt">labels</span><span class="p">:</span>
-<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="w">        </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">payment-api</span>
-<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
-<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="w">      </span><span class="nt">volumes</span><span class="p">:</span>
-<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">satguardian-uds</span>
-<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="w">          </span><span class="nt">emptyDir</span><span class="p">:</span>
-<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a><span class="w">            </span><span class="nt">medium</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Memory</span>
-<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a><span class="w">      </span><span class="nt">containers</span><span class="p">:</span>
-<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">satguardian-waf-sidecar</span>
-<a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a><span class="w">          </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ghcr.io/satguardian/satguardian-waf:v0.2.0</span>
-<a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a><span class="w">          </span><span class="nt">args</span><span class="p">:</span>
-<a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;proxy&quot;</span>
-<a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;--uds&quot;</span>
-<a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;/run/satguardian/waf.sock&quot;</span>
-<a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a><span class="w">          </span><span class="nt">resources</span><span class="p">:</span>
-<a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a><span class="w">            </span><span class="nt">requests</span><span class="p">:</span>
-<a id="__codelineno-2-30" name="__codelineno-2-30" href="#__codelineno-2-30"></a><span class="w">              </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;100m&quot;</span>
-<a id="__codelineno-2-31" name="__codelineno-2-31" href="#__codelineno-2-31"></a><span class="w">              </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;64Mi&quot;</span>
-<a id="__codelineno-2-32" name="__codelineno-2-32" href="#__codelineno-2-32"></a><span class="w">            </span><span class="nt">limits</span><span class="p">:</span>
-<a id="__codelineno-2-33" name="__codelineno-2-33" href="#__codelineno-2-33"></a><span class="w">              </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;500m&quot;</span>
-<a id="__codelineno-2-34" name="__codelineno-2-34" href="#__codelineno-2-34"></a><span class="w">              </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;128Mi&quot;</span>
-<a id="__codelineno-2-35" name="__codelineno-2-35" href="#__codelineno-2-35"></a><span class="w">          </span><span class="nt">volumeMounts</span><span class="p">:</span>
-<a id="__codelineno-2-36" name="__codelineno-2-36" href="#__codelineno-2-36"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">satguardian-uds</span>
-<a id="__codelineno-2-37" name="__codelineno-2-37" href="#__codelineno-2-37"></a><span class="w">              </span><span class="nt">mountPath</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/run/satguardian</span>
-<a id="__codelineno-2-38" name="__codelineno-2-38" href="#__codelineno-2-38"></a>
-<a id="__codelineno-2-39" name="__codelineno-2-39" href="#__codelineno-2-39"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">envoy-front-proxy</span>
-<a id="__codelineno-2-40" name="__codelineno-2-40" href="#__codelineno-2-40"></a><span class="w">          </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">envoyproxy/envoy:v1.29-latest</span>
-<a id="__codelineno-2-41" name="__codelineno-2-41" href="#__codelineno-2-41"></a><span class="w">          </span><span class="nt">ports</span><span class="p">:</span>
-<a id="__codelineno-2-42" name="__codelineno-2-42" href="#__codelineno-2-42"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">containerPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8080</span>
-<a id="__codelineno-2-43" name="__codelineno-2-43" href="#__codelineno-2-43"></a><span class="w">          </span><span class="nt">volumeMounts</span><span class="p">:</span>
-<a id="__codelineno-2-44" name="__codelineno-2-44" href="#__codelineno-2-44"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">satguardian-uds</span>
-<a id="__codelineno-2-45" name="__codelineno-2-45" href="#__codelineno-2-45"></a><span class="w">              </span><span class="nt">mountPath</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/run/satguardian</span>
+<h2 id="3-kubernetes-sidecar-manifest-envoykubernetes-sidecaryaml">3. Kubernetes Sidecar Manifest (<code>envoy/kubernetes-sidecar.yaml</code>)</h2>
+<p>The committed manifest mounts an <code>emptyDir</code> with <code>medium: Memory</code> so Envoy and the sidecar share one Unix Domain Socket, and starts the daemon in <code>ext_authz</code> mode:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="w">      </span><span class="nt">volumes</span><span class="p">:</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">satguardian-ipc</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">          </span><span class="nt">emptyDir</span><span class="p">:</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">            </span><span class="nt">medium</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Memory</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">            </span><span class="nt">sizeLimit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">64Mi</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">satguardian-ledger</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">          </span><span class="nt">emptyDir</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">      </span><span class="nt">containers</span><span class="p">:</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">envoy-proxy</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">          </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">envoyproxy/envoy:v1.30-latest</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="w">          </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;-c&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;/etc/envoy/envoy.yaml&quot;</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="w">          </span><span class="nt">volumeMounts</span><span class="p">:</span>
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">envoy-config-vol</span>
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="w">              </span><span class="nt">mountPath</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/etc/envoy</span>
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">satguardian-ipc</span>
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="w">              </span><span class="nt">mountPath</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/var/run/satguardian</span>
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">satguardian-waf-sidecar</span>
+<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a><span class="w">          </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">satguardian/satguardian-waf:v0.3.0</span>
+<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a><span class="w">          </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;/usr/local/bin/satguardian-waf&quot;</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a><span class="w">          </span><span class="nt">args</span><span class="p">:</span>
+<a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;envoy-authz&quot;</span>
+<a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;--socket&quot;</span>
+<a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;/var/run/satguardian/waf.sock&quot;</span>
+<a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a><span class="w">          </span><span class="nt">env</span><span class="p">:</span>
+<a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">WAF_MODE</span>
+<a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a><span class="w">              </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;block&quot;</span>
+<a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SATGUARDIAN_API_URL</span>
+<a id="__codelineno-2-30" name="__codelineno-2-30" href="#__codelineno-2-30"></a><span class="w">              </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://satguardian.tech/api/simplify&quot;</span>
+<a id="__codelineno-2-31" name="__codelineno-2-31" href="#__codelineno-2-31"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SATGUARDIAN_API_KEY</span><span class="w">            </span><span class="c1"># optional; only needed for cloud review</span>
+<a id="__codelineno-2-32" name="__codelineno-2-32" href="#__codelineno-2-32"></a><span class="w">              </span><span class="nt">valueFrom</span><span class="p">:</span>
+<a id="__codelineno-2-33" name="__codelineno-2-33" href="#__codelineno-2-33"></a><span class="w">                </span><span class="nt">secretKeyRef</span><span class="p">:</span>
+<a id="__codelineno-2-34" name="__codelineno-2-34" href="#__codelineno-2-34"></a><span class="w">                  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">satguardian-cloud-credentials</span>
+<a id="__codelineno-2-35" name="__codelineno-2-35" href="#__codelineno-2-35"></a><span class="w">                  </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">api-token</span>
+<a id="__codelineno-2-36" name="__codelineno-2-36" href="#__codelineno-2-36"></a><span class="w">                  </span><span class="nt">optional</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<a id="__codelineno-2-37" name="__codelineno-2-37" href="#__codelineno-2-37"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">WAF_DATABASE_PATH</span>
+<a id="__codelineno-2-38" name="__codelineno-2-38" href="#__codelineno-2-38"></a><span class="w">              </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/var/lib/satguardian/waf_ledger.db&quot;</span>
+<a id="__codelineno-2-39" name="__codelineno-2-39" href="#__codelineno-2-39"></a><span class="w">          </span><span class="nt">resources</span><span class="p">:</span>
+<a id="__codelineno-2-40" name="__codelineno-2-40" href="#__codelineno-2-40"></a><span class="w">            </span><span class="nt">requests</span><span class="p">:</span>
+<a id="__codelineno-2-41" name="__codelineno-2-41" href="#__codelineno-2-41"></a><span class="w">              </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;100m&quot;</span>
+<a id="__codelineno-2-42" name="__codelineno-2-42" href="#__codelineno-2-42"></a><span class="w">              </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;128Mi&quot;</span>
+<a id="__codelineno-2-43" name="__codelineno-2-43" href="#__codelineno-2-43"></a><span class="w">            </span><span class="nt">limits</span><span class="p">:</span>
+<a id="__codelineno-2-44" name="__codelineno-2-44" href="#__codelineno-2-44"></a><span class="w">              </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1&quot;</span>
+<a id="__codelineno-2-45" name="__codelineno-2-45" href="#__codelineno-2-45"></a><span class="w">              </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;512Mi&quot;</span>
+<a id="__codelineno-2-46" name="__codelineno-2-46" href="#__codelineno-2-46"></a><span class="w">          </span><span class="nt">volumeMounts</span><span class="p">:</span>
+<a id="__codelineno-2-47" name="__codelineno-2-47" href="#__codelineno-2-47"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">satguardian-ipc</span>
+<a id="__codelineno-2-48" name="__codelineno-2-48" href="#__codelineno-2-48"></a><span class="w">              </span><span class="nt">mountPath</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/var/run/satguardian</span>
+<a id="__codelineno-2-49" name="__codelineno-2-49" href="#__codelineno-2-49"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">satguardian-ledger</span>
+<a id="__codelineno-2-50" name="__codelineno-2-50" href="#__codelineno-2-50"></a><span class="w">              </span><span class="nt">mountPath</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/var/lib/satguardian</span>
 </code></pre></div>
+<p>Two operational notes, both read straight off <code>src/main.rs</code>:</p>
+<ul>
+<li><strong>The ledger volume is <code>emptyDir</code> in the shipped manifest</strong>, so recorded traffic, patterns awaiting analysis and open proposals disappear with the pod. Persist <code>/var/lib/satguardian</code> on a real volume before treating the ledger as an audit record.</li>
+<li><strong><code>envoy-authz</code> is a pure verifier.</strong> It mounts only the <code>ext_authz</code> router: no management API, and it starts from the compiled-in rule matrix rather than calling <code>load_applied_clauses()</code>, so a proposal you approve against that ledger does not silently become policy in the sidecar. If you want approved dynamic clauses <em>and</em> the approval API in one process, run the <code>proxy</code> command with <code>envoy_ext_authz_addr</code> (TCP, e.g. loopback) and <code>admin_listen_addr</code> set: <code>run_server</code> loads approved clauses (<code>applied = 1</code>) at startup and serves <code>POST /api/waf/clauses/{id}/apply</code> for live registration. The Unix Domain Socket path (<code>--socket</code>) exists only in <code>envoy-authz</code> today. Treat that split as a known limitation of the lab wiring, not as a hot-reload feature.</li>
+</ul>
 <hr />
 <h2 id="4-measurement-summary">4. Measurement Summary</h2>
 <table>
@@ -1566,17 +1581,27 @@ been exercised in a lab, not a production rollout. See <a href="../../status/">S
 <tr>
 <td style="text-align: left;">In-memory rule latency</td>
 <td style="text-align: left;"><code>benchmark -r 10000</code></td>
-<td style="text-align: left;">p50 <code>~20 µs</code>, mean <code>~22 µs</code>, p99 near <code>50 µs</code> depending on load</td>
+<td style="text-align: left;">p50 <code>~20 µs</code>, mean <code>~22 µs</code>, p99 near <code>50 µs</code> depending on load; in-memory only</td>
 </tr>
 <tr>
 <td style="text-align: left;">Detection, pinned corpus</td>
 <td style="text-align: left;"><code>corpus/independent_v1.json</code></td>
-<td style="text-align: left;">63/63 attacks, 0/16 benign blocked (in-sample regression)</td>
+<td style="text-align: left;">63/63 attacks, 0/16 benign blocked (<strong>in-sample regression floor</strong>)</td>
 </tr>
 <tr>
 <td style="text-align: left;">Detection, first run before fixes</td>
 <td style="text-align: left;">same corpus</td>
 <td style="text-align: left;">51/63 recall (80.95%), 3/16 benign blocked (18.75% FPR)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Held-out detection (the only one)</strong></td>
+<td style="text-align: left;"><code>corpus/heldout_v2.json</code>, one run on 2026-11-04</td>
+<td style="text-align: left;"><strong>56.1% recall</strong> on 98 attacks (95% CI 46.3–65.5%), <strong>7.0% false-positive rate</strong> on 57 controls (95% CI 2.8–16.7%)</td>
+</tr>
+<tr>
+<td style="text-align: left;">End-to-end sidecar latency</td>
+<td style="text-align: left;">not measured in this repository</td>
+<td style="text-align: left;">—</td>
 </tr>
 <tr>
 <td style="text-align: left;">Memory footprint</td>
@@ -1587,7 +1612,8 @@ been exercised in a lab, not a production rollout. See <a href="../../status/">S
 </table>
 <p>No sidecar-to-vendor comparison is reported. Coraza, SafeLine and ModSecurity
 have not been run in this environment; the Python harness agents that resemble
-them are local stand-ins. See <a href="../../status/">STATUS.md</a>.</p>
+them are local stand-ins. There is no third-party evaluation of any of these
+numbers. See <a href="../../status/">STATUS.md</a>.</p>
 
 
 

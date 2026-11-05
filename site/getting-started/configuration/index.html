@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Sub-Millisecond Lexical Normalization, 128-Bit Integer Mask Evaluation, and EXACTOR GXOR Boolean Cloud Optimization">
+        <meta name="description" content="Research-prototype Rust edge WAF with u128 bitmask inspection and opt-in SATGuardian cloud rule synthesis that returns proposals you approve">
       
       
         <meta name="author" content="SATGuardian Cyber-Defense Systems">
@@ -29,7 +29,7 @@
     
     
       
-        <title>Complete Configuration Guide - SATGuardian Edge WAF Documentation</title>
+        <title>Configuration Reference - SATGuardian Edge WAF Documentation</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#satguardian-edge-waf-complete-configuration-guide" class="md-skip">
+        <a href="#satguardian-edge-waf-configuration-reference" class="md-skip">
           Skip to content
         </a>
       
@@ -114,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Complete Configuration Guide
+              Configuration Reference
             
           </span>
         </div>
@@ -606,7 +606,7 @@
   <span class="md-ellipsis">
     
   
-    Complete Configuration Guide
+    Configuration Reference
   
 
     
@@ -624,7 +624,7 @@
   <span class="md-ellipsis">
     
   
-    Complete Configuration Guide
+    Configuration Reference
   
 
     
@@ -683,10 +683,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-cloud-optimization-security-units-su-sqlite-ledger" class="md-nav__link">
+  <a href="#3-management-api-request-limits" class="md-nav__link">
     <span class="md-ellipsis">
       
-        ☁️ 3. Cloud Optimization (Security Units - SU) &amp; SQLite Ledger
+        🎛️ 3. Management API &amp; Request Limits
       
     </span>
   </a>
@@ -694,10 +694,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#4-layer-7-behavioral-defense-rate-limiting" class="md-nav__link">
+  <a href="#4-cloud-review-security-units-su-sqlite-ledger" class="md-nav__link">
     <span class="md-ellipsis">
       
-        🛡️ 4. Layer-7 Behavioral Defense &amp; Rate Limiting
+        ☁️ 4. Cloud Review (Security Units - SU) &amp; SQLite Ledger
       
     </span>
   </a>
@@ -705,10 +705,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#5-envoy-proxy-native-integration-ext_authz" class="md-nav__link">
+  <a href="#5-layer-7-behavioral-defense-rate-limiting" class="md-nav__link">
     <span class="md-ellipsis">
       
-        🔗 5. Envoy Proxy Native Integration (ext_authz)
+        🛡️ 5. Layer-7 Behavioral Defense &amp; Rate Limiting
       
     </span>
   </a>
@@ -716,10 +716,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#6-modular-certainty-islands-islands" class="md-nav__link">
+  <a href="#6-envoy-proxy-native-integration-ext_authz" class="md-nav__link">
     <span class="md-ellipsis">
       
-        🏝️ 6. Modular Certainty Islands ([islands])
+        🔗 6. Envoy Proxy Native Integration (ext_authz)
       
     </span>
   </a>
@@ -727,15 +727,26 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#7-customer-business-access-rules-business_rules" class="md-nav__link">
+  <a href="#7-modular-certainty-islands-islands" class="md-nav__link">
     <span class="md-ellipsis">
       
-        🎯 7. Customer Business Access Rules ([business_rules])
+        🏝️ 7. Modular Certainty Islands ([islands])
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="🎯 7. Customer Business Access Rules ([business_rules])">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-customer-business-access-rules-business_rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🎯 8. Customer Business Access Rules ([business_rules])
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🎯 8. Customer Business Access Rules ([business_rules])">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -755,10 +766,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#8-environment-variables-reference" class="md-nav__link">
+  <a href="#9-environment-variables-reference" class="md-nav__link">
     <span class="md-ellipsis">
       
-        🔑 8. Environment Variables Reference
+        🔑 9. Environment Variables Reference
       
     </span>
   </a>
@@ -788,7 +799,7 @@
   <span class="md-ellipsis">
     
   
-    Configuration & Operations
+    Operations & Tooling Guide
   
 
     
@@ -1444,10 +1455,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-cloud-optimization-security-units-su-sqlite-ledger" class="md-nav__link">
+  <a href="#3-management-api-request-limits" class="md-nav__link">
     <span class="md-ellipsis">
       
-        ☁️ 3. Cloud Optimization (Security Units - SU) &amp; SQLite Ledger
+        🎛️ 3. Management API &amp; Request Limits
       
     </span>
   </a>
@@ -1455,10 +1466,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#4-layer-7-behavioral-defense-rate-limiting" class="md-nav__link">
+  <a href="#4-cloud-review-security-units-su-sqlite-ledger" class="md-nav__link">
     <span class="md-ellipsis">
       
-        🛡️ 4. Layer-7 Behavioral Defense &amp; Rate Limiting
+        ☁️ 4. Cloud Review (Security Units - SU) &amp; SQLite Ledger
       
     </span>
   </a>
@@ -1466,10 +1477,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#5-envoy-proxy-native-integration-ext_authz" class="md-nav__link">
+  <a href="#5-layer-7-behavioral-defense-rate-limiting" class="md-nav__link">
     <span class="md-ellipsis">
       
-        🔗 5. Envoy Proxy Native Integration (ext_authz)
+        🛡️ 5. Layer-7 Behavioral Defense &amp; Rate Limiting
       
     </span>
   </a>
@@ -1477,10 +1488,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#6-modular-certainty-islands-islands" class="md-nav__link">
+  <a href="#6-envoy-proxy-native-integration-ext_authz" class="md-nav__link">
     <span class="md-ellipsis">
       
-        🏝️ 6. Modular Certainty Islands ([islands])
+        🔗 6. Envoy Proxy Native Integration (ext_authz)
       
     </span>
   </a>
@@ -1488,15 +1499,26 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#7-customer-business-access-rules-business_rules" class="md-nav__link">
+  <a href="#7-modular-certainty-islands-islands" class="md-nav__link">
     <span class="md-ellipsis">
       
-        🎯 7. Customer Business Access Rules ([business_rules])
+        🏝️ 7. Modular Certainty Islands ([islands])
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="🎯 7. Customer Business Access Rules ([business_rules])">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-customer-business-access-rules-business_rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🎯 8. Customer Business Access Rules ([business_rules])
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🎯 8. Customer Business Access Rules ([business_rules])">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1516,10 +1538,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#8-environment-variables-reference" class="md-nav__link">
+  <a href="#9-environment-variables-reference" class="md-nav__link">
     <span class="md-ellipsis">
       
-        🔑 8. Environment Variables Reference
+        🔑 9. Environment Variables Reference
       
     </span>
   </a>
@@ -1546,11 +1568,20 @@
   
 
 
-<h1 id="satguardian-edge-waf-complete-configuration-guide">⚙️ SATGuardian Edge WAF — Complete Configuration Guide</h1>
+<h1 id="satguardian-edge-waf-configuration-reference">⚙️ SATGuardian Edge WAF — Configuration Reference</h1>
 <blockquote>
-<p><strong>Status: research prototype, not a production-ready WAF.</strong> See <a href="../../status/">Project Status</a>.</p>
+<p><strong>Status: research prototype, not a production-ready WAF.</strong> Detection has one held-out
+measurement (<strong>56.1% recall on 98 attacks</strong>, 95% CI 46.3–65.5%, and <strong>7.0% false
+positives on 57 controls</strong>, 95% CI 2.8–16.7%, <code>corpus/heldout_v2.json</code>, run once
+2026-11-04, same-author payloads, no third-party evaluation). The in-sample 100% / 0%
+rows in <code>corpus/independent_v1.json</code> are regression floors, not generalization estimates.
+See <a href="../../status/">Project Status</a> and the <a href="../../corpus/">Detection Corpus</a>.</p>
 </blockquote>
-<p>This guide provides a detailed field-by-field reference and step-by-step instructions for configuring <strong>SATGuardian Edge WAF</strong> via <code>waf_config.toml</code> and environment variables.</p>
+<p>This guide provides a field-by-field reference for configuring <strong>SATGuardian Edge WAF</strong> via
+<code>waf_config.toml</code> and environment variables.</p>
+<p><strong>The control rule in one line:</strong> free, you get local protection on your own node; paying,
+you get continuous review of new patterns, update proposals and explanations — without ever
+giving up control of your WAF. Every cloud result below is a proposal until you approve it.</p>
 <hr />
 <h2 id="configuration-file-location">📋 Configuration File Location</h2>
 <p>By default, SATGuardian looks for <code>waf_config.toml</code> in the current working directory. You can specify a custom configuration file path using the <code>--config</code> flag or the <code>SATGUARDIAN_CONFIG</code> environment variable:</p>
@@ -1570,118 +1601,219 @@
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># Target upstream backend application (Nginx, Node.js, Python, Go, Java, PHP, IIS, etc.)</span>
 <a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">upstream_url</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;http://127.0.0.1:3000&quot;</span>
 <a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="c1"># Active perimeter defense mode:</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="c1">#   &quot;block&quot;   - Active Defense: Instantly drops attacks with HTTP 403 Forbidden.</span>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="c1">#   &quot;monitor&quot; - Passive/Dry-Run Mode: Logs attack violations to the ledger but passes traffic upstream.</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="c1"># Defense mode:</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="c1">#   &quot;block&quot;   - Detected requests are rejected with HTTP 403 Forbidden.</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="c1">#   &quot;monitor&quot; - Dry-run mode: violations are logged to the ledger, traffic passes upstream.</span>
 <a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="n">mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;block&quot;</span>
 </code></pre></div>
+<p><code>upstream_url</code> must start with <code>http://</code> or <code>https://</code> — the client refuses to start
+otherwise. The listener itself is plain HTTP: this build does not terminate TLS and does
+not proxy WebSocket upgrades, so TLS belongs to an nginx/Envoy hop in front of it.</p>
 <hr />
 <h2 id="2-anti-reconnaissance-protection-stealth-mode">🥷 2. Anti-Reconnaissance Protection (Stealth Mode)</h2>
 <p>Prevents attackers from identifying your security stack through diagnostic response signatures.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Enable clean web-standard responses</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="c1"># true  -&gt; Returns clean HTTP 403 Forbidden without leaking rules, proofs, or server signatures.</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="c1"># false -&gt; Returns diagnostic JSON payloads containing formal causal proofs (useful for debugging).</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="c1"># true  -&gt; Returns a generic HTTP 403 Forbidden without leaking rules, proofs, or server signatures.</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="c1"># false -&gt; Returns diagnostic JSON containing the causal trace (useful for debugging).</span>
 <a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">stealth_mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
 <a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="c1"># (Optional) Custom HTML or plain text body returned during blocked requests when stealth_mode = true</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="c1"># (Optional) Custom HTML or plain text body returned for blocked requests when stealth_mode = true</span>
 <a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="n">stealth_block_body</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&lt;html&gt;&lt;head&gt;&lt;title&gt;403 Forbidden&lt;/title&gt;&lt;/head&gt;&lt;body&gt;&lt;center&gt;&lt;h1&gt;403 Forbidden&lt;/h1&gt;&lt;p&gt;Access Denied by Security Policy&lt;/p&gt;&lt;/center&gt;&lt;/body&gt;&lt;/html&gt;&quot;</span>
 </code></pre></div>
+<p>Per launch you can override the file: <code>satguardian-waf proxy --verbose</code> emits the
+diagnostic JSON, <code>satguardian-waf proxy --stealth</code> forces the generic block response.</p>
 <hr />
-<h2 id="3-cloud-optimization-security-units-su-sqlite-ledger">☁️ 3. Cloud Optimization (Security Units - SU) &amp; SQLite Ledger</h2>
-<p>Manages asynchronous boolean rule synthesis via <strong>satguardian.tech</strong> and local forensic audit logging.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># SATGuardian Cloud Optimization API URL for EXACTOR GXOR boolean rule minimization</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">satguardian_api_url</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;https://satguardian.tech/api/simplify&quot;</span>
+<h2 id="3-management-api-request-limits">🎛️ 3. Management API &amp; Request Limits</h2>
+<p>The management API is what you use to look at and approve cloud proposals. It never runs
+on the public data-plane port.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Dedicated listener for /api/waf/*. Set to &quot;off&quot; to disable the management API entirely.</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">admin_listen_addr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;127.0.0.1:10001&quot;</span>
 <a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># Cloud API Key (or configure via SATGUARDIAN_API_KEY environment variable)</span>
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">satguardian_api_key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;ek_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxx&quot;</span>
-<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>
-<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="c1"># SQLite WAL Ledger database path for audit logging, anomaly clustering, and digital twin replay</span>
-<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="n">database_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;waf_ledger.db&quot;</span>
-<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>
-<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="c1"># Autonomous background minimization sync interval in seconds (default: 300s / 5 minutes)</span>
-<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="n">autonomous_sync_interval_secs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">300</span>
-<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>
-<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="c1"># Enable automatic hot-reload minimization sync with satguardian.tech</span>
-<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="n">auto_sync_enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># Bearer token required by every management route. Prefer the SATGUARDIAN_ADMIN_TOKEN</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="c1"># environment variable over storing it in the file.</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="c1"># admin_token = &quot;change-me&quot;</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="c1"># Maximum accepted inbound request body (2 MiB).</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="n">max_body_bytes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2097152</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="c1"># Exact IPs or CIDR ranges of upstream proxies allowed to supply X-Forwarded-For /</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="c1"># X-Real-IP / CF-Connecting-IP / True-Client-IP. Loopback is always trusted.</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="n">trusted_proxies</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[]</span>
 </code></pre></div>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Route</th>
+<th style="text-align: left;">Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>GET /health</code>, <code>GET /livez</code></td>
+<td style="text-align: left;">Liveness; the only routes that are not token-protected.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>POST /api/waf/inspect</code></td>
+<td style="text-align: left;">Evaluate one request payload and print the causal trace.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>GET /api/waf/metrics</code>, <code>/api/waf/rules</code>, <code>/api/waf/islands</code></td>
+<td style="text-align: left;">Read engine state.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>GET</code>/<code>POST /api/waf/islands/config</code></td>
+<td style="text-align: left;">Read or change the islands switches.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>GET</code>/<code>POST /api/waf/rules/customer</code>, <code>DELETE /api/waf/rules/customer/{id}</code></td>
+<td style="text-align: left;">Manage declarative business rules.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>POST /api/waf/sync-simplify</code></td>
+<td style="text-align: left;">One opt-in cloud review batch; the result is stored as proposals.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>GET /api/waf/clauses/pending</code></td>
+<td style="text-align: left;">List proposals waiting for a decision.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>POST /api/waf/clauses/{id}/apply</code></td>
+<td style="text-align: left;"><strong>The approval step</strong> — register the clause in the running engine.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>DELETE /api/waf/clauses/{id}</code></td>
+<td style="text-align: left;">Discard a proposal. Never removes a clause already enforcing.</td>
+</tr>
+</tbody>
+</table>
+<p>With no admin token configured these routes answer <code>503 management_api_disabled</code>. The
+listener is plain HTTP on loopback by default — if you expose it anywhere, put a
+TLS-terminating authenticated proxy in front.</p>
+<hr />
+<h2 id="4-cloud-review-security-units-su-sqlite-ledger">☁️ 4. Cloud Review (Security Units - SU) &amp; SQLite Ledger</h2>
+<p>Optional contact with <strong>satguardian.tech</strong> for Boolean rule synthesis, plus local forensic
+audit logging.</p>
+<p>Boolean minimization is <strong>server-side only</strong>. This client normalizes a request into a
+128-bit <code>FeatureVector</code> (<code>u128</code>), evaluates compiled clauses locally, and — only when you
+opt in — sends recorded minterms to the cloud endpoint and stores what comes back as
+proposals. No minimizer ships in the client binary or lives in this repository.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># SATGuardian cloud endpoint for Boolean rule synthesis</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">satguardian_api_url</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;https://satguardian.tech/api/simplify&quot;</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="c1"># Cloud API Key (or configure via SATGUARDIAN_API_KEY environment variable)</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="n">satguardian_api_key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;ek_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxx&quot;</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="c1"># SQLite WAL Ledger database path: audit log, anomaly clustering and update proposals</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="n">database_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;waf_ledger.db&quot;</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="c1"># Seconds between background cloud review runs. Only used when auto_sync_enabled is on.</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="n">autonomous_sync_interval_secs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">300</span>
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="c1"># Opt-in switch. False by default: nothing leaves the node unless you turn this on.</span>
+<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="n">auto_sync_enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
+</code></pre></div>
+<p><strong>What <code>auto_sync_enabled = true</code> does and does not do.</strong> It only uploads the <code>u128</code>
+feature vectors recorded as novel anomalies (patterns awaiting analysis) on that timer —
+not raw traffic, headers, bodies or client IPs. Results are stored with
+<code>dynamic_clauses.applied = 0</code>: they do not enter the running engine and are not loaded at
+startup. Making one enforce is a separate action you take:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>./satguardian-waf<span class="w"> </span>clauses<span class="w"> </span>list
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>./satguardian-waf<span class="w"> </span>clauses<span class="w"> </span>apply<span class="w"> </span>&lt;id&gt;
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>./satguardian-waf<span class="w"> </span>clauses<span class="w"> </span>reject<span class="w"> </span>&lt;id&gt;
+</code></pre></div>
+<p>Review on demand instead of on a timer with <code>./satguardian-waf sync-simplify --limit 100</code>
+or <code>POST /api/waf/sync-simplify</code>.</p>
 <blockquote>
-<p><strong>Quota behavior:</strong> If your monthly Security Units (SU) quota is exhausted (<code>HTTP 402 SU_QUOTA_EXHAUSTED</code>), cloud synthesis pauses and the local Edge WAF keeps serving traffic with its last compiled rule matrix ($0.00 traffic cost).</p>
+<p><strong>Quota behavior:</strong> cloud synthesis is metered in Security Units (SU) per job and the
+balance is readable with <code>satguardian-waf entitlement</code>. A failed review call — including
+one rejected for an exhausted SU balance — is logged and simply produces no proposals;
+the Edge WAF keeps enforcing the last rule matrix you approved. The client treats every
+non-2xx answer as a generic cloud error today; there is no dedicated <code>402
+SU_QUOTA_EXHAUSTED</code> branch in this build. Local inspection is never metered.</p>
 </blockquote>
 <hr />
-<h2 id="4-layer-7-behavioral-defense-rate-limiting">🛡️ 4. Layer-7 Behavioral Defense &amp; Rate Limiting</h2>
-<p>Protects against credential stuffing, brute force login floods, and Layer-7 HTTP DDoS attacks using sliding window ring buffers.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Enable stateful temporal ring buffer analysis</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">stateful_enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="c1"># Maximum total requests permitted per client IP across all endpoints within the sliding window</span>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="n">stateful_global_limit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">300</span>
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>
-<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="c1"># Maximum permitted requests per client IP on sensitive authentication routes (/login, /auth, etc.)</span>
-<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="n">stateful_auth_limit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">20</span>
-<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>
-<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="c1"># Temporal sliding window duration in seconds (60s ring buffer)</span>
-<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="n">stateful_window_secs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">60</span>
-<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>
-<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="c1"># Isolation / jail quarantine duration in seconds for offending IPs (180s = 3 minutes)</span>
-<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="n">stateful_ban_secs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">180</span>
-<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>
-<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="c1"># (Optional) Redis URL for distributed multi-node cluster rate limiting</span>
-<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="c1"># redis_url = &quot;redis://127.0.0.1:6379&quot;</span>
-</code></pre></div>
-<hr />
-<h2 id="5-envoy-proxy-native-integration-ext_authz">🔗 5. Envoy Proxy Native Integration (<code>ext_authz</code>)</h2>
-<p>Enables SATGuardian to serve as a sub-millisecond external authorization sidecar for Envoy Proxy and Kubernetes Ingress Controllers.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Inbound gRPC/HTTP listener for Envoy&#39;s envoy.filters.http.ext_authz filter</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">envoy_ext_authz_addr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;0.0.0.0:9002&quot;</span>
-</code></pre></div>
-<hr />
-<h2 id="6-modular-certainty-islands-islands">🏝️ 6. Modular Certainty Islands (<code>[islands]</code>)</h2>
-<p>Enable or disable pre-compiled domain-specific exploit shields.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">[islands]</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="c1"># WordPress Reconnaissance &amp; Exploit Shield:</span>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="c1"># Drops scanner probes targeting /wp-admin, /wp-login.php, xmlrpc.php, and plugin exploits.</span>
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="c1"># Set to false ONLY if your application legitimately runs WordPress.</span>
-<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="n">wordpress_shield</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+<h2 id="5-layer-7-behavioral-defense-rate-limiting">🛡️ 5. Layer-7 Behavioral Defense &amp; Rate Limiting</h2>
+<p>Protects against credential stuffing, brute force login floods, and Layer-7 HTTP floods
+using sliding window ring buffers.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># Enable stateful temporal ring buffer analysis</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">stateful_enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="c1"># Maximum total requests permitted per client IP across all endpoints within the sliding window</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="n">stateful_global_limit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">300</span>
 <a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>
-<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="c1"># Sensitive Files &amp; Backdoors Shield:</span>
-<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="c1"># Blocks discovery probes targeting /.env, /.git, phpMyAdmin, Spring actuator, and database dumps.</span>
-<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="n">exposure_shield</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
-<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>
-<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="c1"># Modern Framework Exploits Shield:</span>
-<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="c1"># Blocks Log4j/JNDI injection, Spring Cloud SpEL, Laravel Ignition, and ThinkPHP RCE probes.</span>
-<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="n">framework_shield</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="c1"># Maximum permitted requests per client IP on sensitive authentication routes (/login, /auth, etc.)</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="n">stateful_auth_limit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">20</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="c1"># Temporal sliding window duration in seconds (60s ring buffer)</span>
+<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="n">stateful_window_secs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">60</span>
+<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>
+<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="c1"># Isolation / jail quarantine duration in seconds for offending IPs (180s = 3 minutes)</span>
+<a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="n">stateful_ban_secs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">180</span>
+<a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a>
+<a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="c1"># (Optional) Redis URL for distributed multi-node cluster rate limiting</span>
+<a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a><span class="c1"># redis_url = &quot;redis://127.0.0.1:6379&quot;</span>
 </code></pre></div>
 <hr />
-<h2 id="7-customer-business-access-rules-business_rules">🎯 7. Customer Business Access Rules (<code>[business_rules]</code>)</h2>
+<h2 id="6-envoy-proxy-native-integration-ext_authz">🔗 6. Envoy Proxy Native Integration (<code>ext_authz</code>)</h2>
+<p>Runs SATGuardian as an external authorization service for the <code>envoy.filters.http.ext_authz</code>
+filter.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># Inbound HTTP listener for Envoy&#39;s envoy.filters.http.ext_authz filter</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">envoy_ext_authz_addr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;0.0.0.0:9002&quot;</span>
+</code></pre></div>
+<p>This is the HTTP form of <code>ext_authz</code>: the service reads <code>x-envoy-original-method</code> and
+<code>x-envoy-original-path</code> and answers the check itself. The gRPC <code>ext_authz</code> protocol is not
+implemented in this build, and a Unix socket alternative is available via
+<code>satguardian-waf envoy-authz --socket /var/run/waf.sock</code>.</p>
+<p>The check itself costs tens of microseconds in memory; the end-to-end latency your clients
+see still includes TLS, Envoy and your upstream, which this project does not measure.</p>
+<hr />
+<h2 id="7-modular-certainty-islands-islands">🏝️ 7. Modular Certainty Islands (<code>[islands]</code>)</h2>
+<p>Enable or disable pre-compiled domain-specific exploit shields.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">[islands]</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="c1"># WordPress Reconnaissance &amp; Exploit Shield:</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="c1"># Drops scanner probes targeting /wp-admin, /wp-login.php, xmlrpc.php, and plugin exploits.</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="c1"># Set to false ONLY if your application legitimately runs WordPress.</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="n">wordpress_shield</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="c1"># Sensitive Files &amp; Backdoors Shield:</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="c1"># Blocks discovery probes targeting /.env, /.git, phpMyAdmin, Spring actuator, and database dumps.</span>
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="n">exposure_shield</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a>
+<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a><span class="c1"># Modern Framework Exploits Shield:</span>
+<a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a><span class="c1"># Blocks Log4j/JNDI injection, Spring Cloud SpEL, Laravel Ignition, and ThinkPHP RCE probes.</span>
+<a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a><span class="n">framework_shield</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+</code></pre></div>
+<hr />
+<h2 id="8-customer-business-access-rules-business_rules">🎯 8. Customer Business Access Rules (<code>[business_rules]</code>)</h2>
 <p>Declarative access control policies for specific route prefixes, HTTP methods, IP whitelists, blacklists, and mandatory headers.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">[business_rules]</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
-<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="c1"># Example 1: Enforce Strict HTTP Method Whitelist on API endpoints</span>
-<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="k">[[business_rules.rules]]</span>
-<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;biz-api-methods&quot;</span>
-<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Strict API Method Whitelist&quot;</span>
-<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="n">path_prefix</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;/api/v1/&quot;</span>
-<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="n">allowed_methods</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;GET&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;POST&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;PUT&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;DELETE&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;OPTIONS&quot;</span><span class="p">]</span>
-<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="n">blocked_methods</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;TRACE&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;CONNECT&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;PATCH&quot;</span><span class="p">]</span>
-<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="n">allowed_ips</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[]</span>
-<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="n">blocked_ips</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[]</span>
-<a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="n">required_headers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[]</span>
-<a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a><span class="n">max_body_bytes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">10485760</span><span class="w"> </span><span class="c1"># 10 MB payload ceiling</span>
-<a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a><span class="n">enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
-<a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a>
-<a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a><span class="c1"># Example 2: IP-Restricted Internal Administrative Gateway</span>
-<a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a><span class="k">[[business_rules.rules]]</span>
-<a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;biz-admin-gateway&quot;</span>
-<a id="__codelineno-7-20" name="__codelineno-7-20" href="#__codelineno-7-20"></a><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Admin Portal IP Restricted Access&quot;</span>
-<a id="__codelineno-7-21" name="__codelineno-7-21" href="#__codelineno-7-21"></a><span class="n">path_prefix</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;/internal/admin/&quot;</span>
-<a id="__codelineno-7-22" name="__codelineno-7-22" href="#__codelineno-7-22"></a><span class="n">allowed_methods</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;GET&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;POST&quot;</span><span class="p">]</span>
-<a id="__codelineno-7-23" name="__codelineno-7-23" href="#__codelineno-7-23"></a><span class="n">blocked_methods</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[]</span>
-<a id="__codelineno-7-24" name="__codelineno-7-24" href="#__codelineno-7-24"></a><span class="n">allowed_ips</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;10.0.0.1&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;192.168.1.100&quot;</span><span class="p">]</span><span class="w"> </span><span class="c1"># Authorized admin IPs</span>
-<a id="__codelineno-7-25" name="__codelineno-7-25" href="#__codelineno-7-25"></a><span class="n">blocked_ips</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[]</span>
-<a id="__codelineno-7-26" name="__codelineno-7-26" href="#__codelineno-7-26"></a><span class="n">required_headers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;X-Admin-Token&quot;</span><span class="p">]</span><span class="w"> </span><span class="c1"># Mandatory administrative header</span>
-<a id="__codelineno-7-27" name="__codelineno-7-27" href="#__codelineno-7-27"></a><span class="n">max_body_bytes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1048576</span><span class="w"> </span><span class="c1"># 1 MB body ceiling</span>
-<a id="__codelineno-7-28" name="__codelineno-7-28" href="#__codelineno-7-28"></a><span class="n">enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="k">[business_rules]</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="c1"># Example 1: Enforce Strict HTTP Method Whitelist on API endpoints</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="k">[[business_rules.rules]]</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;biz-api-methods&quot;</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Strict API Method Whitelist&quot;</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="n">path_prefix</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;/api/v1/&quot;</span>
+<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="n">allowed_methods</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;GET&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;POST&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;PUT&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;DELETE&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;OPTIONS&quot;</span><span class="p">]</span>
+<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="n">blocked_methods</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;TRACE&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;CONNECT&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;PATCH&quot;</span><span class="p">]</span>
+<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="n">allowed_ips</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[]</span>
+<a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a><span class="n">blocked_ips</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[]</span>
+<a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a><span class="n">required_headers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[]</span>
+<a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a><span class="n">max_body_bytes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">10485760</span><span class="w"> </span><span class="c1"># 10 MB payload ceiling</span>
+<a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a><span class="n">enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+<a id="__codelineno-9-16" name="__codelineno-9-16" href="#__codelineno-9-16"></a>
+<a id="__codelineno-9-17" name="__codelineno-9-17" href="#__codelineno-9-17"></a><span class="c1"># Example 2: IP-Restricted Internal Administrative Gateway</span>
+<a id="__codelineno-9-18" name="__codelineno-9-18" href="#__codelineno-9-18"></a><span class="k">[[business_rules.rules]]</span>
+<a id="__codelineno-9-19" name="__codelineno-9-19" href="#__codelineno-9-19"></a><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;biz-admin-gateway&quot;</span>
+<a id="__codelineno-9-20" name="__codelineno-9-20" href="#__codelineno-9-20"></a><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Admin Portal IP Restricted Access&quot;</span>
+<a id="__codelineno-9-21" name="__codelineno-9-21" href="#__codelineno-9-21"></a><span class="n">path_prefix</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;/internal/admin/&quot;</span>
+<a id="__codelineno-9-22" name="__codelineno-9-22" href="#__codelineno-9-22"></a><span class="n">allowed_methods</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;GET&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;POST&quot;</span><span class="p">]</span>
+<a id="__codelineno-9-23" name="__codelineno-9-23" href="#__codelineno-9-23"></a><span class="n">blocked_methods</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[]</span>
+<a id="__codelineno-9-24" name="__codelineno-9-24" href="#__codelineno-9-24"></a><span class="n">allowed_ips</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;10.0.0.1&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;192.168.1.100&quot;</span><span class="p">]</span><span class="w"> </span><span class="c1"># Authorized admin IPs</span>
+<a id="__codelineno-9-25" name="__codelineno-9-25" href="#__codelineno-9-25"></a><span class="n">blocked_ips</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[]</span>
+<a id="__codelineno-9-26" name="__codelineno-9-26" href="#__codelineno-9-26"></a><span class="n">required_headers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;X-Admin-Token&quot;</span><span class="p">]</span><span class="w"> </span><span class="c1"># Mandatory administrative header</span>
+<a id="__codelineno-9-27" name="__codelineno-9-27" href="#__codelineno-9-27"></a><span class="n">max_body_bytes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1048576</span><span class="w"> </span><span class="c1"># 1 MB body ceiling</span>
+<a id="__codelineno-9-28" name="__codelineno-9-28" href="#__codelineno-9-28"></a><span class="n">enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
 </code></pre></div>
 <h3 id="parameter-reference-for-business-rules">Parameter Reference for Business Rules:</h3>
 <table>
@@ -1726,7 +1858,7 @@
 <tr>
 <td style="text-align: left;"><code>blocked_ips</code></td>
 <td style="text-align: left;">Array</td>
-<td style="text-align: left;">Client IP blacklist (listed IPs are instantly dropped).</td>
+<td style="text-align: left;">Client IP blacklist (listed IPs are dropped).</td>
 </tr>
 <tr>
 <td style="text-align: left;"><code>required_headers</code></td>
@@ -1745,8 +1877,11 @@
 </tr>
 </tbody>
 </table>
+<p>These rules are yours and live in your file. They are separate from cloud proposals: a
+proposal you approve is stored in the ledger as a dynamic clause, not written into
+<code>[business_rules]</code>.</p>
 <hr />
-<h2 id="8-environment-variables-reference">🔑 8. Environment Variables Reference</h2>
+<h2 id="9-environment-variables-reference">🔑 9. Environment Variables Reference</h2>
 <table>
 <thead>
 <tr>
@@ -1763,8 +1898,13 @@
 </tr>
 <tr>
 <td style="text-align: left;"><code>SATGUARDIAN_API_KEY</code></td>
-<td style="text-align: left;">Overrides Cloud Optimization API Key</td>
+<td style="text-align: left;">Overrides the cloud API key (SU metering)</td>
 <td style="text-align: left;"><code>export SATGUARDIAN_API_KEY="ek_live_12345"</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>SATGUARDIAN_ADMIN_TOKEN</code></td>
+<td style="text-align: left;">Bearer token for every management API route; without it the routes return <code>503</code></td>
+<td style="text-align: left;"><code>export SATGUARDIAN_ADMIN_TOKEN="$(openssl rand -hex 32)"</code></td>
 </tr>
 <tr>
 <td style="text-align: left;"><code>RUST_LOG</code></td>
@@ -1773,8 +1913,14 @@
 </tr>
 </tbody>
 </table>
+<p>Most TOML fields also accept a <code>WAF_*</code> override (<code>WAF_LISTEN_ADDR</code>, <code>WAF_UPSTREAM_URL</code>,
+<code>WAF_MODE</code>, <code>WAF_STEALTH_MODE</code>, <code>WAF_ADMIN_LISTEN_ADDR</code>, <code>WAF_MAX_BODY_BYTES</code>,
+<code>WAF_TRUSTED_PROXIES</code>, <code>WAF_DATABASE_PATH</code>, <code>ENVOY_EXT_AUTHZ_ADDR</code>,
+<code>SATGUARDIAN_API_URL</code>), which wins over the file.</p>
 <hr />
-<p><em>© 2026 SATGuardian Cyber-Defense Systems. Sovereign Edge Security Powered by Native Rust &amp; EXACTOR GXOR.</em></p>
+<p>For the update loop (opt-in upload → proposals → your approval) and the CLI/Python
+tooling, see <a href="../operations/">Operations &amp; Tooling Guide</a>.</p>
+<p><em>© 2026 SATGuardian Cyber-Defense Systems. Edge enforcement is local and yours; SATGuardian cloud synthesis is opt-in and proposes, you approve.</em></p>
 
 
 

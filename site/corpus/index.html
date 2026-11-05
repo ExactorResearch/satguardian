@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Sub-Millisecond Lexical Normalization, 128-Bit Integer Mask Evaluation, and EXACTOR GXOR Boolean Cloud Optimization">
+        <meta name="description" content="Research-prototype Rust edge WAF with u128 bitmask inspection and opt-in SATGuardian cloud rule synthesis that returns proposals you approve">
       
       
         <meta name="author" content="SATGuardian Cyber-Defense Systems">
@@ -610,6 +610,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#held-out-measurement-heldout_v2json-2026-11-04" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Held-out measurement, heldout_v2.json (2026-11-04)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -711,7 +722,7 @@
   <span class="md-ellipsis">
     
   
-    Complete Configuration Guide
+    Configuration Reference
   
 
     
@@ -739,7 +750,7 @@
   <span class="md-ellipsis">
     
   
-    Configuration & Operations
+    Operations & Tooling Guide
   
 
     
@@ -1406,6 +1417,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#held-out-measurement-heldout_v2json-2026-11-04" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Held-out measurement, heldout_v2.json (2026-11-04)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1478,12 +1500,25 @@ accuracy.</p>
 <td>17 attack variants + 4 benign controls written after the first fix pass.</td>
 <td>Measured once before correction, then kept as a regression suite.</td>
 </tr>
+<tr>
+<td><code>heldout_v2.json</code></td>
+<td>98 attacks + 57 benign controls written on 2026-11-04, deliberately using techniques absent from the two files above, plus six attack families the engine has no name for (NoSQL, XXE, SSTI, response splitting, Host header, upload).</td>
+<td>Held out at the moment of writing. <code>heldout_v2_report.json</code> is its single measurement.</td>
+</tr>
 </tbody>
 </table>
 <p>Payload provenance is recorded per case in the <code>note</code> field and in the
 <code>provenance</code> block: OWASP CRS/WSTG notes, PortSwigger filter-evasion notes,
 Log4Shell obfuscation catalogues, RFC 7519 JWT fixtures, and benign snippets
 modelled on framework/CDN documentation.</p>
+<p><code>heldout_v2.json</code> adds a constraint the earlier batches did not state: the
+payloads were hand-written from catalogues the author recalled rather than
+copied from a fetched file, so each note names the documented technique instead
+of a URL, and the benign set is imagined traffic — not a sample from a
+customer's access log. The first run is produced by
+<code>tests/heldout_v2_measurement_test.rs</code>, which asserts nothing about detection
+quality on purpose: a held-out estimate that fails into a fix and is then
+re-measured is not an estimate.</p>
 <h2 id="measurements">Measurements</h2>
 <p>All numbers below come from <code>SatguardianSatEngine::new()</code> with the default
 configuration and the corpus request as the only input. No network hop, no
@@ -1580,9 +1615,73 @@ Log4Shell lookup assembly.</p>
 <p>Both files currently report 100% recall and 0% false-positive rate in
 <code>cargo test --test independent_corpus_test</code>. <strong>These are in-sample regression
 numbers.</strong> Every case was used to drive the fixes above, so they say
-"the pinned cases still pass", not "the engine catches X% of real attacks".
-No held-out estimate exists after the second fix pass because the held-out set
-was consumed.</p>
+"the pinned cases still pass", not "the engine catches X% of real attacks".</p>
+<h3 id="held-out-measurement-heldout_v2json-2026-11-04">Held-out measurement, <code>heldout_v2.json</code> (2026-11-04)</h3>
+<p>One run, produced before any engine change in response to these cases. Full
+detail, including every miss and every blocked control, is in
+<code>corpus/heldout_v2_report.json</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Attacks</td>
+<td>98</td>
+</tr>
+<tr>
+<td>Benign controls</td>
+<td>57</td>
+</tr>
+<tr>
+<td>Detected</td>
+<td>55</td>
+</tr>
+<tr>
+<td>Missed</td>
+<td>43</td>
+</tr>
+<tr>
+<td>Controls cleared</td>
+<td>53</td>
+</tr>
+<tr>
+<td>Controls blocked</td>
+<td>4</td>
+</tr>
+<tr>
+<td><strong>Recall</strong></td>
+<td><strong>56.1%</strong> (95% CI 46.3%–65.5%)</td>
+</tr>
+<tr>
+<td><strong>False-positive rate</strong></td>
+<td><strong>7.0%</strong> (95% CI 2.8%–16.7%)</td>
+</tr>
+</tbody>
+</table>
+<p>By family: XSS 12/12, GraphQL 4/4, prototype pollution 4/4, WordPress probes
+5/6, path traversal 6/8, command injection 5/8, SQL injection 8/12, JWT 3/4,
+framework exploit probes 3/8, sensitive-file probes 3/7, SSRF 1/8, XXE 1/2, and
+<strong>zero</strong> detection for the five families the engine has no rules for at all:
+NoSQL operator injection, SSTI, HTTP response splitting, Host-header injection
+and malicious upload.</p>
+<p>The four blocked controls are the honest cost of the signature set: an inline
+SVG in a CSS value, a password containing <code>;ls -la</code>, the public
+<code>/wp-json/wp/v2/posts</code> listing, and the WordPress <code>admin-ajax.php</code> heartbeat —
+those two being the engine blocking ordinary use of the platform a customer
+is most likely to run.</p>
+<p><strong>What this number is:</strong> the first out-of-sample estimate the project has
+produced, on hand-written attacks and imagined traffic. <strong>What it is not:</strong> a
+measurement against real customer logs, a certification, or a number to put on
+the site without this paragraph next to it. The previous batches' 100%/0% are
+still only in-sample regressions.</p>
+<p>This batch is now spent. Any engine change made to close a miss listed in
+<code>heldout_v2_report.json</code> turns <code>heldout_v2.json</code> into a third regression suite,
+and the next honest estimate has to come from a new <code>heldout_v3</code> labelled
+before it is run.</p>
 <h2 id="rules-for-changing-the-corpus">Rules for changing the corpus</h2>
 <ol>
 <li>Label a case before running it against the engine. Do not add a case and
@@ -1598,7 +1697,14 @@ was consumed.</p>
 <h2 id="running">Running</h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>cargo<span class="w"> </span><span class="nb">test</span><span class="w"> </span>--test<span class="w"> </span>independent_corpus_test<span class="w"> </span>--<span class="w"> </span>--nocapture
 </code></pre></div>
-<p>The test prints per-category recall, every miss, every false positive, and
+<p>The held-out batch is measured by its own test, which asserts nothing about
+detection quality. Re-running it prints the same numbers; the committed report is
+only rewritten when the variable is supplied, which is what keeps the first run
+from being silently replaced by a later, tuned one:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nv">HELDOUT_V2_REPORT</span><span class="o">=</span>corpus/heldout_v2_report.json<span class="w"> </span>cargo<span class="w"> </span><span class="nb">test</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">    </span>--test<span class="w"> </span>heldout_v2_measurement_test<span class="w"> </span>--<span class="w"> </span>--nocapture
+</code></pre></div>
+<p>The regression test prints per-category recall, every miss, every false positive, and
 every category-attribution mismatch, then fails if any list is non-empty or
 if recall/FPR cross the regression thresholds.</p>
 

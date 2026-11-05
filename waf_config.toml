@@ -1,8 +1,8 @@
 # ==============================================================================
-# SATGUARDIAN EDGE WAF - PRODUCTION CONFIGURATION
-# Sub-Millisecond Deterministic SAT Cyber-Defense & Reverse Proxy
-# 100% Free & Unlimited Edge Traffic (Open Source Edge WAF)
-# Cloud Boolean Minimization Powered by Security Units (SU) via satguardian.tech
+# SATGUARDIAN EDGE WAF - SAMPLE CONFIGURATION
+# Deterministic bitmask WAF and reverse proxy (research prototype, see STATUS.md)
+# Edge inspection is free and runs on unlimited local traffic (Apache-2.0)
+# Cloud rule synthesis is metered in Security Units (SU) via satguardian.tech
 # ==============================================================================
 
 # Inbound network listener for HTTP traffic to be protected
@@ -47,13 +47,15 @@ max_body_bytes = 2097152
 trusted_proxies = []
 
 # ------------------------------------------------------------------------------
-# CLOUD OPTIMIZATION SERVICE (Security Units - SU)
+# CLOUD REVIEW SERVICE (Security Units - SU)
 # ------------------------------------------------------------------------------
-# SATGuardian Cloud Optimization API URL for Autonomous Boolean Minimization.
-# Traffic inspection is 100% local and free (zero customer traffic touches our cloud).
-# Cloud synthesis consumes Security Units (SU) per Boolean minimization job.
-# When your SU balance is exhausted, cloud optimization pauses but the Edge WAF
-# continues protecting actively with your latest compiled rule matrix.
+# SATGuardian cloud endpoint for Boolean rule synthesis.
+# Inspection is local and free: requests are never forwarded to the cloud. When
+# cloud review runs, it uploads the u128 feature vectors recorded as novel
+# anomalies — not raw traffic, headers, bodies or client IPs.
+# Cloud synthesis consumes Security Units (SU) per job. When the SU balance is
+# exhausted, cloud synthesis pauses while the Edge WAF keeps enforcing the last
+# rule matrix you approved.
 satguardian_api_url = "https://satguardian.tech/api/simplify"
 
 # Cloud API Key (or set via SATGUARDIAN_API_KEY environment variable)
@@ -62,11 +64,13 @@ satguardian_api_url = "https://satguardian.tech/api/simplify"
 # SQLite WAL Ledger database location for audit logging and novel anomaly clustering
 database_path = "waf_ledger.db"
 
-# Autonomous background minimization sync interval in seconds (default: 300s / 5 mins)
+# Seconds between background cloud review runs (default: 300s / 5 mins)
 autonomous_sync_interval_secs = 300
 
-# Enable automatic hot minimization sync with https://satguardian.tech
-auto_sync_enabled = true
+# Send anomalies to the cloud on that timer. Off by default. Turning it on does not
+# change the WAF: results are stored as proposals and have to be approved with
+# `satguardian-waf clauses apply` or POST /api/waf/clauses/{id}/apply.
+auto_sync_enabled = false
 
 # ==============================================================================
 # STATEFUL & BEHAVIORAL DEFENSE (Layer-7 DDoS, Brute Force & Credential Stuffing)
@@ -93,7 +97,9 @@ stateful_ban_secs = 180
 # ENVOY PROXY EXT_AUTHZ INTEGRATION
 # ==============================================================================
 # Inbound HTTP listener for Envoy's envoy.filters.http.ext_authz filter
-# When enabled, Envoy offloads SAT security checks to SATGuardian at sub-millisecond speeds.
+# When enabled, Envoy asks SATGuardian to evaluate each request before forwarding it.
+# The engine's own work measured ~20 µs p50 in memory; the loopback hop adds whatever
+# your machine adds to a local HTTP call, which is not measured here.
 envoy_ext_authz_addr = "0.0.0.0:9002"
 
 # ==============================================================================

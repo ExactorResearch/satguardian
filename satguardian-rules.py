@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 ===============================================================================
- GUARDIAN-RULES: Interactive Rule & Protection Island Manager for Guardian WAF
+ SATGUARDIAN-RULES: Interactive Rule & Protection Island Manager for SATGuardian Edge WAF
  Curses TUI control plane inspired by htop/btop for real-time management of:
    - Customer Business Rules
    - Modular Protection Islands (WordPress, Exposure, Frameworks)
@@ -309,7 +309,7 @@ class SatguardianRulesApp:
         try:
             lines = [
                 "# ==============================================================================",
-                "# GUARDIAN WAF - CONFIGURATION PERSISTED BY GUARDIAN-RULES TUI",
+                "# SATGUARDIAN EDGE WAF - CONFIGURATION PERSISTED BY SATGUARDIAN-RULES TUI",
                 f"# Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}",
                 "# ==============================================================================",
                 "",
@@ -540,10 +540,10 @@ class SatguardianRulesApp:
         stdscr.clear()
         max_y, max_x = stdscr.getmaxyx()
         if max_y < 12 or max_x < 60:
-            safe_addstr(stdscr, 0, 0, "Terminal window too small for GUARDIAN-RULES.", curses.color_pair(2))
+            safe_addstr(stdscr, 0, 0, "Terminal window too small for SATGUARDIAN-RULES.", curses.color_pair(2))
             return
 
-        title = " GUARDIAN-RULES v0.2.0 — Deterministic SAT Cyber-Defense Control Plane "
+        title = " SATGUARDIAN-RULES v0.2.0 — Local Rule & Island Control Plane "
         safe_addstr(stdscr, 0, 0, title.ljust(max_x), curses.color_pair(7) | curses.A_BOLD)
 
         status_color = curses.color_pair(1) if self.is_connected else curses.color_pair(2)
@@ -638,7 +638,7 @@ class SatguardianRulesApp:
 
     def render_islands_view(self, stdscr, start_y, end_y, max_x):
         safe_addstr(stdscr, start_y, 2, "MODULAR CERTAINTY ISLANDS (Defense Islands Toggle)", curses.color_pair(4) | curses.A_BOLD)
-        safe_addstr(stdscr, start_y + 1, 2, "Active islands evaluate hot invariants and automatically drop hostile traffic in < 50 µs.", curses.color_pair(3))
+        safe_addstr(stdscr, start_y + 1, 2, "Islands evaluate every request locally, in memory (p50 ~20 µs; no TLS/proxy/upstream).", curses.color_pair(3))
 
         islands_meta = [
             (
@@ -660,7 +660,7 @@ class SatguardianRulesApp:
                 "ISLAND-FRAMEWORK",
                 "Modern Framework Exploits Shield",
                 "Blocks Log4j/JNDI (${jndi:...}), Spring SpEL, and Laravel Ignition injection.",
-                "Halts remote code execution attempts targeting enterprise application frameworks."
+                "Halts remote code execution attempts targeting modern application frameworks."
             ),
         ]
 
@@ -756,14 +756,14 @@ class SatguardianRulesApp:
             else:
                 self.set_status("Error communicating with /api/waf/inspect.")
         else:
-            self.set_status("WAF offline: Start Guardian WAF server to run live simulations.")
+            self.set_status("WAF offline: Start the SATGuardian Edge WAF to run live simulations.")
 
     def render_advisor_view(self, stdscr, start_y, end_y, max_x):
         safe_addstr(stdscr, start_y, 2, "FORENSIC AI ADVISOR — Trace Analysis & Digital Twin Simulation in Real Time", curses.color_pair(4) | curses.A_BOLD)
-        safe_addstr(stdscr, start_y + 1, 2, "Rules synthesized by TrafficPatternAgent & RuleSynthesizerAgent with 0% False Positives.", curses.color_pair(3))
+        safe_addstr(stdscr, start_y + 1, 2, "Proposals are replayed against the local ledger before you approve them.", curses.color_pair(3))
 
         if not self.advisor_suggestions:
-            safe_addstr(stdscr, start_y + 4, 4, "[✓] No pending suggestions for approval. Perimeter traffic is fully optimized.", curses.color_pair(1) | curses.A_BOLD)
+            safe_addstr(stdscr, start_y + 4, 4, "[✓] No pending proposals awaiting your approval.", curses.color_pair(1) | curses.A_BOLD)
             safe_addstr(stdscr, start_y + 6, 4, "Press 'R' to re-analyze forensic traces from waf_ledger.db.", curses.color_pair(4))
             return
 
@@ -914,7 +914,7 @@ class SatguardianRulesApp:
     # =========================================================================
     def run_cli_fallback(self):
         print("\033[1;36m" + "=" * 78 + "\033[0m")
-        print("\033[1;37m GUARDIAN-RULES v0.2.0 — WAF Rule Control Console\033[0m")
+        print("\033[1;37m SATGUARDIAN-RULES v0.2.0 — WAF Rule Control Console\033[0m")
         print("\033[1;36m" + "=" * 78 + "\033[0m")
         self.sync_data()
         print(f"WAF Status  : \033[1;32m{self.connection_msg}\033[0m" if self.is_connected else f"WAF Status  : \033[1;31m{self.connection_msg}\033[0m")
@@ -966,7 +966,7 @@ class SatguardianRulesApp:
         print("\n\033[1;36m-- RUNNING FORENSIC AI ADVISOR (MULTI-AGENT PIPELINE) --\033[0m")
         self.load_advisor()
         if not self.advisor_suggestions:
-            print("\033[1;32m[OK] No pending suggestions. Traffic is fully optimized.\033[0m\n")
+            print("\033[1;32m[OK] No pending proposals awaiting approval.\033[0m\n")
             return
         print(f"\nFound {len(self.advisor_suggestions)} proposals replayed against the local ledger:\n")
         idx = 0
@@ -1090,7 +1090,7 @@ class SatguardianRulesApp:
         body = input("Body payload (optional): ").strip()
 
         if not self.is_connected:
-            print("\033[1;33m[!] WAF Offline. Start the Guardian WAF server to run live SAT verifications.\033[0m\n")
+            print("\033[1;33m[!] WAF Offline. Start the SATGuardian Edge WAF to run live SAT verifications.\033[0m\n")
             return
 
         ok, res = self.api.inspect_payload(method, path, "", body)
@@ -1115,8 +1115,8 @@ class SatguardianRulesApp:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="GUARDIAN-RULES: Interactive TUI/CLI Manager for Guardian WAF Rules and Islands")
-    parser.add_argument("--api", default=DEFAULT_API_URL, help=f"Guardian WAF Management API URL (default: {DEFAULT_API_URL})")
+    parser = argparse.ArgumentParser(description="SATGUARDIAN-RULES: Interactive TUI/CLI Manager for SATGuardian Edge WAF Rules and Islands")
+    parser.add_argument("--api", default=DEFAULT_API_URL, help=f"SATGuardian Edge WAF management API URL (default: {DEFAULT_API_URL})")
     parser.add_argument("--config", default=None, help="Path to waf_config.toml configuration file")
     parser.add_argument("--cli", action="store_true", help="Force interactive CLI mode instead of curses TUI")
     args = parser.parse_args()
@@ -1127,7 +1127,7 @@ def main():
         try:
             curses.wrapper(app.run_curses)
         except Exception as e:
-            print(f"\n[GUARDIAN-RULES] Error during TUI execution: {e}", file=sys.stderr)
+            print(f"\n[SATGUARDIAN-RULES] Error during TUI execution: {e}", file=sys.stderr)
             sys.exit(1)
     else:
         app.run_cli_fallback()

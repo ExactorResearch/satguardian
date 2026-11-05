@@ -17,13 +17,15 @@ A line-by-line review of the `satguardian` repository and adjacent workspace pro
 
 | Technical Concept | Status in `satguardian` | Actual Code Implementation & Location |
 | :--- | :---: | :--- |
-| **Multi-Pass Lexical Normalization & Tokenization** | **✅ Implemented** | `src/ast/lexer.rs` (`Lexer::normalize_and_tokenize`) and `satguardian_waf/core/solver_sat.py` unwind nested URL/HTML encodings, strip `/*...*/` comments, and extract structural tokens across 5 attack domains (`SQLi`, `XSS`, `RCE`, `LFI`, `SSRF`). |
-| **128-Bit Feature Vector (`u128`)** | **✅ Implemented** | `src/ast/features.rs` (`FeatureVector(pub u128)`) packs HTTP metadata, Shannon entropy flags, and lexical token presence into a 128-bit integer. |
-| **Bitmask Conjunction Evaluator ("SAT Engine")** | **✅ Implemented** | `src/engine/sat_solver.rs` (`SatEngine`) evaluates pre-compiled boolean cubes in $O(1)$ per rule via bitwise `AND`: `(minterm & required_mask) == expected_bits`. *(Note: It is a fast bitmask evaluator, not an in-path backtracking DPLL/CDCL SAT solver).* |
-| **Out-of-Band EXACTOR GXOR Minimization** | **✅ Implemented** | `src/cloud/satguardian_client.rs` (`SatguardianCloudClient::simplify`) and `exactor-core-v128` (`procesar_gxor`, `modify_gray_code`) simplify up to **128 Boolean variables (`u128` minterms)** out of band using the **`{AND, OR, NOT, XOR}`** operator basis and Differential Gray Code Mapping in $O(\text{term\_count})$ linear time. |
+| **Multi-Pass Lexical Normalization & Tokenization** | **✅ Implemented** | `src/ast/lexer.rs` (`AstLexer`) and `satguardian_waf/core/solver_sat.py` unwind nested URL/HTML encodings, strip `/*...*/` comments, and extract structural tokens across 5 attack domains (`SQLi`, `XSS`, `RCE`, `LFI`, `SSRF`). |
+| **128-Bit Feature Vector (`u128`)** | **✅ Implemented** | `src/ast/features.rs` (`FeatureVector { bits: u128 }`, 40 named variables in the current catalogue) packs HTTP metadata, Shannon entropy flags, and lexical token presence into a 128-bit integer. |
+| **Bitmask Conjunction Evaluator ("SAT Engine")** | **✅ Implemented** | `src/engine/sat_solver.rs` (`SatguardianSatEngine`) evaluates pre-compiled boolean cubes per rule via bitwise `AND`: `(fv.bits & required_mask) == expected_bits`. *(Note: It is a fast bitmask evaluator, not an in-path backtracking DPLL/CDCL SAT solver).* |
+| **Opt-in Cloud Review Client** | **✅ Implemented** | `src/cloud/satguardian_client.rs` (`SatguardianCloudClient::simplify`, `compile_equation_to_clauses()`) posts the pending minterms to the SATGuardian cloud synthesis service at `https://satguardian.tech/api/simplify` and compiles the answer into bitmask clauses. `auto_sync_enabled` defaults to `false` (`src/config.rs`, `waf_config.toml`), so no upload happens until the operator turns it on. |
+| **Boolean Minimizer** | **❌ Not in this repository** | Minimization over `{AND, OR, NOT, XOR}` runs inside the SATGuardian cloud service. It is server-side, is not distributed to customers, and this audit could not review its code; the client only receives and evaluates the compiled clauses. |
+| **Proposal Gate for Cloud Clauses** | **✅ Implemented** | `src/ledger/sqlite_ledger.rs` stores cloud clauses with `applied = 0` (`propose_dynamic_clause`); startup loads approved rows only (`load_applied_clauses`, `applied = 1`). Decisions are explicit operator actions behind the admin token: `satguardian-waf clauses list / apply / reject`, `GET /api/waf/clauses/pending`, `POST /api/waf/clauses/{id}/apply`, `DELETE /api/waf/clauses/{id}`. Rejecting deletes only a proposal; a rule already enforcing is never removed by it. |
+| **Approved Clause Goes Live Without a Restart** | **✅ Implemented** | `SatguardianSatEngine::register_dynamic_clause` appends to the in-memory clause set the proxy shares through `Arc`; an HTTP approval is visible to subsequent requests with no process restart and no dropped connections. The earlier description of this step as automatic hot-reload of whatever the cloud returned is no longer true. |
 | **Digital Twin Benign Traffic Replay** | **✅ Implemented** | `satguardian-advisor.py` (`SimulationAgent`) replays candidate rules against benign requests recorded in `waf_ledger.db` and reports collisions. It does not certify a fixed false-positive rate. |
-| **Lock-Free Atomic Rule Hot-Reload** | **✅ Implemented** | `src/proxy/http_proxy.rs` uses `arc_swap::ArcSwap` to swap rule matrices in memory without dropping TCP connections. |
-| **Token-Bucket Burst Rate Limiting** | **✅ Implemented** | `src/engine/sat_solver.rs` uses lock-free `DashMap` counters per client IP to block Layer-7 burst floods (`SAT-STATE-01`). |
+| **Stateful Burst Rate Limiting** | **✅ Implemented** | `src/stateful/limiter.rs` (`StatefulRateLimiter`, per-client records behind an `RwLock<HashMap<..>>`) and `src/stateful/sliding_window.rs` (`SlidingWindowRingCounter`) count requests per client IP over a sliding window and raise the `SAT-STATE-01` violation that `src/engine/sat_solver.rs` turns into a block. *(There is no `DashMap` token bucket in this codebase; an earlier revision of this table claimed one.)* |
 | **Wolfram Cellular Automata / M-Code / Graph Isomorphism** | **❌ Not in WAF Code** | Part of separate theoretical research projects (`hesize-code-ia`, `adn`); removed from all WAF documentation to maintain strict engineering accuracy. |
 
 ---
@@ -33,16 +35,20 @@ A line-by-line review of the `satguardian` repository and adjacent workspace pro
 No value is capped or floored. The benchmark refuses to run without the pinned
 corpus, and prints its scope on every run.
 
-### 2.1 Detection on the pinned corpus
+### 2.1 Detection: in-sample floors and the one held-out run
 
 | Corpus | First run before fixes | Current regression | Nature of the number |
 | :--- | :---: | :---: | :--- |
-| `corpus/independent_v1.json` (63 attacks, 16 benign) | 51/63 recall (80.95%), 3/16 benign blocked (18.75% FPR) | 63/63, 0/16 blocked | In-sample regression |
-| `corpus/heldout_v1.json` (17 attacks, 4 benign) | 11/17 recall (64.71%), 0/4 benign blocked | 17/17, 0/4 blocked | Consumed held-out batch |
+| `corpus/independent_v1.json` (63 attacks, 16 benign) | 51/63 recall (80.95%), 3/16 benign blocked (18.75% FPR) | 63/63, 0/16 blocked | In-sample regression floor |
+| `corpus/heldout_v1.json` (17 attacks, 4 benign) | 11/17 recall (64.71%), 0/4 benign blocked | 17/17, 0/4 blocked | Consumed batch; in-sample regression floor |
+| `corpus/heldout_v2.json` (98 attacks, 57 controls) | **55/98 recall (56.1%, 95% CI 46.3–65.5%)**, **4/57 controls blocked (7.0% FPR, 95% CI 2.8–16.7%)** | deliberately not re-run | **Held-out**, one run on 2026-11-04 (`corpus/heldout_v2_report.json`) |
 
-Both corpora were used to drive fixes after their first run. The current 100%/0%
-therefore means "the pinned cases still pass", not "the engine catches X% of
-real attacks". Protocol: [corpus/README.md](../corpus.md).
+The first two corpora were used to drive fixes after their first run. Their
+current 100%/0% therefore means "the pinned cases still pass", not "the engine
+catches X% of real attacks". The `heldout_v2` row is the only out-of-sample
+estimate available, it is a single run, and there is **no third-party or
+independent evaluation** behind it. Protocol:
+[corpus/README.md](../corpus.md).
 
 ### 2.2 In-memory latency
 
@@ -57,8 +63,9 @@ real attacks". Protocol: [corpus/README.md](../corpus.md).
 - **p99:** `49.3 µs` (near the `50 µs` target; varies with load)
 - **Max:** `311.1 µs`
 
-Scope: in-memory rule evaluation only. No TLS, proxy hop, upstream service or
-stateful tracking is included.
+Scope: in-memory rule evaluation only, on the pinned corpus. No TLS, proxy hop,
+upstream service or stateful tracking is included, and no end-to-end request
+path has been measured.
 
 ### 2.3 Python stand-in harness
 
@@ -66,17 +73,40 @@ stateful tracking is included.
 Python stand-ins. It does not execute Coraza, SafeLine, ModSecurity or an LLM.
 The report prints the dataset provenance and a disclaimer next to the metrics.
 
+### 2.4 Cloud Review, Verified Against Source
+
+Checked line by line in `src/`:
+
+- `auto_sync_enabled` defaults to **`false`** (`src/config.rs`, mirrored in
+  `waf_config.toml`), so the node uploads nothing until the operator opts in.
+- All three review entry points — the timer worker in `src/main.rs`,
+  `satguardian-waf sync-simplify`, and `POST /api/waf/sync-simplify` — call
+  `SqliteLedger::propose_dynamic_clause`, which writes `applied = 0`. The sync
+  response returns `"status": "proposed"` and states that nothing was applied.
+- `src/main.rs` calls `load_applied_clauses()` (`WHERE applied = 1`) at startup,
+  so proposals never reach the engine implicitly.
+- Enforcement requires an explicit decision: `satguardian-waf clauses apply
+  <id>`, or `POST /api/waf/clauses/{id}/apply` for immediate registration on a
+  running process. Both, together with `GET /api/waf/clauses/pending` and
+  `DELETE /api/waf/clauses/{id}`, sit behind `require_admin_token`.
+- `reject_dynamic_clause` deletes only rows with `applied = 0`; it cannot remove
+  a rule that is already enforcing.
+- The minimization itself is not verifiable from this repository: it runs in the
+  SATGuardian cloud service, which is outside the audit scope.
+
 ---
 
 ## 3. Bundled Ledger Walkthrough (`waf_ledger.db`)
 
 Running `python satguardian-advisor.py --report-md audit_report.md` against the
-bundled ledger produces a demo audit:
+bundled ledger produces a demo, evidence-backed audit report:
 - **Total recorded requests:** `3,799`
 - **Blocked:** `2,136` (`951` SQLi, `477` XSS, `472` path traversal, `234` rate-limit bursts, `2` SSRF)
 - **Allowed benign:** `1,663`
 - **Replay:** candidate rules are replayed against the benign rows; collisions are reported per run. No fixed false-positive floor is claimed.
+- **Pending minterms:** rows in `novel_anomalies` are **patterns awaiting analysis**. They are candidates for cloud review, not unprotected threats and not a coverage gap, and with `auto_sync_enabled = false` they stay on the node.
 
 The ledger is demo data for exercising the advisor pipeline, not independently
-labelled ground truth and not a customer tenant.
+labelled ground truth and not a customer tenant. No claim in this section should
+be read as evidence about real traffic.
 

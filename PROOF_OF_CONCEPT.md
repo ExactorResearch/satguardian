@@ -5,7 +5,8 @@ Edge WAF** (`satguardian`) locally using the Rust binary and the Python benchmar
 and advisor suite.
 
 > **Status: research prototype.** The PoC measures in-memory rule evaluation on a
-> small in-sample corpus. It is not a production validation. See
+> small in-sample corpus plus one held-out run of hand-written payloads. It is
+> not a production validation and there is no third-party evaluation. See
 > [STATUS.md](STATUS.md).
 
 ---
@@ -15,15 +16,19 @@ and advisor suite.
 1. **Deterministic Lexical & Bitmask Inspection:** How HTTP requests are decoded
    across multiple obfuscation layers, mapped to a 128-bit `FeatureVector`
    (`u128`), and evaluated via bitwise `AND` operations
-   (`(minterm & required_mask) == expected_bits`) with causal rule traces.
+   (`(fv.bits & required_mask) == expected_bits`) with causal rule traces.
 2. **Python stand-in harness:** CPU timing and detection on the in-repo payload
    list, comparing the Python reference port against local reimplementations.
    It does not execute Coraza, SafeLine, ModSecurity or a trained model.
-3. **Offline EXACTOR GXOR Rule Synthesis & Replay:** How
-   `satguardian-advisor.py` and `SatguardianCloudClient` mine `waf_ledger.db`,
-   invoke EXACTOR GXOR (`{AND, OR, NOT, XOR}` up to 128 variables), replay
-   candidate rules against recorded benign traffic to find collisions, and
-   generate reports (`audit_report.html`, `audit_report.md`).
+3. **Offline rule proposals and replay:** How `satguardian-advisor.py` mines
+   `waf_ledger.db`, replays candidate rules against recorded benign traffic to
+   find collisions, and writes evidence-backed audit reports
+   (`audit_report.html`, `audit_report.md`).
+4. **The approval gate:** How a cloud review run leaves its results as proposals
+   (`dynamic_clauses.applied = 0`) that enforce only after you approve them:
+   `satguardian-waf clauses list`, `clauses apply <id>`, `clauses reject <id>`.
+   The minimization that produced a proposal happens on the SATGuardian cloud
+   service (`satguardian.tech`) and is not part of this repository.
 
 ---
 
@@ -89,17 +94,23 @@ stand-ins, not the named products.
   That excludes network and proxy overhead and says nothing about end-to-end
   throughput.
 - Detection on the pinned corpus is 100%/0% only because the same cases were
-  used to drive the fixes. First-run baselines were 80.95% recall / 18.75% FPR
-  (`independent_v1`) and 64.71% recall / 0% FPR (`heldout_v1`). See
-  [corpus/README.md](corpus/README.md).
+  used to drive the fixes; those rows are in-sample regression floors.
+  First-run baselines were 80.95% recall / 18.75% FPR (`independent_v1`) and
+  64.71% recall / 0% FPR (`heldout_v1`). The only out-of-sample run is
+  `corpus/heldout_v2.json`, executed once on 2026-11-04: **56.1% recall** on 98
+  attacks (95% CI 46.3–65.5%) and a **7.0% false-positive rate** on 57 controls
+  (95% CI 2.8–16.7%). See [corpus/README.md](corpus/README.md).
 - The harness does not show that SATGuardian is faster or more accurate than a
-  real vendor WAF. That comparison has not been run.
+  real vendor WAF. That comparison has not been run, and no part of this PoC has
+  been evaluated by a third party.
 
 ---
 
 ## 4. Generating the Forensic Audit Reports (`satguardian-advisor.py`)
 
-To analyze the 3,799 recorded transactions in `waf_ledger.db`, verify synthesized rules against the Digital Twin, and generate HTML and Markdown compliance reports:
+To analyze the 3,799 recorded transactions in `waf_ledger.db`, verify candidate
+rules against the Digital Twin replay of recorded benign traffic, and generate
+HTML and Markdown evidence-backed audit reports:
 
 ```powershell
 python satguardian-advisor.py --report audit_report.html

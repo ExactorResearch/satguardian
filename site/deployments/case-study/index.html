@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Sub-Millisecond Lexical Normalization, 128-Bit Integer Mask Evaluation, and EXACTOR GXOR Boolean Cloud Optimization">
+        <meta name="description" content="Research-prototype Rust edge WAF with u128 bitmask inspection and opt-in SATGuardian cloud rule synthesis that returns proposals you approve">
       
       
         <meta name="author" content="SATGuardian Cyber-Defense Systems">
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#deployment-notes-forensic-ledger-walkthrough-lab-environment" class="md-skip">
+        <a href="#lab-walkthrough-forensic-ledger-notes-not-a-customer-deployment" class="md-skip">
           Skip to content
         </a>
       
@@ -592,7 +592,7 @@
   <span class="md-ellipsis">
     
   
-    Complete Configuration Guide
+    Configuration Reference
   
 
     
@@ -620,7 +620,7 @@
   <span class="md-ellipsis">
     
   
-    Configuration & Operations
+    Operations & Tooling Guide
   
 
     
@@ -998,10 +998,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#22-offline-rule-synthesis-and-replay" class="md-nav__link">
+  <a href="#22-rule-proposals-and-replay" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2.2 Offline Rule Synthesis and Replay
+        2.2 Rule Proposals and Replay
       
     </span>
   </a>
@@ -1407,10 +1407,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#22-offline-rule-synthesis-and-replay" class="md-nav__link">
+  <a href="#22-rule-proposals-and-replay" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2.2 Offline Rule Synthesis and Replay
+        2.2 Rule Proposals and Replay
       
     </span>
   </a>
@@ -1470,15 +1470,23 @@
   
 
 
-<h1 id="deployment-notes-forensic-ledger-walkthrough-lab-environment">Deployment Notes &amp; Forensic Ledger Walkthrough (Lab Environment)</h1>
-<p><strong>Environment:</strong> local/staging deployment of <code>satguardian</code> v0.3.0<br />
+<h1 id="lab-walkthrough-forensic-ledger-notes-not-a-customer-deployment">Lab Walkthrough &amp; Forensic Ledger Notes (Not a Customer Deployment)</h1>
+<blockquote>
+<p><strong>Read this before quoting anything below.</strong> This document is a walkthrough of
+a research prototype run on our own machine, against the SQLite ledger that is
+committed to the repository as demo data. It is <strong>not</strong> a customer deployment,
+not a production environment, and not production evidence of any kind. No
+third-party traffic, no third-party evaluation and no long-running soak is
+involved. The file keeps its original name so the documentation navigation
+still resolves. See <a href="../../status/">STATUS.md</a> and <a href="../../corpus/">corpus/README.md</a>.</p>
+</blockquote>
+<p><strong>Environment:</strong> local/staging lab run of <code>satguardian</code> v0.3.0 on the project's own development machine<br />
 <strong>Data sources:</strong> bundled demonstration SQLite ledger (<code>waf_ledger.db</code>), the native
 Rust benchmark, and the Python stand-in harness</p>
 <blockquote>
 <p><strong>Status: research prototype.</strong> This is not a customer production deployment
-and does not demonstrate production readiness. Numbers below come from the
-bundled ledger and the in-repo corpus. See <a href="../../status/">STATUS.md</a> and
-<a href="../../corpus/">corpus/README.md</a>.</p>
+and does not demonstrate production readiness. Every number below comes from
+the bundled demo ledger or the in-repo corpus, on one machine.</p>
 </blockquote>
 <hr />
 <h2 id="1-summary">1. Summary</h2>
@@ -1493,16 +1501,23 @@ bundled ledger and the in-repo corpus. See <a href="../../status/">STATUS.md</a>
 <li><strong>Python harness:</strong> <code>python run_benchmark.py 1000</code> compares the Python
    reference port against local Python stand-ins. It does not execute Coraza,
    SafeLine, ModSecurity or an LLM.</li>
+<li><strong>Nothing in this walkthrough changed a rule set automatically.</strong> Cloud review
+   is off by default (<code>auto_sync_enabled = false</code>), and when it runs it leaves
+   proposals in the ledger for a human to approve. The protection you see here is
+   the built-in rule matrix that ships in the binary.</li>
 </ol>
 <blockquote>
 <p><strong>Correction notice:</strong> earlier versions of this document capped accuracy at
 <code>99.9%</code>, floored error rates at <code>&lt; 0.1%</code>, and presented Python stand-ins as
-vendor products. Those numbers and labels were removed.</p>
+vendor products. Those numbers and labels were removed. The held-out figures in
+§3 replace them.</p>
 </blockquote>
 <hr />
 <h2 id="2-forensic-ledger-walkthrough-waf_ledgerdb">2. Forensic Ledger Walkthrough (<code>waf_ledger.db</code>)</h2>
 <p>Generated with <code>python satguardian-advisor.py --report audit_report.html</code> and
-<code>python satguardian-advisor.py --report-md audit_report.md</code>.</p>
+<code>python satguardian-advisor.py --report-md audit_report.md</code>. <strong>The input is the
+demo ledger committed to this repository, so the output is a pipeline exercise,
+not evidence about real traffic.</strong></p>
 <h3 id="21-traffic-taxonomy-bundled-demonstration-ledger">2.1 Traffic Taxonomy (bundled demonstration ledger)</h3>
 <table>
 <thead>
@@ -1542,7 +1557,7 @@ vendor products. Those numbers and labels were removed.</p>
 <td style="text-align: left;">Rate-limited bursts</td>
 <td style="text-align: center;"><code>234</code></td>
 <td style="text-align: left;"><code>BLOCK</code></td>
-<td style="text-align: left;">Token-bucket state rule</td>
+<td style="text-align: left;">Sliding-window state rule (<code>SAT-STATE-01</code>)</td>
 </tr>
 <tr>
 <td style="text-align: left;">SSRF</td>
@@ -1560,59 +1575,62 @@ vendor products. Those numbers and labels were removed.</p>
 </table>
 <p>The ledger is demo data. It is useful for exercising the advisor pipeline; it is
 not evidence that the engine is correct on real traffic.</p>
-<h3 id="22-offline-rule-synthesis-and-replay">2.2 Offline Rule Synthesis and Replay</h3>
+<h3 id="22-rule-proposals-and-replay">2.2 Rule Proposals and Replay</h3>
 <p>The advisor analyses the ledger and proposes rule candidates, then replays each
-candidate against the benign records to find collisions.</p>
+candidate against the benign records to find collisions. <strong>A candidate is a
+proposal: it changes nothing until the operator approves it</strong> (<code>--dry-run</code> lists
+them without applying).</p>
 <table>
 <thead>
 <tr>
 <th style="text-align: left;">Candidate</th>
 <th style="text-align: left;">Basis</th>
-<th style="text-align: center;">Replay gate</th>
-<th style="text-align: left;">Operational effect</th>
+<th style="text-align: left;">Replay result (this demo ledger)</th>
+<th style="text-align: left;">Effect if approved</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td style="text-align: left;"><code>biz-ban-ip-169-254-54-10</code></td>
 <td style="text-align: left;">Source IP concentrated attack events</td>
-<td style="text-align: center;">see advisor report</td>
+<td style="text-align: left;"><code>154 collisions</code> against allowed rows — the operator sees this before deciding</td>
 <td style="text-align: left;">Drops the hostile IP in fast path</td>
 </tr>
 <tr>
 <td style="text-align: left;"><code>biz-method-api-users</code></td>
 <td style="text-align: left;">Benign traffic on <code>/api/users</code> used <code>GET</code> only</td>
-<td style="text-align: center;">see advisor report</td>
+<td style="text-align: left;">No collisions / 1663 allowed</td>
 <td style="text-align: left;">Restricts unused methods</td>
 </tr>
 <tr>
 <td style="text-align: left;"><code>biz-method-api-v1-search</code></td>
 <td style="text-align: left;">Benign traffic used <code>GET</code> only</td>
-<td style="text-align: center;">see advisor report</td>
+<td style="text-align: left;">No collisions / 1663 allowed</td>
 <td style="text-align: left;">Restricts route surface</td>
 </tr>
 <tr>
 <td style="text-align: left;"><code>biz-method-api-v1-users-profile</code></td>
 <td style="text-align: left;">Benign traffic used <code>GET</code> only</td>
-<td style="text-align: center;">see advisor report</td>
+<td style="text-align: left;">No collisions / 1663 allowed</td>
 <td style="text-align: left;">Restricts route surface</td>
 </tr>
 <tr>
 <td style="text-align: left;"><code>biz-method-api-waf-metrics</code></td>
 <td style="text-align: left;">Benign traffic used <code>GET</code> only</td>
-<td style="text-align: center;">see advisor report</td>
+<td style="text-align: left;">No collisions / 1663 allowed</td>
 <td style="text-align: left;">Restricts telemetry endpoint</td>
 </tr>
 <tr>
 <td style="text-align: left;"><code>cloud_sync_pending_anomalies</code></td>
-<td style="text-align: left;">Novel minterms awaiting synthesis</td>
-<td style="text-align: center;">n/a (cloud step)</td>
-<td style="text-align: left;">Compresses minterms via EXACTOR GXOR</td>
+<td style="text-align: left;"><code>14</code> novel minterms recorded as patterns awaiting analysis</td>
+<td style="text-align: left;">Not replayed locally; the cloud step returns compiled clauses</td>
+<td style="text-align: left;">Sent to SATGuardian cloud synthesis <strong>only if the operator opts in</strong>; results arrive as proposals (<code>dynamic_clauses.applied = 0</code>) and enforce only after <code>satguardian-waf clauses apply &lt;id&gt;</code></td>
 </tr>
 </tbody>
 </table>
 <p>Replay outcomes depend on the ledger contents and rule thresholds. The advisor
-prints the collision count for each candidate; no fixed floor is claimed here.</p>
+prints the collision count for each candidate; no fixed floor is claimed here,
+and "no collisions" on demo traffic is not a false-positive guarantee.</p>
 <hr />
 <h2 id="3-measurements-and-limits">3. Measurements and Limits</h2>
 <table>
@@ -1627,7 +1645,7 @@ prints the collision count for each candidate; no fixed floor is claimed here.</
 <tr>
 <td style="text-align: left;">Detection, pinned corpus</td>
 <td style="text-align: left;"><code>corpus/independent_v1.json</code> (63 attacks, 16 benign)</td>
-<td style="text-align: left;">63/63 attacks, 0/16 benign blocked (in-sample regression)</td>
+<td style="text-align: left;">63/63 attacks, 0/16 benign blocked (<strong>in-sample regression floor</strong>)</td>
 </tr>
 <tr>
 <td style="text-align: left;">Detection, first run before fixes</td>
@@ -1637,12 +1655,17 @@ prints the collision count for each candidate; no fixed floor is claimed here.</
 <tr>
 <td style="text-align: left;">Detection, second batch first run</td>
 <td style="text-align: left;"><code>corpus/heldout_v1.json</code> (17 attacks, 4 benign)</td>
-<td style="text-align: left;">11/17 recall (64.71%), 0/4 benign blocked</td>
+<td style="text-align: left;">11/17 recall (64.71%), 0/4 benign blocked; batch since consumed</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Held-out detection (the only one)</strong></td>
+<td style="text-align: left;"><code>corpus/heldout_v2.json</code> (98 attacks, 57 controls), one run on 2026-11-04</td>
+<td style="text-align: left;"><strong>56.1% recall</strong> (95% CI 46.3–65.5%), <strong>7.0% false-positive rate</strong> (95% CI 2.8–16.7%)</td>
 </tr>
 <tr>
 <td style="text-align: left;">In-memory latency, native Rust</td>
 <td style="text-align: left;"><code>benchmark -r 10000</code></td>
-<td style="text-align: left;">p50 <code>~20 µs</code>, mean <code>~22 µs</code>, p99 near <code>50 µs</code> depending on load</td>
+<td style="text-align: left;">p50 <code>~20 µs</code>, mean <code>~22 µs</code>, p99 near <code>50 µs</code> depending on load; in-memory only</td>
 </tr>
 <tr>
 <td style="text-align: left;">Python harness</td>
@@ -1654,11 +1677,18 @@ prints the collision count for each candidate; no fixed floor is claimed here.</
 <h3 id="operational-conclusions">Operational conclusions</h3>
 <ol>
 <li><strong>Latency is in-memory only.</strong> The Rust engine evaluates rules in tens of
-   microseconds per payload. No end-to-end proxy latency has been characterized.</li>
-<li><strong>Evasion coverage is a regression floor.</strong> The current corpus passes after
-   being used to drive fixes. It does not establish coverage of unseen payloads.</li>
-<li><strong>No production guarantees.</strong> There is no third-party evaluation, soak test,
-   or real-product comparison. Treat this document as a lab walkthrough.</li>
+   microseconds per payload on this machine. No end-to-end proxy latency has been
+   characterized.</li>
+<li><strong>The 100%/0% corpus rows are regression floors.</strong> They pass because those
+   cases were used to drive fixes. The honest out-of-sample measurement is the
+   <code>heldout_v2</code> row: <strong>56.1% recall and a 7.0% false-positive rate</strong>, on payloads
+   written inside this project.</li>
+<li><strong>No production guarantees.</strong> There is no third-party evaluation, no soak
+   test, no customer access log and no real-product comparison. Treat this
+   document as a lab walkthrough of a research prototype.</li>
+<li><strong>What the lab run does show</strong> is the operating model: the node protects
+   itself locally and offline by default, review of new patterns is opt-in, and
+   every change to the enforcing rule set is an explicit operator approval.</li>
 </ol>
 
 

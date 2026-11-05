@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Sub-Millisecond Lexical Normalization, 128-Bit Integer Mask Evaluation, and EXACTOR GXOR Boolean Cloud Optimization">
+        <meta name="description" content="Research-prototype Rust edge WAF with u128 bitmask inspection and opt-in SATGuardian cloud rule synthesis that returns proposals you approve">
       
       
         <meta name="author" content="SATGuardian Cyber-Defense Systems">
@@ -592,7 +592,7 @@
   <span class="md-ellipsis">
     
   
-    Complete Configuration Guide
+    Configuration Reference
   
 
     
@@ -620,7 +620,7 @@
   <span class="md-ellipsis">
     
   
-    Configuration & Operations
+    Operations & Tooling Guide
   
 
     
@@ -855,10 +855,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#22-plane-2-out-of-band-exactor-gxor-synthesis-digital-twin-srccloudsatguardian_clientrs-exactor-core-v128-satguardian-advisorpy" class="md-nav__link">
+  <a href="#22-plane-2-out-of-band-cloud-review-replay-and-approval-srccloudsatguardian_clientrs-srcledgersqlite_ledgerrs-satguardian-advisorpy" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2.2 Plane 2: Out-of-Band EXACTOR GXOR Synthesis &amp; Digital Twin (src/cloud/satguardian_client.rs, exactor-core-v128, satguardian-advisor.py)
+        2.2 Plane 2: Out-of-Band Cloud Review, Replay and Approval (src/cloud/satguardian_client.rs, src/ledger/sqlite_ledger.rs, satguardian-advisor.py)
       
     </span>
   </a>
@@ -1401,10 +1401,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#22-plane-2-out-of-band-exactor-gxor-synthesis-digital-twin-srccloudsatguardian_clientrs-exactor-core-v128-satguardian-advisorpy" class="md-nav__link">
+  <a href="#22-plane-2-out-of-band-cloud-review-replay-and-approval-srccloudsatguardian_clientrs-srcledgersqlite_ledgerrs-satguardian-advisorpy" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2.2 Plane 2: Out-of-Band EXACTOR GXOR Synthesis &amp; Digital Twin (src/cloud/satguardian_client.rs, exactor-core-v128, satguardian-advisor.py)
+        2.2 Plane 2: Out-of-Band Cloud Review, Replay and Approval (src/cloud/satguardian_client.rs, src/ledger/sqlite_ledger.rs, satguardian-advisor.py)
       
     </span>
   </a>
@@ -1459,17 +1459,18 @@
 
 
 <h1 id="structured-grammar-inspection-offline-rule-synthesis">Structured Grammar Inspection &amp; Offline Rule Synthesis</h1>
-<p><strong>Architectural Overview: In-Path Bitmask Evaluation and Out-of-Band EXACTOR GXOR (<code>{AND, OR, NOT, XOR}</code>) Minimization up to 128 Variables</strong><br />
-<strong>Codebase Reference:</strong> <code>src/engine/sat_solver.rs</code>, <code>src/cloud/satguardian_client.rs</code>, <code>exactor-core-v128</code>, <code>satguardian-advisor.py</code></p>
+<p><strong>Architectural Overview: In-Path Bitmask Evaluation plus Opt-In Cloud Rule Review</strong><br />
+<strong>Codebase Reference:</strong> <code>src/engine/sat_solver.rs</code>, <code>src/cloud/satguardian_client.rs</code>, <code>src/ledger/sqlite_ledger.rs</code>, <code>src/api/server.rs</code>, <code>satguardian-advisor.py</code></p>
 <blockquote>
 <p><strong>Status: research prototype.</strong> Detection numbers in this document are
-in-sample results on a hand-written corpus and comparisons against local
-Python stand-ins. They are not vendor benchmarks and do not establish
-production readiness. See <a href="../../status/">STATUS.md</a>.</p>
+in-sample results on a hand-written corpus plus one held-out run of the same
+author's payloads, and comparisons against local Python stand-ins. They are
+not vendor benchmarks and do not establish production readiness. There is no
+third-party evaluation. See <a href="../../status/">STATUS.md</a>.</p>
 </blockquote>
 <hr />
 <h2 id="1-core-engineering-problem">1. Core Engineering Problem</h2>
-<p>Enterprise Web Application Firewalls face an operational trade-off between <strong>latency</strong>, <strong>evasion resilience</strong>, and <strong>false positive rates</strong>:</p>
+<p>Web application firewalls face an operational trade-off between <strong>latency</strong>, <strong>evasion resilience</strong>, and <strong>false positive rates</strong>:</p>
 <ol>
 <li><strong>Unnormalized Signature WAFs:</strong> fast on simple strings but bypassable by
    inline comments, URL encoding or alternative DOM vectors. The local
@@ -1486,42 +1487,53 @@ production readiness. See <a href="../../status/">STATUS.md</a>.</p>
 </ol>
 <hr />
 <h2 id="2-the-two-plane-satguardian-architecture">2. The Two-Plane SATGuardian Architecture</h2>
-<p>SATGuardian resolves this trade-off by decoupling <strong>real-time edge inspection</strong> from <strong>offline boolean rule synthesis</strong>:</p>
+<p>SATGuardian resolves this trade-off by decoupling <strong>real-time edge inspection</strong> from <strong>out-of-band rule review</strong>, and by keeping the second plane behind an explicit operator decision:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>┌────────────────────────────────────────────────────────────────────────────┐
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>│ 1. HOT PATH: SOVEREIGN EDGE WAF (100% On-Premise, Unlimited Traffic)       │
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>│                                                                            │
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>│  HTTP Request ──► Multi-Pass Lexer ──► 128-Bit FeatureVector (u128)        │
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>│                   (src/ast/lexer.rs)   (src/ast/features.rs)               │
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>│                                                 │                          │
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>│                                                 ▼                          │
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>│                                 Bitwise Rule Mask Evaluation               │
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>│                                 (minterm &amp; mask) == expected               │
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>│                                 (~20 µs avg in-memory, native Rust)        │
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>│                                        /               \                   │
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>│                                   [ALLOW]             [BLOCK + Causal Log] │
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>└─────────────────────────────────────────────────────────┬──────────────────┘
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>                                                          │ Async SQLite
-<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>                                                          ▼
-<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>┌────────────────────────────────────────────────────────────────────────────┐
-<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>│ 2. CONTROL PLANE: OFFLINE ADVISOR &amp; CLOUD SYNTHESIS (Security Units - SU) │
-<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>│                                                                            │
-<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>│  waf_ledger.db ──► EXACTOR GXOR (AND, OR, NOT, XOR)    ──► Digital Twin    │
-<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>│  (ledger)          128-Variable Boolean Minimization       Replay (collisions)│
-<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>│                    (satguardian_client.rs / exactor-core)        │         │
-<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>│                                                                  ▼         │
-<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>│                                                   Atomic ArcSwap Hot-Reload│
-<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>└────────────────────────────────────────────────────────────────────────────┘
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>│ 1. HOT PATH: SELF-HOSTED EDGE WAF                                          │
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>│    On your own node, no per-request fee, enforces with no network call     │
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>│                                                                            │
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>│ HTTP Request ──► Multi-Pass Lexer ──► 128-Bit FeatureVector (u128)         │
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>│    (src/ast/lexer.rs)        (src/ast/features.rs)                         │
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>│                  │                                                         │
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>│                  ▼                                                         │
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>│    Bitwise Rule Mask Evaluation (src/engine/sat_solver.rs)                 │
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>│    (minterm &amp; required_mask) == expected_bits                              │
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>│    ~20 µs avg in-memory, native Rust; TLS and proxy hops excluded          │
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>│           /                        \                                       │
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>│    [ALLOW: forward to upstream]   [BLOCK 403 + causal log]                 │
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>└────────────────────────────────────────┬───────────────────────────────────┘
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>                                         │  Async SQLite ledger (waf_ledger.db)
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>                                         ▼
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>┌────────────────────────────────────────────────────────────────────────────┐
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>│ 2. CONTROL PLANE: OPT-IN CLOUD REVIEW → PROPOSALS → APPROVAL               │
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>│                                                                            │
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>│ waf_ledger.db ──► cloud review client ──► SATGuardian cloud synthesis      │
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>│   (ledger)      (satguardian_client.rs)   (satguardian.tech, off-repo)     │
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>│                                                                            │
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>│ Returned clauses are stored as PROPOSALS: dynamic_clauses.applied = 0      │
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>│ They are not registered in the engine and are not loaded at startup.       │
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>│ The advisor replays candidates against benign rows, reports collisions.    │
+<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>│      │                                                                     │
+<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>│      ▼                                                                     │
+<a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>│ clauses apply | clauses reject  /  POST /api/waf/clauses/{id}/apply        │
+<a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>│      │ approved only, behind the admin token                               │
+<a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a>│      ▼                                                                     │
+<a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>│ Clause registers in the engine; new requests see it, no restart.           │
+<a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a>└────────────────────────────────────────────────────────────────────────────┘
 </code></pre></div>
 <h3 id="21-plane-1-in-path-lexical-bitmask-engine-srcenginesat_solverrs">2.1 Plane 1: In-Path Lexical &amp; Bitmask Engine (<code>src/engine/sat_solver.rs</code>)</h3>
 <ul>
-<li><strong>Single-Pass Canonicalization:</strong> Decodes nested URL encodings, strips inline comments (<code>/**/</code>), and extracts structural grammar tokens across five domains (<code>ISLAND-SQLI</code>, <code>ISLAND-XSS</code>, <code>ISLAND-RCE</code>, <code>ISLAND-LFI</code>, <code>ISLAND-SSRF</code>).</li>
-<li><strong>Bitwise Conjunction Evaluation:</strong> Evaluates compiled rules via <code>u128</code> bitwise masks. Rules require structural conjunctions rather than isolated keywords. On the 16 benign controls in <code>corpus/independent_v1.json</code> the engine produced no false positives; that sample is too small to generalize.</li>
+<li><strong>Multi-Pass Canonicalization:</strong> Decodes nested URL encodings, strips inline comments (<code>/**/</code>), and extracts structural grammar tokens across five domains (<code>ISLAND-SQLI</code>, <code>ISLAND-XSS</code>, <code>ISLAND-RCE</code>, <code>ISLAND-LFI</code>, <code>ISLAND-SSRF</code>).</li>
+<li><strong>Bitwise Conjunction Evaluation:</strong> Evaluates compiled rules via <code>u128</code> bitwise masks. Rules require structural conjunctions rather than isolated keywords. On the 16 benign controls in <code>corpus/independent_v1.json</code> the engine produced no false positives; that is an in-sample regression floor on a sample too small to generalize, and the one held-out batch measured a 7.0% false-positive rate on 57 controls.</li>
 </ul>
-<h3 id="22-plane-2-out-of-band-exactor-gxor-synthesis-digital-twin-srccloudsatguardian_clientrs-exactor-core-v128-satguardian-advisorpy">2.2 Plane 2: Out-of-Band EXACTOR GXOR Synthesis &amp; Digital Twin (<code>src/cloud/satguardian_client.rs</code>, <code>exactor-core-v128</code>, <code>satguardian-advisor.py</code>)</h3>
+<h3 id="22-plane-2-out-of-band-cloud-review-replay-and-approval-srccloudsatguardian_clientrs-srcledgersqlite_ledgerrs-satguardian-advisorpy">2.2 Plane 2: Out-of-Band Cloud Review, Replay and Approval (<code>src/cloud/satguardian_client.rs</code>, <code>src/ledger/sqlite_ledger.rs</code>, <code>satguardian-advisor.py</code>)</h3>
 <ul>
-<li><strong>Minterm Harvesting:</strong> Novel high-entropy anomalies (<code>14</code> pending <code>u128</code> minterms in the current <code>waf_ledger.db</code>) and hostile IP/route patterns are logged asynchronously to SQLite without slowing down the hot path.</li>
-<li><strong>EXACTOR GXOR Boolean Minimization (Up to 128 Variables):</strong> Unlike classical Quine-McCluskey or Espresso algorithms—which are restricted to <code>{AND, OR, NOT}</code> and suffer from <span class="arithmatex">\(O(2^n)\)</span> exponential blow-up beyond 20–30 variables—the <strong>EXACTOR GXOR</strong> engine (<code>procesar_gxor</code> in <code>exactor-core-v128</code>) operates over the complete <strong><code>{AND, OR, NOT, XOR}</code></strong> (<span class="arithmatex">\(\{\land, \lor, \neg, \oplus\}\)</span>) basis using <strong>Differential Gray Code Mapping</strong> (<code>modify_gray_code</code>). By locating logical neighbors via Gray Code lookups and collapsing symmetric/parity patterns into native <code>XOR</code>/<code>NXOR</code> operations, GXOR is designed to scale as <span class="arithmatex">\(O(\text{term\_count})\)</span> across all <strong>128 variables (<code>u128</code>)</strong>. The size reduction versus a naive Sum-of-Products expansion is not measured in this repository.</li>
-<li><strong>Digital Twin Replay (<code>SimulationAgent</code>):</strong> Every candidate rule is replayed against the benign requests recorded in <code>waf_ledger.db</code>. Rules that collide with known-good traffic are rejected. The collision counts depend on the ledger contents and are not a fixed guarantee.</li>
+<li><strong>Minterm Harvesting:</strong> Requests that match no compiled cube are logged asynchronously to SQLite — without slowing down the hot path — as patterns awaiting analysis. They are candidates for review, not unprotected threats or gaps in coverage.</li>
+<li><strong>Opt-in Upload, Off by Default:</strong> Nothing is sent anywhere unless <code>auto_sync_enabled</code> is turned on (<code>false</code> by default in <code>src/config.rs</code> and <code>waf_config.toml</code>), the operator runs <code>satguardian-waf sync-simplify</code>, or a token-authenticated <code>POST /api/waf/sync-simplify</code> hits the local API.</li>
+<li><strong>Cloud Synthesis Is a Service, Not a Component of This Repository:</strong> The client posts its variable catalogue and minterms to <code>https://satguardian.tech/api/simplify</code>; the Boolean minimization over the <code>{AND, OR, NOT, XOR}</code> basis runs there. The minimizer is server-side, is not distributed to customers, and its internal algorithm and reduction cost are not characterized in this codebase. The client only compiles the returned equation into <code>(required_mask, expected_bits)</code> clauses (<code>compile_equation_to_clauses()</code>) and evaluates them.</li>
+<li><strong>Results Arrive as Proposals:</strong> Each compiled clause is written to <code>dynamic_clauses</code> with <code>applied = 0</code>. Proposals are never registered in the running engine and are skipped at startup, which loads approved clauses only (<code>load_applied_clauses()</code>).</li>
+<li><strong>Digital-Twin Replay (<code>SimulationAgent</code>):</strong> The advisor replays its own candidates against the benign requests recorded in <code>waf_ledger.db</code> and reports collisions, so the operator sees the evidence before deciding. Collision counts depend on the ledger contents and are not a fixed guarantee.</li>
+<li><strong>Approval Is the Only Thing That Enforces:</strong> <code>satguardian-waf clauses apply &lt;id&gt;</code> (from the next start) or <code>POST /api/waf/clauses/{id}/apply</code> on a running process registers one clause in the engine; <code>reject</code> deletes only a proposal and never removes a rule already in force.</li>
 </ul>
 <hr />
 <h2 id="3-measurement-summary">3. Measurement Summary</h2>
@@ -1537,7 +1549,7 @@ production readiness. See <a href="../../status/">STATUS.md</a>.</p>
 <tr>
 <td style="text-align: left;">Detection on pinned corpus</td>
 <td style="text-align: left;"><code>corpus/independent_v1.json</code>, 63 attacks + 16 benign</td>
-<td style="text-align: left;">63/63 detected, 0/16 benign blocked (in-sample regression)</td>
+<td style="text-align: left;">63/63 detected, 0/16 benign blocked — <strong>in-sample regression floor</strong>, not a quality estimate</td>
 </tr>
 <tr>
 <td style="text-align: left;">First-run baseline before fixes</td>
@@ -1545,14 +1557,19 @@ production readiness. See <a href="../../status/">STATUS.md</a>.</p>
 <td style="text-align: left;">51/63 recall (80.95%), 3/16 benign blocked (18.75% FPR)</td>
 </tr>
 <tr>
-<td style="text-align: left;">Held-out first run</td>
+<td style="text-align: left;">Second batch, first run</td>
 <td style="text-align: left;"><code>corpus/heldout_v1.json</code>, 17 attacks + 4 benign</td>
-<td style="text-align: left;">11/17 recall (64.71%), 0/4 benign blocked; now consumed</td>
+<td style="text-align: left;">11/17 recall (64.71%), 0/4 benign blocked; batch consumed by the fix pass, so its 17/17 rerun is in-sample</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Held-out estimate (the only one)</strong></td>
+<td style="text-align: left;"><code>corpus/heldout_v2.json</code>, run once on 2026-11-04: 98 attacks + 57 controls</td>
+<td style="text-align: left;"><strong>56.1% recall</strong> (55/98, 95% CI 46.3–65.5%) and <strong>7.0% false-positive rate</strong> (4/57, 95% CI 2.8–16.7%)</td>
 </tr>
 <tr>
 <td style="text-align: left;">In-memory latency, native Rust</td>
 <td style="text-align: left;"><code>benchmark -r 10000</code></td>
-<td style="text-align: left;">p50 <code>~20 µs</code>, mean <code>~22 µs</code>, p99 near <code>50 µs</code> depending on load</td>
+<td style="text-align: left;">p50 <code>~20 µs</code>, mean <code>~22 µs</code>, p99 near <code>50 µs</code> depending on load; in-memory only, excluding TLS, the proxy hop and the upstream</td>
 </tr>
 <tr>
 <td style="text-align: left;">Python reference + stand-ins</td>
@@ -1564,12 +1581,20 @@ production readiness. See <a href="../../status/">STATUS.md</a>.</p>
 <p>No accuracy value is capped and no error rate is floored. Earlier versions of
 this table did both (<code>99.9%</code> cap, <code>&lt; 0.1%</code> floor); those numbers were fabricated
 and have been removed.</p>
+<p>There is <strong>no third-party or independent evaluation</strong>. Every corpus, including
+the held-out batch, was written inside this project from public payload
+catalogues and labelled by the same side that owns the engine, so the 56.1% /
+7.0% figures describe those payloads and nothing else.</p>
 <hr />
 <h2 id="4-commercial-operational-continuity-model">4. Commercial &amp; Operational Continuity Model</h2>
+<p>The model in one sentence: <strong>free, you get local protection on your own node;
+paying, you get continuous review of new patterns, update proposals and
+explanations — without ever giving up control of your WAF.</strong></p>
 <ol>
-<li><strong>100% On-Premise Traffic Sovereignty:</strong> The Edge WAF runs entirely inside the customer's infrastructure (Standalone binary, Reverse Proxy in front of Nginx/Apache/IIS, or Kubernetes Envoy Sidecar). Customer traffic is never routed through external DNS CNAME bastions.</li>
-<li><strong>Unlimited Edge Inspection at $0.00/Request:</strong> In-path request inspection is 100% free and unlimited.</li>
-<li><strong>Security Units (SU) for Cloud GXOR Rule Optimization:</strong> Cloud-assisted <strong>EXACTOR GXOR</strong> boolean synthesis is metered in <strong>Security Units (SU)</strong> based on the number of variables (up to 128 in SaaS tiers) and minterms compressed. If an organization's monthly SU quota is exhausted (HTTP 402 <code>SU_QUOTA_EXHAUSTED</code>), cloud optimization pauses while the local Edge WAF continues protecting traffic uninterrupted with its last compiled bitmask matrix.</li>
+<li><strong>Self-Hosted Traffic, by Default Offline:</strong> The Edge WAF runs entirely on your own infrastructure (standalone binary, reverse proxy in front of Nginx/Apache/IIS, or an Envoy sidecar in Kubernetes). There is no DNS CNAME redirection through external bastions, and with the default configuration the node makes no outbound call at all: <code>auto_sync_enabled</code> is <code>false</code>.</li>
+<li><strong>Edge Inspection Carries No Per-Request Fee:</strong> In-path request inspection is free and unlimited; the engine's rule set is local, so it keeps enforcing with no network.</li>
+<li><strong>Paid Cloud Review, Metered in Security Units (SU):</strong> A paid plan covers the SATGuardian cloud synthesis service — reviewing the patterns your node recorded and sending back update proposals with the equation and reduction they came from. SU accounting is based on the variables and minterms the service compresses. If the monthly SU quota is exhausted (<code>HTTP 402 SU_QUOTA_EXHAUSTED</code>), cloud review pauses while the local Edge WAF keeps enforcing the rules you already approved.</li>
+<li><strong>Control Stays With the Operator:</strong> Cloud results are proposals stored in your own ledger. They enforce only after you approve them, one at a time, with <code>satguardian-waf clauses apply &lt;id&gt;</code> or the admin-token API. Rejecting a proposal cannot remove protection that is already in force, and turning the cloud off entirely leaves a fully functioning local WAF.</li>
 </ol>
 
 

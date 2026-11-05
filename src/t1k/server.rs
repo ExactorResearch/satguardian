@@ -1,7 +1,7 @@
 //! SafeLine T1K Acceleration Co-Processor Server in Rust.
-//! Listens for T1K protocol connections from SafeLine Tengine, evaluates requests
-//! in sub-millisecond execution time via SATGuardian SAT Engine, and optionally forwards
-//! ambiguous/benign traffic to the downstream SafeLine detector (snserver).
+//! Listens for T1K protocol connections from SafeLine Tengine, evaluates requests with the
+//! SATGuardian bitmask engine (in-memory latency, excludes TLS and the downstream hop), and
+//! optionally forwards ambiguous/benign traffic to the downstream SafeLine detector (snserver).
 
 use crate::ast::features::FeatureBinarizer;
 use crate::ast::lexer::AstLexer;

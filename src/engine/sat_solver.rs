@@ -71,7 +71,7 @@ impl SatguardianSatEngine {
                 island_id: "ISLAND-SQLI".to_string(),
                 name: "SQL Grammar & AST Island".to_string(),
                 category: AttackCategory::SqlInjection,
-                description: "Guaranteed invariant domain covering AST tautologies, unmapped UNION projections, stacked queries, and time delays.".to_string(),
+                description: "Deterministic island covering AST tautologies, unmapped UNION projections, stacked queries, and time delays.".to_string(),
                 formal_invariant: r"\mathcal{I}_{\text{SQLi}} \equiv \neg (Token(\text{QUOTE}) \land (Token(\text{TAUTOLOGY}) \lor Token(\text{UNION\_SELECT}) \lor Token(\text{STACKED\_DDL}) \lor Token(\text{TIME\_DELAY})))".to_string(),
                 confidence: 1.0,
             },
@@ -82,7 +82,7 @@ impl SatguardianSatEngine {
                 island_id: "ISLAND-XSS".to_string(),
                 name: "DOM Context & Execution Island".to_string(),
                 category: AttackCategory::Xss,
-                description: "Guaranteed invariant domain covering executable HTML contexts, event attributes, and scripting URIs.".to_string(),
+                description: "Deterministic island covering executable HTML contexts, event attributes, and scripting URIs.".to_string(),
                 formal_invariant: r"\mathcal{I}_{\text{XSS}} \equiv \neg (Token(\text{TAG\_OPEN}) \land (Token(\text{SCRIPT\_CONTEXT}) \lor Token(\text{EVENT\_TRIGGER}) \lor Token(\text{JS\_SCHEME})))".to_string(),
                 confidence: 1.0,
             },
@@ -93,7 +93,7 @@ impl SatguardianSatEngine {
                 island_id: "ISLAND-RCE".to_string(),
                 name: "OS Shell & Dynamic Runtime Island".to_string(),
                 category: AttackCategory::CommandInjection,
-                description: "Guaranteed invariant domain covering shell metacharacter cascades, subshell substitutions, and dynamic code evaluation sinks.".to_string(),
+                description: "Deterministic island covering shell metacharacter cascades, subshell substitutions, and dynamic code evaluation sinks.".to_string(),
                 formal_invariant: r"\mathcal{I}_{\text{RCE}} \equiv \neg (Token(\text{SHELL\_METACHAR}) \land Token(\text{SYS\_EXEC}) \lor Token(\text{DYNAMIC\_EVAL\_SINK}))".to_string(),
                 confidence: 1.0,
             },
@@ -104,7 +104,7 @@ impl SatguardianSatEngine {
                 island_id: "ISLAND-LFI".to_string(),
                 name: "Filesystem Sandbox Boundary Island".to_string(),
                 category: AttackCategory::PathTraversal,
-                description: "Guaranteed invariant domain covering relative path escapes and direct access to protected kernel/system descriptors.".to_string(),
+                description: "Deterministic island covering relative path escapes and direct access to protected kernel/system descriptors.".to_string(),
                 formal_invariant: r"\mathcal{I}_{\text{LFI}} \equiv \neg (Token(\text{TRAVERSAL\_DOTS}) \lor Token(\text{SENSITIVE\_SYSTEM\_PATH}))".to_string(),
                 confidence: 1.0,
             },
@@ -115,7 +115,7 @@ impl SatguardianSatEngine {
                 island_id: "ISLAND-SSRF".to_string(),
                 name: "Network Perimeter & Cloud Metadata Island".to_string(),
                 category: AttackCategory::Ssrf,
-                description: "Guaranteed invariant domain covering cloud metadata endpoints (169.254.169.254), loopback interfaces, and private protocols.".to_string(),
+                description: "Deterministic island covering cloud metadata endpoints (169.254.169.254), loopback interfaces, and private protocols.".to_string(),
                 formal_invariant: r"\mathcal{I}_{\text{SSRF}} \equiv \neg (Token(\text{PROXY\_URI}) \land (Token(\text{METADATA\_ENDPOINT}) \lor Token(\text{LOOPBACK\_TARGET})))".to_string(),
                 confidence: 1.0,
             },
@@ -126,7 +126,7 @@ impl SatguardianSatEngine {
                 island_id: "ISLAND-GRAPHQL".to_string(),
                 name: "GraphQL Grammar & AST Invariant Island".to_string(),
                 category: AttackCategory::GraphqlAbuse,
-                description: "Guaranteed invariant domain protecting GraphQL services against introspection probes, cyclic recursive nesting exhaustion, and alias multiplexing.".to_string(),
+                description: "Deterministic island protecting GraphQL services against introspection probes, cyclic recursive nesting exhaustion, and alias multiplexing.".to_string(),
                 formal_invariant: r"\mathcal{I}_{\text{GraphQL}} \equiv \neg (Token(\text{INTROSPECTION}) \lor Token(\text{DEEP\_NESTING}) \lor Token(\text{BATCHING}))".to_string(),
                 confidence: 1.0,
             },
@@ -137,7 +137,7 @@ impl SatguardianSatEngine {
                 island_id: "ISLAND-JSON-PROTO".to_string(),
                 name: "Strict JSON Schema & Prototype Sandbox Island".to_string(),
                 category: AttackCategory::PrototypePollution,
-                description: "Guaranteed invariant domain preventing JavaScript prototype tampering, object property pollution, and recursive JSON parsing bombs.".to_string(),
+                description: "Deterministic island preventing JavaScript prototype tampering, object property pollution, and recursive JSON parsing bombs.".to_string(),
                 formal_invariant: r"\mathcal{I}_{\text{Proto}} \equiv \neg (Token(\text{PROTO\_POLLUTION}) \lor Token(\text{SCHEMA\_EXHAUSTION}))".to_string(),
                 confidence: 1.0,
             },
@@ -148,7 +148,7 @@ impl SatguardianSatEngine {
                 island_id: "ISLAND-GRPC".to_string(),
                 name: "gRPC & Protobuf Wire Protocol Framing Island".to_string(),
                 category: AttackCategory::GrpcSmuggling,
-                description: "Guaranteed invariant domain validating HTTP/2 gRPC 5-byte framing, preventing client status trailer injection and protocol smuggling.".to_string(),
+                description: "Deterministic island validating HTTP/2 gRPC 5-byte framing, preventing client status trailer injection and protocol smuggling.".to_string(),
                 formal_invariant: r"\mathcal{I}_{\text{gRPC}} \equiv \neg (Token(\text{STATUS\_INJECTION}) \lor Token(\text{FRAME\_DESYNC}))".to_string(),
                 confidence: 1.0,
             },
@@ -159,7 +159,7 @@ impl SatguardianSatEngine {
                 island_id: "ISLAND-JWT".to_string(),
                 name: "Cryptographic Identity & JWT Integrity Island".to_string(),
                 category: AttackCategory::JwtTampering,
-                description: "Guaranteed invariant domain enforcing cryptographically signed tokens, preventing alg: none confusion, missing signatures, and header parameter injections.".to_string(),
+                description: "Deterministic island enforcing cryptographically signed tokens, preventing alg: none confusion, missing signatures, and header parameter injections.".to_string(),
                 formal_invariant: r"\mathcal{I}_{\text{JWT}} \equiv \neg (Token(\text{ALG\_NONE}) \lor Token(\text{MISSING\_SIGNATURE}) \lor Token(\text{HEADER\_INJECTION}))".to_string(),
                 confidence: 1.0,
             },
@@ -170,7 +170,7 @@ impl SatguardianSatEngine {
                 island_id: "ISLAND-STATEFUL".to_string(),
                 name: "Temporal Sliding Window & Behavioral Dynamics Island".to_string(),
                 category: AttackCategory::RateLimitDdos,
-                description: "Guaranteed invariant domain monitoring temporal event frequencies across sliding atomic ring counters to block L7 bursts, distributed brute-force, and credential stuffing.".to_string(),
+                description: "Deterministic island monitoring temporal event frequencies across sliding atomic ring counters to block L7 bursts, distributed brute-force, and credential stuffing.".to_string(),
                 formal_invariant: r"\mathcal{I}_{\text{Stateful}} \equiv \neg (Token(\text{RATE\_LIMIT\_BURST}) \lor Token(\text{CREDENTIAL\_STUFFING}))".to_string(),
                 confidence: 1.0,
             },
@@ -181,7 +181,7 @@ impl SatguardianSatEngine {
                 island_id: "ISLAND-WORDPRESS".to_string(),
                 name: "WordPress Shield & Reconnaissance Defense Island".to_string(),
                 category: AttackCategory::CmsWordpressProbe,
-                description: "Guaranteed invariant domain protecting non-WordPress web applications against automated scanner probes (/wp-admin, /wp-login, xmlrpc.php, plugins enumeration).".to_string(),
+                description: "Deterministic island protecting non-WordPress web applications against automated scanner probes (/wp-admin, /wp-login, xmlrpc.php, plugins enumeration).".to_string(),
                 formal_invariant: r"\mathcal{I}_{\text{WP}} \equiv \neg (Token(\text{WORDPRESS\_PROBE}) \land \text{IslandsConfig.wordpress\_shield})".to_string(),
                 confidence: 1.0,
             },
@@ -192,7 +192,7 @@ impl SatguardianSatEngine {
                 island_id: "ISLAND-EXPOSURE".to_string(),
                 name: "Sensitive Files & Backdoor Exposure Defense Island".to_string(),
                 category: AttackCategory::SensitiveExposureProbe,
-                description: "Guaranteed invariant domain preventing unauthorized access to sensitive configuration dumps (.env, .git, .aws/credentials, phpMyAdmin, actuator, backup.sql).".to_string(),
+                description: "Deterministic island preventing unauthorized access to sensitive configuration dumps (.env, .git, .aws/credentials, phpMyAdmin, actuator, backup.sql).".to_string(),
                 formal_invariant: r"\mathcal{I}_{\text{Exp}} \equiv \neg (Token(\text{SENSITIVE\_EXPOSURE}) \land \text{IslandsConfig.exposure\_shield})".to_string(),
                 confidence: 1.0,
             },
@@ -203,7 +203,7 @@ impl SatguardianSatEngine {
                 island_id: "ISLAND-FRAMEWORK".to_string(),
                 name: "Framework Remote Code Execution & JNDI Defense Island".to_string(),
                 category: AttackCategory::FrameworkExploitProbe,
-                description: "Guaranteed invariant domain neutralizing known framework vulnerabilities including Log4j JNDI injection, Spring Expression Language, and Laravel Ignition RCE.".to_string(),
+                description: "Deterministic island neutralizing known framework vulnerabilities including Log4j JNDI injection, Spring Expression Language, and Laravel Ignition RCE.".to_string(),
                 formal_invariant: r"\mathcal{I}_{\text{Framework}} \equiv \neg (Token(\text{FRAMEWORK\_EXPLOIT}) \land \text{IslandsConfig.framework\_shield})".to_string(),
                 confidence: 1.0,
             },
@@ -734,13 +734,13 @@ impl SatguardianSatEngine {
     }
 
     /// Evaluates an HTTP request payload against all Certainty Islands and dynamic rules.
-    /// Operates in sub-millisecond execution time (< 0.05 ms / 50 µs).
+    /// In-memory latency on the pinned corpus measures p50 ~20 µs; it excludes TLS, the proxy
+    /// hop and the upstream, so it is not an end-to-end request time.
     pub fn evaluate_payload(&self, req: &HttpRequestPayload) -> ProofChain {
         self.evaluate_payload_with_verdict(req, None)
     }
 
     /// Evaluates an HTTP request payload against all Certainty Islands, dynamic rules, and stateful verdicts.
-    /// Operates in sub-millisecond execution time (< 0.05 ms / 50 µs).
     pub fn evaluate_payload_with_verdict(
         &self,
         req: &HttpRequestPayload,
@@ -748,7 +748,7 @@ impl SatguardianSatEngine {
     ) -> ProofChain {
         let t_start = Instant::now();
 
-        // Safety Invariant: Protect sub-millisecond SLA against payload exhaustion bombs
+        // Bound the work one request can cause: an oversized payload is refused before lexing.
         const MAX_SAFE_DEPTH: usize = 1_048_576; // 1 MB boundary
         if req.query_string.len() > MAX_SAFE_DEPTH || req.body.len() > MAX_SAFE_DEPTH {
             let elapsed = t_start.elapsed();
@@ -761,9 +761,9 @@ impl SatguardianSatEngine {
                 matched_rules: Vec::new(),
                 active_islands: vec!["ISLAND-BUSINESS-RULES".to_string()],
                 active_tokens: vec!["PAYLOAD_EXCEEDS_MAX_SAFE_DEPTH".to_string()],
-                deduction_steps: vec!["[EARLY-EXIT] Payload length exceeded 1MB safety threshold. Fast-failed in < 1µs.".to_string()],
+                deduction_steps: vec!["[EARLY-EXIT] Payload length exceeded the 1 MB safety threshold.".to_string()],
                 decision_reason: r"\text{Length}(req) > 1\text{MB} \implies \mathbf{BLOCK}".to_string(),
-                rule_match_details: "Invariant(PayloadSize <= MAX_SAFE_DEPTH) breached ⟹ ACTION_BLOCK [FAST_FAIL < 1µs]".to_string(),
+                rule_match_details: "PayloadSize <= MAX_SAFE_DEPTH breached => ACTION_BLOCK [EARLY_EXIT]".to_string(),
                 execution_time_us: (elapsed.as_secs_f64() * 1_000_000.0 * 100.0).round() / 100.0,
             };
         }

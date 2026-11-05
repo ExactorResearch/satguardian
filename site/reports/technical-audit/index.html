@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Sub-Millisecond Lexical Normalization, 128-Bit Integer Mask Evaluation, and EXACTOR GXOR Boolean Cloud Optimization">
+        <meta name="description" content="Research-prototype Rust edge WAF with u128 bitmask inspection and opt-in SATGuardian cloud rule synthesis that returns proposals you approve">
       
       
         <meta name="author" content="SATGuardian Cyber-Defense Systems">
@@ -592,7 +592,7 @@
   <span class="md-ellipsis">
     
   
-    Complete Configuration Guide
+    Configuration Reference
   
 
     
@@ -620,7 +620,7 @@
   <span class="md-ellipsis">
     
   
-    Configuration & Operations
+    Operations & Tooling Guide
   
 
     
@@ -1161,10 +1161,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#21-detection-on-the-pinned-corpus" class="md-nav__link">
+  <a href="#21-detection-in-sample-floors-and-the-one-held-out-run" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2.1 Detection on the pinned corpus
+        2.1 Detection: in-sample floors and the one held-out run
       
     </span>
   </a>
@@ -1187,6 +1187,17 @@
     <span class="md-ellipsis">
       
         2.3 Python stand-in harness
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24-cloud-review-verified-against-source" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4 Cloud Review, Verified Against Source
       
     </span>
   </a>
@@ -1390,10 +1401,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#21-detection-on-the-pinned-corpus" class="md-nav__link">
+  <a href="#21-detection-in-sample-floors-and-the-one-held-out-run" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2.1 Detection on the pinned corpus
+        2.1 Detection: in-sample floors and the one held-out run
       
     </span>
   </a>
@@ -1416,6 +1427,17 @@
     <span class="md-ellipsis">
       
         2.3 Python stand-in harness
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24-cloud-review-verified-against-source" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4 Cloud Review, Verified Against Source
       
     </span>
   </a>
@@ -1483,22 +1505,37 @@ misleading and have been removed. See <a href="../../status/">STATUS.md</a>.</p>
 <tr>
 <td style="text-align: left;"><strong>Multi-Pass Lexical Normalization &amp; Tokenization</strong></td>
 <td style="text-align: center;"><strong>✅ Implemented</strong></td>
-<td style="text-align: left;"><code>src/ast/lexer.rs</code> (<code>Lexer::normalize_and_tokenize</code>) and <code>satguardian_waf/core/solver_sat.py</code> unwind nested URL/HTML encodings, strip <code>/*...*/</code> comments, and extract structural tokens across 5 attack domains (<code>SQLi</code>, <code>XSS</code>, <code>RCE</code>, <code>LFI</code>, <code>SSRF</code>).</td>
+<td style="text-align: left;"><code>src/ast/lexer.rs</code> (<code>AstLexer</code>) and <code>satguardian_waf/core/solver_sat.py</code> unwind nested URL/HTML encodings, strip <code>/*...*/</code> comments, and extract structural tokens across 5 attack domains (<code>SQLi</code>, <code>XSS</code>, <code>RCE</code>, <code>LFI</code>, <code>SSRF</code>).</td>
 </tr>
 <tr>
 <td style="text-align: left;"><strong>128-Bit Feature Vector (<code>u128</code>)</strong></td>
 <td style="text-align: center;"><strong>✅ Implemented</strong></td>
-<td style="text-align: left;"><code>src/ast/features.rs</code> (<code>FeatureVector(pub u128)</code>) packs HTTP metadata, Shannon entropy flags, and lexical token presence into a 128-bit integer.</td>
+<td style="text-align: left;"><code>src/ast/features.rs</code> (<code>FeatureVector { bits: u128 }</code>, 40 named variables in the current catalogue) packs HTTP metadata, Shannon entropy flags, and lexical token presence into a 128-bit integer.</td>
 </tr>
 <tr>
 <td style="text-align: left;"><strong>Bitmask Conjunction Evaluator ("SAT Engine")</strong></td>
 <td style="text-align: center;"><strong>✅ Implemented</strong></td>
-<td style="text-align: left;"><code>src/engine/sat_solver.rs</code> (<code>SatEngine</code>) evaluates pre-compiled boolean cubes in <span class="arithmatex">\(O(1)\)</span> per rule via bitwise <code>AND</code>: <code>(minterm &amp; required_mask) == expected_bits</code>. <em>(Note: It is a fast bitmask evaluator, not an in-path backtracking DPLL/CDCL SAT solver).</em></td>
+<td style="text-align: left;"><code>src/engine/sat_solver.rs</code> (<code>SatguardianSatEngine</code>) evaluates pre-compiled boolean cubes per rule via bitwise <code>AND</code>: <code>(fv.bits &amp; required_mask) == expected_bits</code>. <em>(Note: It is a fast bitmask evaluator, not an in-path backtracking DPLL/CDCL SAT solver).</em></td>
 </tr>
 <tr>
-<td style="text-align: left;"><strong>Out-of-Band EXACTOR GXOR Minimization</strong></td>
+<td style="text-align: left;"><strong>Opt-in Cloud Review Client</strong></td>
 <td style="text-align: center;"><strong>✅ Implemented</strong></td>
-<td style="text-align: left;"><code>src/cloud/satguardian_client.rs</code> (<code>SatguardianCloudClient::simplify</code>) and <code>exactor-core-v128</code> (<code>procesar_gxor</code>, <code>modify_gray_code</code>) simplify up to <strong>128 Boolean variables (<code>u128</code> minterms)</strong> out of band using the <strong><code>{AND, OR, NOT, XOR}</code></strong> operator basis and Differential Gray Code Mapping in <span class="arithmatex">\(O(\text{term\_count})\)</span> linear time.</td>
+<td style="text-align: left;"><code>src/cloud/satguardian_client.rs</code> (<code>SatguardianCloudClient::simplify</code>, <code>compile_equation_to_clauses()</code>) posts the pending minterms to the SATGuardian cloud synthesis service at <code>https://satguardian.tech/api/simplify</code> and compiles the answer into bitmask clauses. <code>auto_sync_enabled</code> defaults to <code>false</code> (<code>src/config.rs</code>, <code>waf_config.toml</code>), so no upload happens until the operator turns it on.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Boolean Minimizer</strong></td>
+<td style="text-align: center;"><strong>❌ Not in this repository</strong></td>
+<td style="text-align: left;">Minimization over <code>{AND, OR, NOT, XOR}</code> runs inside the SATGuardian cloud service. It is server-side, is not distributed to customers, and this audit could not review its code; the client only receives and evaluates the compiled clauses.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Proposal Gate for Cloud Clauses</strong></td>
+<td style="text-align: center;"><strong>✅ Implemented</strong></td>
+<td style="text-align: left;"><code>src/ledger/sqlite_ledger.rs</code> stores cloud clauses with <code>applied = 0</code> (<code>propose_dynamic_clause</code>); startup loads approved rows only (<code>load_applied_clauses</code>, <code>applied = 1</code>). Decisions are explicit operator actions behind the admin token: <code>satguardian-waf clauses list / apply / reject</code>, <code>GET /api/waf/clauses/pending</code>, <code>POST /api/waf/clauses/{id}/apply</code>, <code>DELETE /api/waf/clauses/{id}</code>. Rejecting deletes only a proposal; a rule already enforcing is never removed by it.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Approved Clause Goes Live Without a Restart</strong></td>
+<td style="text-align: center;"><strong>✅ Implemented</strong></td>
+<td style="text-align: left;"><code>SatguardianSatEngine::register_dynamic_clause</code> appends to the in-memory clause set the proxy shares through <code>Arc</code>; an HTTP approval is visible to subsequent requests with no process restart and no dropped connections. The earlier description of this step as automatic hot-reload of whatever the cloud returned is no longer true.</td>
 </tr>
 <tr>
 <td style="text-align: left;"><strong>Digital Twin Benign Traffic Replay</strong></td>
@@ -1506,14 +1543,9 @@ misleading and have been removed. See <a href="../../status/">STATUS.md</a>.</p>
 <td style="text-align: left;"><code>satguardian-advisor.py</code> (<code>SimulationAgent</code>) replays candidate rules against benign requests recorded in <code>waf_ledger.db</code> and reports collisions. It does not certify a fixed false-positive rate.</td>
 </tr>
 <tr>
-<td style="text-align: left;"><strong>Lock-Free Atomic Rule Hot-Reload</strong></td>
+<td style="text-align: left;"><strong>Stateful Burst Rate Limiting</strong></td>
 <td style="text-align: center;"><strong>✅ Implemented</strong></td>
-<td style="text-align: left;"><code>src/proxy/http_proxy.rs</code> uses <code>arc_swap::ArcSwap</code> to swap rule matrices in memory without dropping TCP connections.</td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong>Token-Bucket Burst Rate Limiting</strong></td>
-<td style="text-align: center;"><strong>✅ Implemented</strong></td>
-<td style="text-align: left;"><code>src/engine/sat_solver.rs</code> uses lock-free <code>DashMap</code> counters per client IP to block Layer-7 burst floods (<code>SAT-STATE-01</code>).</td>
+<td style="text-align: left;"><code>src/stateful/limiter.rs</code> (<code>StatefulRateLimiter</code>, per-client records behind an <code>RwLock&lt;HashMap&lt;..&gt;&gt;</code>) and <code>src/stateful/sliding_window.rs</code> (<code>SlidingWindowRingCounter</code>) count requests per client IP over a sliding window and raise the <code>SAT-STATE-01</code> violation that <code>src/engine/sat_solver.rs</code> turns into a block. <em>(There is no <code>DashMap</code> token bucket in this codebase; an earlier revision of this table claimed one.)</em></td>
 </tr>
 <tr>
 <td style="text-align: left;"><strong>Wolfram Cellular Automata / M-Code / Graph Isomorphism</strong></td>
@@ -1526,7 +1558,7 @@ misleading and have been removed. See <a href="../../status/">STATUS.md</a>.</p>
 <h2 id="2-reproducible-measurements">2. Reproducible Measurements</h2>
 <p>No value is capped or floored. The benchmark refuses to run without the pinned
 corpus, and prints its scope on every run.</p>
-<h3 id="21-detection-on-the-pinned-corpus">2.1 Detection on the pinned corpus</h3>
+<h3 id="21-detection-in-sample-floors-and-the-one-held-out-run">2.1 Detection: in-sample floors and the one held-out run</h3>
 <table>
 <thead>
 <tr>
@@ -1541,19 +1573,28 @@ corpus, and prints its scope on every run.</p>
 <td style="text-align: left;"><code>corpus/independent_v1.json</code> (63 attacks, 16 benign)</td>
 <td style="text-align: center;">51/63 recall (80.95%), 3/16 benign blocked (18.75% FPR)</td>
 <td style="text-align: center;">63/63, 0/16 blocked</td>
-<td style="text-align: left;">In-sample regression</td>
+<td style="text-align: left;">In-sample regression floor</td>
 </tr>
 <tr>
 <td style="text-align: left;"><code>corpus/heldout_v1.json</code> (17 attacks, 4 benign)</td>
 <td style="text-align: center;">11/17 recall (64.71%), 0/4 benign blocked</td>
 <td style="text-align: center;">17/17, 0/4 blocked</td>
-<td style="text-align: left;">Consumed held-out batch</td>
+<td style="text-align: left;">Consumed batch; in-sample regression floor</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>corpus/heldout_v2.json</code> (98 attacks, 57 controls)</td>
+<td style="text-align: center;"><strong>55/98 recall (56.1%, 95% CI 46.3–65.5%)</strong>, <strong>4/57 controls blocked (7.0% FPR, 95% CI 2.8–16.7%)</strong></td>
+<td style="text-align: center;">deliberately not re-run</td>
+<td style="text-align: left;"><strong>Held-out</strong>, one run on 2026-11-04 (<code>corpus/heldout_v2_report.json</code>)</td>
 </tr>
 </tbody>
 </table>
-<p>Both corpora were used to drive fixes after their first run. The current 100%/0%
-therefore means "the pinned cases still pass", not "the engine catches X% of
-real attacks". Protocol: <a href="../../corpus/">corpus/README.md</a>.</p>
+<p>The first two corpora were used to drive fixes after their first run. Their
+current 100%/0% therefore means "the pinned cases still pass", not "the engine
+catches X% of real attacks". The <code>heldout_v2</code> row is the only out-of-sample
+estimate available, it is a single run, and there is <strong>no third-party or
+independent evaluation</strong> behind it. Protocol:
+<a href="../../corpus/">corpus/README.md</a>.</p>
 <h3 id="22-in-memory-latency">2.2 In-memory latency</h3>
 <p><code>satguardian-waf benchmark -r 10000</code> on the same corpus, one representative run:</p>
 <ul>
@@ -1566,22 +1607,45 @@ real attacks". Protocol: <a href="../../corpus/">corpus/README.md</a>.</p>
 <li><strong>p99:</strong> <code>49.3 µs</code> (near the <code>50 µs</code> target; varies with load)</li>
 <li><strong>Max:</strong> <code>311.1 µs</code></li>
 </ul>
-<p>Scope: in-memory rule evaluation only. No TLS, proxy hop, upstream service or
-stateful tracking is included.</p>
+<p>Scope: in-memory rule evaluation only, on the pinned corpus. No TLS, proxy hop,
+upstream service or stateful tracking is included, and no end-to-end request
+path has been measured.</p>
 <h3 id="23-python-stand-in-harness">2.3 Python stand-in harness</h3>
 <p><code>python run_benchmark.py 1000</code> compares the Python reference port against local
 Python stand-ins. It does not execute Coraza, SafeLine, ModSecurity or an LLM.
 The report prints the dataset provenance and a disclaimer next to the metrics.</p>
+<h3 id="24-cloud-review-verified-against-source">2.4 Cloud Review, Verified Against Source</h3>
+<p>Checked line by line in <code>src/</code>:</p>
+<ul>
+<li><code>auto_sync_enabled</code> defaults to <strong><code>false</code></strong> (<code>src/config.rs</code>, mirrored in
+  <code>waf_config.toml</code>), so the node uploads nothing until the operator opts in.</li>
+<li>All three review entry points — the timer worker in <code>src/main.rs</code>,
+  <code>satguardian-waf sync-simplify</code>, and <code>POST /api/waf/sync-simplify</code> — call
+  <code>SqliteLedger::propose_dynamic_clause</code>, which writes <code>applied = 0</code>. The sync
+  response returns <code>"status": "proposed"</code> and states that nothing was applied.</li>
+<li><code>src/main.rs</code> calls <code>load_applied_clauses()</code> (<code>WHERE applied = 1</code>) at startup,
+  so proposals never reach the engine implicitly.</li>
+<li>Enforcement requires an explicit decision: <code>satguardian-waf clauses apply
+  &lt;id&gt;</code>, or <code>POST /api/waf/clauses/{id}/apply</code> for immediate registration on a
+  running process. Both, together with <code>GET /api/waf/clauses/pending</code> and
+  <code>DELETE /api/waf/clauses/{id}</code>, sit behind <code>require_admin_token</code>.</li>
+<li><code>reject_dynamic_clause</code> deletes only rows with <code>applied = 0</code>; it cannot remove
+  a rule that is already enforcing.</li>
+<li>The minimization itself is not verifiable from this repository: it runs in the
+  SATGuardian cloud service, which is outside the audit scope.</li>
+</ul>
 <hr />
 <h2 id="3-bundled-ledger-walkthrough-waf_ledgerdb">3. Bundled Ledger Walkthrough (<code>waf_ledger.db</code>)</h2>
 <p>Running <code>python satguardian-advisor.py --report-md audit_report.md</code> against the
-bundled ledger produces a demo audit:
+bundled ledger produces a demo, evidence-backed audit report:
 - <strong>Total recorded requests:</strong> <code>3,799</code>
 - <strong>Blocked:</strong> <code>2,136</code> (<code>951</code> SQLi, <code>477</code> XSS, <code>472</code> path traversal, <code>234</code> rate-limit bursts, <code>2</code> SSRF)
 - <strong>Allowed benign:</strong> <code>1,663</code>
-- <strong>Replay:</strong> candidate rules are replayed against the benign rows; collisions are reported per run. No fixed false-positive floor is claimed.</p>
+- <strong>Replay:</strong> candidate rules are replayed against the benign rows; collisions are reported per run. No fixed false-positive floor is claimed.
+- <strong>Pending minterms:</strong> rows in <code>novel_anomalies</code> are <strong>patterns awaiting analysis</strong>. They are candidates for cloud review, not unprotected threats and not a coverage gap, and with <code>auto_sync_enabled = false</code> they stay on the node.</p>
 <p>The ledger is demo data for exercising the advisor pipeline, not independently
-labelled ground truth and not a customer tenant.</p>
+labelled ground truth and not a customer tenant. No claim in this section should
+be read as evidence about real traffic.</p>
 
 
 

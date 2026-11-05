@@ -1,11 +1,12 @@
-# SATGuardian Edge WAF: Sub-Millisecond Lexical Normalization, 128-Bit Boolean Mask Evaluation, and Out-of-Band EXACTOR GXOR Rule Synthesis
+# SATGuardian Edge WAF: Tens-of-Microseconds Lexical Normalization, 128-Bit Boolean Mask Evaluation, and Opt-In Out-of-Band Cloud Rule Review
 
 **Technical White Paper — Version 3.0 (Research Prototype Edition)**  
-**Implementation Reference:** `satguardian` (`src/` in Rust, `satguardian_waf/` in Python) & `exactor-core-v128` (EXACTOR GXOR Engine)
+**Implementation Reference:** `satguardian` (`src/` in Rust, `satguardian_waf/` in Python). The Boolean minimizer is a service at `satguardian.tech`; only its client lives in this repository.
 
 > **Status: research prototype, not a production-ready WAF.** Evaluation is
-> in-sample on a small hand-written corpus; competitor rows are local Python
-> stand-ins. See [Project Status](../status.md).
+> in-sample on a small hand-written corpus plus one held-out run of hand-written
+> payloads; competitor rows are local Python stand-ins; no third-party
+> evaluation exists. See [STATUS.md](../status.md).
 
 ---
 
@@ -13,9 +14,9 @@
 
 Modern Web Application Firewalls (WAFs) face a fundamental engineering tension between **inspection latency**, **evasion resistance**, and **false positive rates**. Unnormalized regular expression engines are cheap per request but miss nested encodings and inline comments. Anomaly-scoring rule sets transform several request targets and evaluate many rules. Token-weight classifiers can fire on benign technical prose. Those statements are design-level; this repository does not benchmark the real products, only local Python stand-ins.
 
-This paper presents the implemented architecture and the measurements available for **SATGuardian Edge WAF** (`satguardian`). SATGuardian decouples **in-path request evaluation** from **out-of-band boolean rule minimization**:
-1. **In-Path Hot Plane (Native Rust):** Applies bounded multi-pass lexical normalization (`src/ast/lexer.rs`), packs structural tokens and request attributes into a 128-bit integer (`FeatureVector(pub u128)` in `src/ast/features.rs`), and evaluates compiled rule cubes via bitwise operations (`(minterm & required_mask) == expected_bits` in `src/engine/sat_solver.rs`). On the pinned corpus at 10,000 requests, a representative run measured p50 `~20 µs`, mean `~22 µs`, and p99 near `50 µs`, single-threaded, in memory only.
-2. **Out-of-Band Synthesis Plane (Rust & Python):** Logs novel anomalous `u128` minterms to a local SQLite ledger (`waf_ledger.db`), simplifies up to **128 Boolean variables** asynchronously using the **EXACTOR GXOR** engine over the complete **`{AND, OR, NOT, XOR}`** operator basis via Differential Gray Code Mapping, replays candidates against recorded benign traffic to find collisions, and hot-reloads compiled bitmasks via lock-free `ArcSwap`.
+This paper presents the implemented architecture and the measurements available for **SATGuardian Edge WAF** (`satguardian`). SATGuardian decouples **in-path request evaluation** from **out-of-band rule review**, and puts an operator decision between the two:
+1. **In-Path Hot Plane (Native Rust):** Applies bounded multi-pass lexical normalization (`src/ast/lexer.rs`), packs structural tokens and request attributes into a 128-bit integer (`FeatureVector { bits: u128 }` in `src/ast/features.rs`), and evaluates compiled rule cubes via bitwise operations (`(fv.bits & required_mask) == expected_bits` in `src/engine/sat_solver.rs`). On the pinned corpus at 10,000 requests, a representative run measured p50 `~20 µs`, mean `~22 µs`, and p99 near `50 µs`, single-threaded, in memory only.
+2. **Out-of-Band Review Plane (Rust & Python, opt-in):** Logs anomalous `u128` minterms to a local SQLite ledger (`waf_ledger.db`). Only if the operator turns cloud review on (`auto_sync_enabled`, `false` by default) are those minterms sent to **SATGuardian cloud synthesis** at `satguardian.tech`, which minimizes them over the `{AND, OR, NOT, XOR}` basis server-side. The client compiles the returned equation into bitmask clauses and stores them as **proposals** (`dynamic_clauses.applied = 0`). Nothing is enforced until the operator approves a proposal; approved clauses then register in the running engine without a restart.
 
 ---
 
@@ -28,11 +29,11 @@ The lexical normalizer $\mathcal{N}$ (`src/ast/lexer.rs`) applies bounded iterat
 
 $$\mathbf{v}(r) \in \{0, 1\}^{128} \quad (\text{represented in Rust as } \texttt{u128})$$
 
-Each bit $v_i \in \{0, 1\}$ ($i \in \{0, \dots, 127\}$) encodes a deterministic predicate (e.g., presence of SQL tautology tokens, `UNION SELECT` projection, executable `<script>` or inline DOM event attributes, shell command chaining operators, relative path traversal sequences, or high character Shannon entropy $H(s) > \tau$).
+Each bit $v_i \in \{0, 1\}$ ($i \in \{0, \dots, 127\}$) encodes a deterministic predicate (e.g., presence of SQL tautology tokens, `UNION SELECT` projection, executable `<script>` or inline DOM event attributes, shell command chaining operators, relative path traversal sequences, or high character Shannon entropy $H(s) > \tau$). The `u128` container addresses up to 128 variables; the catalogue in `src/ast/features.rs` names 40 of them today, and that catalogue is exactly what the client sends to the cloud service.
 
 ### 1.2 In-Path Bitmask Cube Evaluation (`src/engine/sat_solver.rs`)
 Each compiled security rule $c_j$ is a boolean cube (product term / conjunction of literals) represented by two 128-bit integers:
-- `required_mask` ($M_j \in \texttt{u128}$): Bitmask indicating which of the 128 variables participate in rule $j$.
+- `required_mask` ($M_j \in \texttt{u128}$): Bitmask indicating which positions of the vector participate in rule $j$.
 - `expected_bits` ($E_j \in \texttt{u128}$): Expected polarity (`1` for positive literal, `0` for negated literal) of those active variables.
 
 At runtime, evaluating whether request $\mathbf{v}(r)$ triggers rule $c_j$ requires a single bitwise `AND` and equality check:
@@ -41,12 +42,15 @@ $$\text{Match}(\mathbf{v}(r), c_j) \iff (\mathbf{v}(r) \mathbin{\&} M_j) == E_j$
 
 If no rule cube matches ($\forall j, \, (\mathbf{v}(r) \mathbin{\&} M_j) \neq E_j$), the security invariant holds and the request is allowed. Unlike backtracking regular expressions or NP-complete in-path DPLL/CDCL solvers, bitwise evaluation over $R$ rules executes in deterministic $O(R)$ CPU cycles.
 
-### 1.3 Out-of-Band EXACTOR GXOR Minimization (`src/cloud/satguardian_client.rs`, `exactor-core-v128`)
-When unobserved malicious minterms $\mathcal{M} = \{m_1, m_2, \dots, m_k\} \subset \{0, 1\}^{n}$ ($n \le 128$) are collected in `waf_ledger.db`, classical `{AND, OR, NOT}` minimizers (such as Quine-McCluskey or Espresso) suffer from $O(2^n)$ exponential blow-up beyond 20–30 variables. Instead, the out-of-band synthesizer invokes the **EXACTOR GXOR** engine (`procesar_gxor` in `exactor-core-v128`) via `SatguardianCloudClient::simplify`:
-1. **Differential Gray Code Mapping (`modify_gray_code`):** Projects 128-bit minterms into a Gray Code space and locates logical neighbors differing by a single bit ($\text{popcount}(E_a \oplus E_b) = 1$) in $O(1)$ constant time via `BTreeMap`/`HashMap` lookups, achieving $O(\text{term\_count})$ linear complexity:
-   $$M_{\text{merged}} = M_a \mathbin{\&} \neg(E_a \oplus E_b), \quad E_{\text{merged}} = E_a \mathbin{\&} M_{\text{merged}}$$
-2. **GXOR / NXOR Algebraic Reduction over `{AND, OR, NOT, XOR}`:** Detects exclusive-OR ($\oplus$) and equivalence ($\odot$) structures across up to **128 Boolean variables (`u128`)**, collapsing parity and symmetric attack predicates that would otherwise require exponentially many Sum-of-Products (SOP) clauses.
-3. **Digital Twin Collision Replay (`satguardian-advisor.py`):** Before a reduced invariant $c^*$ is added to the active rule matrix, the `SimulationAgent` replays it against the benign records stored in `waf_ledger.db` and reports any collision. The ledger in this repository is demo data, so the replay finds collisions; it does not certify a fixed false-positive rate.
+### 1.3 Out-of-Band Cloud Synthesis and the Approval Gate (`src/cloud/satguardian_client.rs`, `src/ledger/sqlite_ledger.rs`, `src/api/server.rs`)
+When previously unobserved minterms $\mathcal{M} = \{m_1, m_2, \dots, m_k\} \subset \{0, 1\}^{n}$ ($n \le 128$) accumulate in `waf_ledger.db`, the client can ask the service to reduce them:
+
+1. **Request.** `SatguardianCloudClient::simplify` posts the variable catalogue and the pending minterms to `https://satguardian.tech/api/simplify`. This only happens if the operator opted in: `auto_sync_enabled` is `false` by default in `src/config.rs` and `waf_config.toml`.
+2. **Minimization, server-side.** Reducing $\mathcal{M}$ to a compact formula $c^*$ over $\{\land, \lor, \neg, \oplus\}$ is done by **SATGuardian cloud synthesis**. That minimizer is not part of this repository, is not distributed to customers, and its internal algorithm and reduction behaviour are not characterized by any measurement here.
+3. **Compilation, client-side.** `compile_equation_to_clauses()` parses the returned equation into runtime pairs $(M_j, E_j)$, i.e. `(required_mask, expected_bits)`, so the hot path stays a single `AND` plus one comparison per clause. An equation that does not parse is refused (`invalid_cloud_equation`) and the ledger is left unchanged.
+4. **Proposal, not enforcement.** Each clause is stored with `applied = 0` (`SqliteLedger::propose_dynamic_clause`). The running engine does not see it and startup skips it — `load_applied_clauses()` selects `applied = 1` only. The HTTP response says so: `"status": "proposed"`.
+5. **Digital-twin replay as evidence.** `satguardian-advisor.py` (`SimulationAgent`) replays candidate bitmasks against the benign records in `waf_ledger.db` and reports collisions per run, so the operator decides with the replay in front of them. On the bundled demo ledger the current run prints, for example, `154 collisions` for the hostile-IP candidate and `No collisions / 1663 allowed` for the method-restriction candidates. The ledger is demo data, so neither outcome establishes a false-positive rate.
+6. **Approval.** `satguardian-waf clauses apply <id>` or `POST /api/waf/clauses/{id}/apply` (admin token) registers one clause in the engine; the HTTP call applies it to the live process, the CLI applies it from the next start. `reject` deletes only a proposal and never removes a rule already enforcing.
 
 ---
 
@@ -58,23 +62,34 @@ When unobserved malicious minterms $\mathcal{M} = \{m_1, m_2, \dots, m_k\} \subs
 > Coraza, SafeLine, ModSecurity or any commercial product. Their numbers describe
 > this repository's stand-ins only.
 
-### 2.1 Detection on the Pinned Corpus
+### 2.1 Detection: In-Sample Floors and the One Held-Out Measurement
 
 `corpus/independent_v1.json` holds 63 labelled attacks and 16 benign controls;
-`corpus/heldout_v1.json` holds 17 attack variants and 4 benign controls. The
-first run of each file was recorded before any fix and is the only number in
-this repository that was not produced by tuning against the same data.
+`corpus/heldout_v1.json` holds 17 attack variants and 4 benign controls. Both
+were used to drive fixes after their first run, so their current scores are
+regression floors. `corpus/heldout_v2.json` (98 attacks, 57 controls) was
+labelled first and run **once**, before any fix; it is the only out-of-sample
+measurement in this repository.
 
 | Corpus | First run (before fixes) | Current regression run | Interpretation |
 | :--- | :---: | :---: | :--- |
-| `independent_v1` | 51/63 attacks (80.95%), 3/16 benign blocked (18.75%) | 63/63 attacks, 0/16 benign blocked | In-sample regression after fixes |
-| `heldout_v1` | 11/17 attacks (64.71%), 0/4 benign blocked (0.00%) | 17/17 attacks, 0/4 benign blocked | Batch consumed by the fix pass; in-sample now |
+| `independent_v1` | 51/63 attacks (80.95%), 3/16 benign blocked (18.75%) | 63/63 attacks, 0/16 benign blocked | In-sample regression floor after fixes |
+| `heldout_v1` | 11/17 attacks (64.71%), 0/4 benign blocked (0.00%) | 17/17 attacks, 0/4 benign blocked | Batch consumed by the fix pass; in-sample regression floor |
+| `heldout_v2` | **55/98 attacks (56.1% recall, 95% CI 46.3–65.5%)**, **4/57 controls blocked (7.0% FPR, 95% CI 2.8–16.7%)** | not re-run; tuning against it would invalidate the batch | **The only held-out estimate**, one run on 2026-11-04 |
 
-The first-run row is the honest statement about the engine as originally
-published: it missed roughly one attack in five and blocked three benign
-requests. The current row says the pinned cases pass. It is not a held-out
-estimate and it is not evidence of production accuracy. Rules for adding cases
-and the full miss list live in [Detection Corpus](../corpus.md).
+The held-out row is the number to quote: the engine caught a little over half of
+a 98-case batch written from public payload catalogues, and blocked 4 of 57
+plausible benign requests. `corpus/heldout_v2_report.json` carries the
+per-category breakdown and names the categories the engine has no name for
+(`host_header_injection`, `http_response_splitting`, `malicious_upload`,
+`nosql_injection`, `ssti`, `xxe`), plus every individual miss. The current
+100%/0% rows mean only that the pinned cases still pass; they are not held-out
+estimates and they are not evidence of accuracy on real traffic. There is
+**no third-party or independent evaluation**: every batch, including
+`heldout_v2`, was written inside this project from public payload catalogues and
+labelled by the same side that owns the engine, and its benign controls are
+imagined traffic, not a sample from a real access log. Rules for adding cases
+and the full miss list live in [corpus/README.md](../corpus.md).
 
 ### 2.2 In-Memory Latency (Native Rust)
 
@@ -122,16 +137,24 @@ they do not establish production readiness.
    bitmask test is one `AND` plus one comparison per rule; the decode loop runs
    first and sets the floor. This ordering is why the in-memory figure is tens of
    microseconds rather than single digits.
-4. **None of this is an independent evaluation.** The corpus is small and
-   hand-written, and it has been used to drive fixes. A defensible quality claim
-   needs a held-out corpus built and labelled by someone who has not seen the
-   engine, plus a production soak. Neither exists yet. See [Project Status](../status.md).
+4. **One held-out run is not an independent evaluation.** `corpus/heldout_v2.json`
+   is a real out-of-sample measurement of *those* payloads — **56.1% recall
+   (95% CI 46.3–65.5%)** and a **7.0% false-positive rate (95% CI
+   2.8–16.7%)** — and the earlier batches are regression floors. A defensible
+   quality claim still needs batches built and labelled by people outside this
+   project, repeated held-out runs, and a long-running soak under real traffic.
+   None of that exists, and no third-party evaluation has been run. See
+   [STATUS.md](../status.md).
 
 ---
 
-## 3. Sovereign Deployment & Security Units (SU) Licensing Model
+## 3. Self-Hosted Deployment & the Security Units (SU) Review Model
 
-SATGuardian is designed for **100% on-premise data sovereignty**:
-- **Zero Traffic Hosting:** Customer DNS CNAMEs never point to SATGuardian servers. The Edge WAF deploys as a **Standalone Rust Binary**, a **Reverse Proxy** in front of Nginx/Apache/IIS, or a **Kubernetes Envoy Sidecar** (`unix:///run/satguardian/waf.sock`).
-- **100% Free & Unlimited Edge Inspection:** In-path traffic inspection carries zero per-request fees (`$0.00 / 1M requests`).
-- **Cloud Optimization via Security Units (SU):** Only out-of-band cloud boolean minimization (**EXACTOR GXOR** `{AND, OR, NOT, XOR}` synthesis up to 128 variables) consumes Security Units (SU) across five tiers (**Scout** `$20/mo` up to 20 vars, **Pro/Dev** `$49/mo` up to 64 vars, **Startup** `$499/mo` up to 128 vars, **Scale** `$2,499/mo` up to 128 vars, and **Enterprise** custom up to 128 variables; 256+ variables are delivered as dedicated bare-metal Engineering Expansion Projects). When a plan's monthly SU quota is exhausted (`HTTP 402 SU_QUOTA_EXHAUSTED`), cloud optimization pauses while the Edge WAF continues serving traffic with its last compiled bitmask matrix.
+The whole model in one sentence: **free, you get local protection on your own
+node; paying, you get continuous review of new patterns, update proposals and
+explanations — without ever giving up control of your WAF.**
+
+- **No traffic hosting:** your DNS CNAMEs never point at SATGuardian servers. The Edge WAF runs where you put it — as a **standalone Rust binary**, a **reverse proxy** in front of Nginx/Apache/IIS, or an **Envoy sidecar** in Kubernetes talking `ext_authz` over a Unix Domain Socket (`/var/run/satguardian/waf.sock`).
+- **Edge inspection carries no per-request fee:** the in-path plane is free and unlimited, needs no network access to enforce, and keeps working if the cloud is unreachable or the plan lapses.
+- **What a paid plan buys is review, not control of your WAF:** the SATGuardian cloud synthesis service analyses the patterns your node recorded and returns update proposals with their equation, reduction and replay evidence. That service is metered in **Security Units (SU)** against the variables and minterms it compresses; when a plan's monthly SU quota is exhausted it returns `HTTP 402 SU_QUOTA_EXHAUSTED`, cloud review pauses, and the node keeps enforcing the clauses you already approved. The current plan table lives in the project README and on the product site; this paper does not restate prices, and no plan comes with an SLA or a coverage guarantee.
+- **Control is the product feature:** cloud results land in your ledger as proposals (`dynamic_clauses.applied = 0`), never in the engine. Only `satguardian-waf clauses apply <id>` or an admin-token `POST /api/waf/clauses/{id}/apply` makes one enforce; `reject` discards a proposal and cannot remove a rule already in force; and `auto_sync_enabled` stays `false` until you turn it on.
