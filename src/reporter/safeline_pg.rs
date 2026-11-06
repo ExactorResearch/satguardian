@@ -46,8 +46,19 @@ impl SafeLinePgReporter {
             AttackCategory::CmsWordpressProbe => 26, // Web 后门 / CMS 扫描 (Web Shell / Scanner)
             AttackCategory::SensitiveExposureProbe => 22, // 信息泄露 (Information Disclosure)
             AttackCategory::FrameworkExploitProbe => 9,  // 命令注入 (RCE / Framework Exploit)
+            AttackCategory::Ssti => 9,                   // 命令注入 (SSTI -> RCE)
+            AttackCategory::NoSqlInjection => 0,          // SQL 注入 (NoSQL operator injection)
+            AttackCategory::HttpResponseSplitting => 35,  // HTTP 协议违规 (CRLF injection)
+            AttackCategory::HostHeaderInjection => 35,    // HTTP 协议违规 (header manipulation)
+            AttackCategory::MaliciousUpload => 26,        // Web 后门 / 恶意文件上传 (Web Shell / Upload)
+            AttackCategory::Xxe => 35,                    // HTTP 协议违规 (XXE injection)
             AttackCategory::BusinessRuleViolation => 35, // HTTP 协议违规 / 自定义规则 (Policy Violation)
+            AttackCategory::LdapInjection => 9,         // 命令注入 (LDAP injection -> auth bypass)
+            AttackCategory::Deserialization => 9,      // 命令注入 (deserialization -> RCE gadget)
+            AttackCategory::XpathInjection => 1,       // SQL 注入 (XPath -> auth/data bypass)
             AttackCategory::Benign => -1,            // 非攻击
+            AttackCategory::ProtocolSemantics => 35, // HTTP 协议违规 (desync/WebDAV/OAuth/SAML)
+            AttackCategory::ContentObfuscation => 62,// 内容混淆/伪造 (ANSI/log forgery/ReDoS)
             AttackCategory::Unknown => 62,           // 未知
         }
     }
