@@ -1591,7 +1591,7 @@ impl SatguardianSatEngine {
         }
 
         // 14j. ISLAND-SSRF extended coverage (userinfo trick / scheme-relative)
-        if tokens.has_ssrf_userinfo || tokens.has_ssrf_scheme_rel {
+        if tokens.has_ssrf_userinfo || tokens.has_ssrf_scheme_rel || tokens.has_webhook_ssrf_signal {
             if let Some(r) = self.rules.get("SAT-SSRF-02") {
                 matched_rules.push(r.clone());
                 active_islands.push("ISLAND-SSRF".to_string());
@@ -1630,6 +1630,11 @@ impl SatguardianSatEngine {
         if tokens.has_smuggling_desync || tokens.has_webdav_method || tokens.has_cache_deception
             || tokens.has_cache_poisoning_signal || tokens.has_path_traversal_signal
             || tokens.has_cms_wordpress_probe_signal
+            || tokens.has_parameter_pollution_signal || tokens.has_connect_tunnel_signal
+            || tokens.has_http2_pseudo_header || tokens.has_protocol_injection_signal
+            || tokens.has_content_type_confusion_signal || tokens.has_websocket_abuse_signal
+            || tokens.has_spring4shell_signal || tokens.has_open_redirect_signal
+            || tokens.has_management_endpoint_signal
         {
             if let Some(r) = self.rules.get("SAT-SEM-01") {
                 matched_rules.push(r.clone());
@@ -1647,7 +1652,8 @@ impl SatguardianSatEngine {
             }
         }
         if tokens.has_privileged_field || tokens.has_numeric_anomaly || tokens.has_csv_formula
-            || tokens.has_business_logic_signal
+            || tokens.has_business_logic_signal || tokens.has_type_juggling_signal
+            || tokens.has_integer_overflow_signal
         {
             if let Some(r) = self.rules.get("SAT-SEM-03") {
                 matched_rules.push(r.clone());

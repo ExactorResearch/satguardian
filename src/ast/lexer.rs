@@ -101,6 +101,19 @@ pub struct LexicalTokens {
     pub has_path_traversal_signal: bool,
     pub has_cms_wordpress_probe_signal: bool,
     pub has_business_logic_signal: bool,
+    // v7 lex proposals (bits v86-v97)
+    pub has_parameter_pollution_signal: bool,
+    pub has_type_juggling_signal: bool,
+    pub has_protocol_injection_signal: bool,
+    pub has_connect_tunnel_signal: bool,
+    pub has_webhook_ssrf_signal: bool,
+    pub has_http2_pseudo_header: bool,
+    pub has_management_endpoint_signal: bool,
+    pub has_open_redirect_signal: bool,
+    pub has_content_type_confusion_signal: bool,
+    pub has_integer_overflow_signal: bool,
+    pub has_websocket_abuse_signal: bool,
+    pub has_spring4shell_signal: bool,
     pub active_token_names: Vec<String>,
 }
 
@@ -224,6 +237,17 @@ static RE_CYR_BRAND: OnceLock<Regex> = OnceLock::new();
 static RE_PARAM_PAIR: OnceLock<Regex> = OnceLock::new();
 static RE_MIXED_TOKEN: OnceLock<Regex> = OnceLock::new();
 static RE_CMS_VULN_SLUG: OnceLock<Regex> = OnceLock::new();
+static RE_MAGIC_HASH: OnceLock<Regex> = OnceLock::new();
+static RE_HEX_NUM: OnceLock<Regex> = OnceLock::new();
+static RE_BRACKET_PARAM: OnceLock<Regex> = OnceLock::new();
+static RE_PRIV_LIKE_VALUE: OnceLock<Regex> = OnceLock::new();
+static RE_PROTO_LINE: OnceLock<Regex> = OnceLock::new();
+static RE_INLINE_PROTO: OnceLock<Regex> = OnceLock::new();
+static RE_INTERNAL_HOST: OnceLock<Regex> = OnceLock::new();
+static RE_SCI_NUM: OnceLock<Regex> = OnceLock::new();
+static RE_FORM_BODY: OnceLock<Regex> = OnceLock::new();
+static RE_MGMT_ENDPOINT: OnceLock<Regex> = OnceLock::new();
+static RE_PARAM_PAIR_WIDE: OnceLock<Regex> = OnceLock::new();
 static RE_NUM_TINY: OnceLock<Regex> = OnceLock::new();
 static RE_APPLIANCE_CVE: OnceLock<Regex> = OnceLock::new();
 
@@ -726,6 +750,50 @@ fn init_regexes() {
     let _ = RE_CMS_VULN_SLUG.get_or_init(|| {
         // Historically vulnerable CMS plugin/action slugs (WordPress et al.).
         Regex::new(r#"(?i)revslider|elementor|timthumb|duplicator|wp\.vcd|wp\.vcd|filemanager|wp\.file\.manager|ninja\.forms|ninja-forms|mailpoet|wpdiscuz|responsivevoice|contact\.form.?7|gravityforms|gravity\.forms|wpscan|really\.simple\.ssl|wp\.cron\.php|arbitrary\.file|show_image|image\.php\?|load-scripts|load-styles"#).unwrap()
+    });
+    let _ = RE_MAGIC_HASH.get_or_init(|| {
+        // PHP loose-comparison magic hashes: 0e<digits> == 0 in PHP 7.
+        Regex::new(r#"^0e\d{3,}$"#).unwrap()
+    });
+    let _ = RE_HEX_NUM.get_or_init(|| {
+        // Hex/octal-looking numeric juggling values (0x539, 017, 0b101).
+        Regex::new(r#"^(?:0x[0-9a-f]+|0b[01]+|0[0-7]{2,})$"#).unwrap()
+    });
+    let _ = RE_BRACKET_PARAM.get_or_init(|| {
+        // PHP/Rails-style array params: key[]=v, key[0]=v, key[sub]=v.
+        Regex::new(r#"(?i)["']?([a-z_][a-z0-9_]*)\s*(?:\[\]|\[\d+\]|\[[a-z_][a-z0-9_]*\])["']?\s*[:=]\s*["']?([^&\s"',}\]]{1,120})"#).unwrap()
+    });
+    let _ = RE_PRIV_LIKE_VALUE.get_or_init(|| {
+        // Values that signal privilege/conflict intent in duplicate params.
+        Regex::new(r#"(?i)^(?:admin|administrator|root|staff|internal|support|sudo|operator|superuser|moderator|owner|manager|editor|true|yes|on|enabled?|active|verified|approved|debug|test)$"#).unwrap()
+    });
+    let _ = RE_PROTO_LINE.get_or_init(|| {
+        // Redis/Memcached/RESP command at line start (after CRLF smuggling).
+        Regex::new(r#"(?im)^\s*(?:set|get|flushall|flush_all|flushdb|config|eval|del|delete|unlink|keys|scan|hscan|sscan|zscan|incr|decr|incrby|decrby|lpush|rpush|lpushx|rpushx|linsert|lpop|rpop|rpoplpush|lrange|lrem|lset|ltrim|llen|lindex|lpos|hset|hsetnx|hmset|hget|hmget|hdel|hexists|hkeys|hlen|hvals|hincrby|hscan|sadd|srem|smove|spop|srandmember|scard|sismember|smembers|sdiff|sinter|sunion|zadd|zrem|zincrby|zrange|zrevrange|zrangebyscore|zrevrangebyscore|zrank|zrevrank|zscore|zcard|zcount|zlexcount|select|auth|expire|pexpire|expireat|persist|ttl|pttl|ping|echo|info|shutdown|slaveof|replicaof|debug|slowlog|client|cluster|migrate|rename|renamenx|sort|save|bgsave|bgrewriteaof|lastsave|monitor|sync|psync|replconf|swapdb|object|memory|xadd|xread|xrange|xlen|xtrim|publish|subscribe|psubscribe|punsubscribe|pubsub|bitcount|bitop|bitpos|getbit|setbit|dump|exists|restore|geoadd|georadius|geosearch|geopos|geodist|geohash|mget|mset|msetnx|pfadd|pfcount|pfmerge|randomkey|asking|readonly|readwrite|failover|reset|append|prepend|cas|gets|gat|touch|stats|version|quit|add|replace|getdel|getex)\b"#).unwrap()
+    });
+    let _ = RE_INLINE_PROTO.get_or_init(|| {
+        // Inline memcached/redis verb at value start (no CRLF needed).
+        Regex::new(r#"(?i)^(?:get|set|add|delete|flush_all|flushall|stats|version|quit|prepend|append|cas|gets|gat|touch|incr|decr|replace|gets)\s+\S"#).unwrap()
+    });
+    let _ = RE_INTERNAL_HOST.get_or_init(|| {
+        Regex::new(r#"(?i)(?:169\.254\.169\.254|localhost|127\.0\.0\.1|0\.0\.0\.0|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}|metadata\.google\.internal|host\.docker\.internal|kubernetes\.default|instance-data|(?:^|[^a-z0-9])(?:internal|intranet|corp|lan|home)\.)"#).unwrap()
+    });
+    let _ = RE_SCI_NUM.get_or_init(|| {
+        // Scientific-notation magnitudes: |exponent| >= 30 overflows f64/i64.
+        Regex::new(r#"(?i)^-?\d+(?:\.\d+)?[eE]([+-]?\d+)$"#).unwrap()
+    });
+    let _ = RE_FORM_BODY.get_or_init(|| {
+        // application/x-www-form-urlencoded shape: key=value&...
+        Regex::new(r#"(?i)^[a-zA-Z_][\w.\-]*="#).unwrap()
+    });
+    let _ = RE_MGMT_ENDPOINT.get_or_init(|| {
+        // Management/debug surfaces with no legitimate public exposure.
+        Regex::new(r#"(?i)/(?:api/v\d+/namespaces/|containers/json|jolokia|debug/(?:pprof|vars|requests)|_cat/|_cluster/|_nodes/|_all_docs|pprof/|_bulk|_sql\b|_xpack|_tasks|_snapshot|_aliases|_settings|_mapping)"#).unwrap()
+    });
+    let _ = RE_PARAM_PAIR_WIDE.get_or_init(|| {
+        // Like RE_PARAM_PAIR but the value may contain whitespace/CRLF —
+        // needed to see protocol commands smuggled inside a parameter.
+        Regex::new(r#"(?i)["']?([a-z_][a-z0-9_.\-]{0,40})["']?\s*[:=]\s*["']?([^&"',}\]]{1,300})"#).unwrap()
     });
     let _ = RE_APPLIANCE_CVE.get_or_init(|| {
         // Known-vulnerable appliance/admin endpoints (PAN-OS, FortiGate,
@@ -2783,6 +2851,292 @@ impl AstLexer {
             }) {
                 tokens.has_business_logic_signal = true;
                 tokens.active_token_names.push("CROSS_PARAM_NUMERIC_ANOMALY".to_string());
+            }
+        }
+
+        // U. v7 lex proposals — parameter-level semantic anomalies.
+        {
+            let norm = tokens.normalized_text.clone();
+            let mut dup_keys: std::collections::HashMap<String, std::collections::BTreeSet<String>> =
+                std::collections::HashMap::new();
+            let mut bracket_keys: std::collections::HashMap<String, Vec<String>> =
+                std::collections::HashMap::new();
+            let mut bracket_keys_all: std::collections::HashMap<String, Vec<String>> =
+                std::collections::HashMap::new();
+            let mut magic_hash = false;
+            let mut hex_juggle = false;
+            let mut proto_inject = false;
+            let mut webhook_ssrf = false;
+            let mut open_redirect = false;
+            let mut int_overflow = false;
+            let mut classloader = false;
+
+            const SENSITIVE_KEYS: &[&str] = &[
+                "username", "user", "password", "passwd", "pass", "pwd", "email",
+                "token", "role", "admin", "account", "login", "auth", "secret",
+                "key", "permission", "permissions", "isadmin", "verified",
+                "credit", "balance", "price", "amount", "qty", "quantity",
+                "bid", "score", "bonus", "discount",
+            ];
+            const REDIRECT_KEYS: &[&str] = &[
+                "next", "redirect", "return", "url", "to", "target", "continue",
+                "continue_url", "redir", "go", "link", "out", "u", "return_url",
+                "returnto", "return_to", "dest", "destination", "redirect_url",
+                "redirect_uri", "redirect_to", "forward", "goto",
+            ];
+            const WEBHOOK_KEYS: &[&str] = &[
+                "callback", "webhook", "webhook_url", "notify_url", "notify",
+                "pingback", "endpoint", "delivery", "callback_url", "target_url",
+                "hook", "feed_url", "notify_uri", "call_back",
+            ];
+            const JUGGLE_KEYS: &[&str] = &[
+                "password", "passwd", "pass", "pwd", "token", "hash", "secret",
+                "key", "auth", "signature", "nonce", "code", "digest", "apikey",
+                "api_key", "session", "sess", "jwt", "credential", "id", "num",
+                "n", "qty", "count", "level", "pin", "otp", "year", "month",
+                "day", "version", "build",
+            ];
+            const BIG_NUM_KEYS: &[&str] = &[
+                "percent", "ratio", "multiplier", "factor", "count", "num",
+                "number", "percentage",
+            ];
+
+            for cap in RE_PARAM_PAIR.get().unwrap().captures_iter(&norm) {
+                let key = cap[1].to_ascii_lowercase();
+                let val = cap[2].to_string();
+                let vl = val.to_ascii_lowercase();
+                if !val.is_empty() {
+                    dup_keys.entry(key.clone()).or_default().insert(val.clone());
+                }
+                if !magic_hash
+                    && JUGGLE_KEYS.contains(&key.as_str())
+                    && RE_MAGIC_HASH.get().unwrap().is_match(&vl)
+                {
+                    magic_hash = true;
+                }
+                if !hex_juggle
+                    && JUGGLE_KEYS.contains(&key.as_str())
+                    && RE_HEX_NUM.get().unwrap().is_match(&vl)
+                {
+                    hex_juggle = true;
+                }
+                if !proto_inject && (vl.contains('\n') || vl.contains('\r') || vl.contains('+')) {
+                    // Wide pass below sees the full value including CRLF.
+                }
+                if !webhook_ssrf
+                    && WEBHOOK_KEYS.contains(&key.as_str())
+                    && RE_INTERNAL_HOST.get().unwrap().is_match(&vl)
+                {
+                    webhook_ssrf = true;
+                }
+                if !open_redirect && REDIRECT_KEYS.contains(&key.as_str()) {
+                    // Judge on the DECODED value: %2f%2f at value start means
+                    // protocol-relative //evil, while %3A%2F%2F is just an
+                    // https:// URL — the raw variant still holds the literal
+                    // escapes, so checking vl alone would FP on encoded URLs.
+                    let dvl = percent_decode_str(&val)
+                        .decode_utf8_lossy()
+                        .to_lowercase();
+                    if vl.starts_with("//")
+                        || dvl.starts_with("//")
+                        || dvl.contains("javascript:")
+                        || dvl.contains("data:")
+                        || dvl.contains("\\\\")
+                    {
+                        open_redirect = true;
+                    }
+                }
+                // Integer overflow: >u64::MAX all-digit values, |exp|>=30
+                // scientific notation, or extended big-number keys >= 1e6.
+                if !int_overflow {
+                    if val.bytes().all(|b| b.is_ascii_digit()) && val.len() >= 19 {
+                        if let Ok(n) = val.parse::<u128>() {
+                            if n > u64::MAX as u128 {
+                                int_overflow = true;
+                            }
+                        }
+                    }
+                    // Scientific notation only overflows when the value is
+                    // actually unrepresentable — 0e999 parses to 0.0 (benign
+                    // magic-hash shape), 1e309 parses to f64::INFINITY.
+                    if vl.parse::<f64>().map(|f| f.is_infinite()).unwrap_or(false) {
+                        int_overflow = true;
+                    }
+                    if BIG_NUM_KEYS.contains(&key.as_str()) {
+                        if let Ok(n) = vl.trim().parse::<f64>() {
+                            if n.abs() >= 1_000_000.0 {
+                                int_overflow = true;
+                            }
+                        }
+                    }
+                }
+            }
+            // Spring4Shell binding keys can exceed the pair-regex key limit
+            // (~58 chars), so check the normalized text for the
+            // classloader+pipeline signature directly.
+            if !classloader {
+                let nl = norm.to_ascii_lowercase();
+                if nl.contains("classloader")
+                    && (nl.contains("pipeline")
+                        || nl.contains("class.module")
+                        || nl.contains(".first."))
+                {
+                    classloader = true;
+                }
+            }
+            // Protocol injection needs values that may contain CRLF, which the
+            // narrow pair regex truncates at \s — use the wide variant here.
+            if !proto_inject {
+                const ALONE_PROTO: &[&str] = &[
+                    "eval", "config", "flushall", "flushdb", "flush_all",
+                    "slaveof",
+                    "replicaof", "psync", "replconf", "slowlog", "asking",
+                    "failover", "migrate", "monitor", "subscribe", "psubscribe",
+                    "pubsub", "shutdown",
+                ];
+                for cap in RE_PARAM_PAIR_WIDE.get().unwrap().captures_iter(&norm) {
+                    let vl = cap[2].to_ascii_lowercase();
+                    let vl_sp = vl.replace('+', " ");
+                    let has_nl = vl.contains('\n') || vl.contains('\r');
+                    if has_nl && RE_PROTO_LINE.get().unwrap().is_match(&vl_sp) {
+                        proto_inject = true;
+                        break;
+                    }
+                    // Dangerous-alone verbs (never legit param values) fire
+                    // when followed by arguments or a CRLF payload.
+                    let first = vl_sp.split_whitespace().next().unwrap_or("");
+                    if ALONE_PROTO.contains(&first)
+                        && (has_nl || vl_sp.split_whitespace().count() >= 2)
+                    {
+                        proto_inject = true;
+                        break;
+                    }
+                    // Inline memcached/redis verb without CRLF: argument must
+                    // look protocol-ish (/, :, RESP marker, or digit run).
+                    if !has_nl {
+                        if let Some(m) = RE_INLINE_PROTO.get().unwrap().find(&vl_sp) {
+                            let _ = m;
+                            let rest = vl_sp[m.end()..].trim_start();
+                            if rest.contains('/') || rest.contains(':') || rest.contains('*')
+                                || rest.contains('$')
+                                || rest.split_whitespace().any(|w| w.len() >= 4 && w.bytes().all(|b| b.is_ascii_digit()))
+                            {
+                                proto_inject = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            // Bracket-array params: sensitive keys (type juggling) and
+            // divergent values under one base key (pollution).
+            for cap in RE_BRACKET_PARAM.get().unwrap().captures_iter(&norm) {
+                let key = cap[1].to_ascii_lowercase();
+                let val = cap[2].to_string();
+                if SENSITIVE_KEYS.contains(&key.as_str()) {
+                    bracket_keys.entry(key.clone()).or_default().push(val.clone());
+                }
+                // Pollution view: ANY bracket base key repeating with divergent
+                // values — privilege flavor decides, not key sensitivity.
+                bracket_keys_all.entry(key).or_default().push(val);
+            }
+            // v86 pollution: same scalar key, >=2 distinct values, at least
+            // one privilege/conflict-flavored value.
+            let pollution = dup_keys.iter().any(|(_, vals)| {
+                vals.len() > 1 && vals.iter().any(|v| RE_PRIV_LIKE_VALUE.get().unwrap().is_match(v))
+            }) || bracket_keys_all.values().any(|vals| {
+                let distinct: std::collections::BTreeSet<&String> = vals.iter().collect();
+                distinct.len() > 1
+                    && vals.iter().any(|v| RE_PRIV_LIKE_VALUE.get().unwrap().is_match(v))
+            });
+            if pollution {
+                tokens.has_parameter_pollution_signal = true;
+                tokens.active_token_names.push("PARAM_VALUE_POLLUTION".to_string());
+            }
+            if magic_hash || hex_juggle || !bracket_keys.is_empty() {
+                tokens.has_type_juggling_signal = true;
+                tokens.active_token_names.push("LOOSE_TYPE_JUGGLING".to_string());
+            }
+            if proto_inject {
+                tokens.has_protocol_injection_signal = true;
+                tokens.active_token_names.push("REDIS_MEMCACHED_INJECTION".to_string());
+            }
+            if webhook_ssrf {
+                tokens.has_webhook_ssrf_signal = true;
+                tokens.active_token_names.push("WEBHOOK_CALLBACK_SSRF".to_string());
+            }
+            if open_redirect {
+                tokens.has_open_redirect_signal = true;
+                tokens.active_token_names.push("OPEN_REDIRECT_PARAM".to_string());
+            }
+            if int_overflow {
+                tokens.has_integer_overflow_signal = true;
+                tokens.active_token_names.push("INTEGER_OVERFLOW_BOUNDARY".to_string());
+            }
+            if classloader {
+                tokens.has_spring4shell_signal = true;
+                tokens.active_token_names.push("CLASSLOADER_BINDING_INJECTION".to_string());
+            }
+        }
+
+        // V. Request-level signals: CONNECT tunneling, HTTP/2 pseudo-headers,
+        // management endpoints, Content-Type confusion, WebSocket abuse.
+        if req.method.eq_ignore_ascii_case("CONNECT") {
+            tokens.has_connect_tunnel_signal = true;
+            tokens.active_token_names.push("CONNECT_TUNNEL_ABUSE".to_string());
+        }
+        for (k, _) in &req.headers {
+            if k.starts_with(':') {
+                tokens.has_http2_pseudo_header = true;
+                tokens.active_token_names.push("HTTP2_PSEUDO_HEADER_LEAK".to_string());
+                break;
+            }
+        }
+        {
+            let pq = format!("{}?{}", req.path, req.query_string).to_ascii_lowercase();
+            if RE_MGMT_ENDPOINT.get().unwrap().is_match(&pq) {
+                tokens.has_management_endpoint_signal = true;
+                tokens.active_token_names.push("MANAGEMENT_ENDPOINT_PROBE".to_string());
+            }
+            // WebSocket upgrade carrying injection-flavored subprotocols.
+            let is_ws = req.headers.iter().any(|(k, v)| {
+                k.eq_ignore_ascii_case("upgrade") && v.eq_ignore_ascii_case("websocket")
+            });
+            if is_ws {
+                for (k, v) in &req.headers {
+                    if k.eq_ignore_ascii_case("sec-websocket-protocol") {
+                        let vl = v.to_ascii_lowercase();
+                        if vl.contains("sql") || vl.contains("script") || vl.contains("exec")
+                            || vl.contains("eval") || vl.contains("admin") || vl.contains("..")
+                            || vl.contains('<') || vl.contains("javascript")
+                        {
+                            tokens.has_websocket_abuse_signal = true;
+                            tokens.active_token_names.push("WEBSOCKET_SUBPROTOCOL_ABUSE".to_string());
+                            break;
+                        }
+                    }
+                }
+            }
+            // Content-Type confusion: declared type contradicts body shape.
+            let ct = req.headers.iter()
+                .find(|(k, _)| k.eq_ignore_ascii_case("content-type"))
+                .map(|(_, v)| v.to_ascii_lowercase());
+            if let Some(ct) = ct {
+                let body_t = req.body.trim_start();
+                let first = body_t.chars().next().unwrap_or(' ');
+                let body_json = first == '{' || first == '[';
+                let body_xml = first == '<';
+                let body_form = RE_FORM_BODY.get().unwrap().is_match(body_t);
+                let json_ct = ct.contains("json");
+                let xml_ct = ct.contains("xml");
+                let form_ct = ct.contains("x-www-form-urlencoded");
+                if (json_ct && (body_xml || body_form))
+                    || (xml_ct && (body_json || body_form))
+                    || (form_ct && (body_json || body_xml))
+                {
+                    tokens.has_content_type_confusion_signal = true;
+                    tokens.active_token_names.push("CONTENT_TYPE_CONFUSION".to_string());
+                }
             }
         }
 

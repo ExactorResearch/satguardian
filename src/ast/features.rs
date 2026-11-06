@@ -95,6 +95,18 @@ pub const FEATURE_NAMES: &[&str] = &[
     "v83_param_path_traversal",
     "v84_cms_plugin_probe",
     "v85_cross_param_numeric",
+    "v86_parameter_pollution",
+    "v87_type_juggling",
+    "v88_protocol_injection",
+    "v89_connect_tunnel",
+    "v90_webhook_ssrf",
+    "v91_http2_pseudo_header",
+    "v92_management_endpoint",
+    "v93_open_redirect",
+    "v94_content_type_confusion",
+    "v95_integer_overflow",
+    "v96_websocket_abuse",
+    "v97_spring4shell",
 ];
 
 /// Binarized request state representing a point on the Boolean Hypercube $\{0, 1\}^N$.
@@ -257,6 +269,20 @@ impl FeatureBinarizer {
         if tokens.has_path_traversal_signal { fv.set(83); }
         if tokens.has_cms_wordpress_probe_signal { fv.set(84); }
         if tokens.has_business_logic_signal { fv.set(85); }
+
+        // v7 lex proposals
+        if tokens.has_parameter_pollution_signal { fv.set(86); }
+        if tokens.has_type_juggling_signal { fv.set(87); }
+        if tokens.has_protocol_injection_signal { fv.set(88); }
+        if tokens.has_connect_tunnel_signal { fv.set(89); }
+        if tokens.has_webhook_ssrf_signal { fv.set(90); }
+        if tokens.has_http2_pseudo_header { fv.set(91); }
+        if tokens.has_management_endpoint_signal { fv.set(92); }
+        if tokens.has_open_redirect_signal { fv.set(93); }
+        if tokens.has_content_type_confusion_signal { fv.set(94); }
+        if tokens.has_integer_overflow_signal { fv.set(95); }
+        if tokens.has_websocket_abuse_signal { fv.set(96); }
+        if tokens.has_spring4shell_signal { fv.set(97); }
 
         fv
     }
