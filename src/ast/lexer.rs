@@ -274,8 +274,20 @@ static RE_XSS_EXTENDED: OnceLock<Regex> = OnceLock::new();
 static RE_LFI_EXTENDED: OnceLock<Regex> = OnceLock::new();
 static RE_IIS_LT: OnceLock<Regex> = OnceLock::new();
 static RE_IIS_GT: OnceLock<Regex> = OnceLock::new();
+static RE_IIS_SQUOTE: OnceLock<Regex> = OnceLock::new();
+static RE_IIS_DQUOTE: OnceLock<Regex> = OnceLock::new();
+static RE_IIS_GUILLEMET_L: OnceLock<Regex> = OnceLock::new();
+static RE_IIS_GUILLEMET_R: OnceLock<Regex> = OnceLock::new();
 static RE_RFI_SCHEME: OnceLock<Regex> = OnceLock::new();
 static RE_SESSION_URL: OnceLock<Regex> = OnceLock::new();
+static RE_BAD_CHARSET: OnceLock<Regex> = OnceLock::new();
+static RE_ABS_URI_METHOD: OnceLock<Regex> = OnceLock::new();
+static RE_JSON_KEY_SQL: OnceLock<Regex> = OnceLock::new();
+static RE_B64_TOKEN: OnceLock<Regex> = OnceLock::new();
+static RE_SCRIPT_EXT_HDR: OnceLock<Regex> = OnceLock::new();
+static RE_HEX_PAIRS: OnceLock<Regex> = OnceLock::new();
+static RE_IPV6_LITERAL: OnceLock<Regex> = OnceLock::new();
+static RE_LOCALHOST_DNS: OnceLock<Regex> = OnceLock::new();
 
 fn init_regexes() {
     let _ = RE_TAUT_PAIR.get_or_init(|| {
@@ -413,6 +425,20 @@ fn init_regexes() {
     });
     let _ = RE_IIS_GT.get_or_init(|| {
         Regex::new(r#"(?i)%u203a|%u3009|%uff1e"#).unwrap()
+    });
+    let _ = RE_IIS_SQUOTE.get_or_init(|| {
+        // Typographic quotes used as SQL quote substitutes in IIS unicode.
+        Regex::new(r#"(?i)%u2018|%u2019|%u02bc|%u02b9"#).unwrap()
+    });
+    let _ = RE_IIS_DQUOTE.get_or_init(|| {
+        Regex::new(r#"(?i)%u201c|%u201d|%u2033|%u2036"#).unwrap()
+    });
+    let _ = RE_IIS_GUILLEMET_L.get_or_init(|| {
+        // « = fake '<' (IIS unicode XSS probes).
+        Regex::new(r#"(?i)%u00ab|%u300a|%uff1a"#).unwrap()
+    });
+    let _ = RE_IIS_GUILLEMET_R.get_or_init(|| {
+        Regex::new(r#"(?i)%u00bb|%u300b|%uff1b"#).unwrap()
     });
     let _ = RE_NOSQL_JSON_OP.get_or_init(|| {
         // MongoDB operator keys in JSON position: {"$ne": ...}, {"$where": ...}
@@ -828,12 +854,12 @@ fn init_regexes() {
         // has no legitimate place in an HTTP parameter or JSON/XML body.
         // "@type" alone is JSON-LD schema markup — only flag when the value is
         // a Java-ish class name (fastjson/jackson gadget style).
-        Regex::new(r#"(?i)\b(?:java|javax|sun|com\.sun|oracle|org\.apache\.commons|ognl|javassist|xstream|fastjson|mvel|spel|groovy|aspectjweaver|beanshell|jython|mozilla\.rhino)\.[a-z]|"@type"\s*:\s*"[^"]*(?:java|com\.sun|oracle|ognl|xstream|fastjson|javassist|aspectj|beanshell|jython|rhino|groovy|mvel|spel)|invokertransformer|templatesimpl|jdbcrowsetimpl|jdk\.internal|com\.thoughtworks\.xstream|org\.yaml\.snakeyaml|flex\.messaging|org\.jsecurity|com\.alibaba\.fastjson|ognl\.|spel\.|mvel\.|#\{[a-zA-Z_]|\$\{[a-zA-Z_]+\.(?:get|set|eval|exec|runtime|process|class|forname|newinstance)|class\.forname|runtime\.getruntime|processbuilder"#).unwrap()
+        Regex::new(r#"(?i)\b(?:java|javax|sun|com\.sun|oracle|ognl|javassist|xstream|fastjson|mvel|spel|groovy|aspectjweaver|beanshell|jython|mozilla\.rhino)\.[a-z]|org\.apache\.commons|com\.opensymphony|org\.springframework|com\.thoughtworks|org\.yaml\.snakeyaml|flex\.messaging|org\.jsecurity|com\.alibaba\.fastjson|xwork\.|struts|webwork|rO0AB|"@type"\s*:\s*"[^"]*(?:java|com\.sun|oracle|ognl|xstream|fastjson|javassist|aspectj|beanshell|jython|rhino|groovy|mvel|spel|opensymphony|springframework)|invokertransformer|templatesimpl|jdbcrowsetimpl|jdk\.internal|clonefactory|ognl\.|spel\.|mvel\.|#\{[a-zA-Z_]|\$\{[a-zA-Z_]+\.(?:get|set|eval|exec|runtime|process|class|forname|newinstance)|class\.forname|runtime\.getruntime|runtime\.exec|processbuilder|process\s*\.\s*builder"#).unwrap()
     });
     let _ = RE_SQL_EXTENDED.get_or_init(|| {
         // DBMS-specific functions reachable only through injection: Oracle,
         // MySQL file/network exfil, MSSQL xp_*/openrowset, Postgres file/dblink.
-        Regex::new(r#"(?i)\b(?:unistr|updatexml|extractvalue|xmltype|ordsys|ctxsys|dbms_\w+|utl_\w+|load_file|benchmark|xp_cmdshell|xp_reg\w+|xp_dirtree|xp_fileexist|xp_subdirs|openrowset|opendatasource|sp_executesql|sp_oacreate|sp_oamethod|sp_makewebtask|pg_read_file|pg_ls_dir|pg_read_binary_file|pg_stat_file|dblink|dblink_exec|dblink_connect|lo_import|lo_export|generate_series|dbms_pipe|dbms_lock|dbms_aw|dbms_xmlgen|dbms_scheduler|dbms_alert|dbms_output|utl_http|utl_inaddr|utl_file|utl_smtp|utl_tcp|ordsys\.|ctxsys\.)\s*\("#).unwrap()
+        Regex::new(r#"(?i)\b(?:unistr|updatexml|extractvalue|xmltype|ordsys|ctxsys|dbms_\w+|utl_\w+|load_file|benchmark|xp_cmdshell|xp_reg\w+|xp_dirtree|xp_fileexist|xp_subdirs|openrowset|opendatasource|sp_executesql|sp_oacreate|sp_oamethod|sp_makewebtask|pg_read_file|pg_ls_dir|pg_read_binary_file|pg_stat_file|dblink|dblink_exec|dblink_connect|lo_import|lo_export|generate_series|dbms_pipe|dbms_lock|dbms_aw|dbms_xmlgen|dbms_scheduler|dbms_alert|dbms_output|utl_http|utl_inaddr|utl_file|utl_smtp|utl_tcp|ordsys\.|ctxsys\.|concat_ws|ifnull|nullif|coalesce|greatest|least|locate|instr|to_char|to_date|to_number|to_timestamp|date_format|str_to_date|unix_timestamp|from_unixtime|collate|soundex|difference|lpad|rpad|quote|unhex|octet_length|bit_length|char_length|character_length|initcap|ucase|lcase|substring_index|make_set|export_set|find_in_set|substr|substring|floor|ceil)\s*\(|::(?:int|integer|bigint|smallint|text|varchar|char|numeric|decimal|float|double|real|bool|boolean|date|time|timestamp|interval|json|jsonb|xml|uuid|inet|cidr|macaddr|point|line|lseg|box|path|polygon|circle|money|bit|varbit|tsvector|tsquery|regclass|bytea|name|oid)\b|\blike\s+null\b|\bnot\s+like\s+null\b"#).unwrap()
     });
     let _ = RE_SQL_TAUTOLOGY.get_or_init(|| {
         // Quote-flanked numeric tautologies: ' and 526=527 / " or 1=1.
@@ -848,7 +874,7 @@ fn init_regexes() {
     let _ = RE_RCE_EXTENDED.get_or_init(|| {
         // Windows command constructs and shell-variable indirection that the
         // POSIX chaining rules do not model.
-        Regex::new(r#"(?i)\b(?:if\s+(?:not\s+)?exist\b|for\s+%[a-z]\s+in\b|choice\s+/c|timeout\s+/t|%comspec%|%windir%|%systemroot%|\$\{?IFS\}?|\$SHELL\s+-c|cmd(?:\.exe)?\s+/[ck]\b|forfiles(?:\.exe)?\s+/p|pcalua(?:\.exe)?\s+-a|syncappvpublishingserver|desktopimgdownldr|eventvwr(?:\.exe)?\s+[^\s]*\.msc|presentationhost(?:\.exe)?\s|runscripthelper|msdt(?:\.exe)?\s|pcwrun|xwizard|ie4uinit|infdefaultinstall|gonext|control\.exe\s+[^\s]*\.cpl)"#).unwrap()
+        Regex::new(r#"(?i)\b(?:if\s+(?:not\s+)?exist\b|for\s+%.{1,4}\s+in\b|choice\s+/c|timeout\s+/t|%comspec%|%windir%|%systemroot%|\$\{?IFS\}?|\$SHELL\s+-c|cmd(?:\.exe)?\s+/[ck]\b|forfiles(?:\.exe)?\s+/p|pcalua(?:\.exe)?\s+-a|syncappvpublishingserver|desktopimgdownldr|eventvwr(?:\.exe)?\s+[^\s]*\.msc|presentationhost(?:\.exe)?\s|runscripthelper|msdt(?:\.exe)?\s|pcwrun|xwizard|ie4uinit|infdefaultinstall|gonext|control\.exe\s+[^\s]*\.cpl|invoke-webrequest|invoke-expression|invoke-command|invoke-item|invoke-restmethod|invoke-wmimethod|powershell(?:\.exe)?\s+-\w|pwsh(?:\.exe)?\s+-\w|iex\s*\(|iex\s+-|enter-pssession|new-object|net\.webclient|system\.net\.webclient|downloadstring|downloadfile|get-wmiobject|start-bitstransfer|(?:ba|da|z|k)?sh\s+-c\b|python[0-9.]*\s+-c\b|perl\s+-e\b|ruby\s+-e\b|node\s+-e\b|php\s+-r\b|lua\s+-e\b|tclsh\b|cmdextversion|\bgoto\s+[a-z_]|\bcall\s+[a-z_%.]|\bstart\s+/|\bif\s+[^\n|]{0,50}==|(?:^|[\s|;&])~[+-]|[|;&]\s*\$[a-zA-Z_]\w*\s+\S)"#).unwrap()
     });
     let _ = RE_METHOD_OVERRIDE_PARAM.get_or_init(|| {
         // _method=PUT/DELETE/PROPFIND style verb tunneling inside the body/qs.
@@ -865,13 +891,13 @@ fn init_regexes() {
     });
     let _ = RE_NODEJS_ABUSE.get_or_init(|| {
         // Node.js runtime/module surfaces with no place in HTTP parameters.
-        Regex::new(r#"(?i)\b(?:require\s*\(|import\s*\(|child_process|process\.(?:env|argv|binding|_linkedbinding|dlopen|exit|kill)|global\.(?:process|require|buffer|__dirname)|__dirname|__filename|module\.exports|buffer\.from|vm\.runin|vm\.createcontext|worker_threads|cluster\.|fs\.(?:readfile|writefile|createreadstream|createwritestream)|net\.(?:connect|createconnection|createserver)|dgram\.|__proto__|constructor\s*\[|prototype\s*\[|process\[req\.)"#).unwrap()
+        Regex::new(r#"(?i)\b(?:require\s*\(|import\s*\(|child_process|process\.(?:env|argv|binding|_linkedbinding|dlopen|exit|kill)|process\s*\[|global\.(?:process|require|buffer|__dirname)|__dirname|__filename|module\.exports|buffer\.from|vm\.runin|vm\.createcontext|worker_threads|cluster\.|fs\.(?:readfile|writefile|createreadstream|createwritestream)|net\.(?:connect|createconnection|createserver)|dgram\.|__proto__|constructor\s*\[|prototype\s*\[|process\[req\.|console\.|__js_function|globalthis|globaleval|this\.constructor|constructor\.constructor|while\s*\(\s*(?:true|!0|1)\s*\)\s*;|for\s*\(\s*;\s*;)"#).unwrap()
     });
     let _ = RE_XSS_EXTENDED.get_or_init(|| {
         // JavaScript runtime constructs and executable markup that survive
         // outside <script> tags: new Function, document./window. sinks,
         // dynamic import(), legacy plugin tags.
-        Regex::new(r#"(?i)new\s+function\s*\(|document\.(?:cookie|write|writeln|location|domain|referrer|body|forms|images|links|scripts|all|layers|plugins|url|documenturi|baseuri)|window\.(?:location|open|name|top|parent|frames|self|document|opener|event)|import\s*\(|confirm\s*\(|prompt\s*\(|<\s*(?:object|applet|isindex|keygen|menuitem|xml|xss|xml)\b"#).unwrap()
+        Regex::new(r#"(?i)new\s+function\s*\(|document\.(?:cookie|write|writeln|location|domain|referrer|body|forms|images|links|scripts|all|layers|plugins|url|documenturi|baseuri)|window\.(?:location|open|name|top|parent|frames|self|document|opener|event)|window\s*\[|document\s*\[|self\s*\[|top\s*\[|parent\s*\[|frames\s*\[|globalEval|globalThis|setTimeout\s*\(|setInterval\s*\(|queueMicrotask|requestAnimationFrame|eval\s*\(|import\s*\(|confirm\s*\(|prompt\s*\(|alert\s*\(|!\[\]|javascript&#\d|\\x[0-9a-f]{2}(?:script|iframe|img|svg|details|video|audio|object|embed|style|link|form|isindex|keygen|marquee|template|noscript|xmp|plaintext|listing)\\x|<\s*(?:object|applet|isindex|keygen|menuitem|embed|bgsound|ilayer|layer|comment|xml|xss)\b"#).unwrap()
     });
     let _ = RE_LFI_EXTENDED.get_or_init(|| {
         // Backslash traversal the forward-slash rules do not model. Bare
@@ -879,7 +905,7 @@ fn init_regexes() {
         // only `..\` traversal and its encodings are attack-shaped. The char
         // after the separator must be filename-ish so JSON escapes like `..\"`
         // (Prometheus `5..\"}[5m]`) do not fire.
-        Regex::new(r#"(?i)(?:\.\.[\\/][a-zA-Z0-9_.]|%2e%2e%5c|%252e%252e%255c)"#).unwrap()
+        Regex::new(r#"(?i)(?:\.\.[\\/][a-zA-Z0-9_.]|%2e%2e%5c|%252e%252e%255c|(?:0x[0-9a-f]{2}){2,}|0x(?:5c|2e|2f|25|00)\b)"#).unwrap()
     });
     let _ = RE_RFI_SCHEME.get_or_init(|| {
         // Non-HTTP URL schemes that only make sense as server-side fetch
@@ -890,7 +916,41 @@ fn init_regexes() {
     let _ = RE_SESSION_URL.get_or_init(|| {
         // Session identifiers carried in the URL query — fixation/leakage
         // class. Checked against query_string only, never request bodies.
-        Regex::new(r#"(?i)[?&](?:jsessionid|phpsessid|sessid|sessionid|session_id|aspsessionid|asp\.net_sessionid|phpsessionid|cfid|cftoken|connect\.sid|play_session|phpsession|session_token)="#).unwrap()
+        // query_string arrives without the leading '?', so anchor on ^ too.
+        Regex::new(r#"(?i)(?:^|[?&])(jsessionid|phpsessid|sessid|sessionid|session_id|aspsessionid|asp\.net_sessionid|phpsessionid|cfid|cftoken|connect\.sid|play_session|phpsession|session_token)="#).unwrap()
+    });
+    let _ = RE_BAD_CHARSET.get_or_init(|| {
+        // Exotic/mutable charsets used for parser-differential evasion.
+        Regex::new(r#"(?i)(?:charset|_charset_)\s*[=:]\s*["']?(?:utf-?7|utf-?16|utf-?32|unicode|unicodefeff|unicodefffe|x-user-defined|hz-gb-2312|iso-2022-[a-z]+|replacement|x-mac-cyrillic|koi8-[ru]|windows-125[0-9]|ibm[-_]\d+)"#).unwrap()
+    });
+    let _ = RE_ABS_URI_METHOD.get_or_init(|| {
+        // Request-line smuggling inside a parameter: "GET http://h/ HTTP/1.1".
+        Regex::new(r#"(?i)\b(?:GET|POST|PUT|DELETE|HEAD|OPTIONS|TRACE|CONNECT|PATCH|PROPFIND|PROPPATCH|MKCOL|COPY|MOVE|LOCK|UNLOCK)\s+https?://\S+\s+HTTP/\d"#).unwrap()
+    });
+    let _ = RE_JSON_KEY_SQL.get_or_init(|| {
+        // SQL *constructs* inside quoted JSON keys — bare keywords like
+        // "where"/"select" are legitimate query-builder keys.
+        Regex::new(r#"(?i)["'][^"'\n]{0,50}?(?:union\s+(?:all\s+)?select|select\s+[^"']{1,40}?\s+from|['"]\s*(?:or|and)\s+\w|\bor\s+\d+\s*=\s*\d+|\band\s+\d+\s*=\s*\d+|drop\s+table|insert\s+into|delete\s+from|update\s+\w+\s+set|exec(?:ute)?\s|load_file|into\s+(?:out|dump)file|--|#|/\*|\|\||&&)[^"'\n]{0,50}?["']\s*:"#).unwrap()
+    });
+    let _ = RE_B64_TOKEN.get_or_init(|| {
+        // Standalone base64-ish tokens worth a gadget-substring decode check.
+        Regex::new(r#"(?i)["']?([A-Za-z0-9+/]{16,}={0,2})["']?"#).unwrap()
+    });
+    let _ = RE_SCRIPT_EXT_HDR.get_or_init(|| {
+        // Executable/server-side extensions smuggled via filename headers.
+        Regex::new(r#"(?i)\.(?:php[3-8]?|phtml?|phar|pht|phps|pl|py|pyc|pyo|rb|cgi|fcgi|jspx?|asp[x]?|ashx|asmx|cer|cdx|htr|shtml?|stm|ssi|action|do|faces|jsf|jspx|php[3-8]?s?)\s*(?:$|[\s"';&|])"#).unwrap()
+    });
+    let _ = RE_HEX_PAIRS.get_or_init(|| {
+        // Adjacent 0xHH hex-byte runs — encoded traversal/null shapes.
+        Regex::new(r#"(?i)(?:0x[0-9a-f]{2}){2,}"#).unwrap()
+    });
+    let _ = RE_IPV6_LITERAL.get_or_init(|| {
+        // IPv6 literals in URLs: http://[::1]/, scheme:[::ffff:...], etc.
+        Regex::new(r#"(?i)\[([0-9a-fA-F:]{2,}(?::[0-9a-fA-F]{0,4})+)%?[0-9a-zA-Z]*\]"#).unwrap()
+    });
+    let _ = RE_LOCALHOST_DNS.get_or_init(|| {
+        // Public DNS names / TLDs that resolve to loopback or private space.
+        Regex::new(r#"(?i)(?:\b(?:lvh|vcap|localtest|lacolhost)\.me\b|\b(?:nip|sslip|xip)\.io\b|\bmetadata\.packet\.net\b|\bmetadata\.google\.internal\b|\binstance-data\b|\.(?:localhost|local|internal|lan|corp|home|intranet|svc|consul)\b)"#).unwrap()
     });
     let _ = RE_PARAM_PAIR_WIDE.get_or_init(|| {
         // Like RE_PARAM_PAIR but the value may contain whitespace/CRLF —
@@ -919,9 +979,17 @@ impl AstLexer {
             is_obfuscated = true;
         }
 
+        // JSP EL brace entities collapse to template delimiters.
+        let raw_lbrace = if raw.contains("$&LBRACE;") || raw.contains("$&RBRACE;") {
+            is_obfuscated = true;
+            raw.replace("$&LBRACE;", "${").replace("$&RBRACE;", "}")
+        } else {
+            raw.to_string()
+        };
+
         // Pass 0: Overlong UTF-8 / IIS encodings decode to replacement chars if left to the
         // UTF-8 decoder, so rewrite them into `.`, `/`, `\` before percent decoding.
-        let raw_path = Self::decode_overlong_encodings(raw);
+        let raw_path = Self::decode_overlong_encodings(&raw_lbrace);
         if raw_path != raw {
             is_obfuscated = true;
         }
@@ -1226,7 +1294,11 @@ impl AstLexer {
         decoded = RE_IIS_SLASH.get().unwrap().replace_all(&decoded, "/").to_string();
         decoded = RE_IIS_BACKSLASH.get().unwrap().replace_all(&decoded, "\\").to_string();
         decoded = RE_IIS_LT.get().unwrap().replace_all(&decoded, "<").to_string();
-        RE_IIS_GT.get().unwrap().replace_all(&decoded, ">").to_string()
+        decoded = RE_IIS_GT.get().unwrap().replace_all(&decoded, ">").to_string();
+        decoded = RE_IIS_SQUOTE.get().unwrap().replace_all(&decoded, "'").to_string();
+        decoded = RE_IIS_DQUOTE.get().unwrap().replace_all(&decoded, "\"").to_string();
+        decoded = RE_IIS_GUILLEMET_L.get().unwrap().replace_all(&decoded, "<").to_string();
+        RE_IIS_GUILLEMET_R.get().unwrap().replace_all(&decoded, ">").to_string()
     }
 
     fn extract_mysql_exec_comments(text: &str) -> String {
@@ -1507,6 +1579,52 @@ impl AstLexer {
             return true;
         }
         false
+    }
+
+    /// Classify an IPv6 literal (without brackets) as loopback/private/
+    /// link-local/reserved — the ranges an edge SSRF filter must reject.
+    fn is_internal_ipv6(inner: &str) -> bool {
+        let s = inner.split('%').next().unwrap_or(inner); // strip zone id
+        if s == "::1" || s == "::" {
+            return true;
+        }
+        let lower = s.to_ascii_lowercase();
+        // ::ffff:a.b.c.d IPv4-mapped — recurse on the dotted tail.
+        if let Some(tail) = lower.strip_prefix("::ffff:") {
+            if tail.contains('.') {
+                return Self::is_internal_ipv4_str(tail);
+            }
+            // hex form ::ffff:a9fe:a9fe — last 32 bits as two hextets.
+            let parts: Vec<&str> = tail.split(':').collect();
+            if parts.len() == 2 {
+                if let (Ok(hi), Ok(lo)) = (u16::from_str_radix(parts[0], 16), u16::from_str_radix(parts[1], 16)) {
+                    let ip = format!("{}.{}.{}.{}", (hi >> 8) as u8, (hi & 0xff) as u8, (lo >> 8) as u8, (lo & 0xff) as u8);
+                    return Self::is_internal_ipv4_str(&ip);
+                }
+            }
+            return false;
+        }
+        // fe80::/10 link-local, fc00::/7 ULA, fec0::/10 site-local, ff00::/8 multicast.
+        lower.starts_with("fe8") || lower.starts_with("fe9") || lower.starts_with("fea") || lower.starts_with("feb")
+            || lower.starts_with("fc") || lower.starts_with("fd") || lower.starts_with("fec")
+            || lower.starts_with("ff")
+    }
+
+    /// IPv4 private/loopback/link-local/reserved check for mapped forms.
+    fn is_internal_ipv4_str(ip: &str) -> bool {
+        let mut it = ip.split('.');
+        let octets: Vec<u8> = it.filter_map(|p| p.parse::<u8>().ok()).collect();
+        if octets.len() != 4 {
+            return false;
+        }
+        let [a, b, c, _] = [octets[0], octets[1], octets[2], octets[3]];
+        a == 0 || a == 10 || a == 127 || (a == 169 && b == 254)
+            || (a == 172 && (16..=31).contains(&b)) || (a == 192 && b == 168)
+            || (a == 100 && (64..=127).contains(&b)) || (a == 198 && (b == 18 || b == 19))
+            || (a == 192 && b == 0 && c == 2)   // TEST-NET-1 (documentation, non-routable)
+            || (a == 198 && b == 51 && c == 100) // TEST-NET-2
+            || (a == 203 && b == 0 && c == 113)  // TEST-NET-3
+            || a >= 224 // multicast + reserved + broadcast
     }
 
     /// Internal-only hostnames that should never appear in a public Host header
@@ -3312,6 +3430,113 @@ impl AstLexer {
             if RE_SESSION_URL.get().unwrap().is_match(&req.query_string.to_ascii_lowercase()) {
                 tokens.has_session_token_url_signal = true;
                 tokens.active_token_names.push("SESSION_ID_IN_URL".to_string());
+            }
+            // Protocol enforcement: exotic charset declarations, request-line
+            // smuggling inside params, invalid HTTP method tokens, Range
+            // header fan-out (multi-range DoS / desync aid).
+            if RE_BAD_CHARSET.get().unwrap().is_match(&norm)
+                || RE_ABS_URI_METHOD.get().unwrap().is_match(&norm)
+            {
+                tokens.has_protocol_enforcement_signal = true;
+                tokens.active_token_names.push("PROTOCOL_DIFFERENTIAL".to_string());
+            }
+            {
+                // HTTP method must be a token of reasonable length; pipelines
+                // and unknown verbs beyond that are enforcement failures.
+                let m = req.method.as_bytes();
+                let valid_token = m.iter().all(|b| b.is_ascii_alphanumeric()
+                    || b"!#$%&'*+-.^_`|~".contains(b));
+                if !valid_token || m.len() > 20 {
+                    tokens.has_protocol_enforcement_signal = true;
+                    tokens.active_token_names.push("INVALID_METHOD_TOKEN".to_string());
+                }
+                for (k, v) in &req.headers {
+                    let kl = k.to_ascii_lowercase();
+                    if (kl == "range" || kl == "request-range")
+                        && v.to_ascii_lowercase().starts_with("bytes=")
+                        && v.matches(',').count() >= 5
+                    {
+                        tokens.has_protocol_enforcement_signal = true;
+                        tokens.active_token_names.push("RANGE_FANOUT_ABUSE".to_string());
+                        break;
+                    }
+                    // Script-extension filenames smuggled in custom upload
+                    // headers (X-Filename etc.) — the body filename= rules
+                    // never see these.
+                    if (kl.contains("filename") || kl.contains("file-name") || kl == "x-file")
+                        && RE_SCRIPT_EXT_HDR.get().unwrap().is_match(v)
+                    {
+                        tokens.has_malicious_upload = true;
+                        tokens.active_token_names.push("SCRIPT_EXT_HEADER".to_string());
+                    }
+                }
+            }
+            // JSON keys carrying SQL vocabulary.
+            if RE_JSON_KEY_SQL.get().unwrap().is_match(&norm) {
+                tokens.has_sqli_extended_signal = true;
+                tokens.active_token_names.push("JSON_KEY_SQL_INJECTION".to_string());
+            }
+            // Null bytes and adjacent 0xHH hex-pair runs (truncation / encoded
+            // traversal shapes like 0x5c0x2e.%00/).
+            if norm.contains('\0') || RE_HEX_PAIRS.get().unwrap().is_match(&norm) {
+                tokens.has_lfi_extended_signal = true;
+                tokens.active_token_names.push("NULL_BYTE_OR_HEX_TRAVERSAL".to_string());
+            }
+            // Base64-encoded Java gadget vocabulary (CRS 944xxx ships class
+            // names base64'd inside params). Decode candidates and substring-
+            // match against the gadget lexicon — bounded scan for latency.
+            {
+                const GADGETS: &[&str] = &[
+                    "processbuilder", "getruntime", "classloader", "invokertransformer",
+                    "templatesimpl", "jdbcrowset", "xstream", "fastjson", "snakeyaml",
+                    "aspectj", "javassist", "ognl", "spel", "mvel", "groovy", "rhino",
+                    "jython", "beanshell", "opensymphony", "springframework", "readobject",
+                    "serialversionuid", "scriptenginemanager", "urlclassloader",
+                ];
+                let mut scanned = 0usize;
+                for cap in RE_B64_TOKEN.get().unwrap().captures_iter(&tokens.normalized_text) {
+                    scanned += 1;
+                    if scanned > 200 {
+                        break;
+                    }
+                    let tok = &cap[1];
+                    if tok.len() < 16 || !tok.len().is_multiple_of(4) && !tok.ends_with('=') {
+                        continue;
+                    }
+                    if let Some(bytes) = crate::ast::jwt::JwtTamperingAnalyzer::base64url_decode(tok) {
+                        if let Ok(s) = String::from_utf8(bytes) {
+                            let sl = s.to_ascii_lowercase();
+                            if GADGETS.iter().any(|g| sl.contains(g)) {
+                                tokens.has_java_attack_signal = true;
+                                tokens.active_token_names.push("B64_JAVA_GADGET".to_string());
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            // SSRF via IPv6 literals and public-DNS-to-localhost names —
+            // checked on parameter VALUES only: bare internal hostnames in
+            // Host headers are legitimate for on-prem deployments.
+            if !tokens.has_rfi_scheme_signal {
+                for cap in RE_PARAM_PAIR_WIDE.get().unwrap().captures_iter(&tokens.normalized_text) {
+                    let vl = cap[2].to_ascii_lowercase();
+                    let mut hit = false;
+                    for cap6 in RE_IPV6_LITERAL.get().unwrap().captures_iter(&vl) {
+                        if Self::is_internal_ipv6(&cap6[1]) {
+                            hit = true;
+                            break;
+                        }
+                    }
+                    if !hit {
+                        hit = RE_LOCALHOST_DNS.get().unwrap().is_match(&vl);
+                    }
+                    if hit {
+                        tokens.has_rfi_scheme_signal = true;
+                        tokens.active_token_names.push("IPV6_OR_LOCALHOST_SSRF".to_string());
+                        break;
+                    }
+                }
             }
         }
 
