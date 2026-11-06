@@ -114,6 +114,17 @@ pub struct LexicalTokens {
     pub has_integer_overflow_signal: bool,
     pub has_websocket_abuse_signal: bool,
     pub has_spring4shell_signal: bool,
+    // CRS rule-group coverage (v98-v107): language-runtime abuse classes.
+    pub has_java_attack_signal: bool,
+    pub has_sqli_extended_signal: bool,
+    pub has_rce_extended_signal: bool,
+    pub has_protocol_enforcement_signal: bool,
+    pub has_php_injection_signal: bool,
+    pub has_nodejs_injection_signal: bool,
+    pub has_xss_extended_signal: bool,
+    pub has_lfi_extended_signal: bool,
+    pub has_rfi_scheme_signal: bool,
+    pub has_session_token_url_signal: bool,
     pub active_token_names: Vec<String>,
 }
 
@@ -250,6 +261,21 @@ static RE_MGMT_ENDPOINT: OnceLock<Regex> = OnceLock::new();
 static RE_PARAM_PAIR_WIDE: OnceLock<Regex> = OnceLock::new();
 static RE_NUM_TINY: OnceLock<Regex> = OnceLock::new();
 static RE_APPLIANCE_CVE: OnceLock<Regex> = OnceLock::new();
+static RE_JAVA_ATTACK: OnceLock<Regex> = OnceLock::new();
+static RE_SQL_EXTENDED: OnceLock<Regex> = OnceLock::new();
+static RE_SQL_TAUTOLOGY: OnceLock<Regex> = OnceLock::new();
+static RE_ORM_LOOKUP: OnceLock<Regex> = OnceLock::new();
+static RE_RCE_EXTENDED: OnceLock<Regex> = OnceLock::new();
+static RE_METHOD_OVERRIDE_PARAM: OnceLock<Regex> = OnceLock::new();
+static RE_PHP_DANGER: OnceLock<Regex> = OnceLock::new();
+static RE_PHP_VAR_SHAPE: OnceLock<Regex> = OnceLock::new();
+static RE_NODEJS_ABUSE: OnceLock<Regex> = OnceLock::new();
+static RE_XSS_EXTENDED: OnceLock<Regex> = OnceLock::new();
+static RE_LFI_EXTENDED: OnceLock<Regex> = OnceLock::new();
+static RE_IIS_LT: OnceLock<Regex> = OnceLock::new();
+static RE_IIS_GT: OnceLock<Regex> = OnceLock::new();
+static RE_RFI_SCHEME: OnceLock<Regex> = OnceLock::new();
+static RE_SESSION_URL: OnceLock<Regex> = OnceLock::new();
 
 fn init_regexes() {
     let _ = RE_TAUT_PAIR.get_or_init(|| {
@@ -380,6 +406,13 @@ fn init_regexes() {
     });
     let _ = RE_IIS_BACKSLASH.get_or_init(|| {
         Regex::new(r#"(?i)%u2216|%u005c|%uff3c"#).unwrap()
+    });
+    let _ = RE_IIS_LT.get_or_init(|| {
+        // %u2039 = ‹ used as a fake '<' in IIS-unicode XSS probes.
+        Regex::new(r#"(?i)%u2039|%u3008|%uff1c"#).unwrap()
+    });
+    let _ = RE_IIS_GT.get_or_init(|| {
+        Regex::new(r#"(?i)%u203a|%u3009|%uff1e"#).unwrap()
     });
     let _ = RE_NOSQL_JSON_OP.get_or_init(|| {
         // MongoDB operator keys in JSON position: {"$ne": ...}, {"$where": ...}
@@ -790,6 +823,75 @@ fn init_regexes() {
         // Management/debug surfaces with no legitimate public exposure.
         Regex::new(r#"(?i)/(?:api/v\d+/namespaces/|containers/json|jolokia|debug/(?:pprof|vars|requests)|_cat/|_cluster/|_nodes/|_all_docs|pprof/|_bulk|_sql\b|_xpack|_tasks|_snapshot|_aliases|_settings|_mapping)"#).unwrap()
     });
+    let _ = RE_JAVA_ATTACK.get_or_init(|| {
+        // Java runtime namespaces and deserialization/gadget vocabulary that
+        // has no legitimate place in an HTTP parameter or JSON/XML body.
+        // "@type" alone is JSON-LD schema markup — only flag when the value is
+        // a Java-ish class name (fastjson/jackson gadget style).
+        Regex::new(r#"(?i)\b(?:java|javax|sun|com\.sun|oracle|org\.apache\.commons|ognl|javassist|xstream|fastjson|mvel|spel|groovy|aspectjweaver|beanshell|jython|mozilla\.rhino)\.[a-z]|"@type"\s*:\s*"[^"]*(?:java|com\.sun|oracle|ognl|xstream|fastjson|javassist|aspectj|beanshell|jython|rhino|groovy|mvel|spel)|invokertransformer|templatesimpl|jdbcrowsetimpl|jdk\.internal|com\.thoughtworks\.xstream|org\.yaml\.snakeyaml|flex\.messaging|org\.jsecurity|com\.alibaba\.fastjson|ognl\.|spel\.|mvel\.|#\{[a-zA-Z_]|\$\{[a-zA-Z_]+\.(?:get|set|eval|exec|runtime|process|class|forname|newinstance)|class\.forname|runtime\.getruntime|processbuilder"#).unwrap()
+    });
+    let _ = RE_SQL_EXTENDED.get_or_init(|| {
+        // DBMS-specific functions reachable only through injection: Oracle,
+        // MySQL file/network exfil, MSSQL xp_*/openrowset, Postgres file/dblink.
+        Regex::new(r#"(?i)\b(?:unistr|updatexml|extractvalue|xmltype|ordsys|ctxsys|dbms_\w+|utl_\w+|load_file|benchmark|xp_cmdshell|xp_reg\w+|xp_dirtree|xp_fileexist|xp_subdirs|openrowset|opendatasource|sp_executesql|sp_oacreate|sp_oamethod|sp_makewebtask|pg_read_file|pg_ls_dir|pg_read_binary_file|pg_stat_file|dblink|dblink_exec|dblink_connect|lo_import|lo_export|generate_series|dbms_pipe|dbms_lock|dbms_aw|dbms_xmlgen|dbms_scheduler|dbms_alert|dbms_output|utl_http|utl_inaddr|utl_file|utl_smtp|utl_tcp|ordsys\.|ctxsys\.)\s*\("#).unwrap()
+    });
+    let _ = RE_SQL_TAUTOLOGY.get_or_init(|| {
+        // Quote-flanked numeric tautologies: ' and 526=527 / " or 1=1.
+        // The quote anchor keeps prose like "this and 2=2 that" out.
+        Regex::new(r#"(?i)['"][^'"]{0,60}?\b(?:and|or|xor)\s+\d+\s*[:=<>]\s*\d+"#).unwrap()
+    });
+    let _ = RE_ORM_LOOKUP.get_or_init(|| {
+        // Django/SQLAlchemy-style field__lookup chains ending in a known
+        // lookup operator — ORM injection that reaches the SQL layer.
+        Regex::new(r#"(?i)["']?[a-zA-Z_]\w*(?:__[a-zA-Z_]\w*)*__(?:startswith|istartswith|endswith|iendswith|contains|icontains|iexact|exact|regex|iregex|in|gt|gte|lt|lte|range|isnull|search|unaccent|similar|fulltext|has_key|has_keys|has_any_keys|overlap|contained_by)\b"#).unwrap()
+    });
+    let _ = RE_RCE_EXTENDED.get_or_init(|| {
+        // Windows command constructs and shell-variable indirection that the
+        // POSIX chaining rules do not model.
+        Regex::new(r#"(?i)\b(?:if\s+(?:not\s+)?exist\b|for\s+%[a-z]\s+in\b|choice\s+/c|timeout\s+/t|%comspec%|%windir%|%systemroot%|\$\{?IFS\}?|\$SHELL\s+-c|cmd(?:\.exe)?\s+/[ck]\b|forfiles(?:\.exe)?\s+/p|pcalua(?:\.exe)?\s+-a|syncappvpublishingserver|desktopimgdownldr|eventvwr(?:\.exe)?\s+[^\s]*\.msc|presentationhost(?:\.exe)?\s|runscripthelper|msdt(?:\.exe)?\s|pcwrun|xwizard|ie4uinit|infdefaultinstall|gonext|control\.exe\s+[^\s]*\.cpl)"#).unwrap()
+    });
+    let _ = RE_METHOD_OVERRIDE_PARAM.get_or_init(|| {
+        // _method=PUT/DELETE/PROPFIND style verb tunneling inside the body/qs.
+        Regex::new(r#"(?i)(?:^|[?&\s"'])_method\s*=\s*["']?(?:put|delete|patch|propfind|proppatch|mkcol|copy|move|lock|unlock|search|acl|bind|unbind|checkout|merge|report|version-control|baseline-control|label|mkworkspace|mkactivity|mkredirectrefworkspace|updateredirectref)\b"#).unwrap()
+    });
+    let _ = RE_PHP_DANGER.get_or_init(|| {
+        // PHP runtime sinks: code-exec, dynamic include, decode helpers and
+        // superglobal introspection reachable from request data.
+        Regex::new(r#"(?i)(?:^|[^a-z_])(?:eval|assert|system|exec|shell_exec|passthru|popen|proc_open|pcntl_exec|dl|create_function|call_user_func(?:_array)?|preg_replace|include|include_once|require|require_once|base64_decode|gzinflate|gzuncompress|str_rot13|convert_uudecode|hex2bin|get_defined_vars?|get_defined_functions|func_get_args|maybe_unserialize|mb_ereg_replace|show_source|highlight_file|phpinfo)\s*\(|<\?php|<\?=|`[^`]{1,80}`"#).unwrap()
+    });
+    let _ = RE_PHP_VAR_SHAPE.get_or_init(|| {
+        // PHP variable-function / variable-variable call shapes: $a(...), $$x, ${...}
+        Regex::new(r#"(?i)\$[a-zA-Z_]\w*\s*\(|\$\$|\$\{|\$\[|->\s*\$\w+|\$\w+\s*->\s*\w+\s*\("#).unwrap()
+    });
+    let _ = RE_NODEJS_ABUSE.get_or_init(|| {
+        // Node.js runtime/module surfaces with no place in HTTP parameters.
+        Regex::new(r#"(?i)\b(?:require\s*\(|import\s*\(|child_process|process\.(?:env|argv|binding|_linkedbinding|dlopen|exit|kill)|global\.(?:process|require|buffer|__dirname)|__dirname|__filename|module\.exports|buffer\.from|vm\.runin|vm\.createcontext|worker_threads|cluster\.|fs\.(?:readfile|writefile|createreadstream|createwritestream)|net\.(?:connect|createconnection|createserver)|dgram\.|__proto__|constructor\s*\[|prototype\s*\[|process\[req\.)"#).unwrap()
+    });
+    let _ = RE_XSS_EXTENDED.get_or_init(|| {
+        // JavaScript runtime constructs and executable markup that survive
+        // outside <script> tags: new Function, document./window. sinks,
+        // dynamic import(), legacy plugin tags.
+        Regex::new(r#"(?i)new\s+function\s*\(|document\.(?:cookie|write|writeln|location|domain|referrer|body|forms|images|links|scripts|all|layers|plugins|url|documenturi|baseuri)|window\.(?:location|open|name|top|parent|frames|self|document|opener|event)|import\s*\(|confirm\s*\(|prompt\s*\(|<\s*(?:object|applet|isindex|keygen|menuitem|xml|xss|xml)\b"#).unwrap()
+    });
+    let _ = RE_LFI_EXTENDED.get_or_init(|| {
+        // Backslash traversal the forward-slash rules do not model. Bare
+        // drive-letter/UNC paths are legit client references (file uploads) —
+        // only `..\` traversal and its encodings are attack-shaped. The char
+        // after the separator must be filename-ish so JSON escapes like `..\"`
+        // (Prometheus `5..\"}[5m]`) do not fire.
+        Regex::new(r#"(?i)(?:\.\.[\\/][a-zA-Z0-9_.]|%2e%2e%5c|%252e%252e%255c)"#).unwrap()
+    });
+    let _ = RE_RFI_SCHEME.get_or_init(|| {
+        // Non-HTTP URL schemes that only make sense as server-side fetch
+        // targets (RFI/SSRF): gopher, dict, file, tftp, ldap, jar, php...
+        // ftp/ftps excluded: legit URL-preview params carry them (benign-v5-061).
+        Regex::new(r#"(?i)(?:^|[?&\s"'=])(?:gopher|dict|file|tftp|ldap|ldaps|jar|netdoc|expect|php|glob|ogg|zlib|rar|sftp|smb|afp|nfs)://|(?:^|[?&\s"'])(?:file|ftps?|gopher|dict|tftp|ldap|jar|expect|php|glob|ogg|zlib|rar|sftp|smb|nfs)\?(?:["'\s]|$)"#).unwrap()
+    });
+    let _ = RE_SESSION_URL.get_or_init(|| {
+        // Session identifiers carried in the URL query — fixation/leakage
+        // class. Checked against query_string only, never request bodies.
+        Regex::new(r#"(?i)[?&](?:jsessionid|phpsessid|sessid|sessionid|session_id|aspsessionid|asp\.net_sessionid|phpsessionid|cfid|cftoken|connect\.sid|play_session|phpsession|session_token)="#).unwrap()
+    });
     let _ = RE_PARAM_PAIR_WIDE.get_or_init(|| {
         // Like RE_PARAM_PAIR but the value may contain whitespace/CRLF —
         // needed to see protocol commands smuggled inside a parameter.
@@ -1122,7 +1224,9 @@ impl AstLexer {
         decoded = RE_OVERLONG_BACKSLASH.get().unwrap().replace_all(&decoded, "\\").to_string();
         decoded = RE_IIS_DOT.get().unwrap().replace_all(&decoded, ".").to_string();
         decoded = RE_IIS_SLASH.get().unwrap().replace_all(&decoded, "/").to_string();
-        RE_IIS_BACKSLASH.get().unwrap().replace_all(&decoded, "\\").to_string()
+        decoded = RE_IIS_BACKSLASH.get().unwrap().replace_all(&decoded, "\\").to_string();
+        decoded = RE_IIS_LT.get().unwrap().replace_all(&decoded, "<").to_string();
+        RE_IIS_GT.get().unwrap().replace_all(&decoded, ">").to_string()
     }
 
     fn extract_mysql_exec_comments(text: &str) -> String {
@@ -3137,6 +3241,77 @@ impl AstLexer {
                     tokens.has_content_type_confusion_signal = true;
                     tokens.active_token_names.push("CONTENT_TYPE_CONFUSION".to_string());
                 }
+            }
+        }
+
+        // W. CRS rule-group coverage: language-runtime abuse classes that the
+        // payload-oriented islands do not model (Java/.NET runtimes, DBMS-
+        // specific functions, Windows cmd, PHP/Node sinks, ORM lookups).
+        {
+            let norm = tokens.normalized_text.to_ascii_lowercase();
+            if RE_JAVA_ATTACK.get().unwrap().is_match(&norm) {
+                tokens.has_java_attack_signal = true;
+                tokens.active_token_names.push("JAVA_RUNTIME_ABUSE".to_string());
+            }
+            if RE_SQL_EXTENDED.get().unwrap().is_match(&norm)
+                || RE_SQL_TAUTOLOGY.get().unwrap().is_match(&norm)
+                || RE_ORM_LOOKUP.get().unwrap().is_match(&norm)
+            {
+                tokens.has_sqli_extended_signal = true;
+                tokens.active_token_names.push("EXTENDED_INJECTION_PRIMITIVE".to_string());
+            }
+            if RE_RCE_EXTENDED.get().unwrap().is_match(&norm) {
+                tokens.has_rce_extended_signal = true;
+                tokens.active_token_names.push("WINDOWS_CMD_CONSTRUCT".to_string());
+            }
+            // _method= verb tunneling applies to query string AND body params.
+            let pq_body = format!("{} {}", req.query_string, req.body);
+            if RE_METHOD_OVERRIDE_PARAM.get().unwrap().is_match(&pq_body.to_ascii_lowercase()) {
+                tokens.has_protocol_enforcement_signal = true;
+                tokens.active_token_names.push("METHOD_OVERRIDE_TUNNEL".to_string());
+            }
+            if RE_PHP_DANGER.get().unwrap().is_match(&norm)
+                || RE_PHP_VAR_SHAPE.get().unwrap().is_match(&norm)
+            {
+                tokens.has_php_injection_signal = true;
+                tokens.active_token_names.push("PHP_RUNTIME_SINK".to_string());
+            }
+            if RE_NODEJS_ABUSE.get().unwrap().is_match(&norm) {
+                tokens.has_nodejs_injection_signal = true;
+                tokens.active_token_names.push("NODEJS_RUNTIME_ABUSE".to_string());
+            }
+            if RE_XSS_EXTENDED.get().unwrap().is_match(&norm) {
+                tokens.has_xss_extended_signal = true;
+                tokens.active_token_names.push("JS_RUNTIME_SINK".to_string());
+            }
+            let mut lfi_ext = RE_LFI_EXTENDED.get().unwrap().is_match(&norm);
+            // AI-tool / editor dot-directories absent from RE_SENSITIVE_EXPOSURE.
+            let low_path = req.path.to_ascii_lowercase();
+            if !lfi_ext
+                && ["/.codex", "/.opencode", "/.cursor", "/.claude", "/.aider",
+                    "/.continue", "/.cody", "/.tabnine", "/.codeium", "/.windsurf",
+                    "/.amazonq", "/.kiro", "/.trae", "/.void", "/.config/gh",
+                    "/.config/gcloud", "/.azure", "/.config/hub",
+                ]
+                .iter()
+                .any(|p| low_path.contains(p))
+            {
+                lfi_ext = true;
+                tokens.has_sensitive_file_probe = true;
+            }
+            if lfi_ext {
+                tokens.has_lfi_extended_signal = true;
+                tokens.active_token_names.push("EXTENDED_PATH_ABUSE".to_string());
+            }
+            if RE_RFI_SCHEME.get().unwrap().is_match(&norm) {
+                tokens.has_rfi_scheme_signal = true;
+                tokens.active_token_names.push("NONHTTP_URL_SCHEME".to_string());
+            }
+            // Session identifiers in the URL query only — bodies legitimately
+            // carry sessionid on login forms.
+            if RE_SESSION_URL.get().unwrap().is_match(&req.query_string.to_ascii_lowercase()) {
+                tokens.has_session_token_url_signal = true;
+                tokens.active_token_names.push("SESSION_ID_IN_URL".to_string());
             }
         }
 

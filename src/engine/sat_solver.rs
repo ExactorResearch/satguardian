@@ -1183,7 +1183,7 @@ impl SatguardianSatEngine {
         }
 
         // 2. ISLAND-XSS evaluation
-        if tokens.has_script_tag {
+        if tokens.has_script_tag || tokens.has_xss_extended_signal {
             if let Some(r) = self.rules.get("SAT-XSS-01") {
                 matched_rules.push(r.clone());
                 active_islands.push("ISLAND-XSS".to_string());
@@ -1206,7 +1206,7 @@ impl SatguardianSatEngine {
         }
 
         // 3. ISLAND-RCE evaluation
-        if tokens.has_shell_chain {
+        if tokens.has_shell_chain || tokens.has_rce_extended_signal {
             if let Some(r) = self.rules.get("SAT-RCE-01") {
                 matched_rules.push(r.clone());
                 active_islands.push("ISLAND-RCE".to_string());
@@ -1220,7 +1220,7 @@ impl SatguardianSatEngine {
                 deduction_steps.push("[ISLAND-RCE] Dynamic command substitution subshell context `$()` or backtick sequence detected.".to_string());
             }
         }
-        if tokens.has_dynamic_eval {
+        if tokens.has_dynamic_eval || tokens.has_php_injection_signal || tokens.has_nodejs_injection_signal {
             if let Some(r) = self.rules.get("SAT-RCE-03") {
                 matched_rules.push(r.clone());
                 active_islands.push("ISLAND-RCE".to_string());
@@ -1229,7 +1229,7 @@ impl SatguardianSatEngine {
         }
 
         // 4. ISLAND-LFI evaluation
-        if tokens.has_path_traversal {
+        if tokens.has_path_traversal || tokens.has_lfi_extended_signal {
             if let Some(r) = self.rules.get("SAT-PATH-01") {
                 matched_rules.push(r.clone());
                 active_islands.push("ISLAND-LFI".to_string());
@@ -1503,7 +1503,7 @@ impl SatguardianSatEngine {
         }
 
         // 14a-bis. ISLAND-SQLI extended coverage (error-based / blind functions)
-        if tokens.has_sqli_danger_func {
+        if tokens.has_sqli_danger_func || tokens.has_sqli_extended_signal {
             if let Some(r) = self.rules.get("SAT-SQLI-05") {
                 matched_rules.push(r.clone());
                 active_islands.push("ISLAND-SQLI".to_string());
@@ -1591,7 +1591,7 @@ impl SatguardianSatEngine {
         }
 
         // 14j. ISLAND-SSRF extended coverage (userinfo trick / scheme-relative)
-        if tokens.has_ssrf_userinfo || tokens.has_ssrf_scheme_rel || tokens.has_webhook_ssrf_signal {
+        if tokens.has_ssrf_userinfo || tokens.has_ssrf_scheme_rel || tokens.has_webhook_ssrf_signal || tokens.has_rfi_scheme_signal {
             if let Some(r) = self.rules.get("SAT-SSRF-02") {
                 matched_rules.push(r.clone());
                 active_islands.push("ISLAND-SSRF".to_string());
@@ -1609,7 +1609,7 @@ impl SatguardianSatEngine {
         }
 
         // 14l. ISLAND-DESERIALIZATION evaluation
-        if tokens.has_deserialization {
+        if tokens.has_deserialization || tokens.has_java_attack_signal {
             if let Some(r) = self.rules.get("SAT-DESER-01") {
                 matched_rules.push(r.clone());
                 active_islands.push("ISLAND-DESERIALIZATION".to_string());
@@ -1634,7 +1634,8 @@ impl SatguardianSatEngine {
             || tokens.has_http2_pseudo_header || tokens.has_protocol_injection_signal
             || tokens.has_content_type_confusion_signal || tokens.has_websocket_abuse_signal
             || tokens.has_spring4shell_signal || tokens.has_open_redirect_signal
-            || tokens.has_management_endpoint_signal
+            || tokens.has_management_endpoint_signal || tokens.has_protocol_enforcement_signal
+            || tokens.has_session_token_url_signal
         {
             if let Some(r) = self.rules.get("SAT-SEM-01") {
                 matched_rules.push(r.clone());

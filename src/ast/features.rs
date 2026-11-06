@@ -107,6 +107,16 @@ pub const FEATURE_NAMES: &[&str] = &[
     "v95_integer_overflow",
     "v96_websocket_abuse",
     "v97_spring4shell",
+    "v98_java_attack",
+    "v99_sqli_extended",
+    "v100_rce_extended",
+    "v101_protocol_enforcement",
+    "v102_php_injection",
+    "v103_nodejs_injection",
+    "v104_xss_extended",
+    "v105_lfi_extended",
+    "v106_rfi_scheme",
+    "v107_session_token_url",
 ];
 
 /// Binarized request state representing a point on the Boolean Hypercube $\{0, 1\}^N$.
@@ -283,6 +293,16 @@ impl FeatureBinarizer {
         if tokens.has_integer_overflow_signal { fv.set(95); }
         if tokens.has_websocket_abuse_signal { fv.set(96); }
         if tokens.has_spring4shell_signal { fv.set(97); }
+        if tokens.has_java_attack_signal { fv.set(98); }
+        if tokens.has_sqli_extended_signal { fv.set(99); }
+        if tokens.has_rce_extended_signal { fv.set(100); }
+        if tokens.has_protocol_enforcement_signal { fv.set(101); }
+        if tokens.has_php_injection_signal { fv.set(102); }
+        if tokens.has_nodejs_injection_signal { fv.set(103); }
+        if tokens.has_xss_extended_signal { fv.set(104); }
+        if tokens.has_lfi_extended_signal { fv.set(105); }
+        if tokens.has_rfi_scheme_signal { fv.set(106); }
+        if tokens.has_session_token_url_signal { fv.set(107); }
 
         fv
     }
