@@ -1,0 +1,107 @@
+// === PROPOSAL lex_cache_poisoning_80 :: cache_poisoning ===
+// detector=headers  island=ISLAND-PROTOCOL-SEMANTICS  points=[h:accept-encoding, h:range, h:x-forwarded-port, h:x-forwarded-scheme]
+// sample: Accept-Encoding: gzip
+//
+// 1) src/ast/lexer.rs — LexicalTokens field:
+//    pub has_cache_poisoning_signal: bool,
+//
+// 2) src/ast/lexer.rs — detection (kind 'headers'):
+//    for (k, v) in &req.headers { /* match suspicious header names/values */ }
+//
+// 3) src/ast/features.rs — FEATURE_NAMES + binarize:
+//    "v80_cache_poisoning",
+//    if tokens.has_cache_poisoning_signal { fv.set(80); }
+//
+// 4) src/engine/sat_solver.rs — DeductionRule + eval arm:
+//    rules.insert("SAT-LEX-01".to_string(), DeductionRule { ... island_id: "ISLAND-PROTOCOL-SEMANTICS" ... });
+//    if tokens.has_cache_poisoning_signal { ... rules.get("SAT-LEX-01") ... }
+
+// === PROPOSAL lex_oauth_oidc_81 :: oauth_oidc ===
+// detector=normalized  island=ISLAND-PROTOCOL-SEMANTICS  points=[q:client_id, q:code, q:grant_type, q:redirect_uri]
+// sample: grant_type=authorization_code&code=x&redirect_uri=https://evil.example
+//
+// 1) src/ast/lexer.rs — LexicalTokens field:
+//    pub has_oauth_oidc_signal: bool,
+//
+// 2) src/ast/lexer.rs — detection (kind 'normalized'):
+//    if RE_<NAME>.get().unwrap().is_match(&normalized) { tokens.has_oauth_oidc_signal = true; tokens.active_token_names.push("<TOKEN_NAME>".to_string()); }
+//
+// 3) src/ast/features.rs — FEATURE_NAMES + binarize:
+//    "v81_oauth_oidc",
+//    if tokens.has_oauth_oidc_signal { fv.set(81); }
+//
+// 4) src/engine/sat_solver.rs — DeductionRule + eval arm:
+//    rules.insert("SAT-LEX-02".to_string(), DeductionRule { ... island_id: "ISLAND-PROTOCOL-SEMANTICS" ... });
+//    if tokens.has_oauth_oidc_signal { ... rules.get("SAT-LEX-02") ... }
+
+// === PROPOSAL lex_unicode_normalization_82 :: unicode_normalization ===
+// detector=normalized  island=ISLAND-CONTENT-OBFUSCATION  points=[q:q]
+// sample: q=paуссword
+//
+// 1) src/ast/lexer.rs — LexicalTokens field:
+//    pub has_unicode_normalization_signal: bool,
+//
+// 2) src/ast/lexer.rs — detection (kind 'normalized'):
+//    if RE_<NAME>.get().unwrap().is_match(&normalized) { tokens.has_unicode_normalization_signal = true; tokens.active_token_names.push("<TOKEN_NAME>".to_string()); }
+//
+// 3) src/ast/features.rs — FEATURE_NAMES + binarize:
+//    "v82_unicode_normalization",
+//    if tokens.has_unicode_normalization_signal { fv.set(82); }
+//
+// 4) src/engine/sat_solver.rs — DeductionRule + eval arm:
+//    rules.insert("SAT-LEX-03".to_string(), DeductionRule { ... island_id: "ISLAND-CONTENT-OBFUSCATION" ... });
+//    if tokens.has_unicode_normalization_signal { ... rules.get("SAT-LEX-03") ... }
+
+// === PROPOSAL lex_path_traversal_83 :: path_traversal ===
+// detector=analyzer  island=ISLAND-PROTOCOL-SEMANTICS  points=[q:lang]
+// sample: lang=/var/log/nginx/access.log
+//
+// 1) src/ast/lexer.rs — LexicalTokens field:
+//    pub has_path_traversal_signal: bool,
+//
+// 2) src/ast/lexer.rs — detection (kind 'analyzer'):
+//    // dedicated analyzer module (see ast/jwt.rs, ast/graphql.rs)
+//
+// 3) src/ast/features.rs — FEATURE_NAMES + binarize:
+//    "v83_path_traversal",
+//    if tokens.has_path_traversal_signal { fv.set(83); }
+//
+// 4) src/engine/sat_solver.rs — DeductionRule + eval arm:
+//    rules.insert("SAT-LEX-04".to_string(), DeductionRule { ... island_id: "ISLAND-PROTOCOL-SEMANTICS" ... });
+//    if tokens.has_path_traversal_signal { ... rules.get("SAT-LEX-04") ... }
+
+// === PROPOSAL lex_cms_wordpress_probe_84 :: cms_wordpress_probe ===
+// detector=analyzer  island=ISLAND-PROTOCOL-SEMANTICS  points=[q:action, q:img]
+// sample: action=revslider_show_image&img=../wp-config.php
+//
+// 1) src/ast/lexer.rs — LexicalTokens field:
+//    pub has_cms_wordpress_probe_signal: bool,
+//
+// 2) src/ast/lexer.rs — detection (kind 'analyzer'):
+//    // dedicated analyzer module (see ast/jwt.rs, ast/graphql.rs)
+//
+// 3) src/ast/features.rs — FEATURE_NAMES + binarize:
+//    "v84_cms_wordpress_probe",
+//    if tokens.has_cms_wordpress_probe_signal { fv.set(84); }
+//
+// 4) src/engine/sat_solver.rs — DeductionRule + eval arm:
+//    rules.insert("SAT-LEX-05".to_string(), DeductionRule { ... island_id: "ISLAND-PROTOCOL-SEMANTICS" ... });
+//    if tokens.has_cms_wordpress_probe_signal { ... rules.get("SAT-LEX-05") ... }
+
+// === PROPOSAL lex_business_logic_85 :: business_logic ===
+// detector=analyzer  island=ISLAND-BUSINESS-RULES  points=[q:?score, q:bonus, q:max]
+// sample: ?score=10&max=1&bonus=999
+//
+// 1) src/ast/lexer.rs — LexicalTokens field:
+//    pub has_business_logic_signal: bool,
+//
+// 2) src/ast/lexer.rs — detection (kind 'analyzer'):
+//    // dedicated analyzer module (see ast/jwt.rs, ast/graphql.rs)
+//
+// 3) src/ast/features.rs — FEATURE_NAMES + binarize:
+//    "v85_business_logic",
+//    if tokens.has_business_logic_signal { fv.set(85); }
+//
+// 4) src/engine/sat_solver.rs — DeductionRule + eval arm:
+//    rules.insert("SAT-LEX-06".to_string(), DeductionRule { ... island_id: "ISLAND-BUSINESS-RULES" ... });
+//    if tokens.has_business_logic_signal { ... rules.get("SAT-LEX-06") ... }

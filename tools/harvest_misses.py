@@ -10,6 +10,7 @@ clause (the regex may then be demoted to a cheap pre-filter or retired).
 Usage:
   python tools/harvest_misses.py harvest --corpus <corpus.jsonl> --verdicts <verdicts.jsonl>
   python tools/harvest_misses.py report
+  python tools/harvest_misses.py propose [--emit-rust out.rs.txt]
   python tools/harvest_misses.py promote --id <candidate_id> --bit <N> --rule <RULE_ID> --by <name>
   python tools/harvest_misses.py reject --id <candidate_id>
 """
@@ -22,6 +23,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 DEFAULT_DB = Path(__file__).parent / "pattern_candidates.jsonl"
+DEFAULT_PROPOSALS = Path(__file__).parent / "lex_proposals.jsonl"
+FEATURES_RS = Path(__file__).parent.parent / "src" / "ast" / "features.rs"
 
 # Coarse detector hint per attack family — where a promoted clause would live.
 DETECTOR_HINT = {
@@ -46,11 +49,133 @@ DETECTOR_HINT = {
     "cms_wordpress": "cms_path",
     "framework_exploit": "framework_signature",
     "nosql_injection": "json_operator",
+    # v6 protocol/semantic families
+    "request_smuggling": "header_rule",
+    "cache_poisoning": "header_rule",
+    "oauth_oidc": "url_param_context",
+    "saml": "mime_analyzer",
+    "xslt_xquery": "xml_dtd",
+    "dom_mxss": "markup_grammar",
+    "csv_formula": "filename_rule",
+    "archive_slip": "filename_rule",
+    "redos": "url_param_context",
+    "bidi_tag_chars": "markup_grammar",
+    "appliance_cve_paths": "path_dictionary",
+    "idn_homograph": "url_param_context",
+    "smtp_raw": "mime_analyzer",
+    "soap_action": "header_rule",
+    "graphql_advanced": "graphql_analyzer",
+    "mass_assignment": "json_operator",
+    "business_logic": "json_operator",
+    "atlassian_cve": "path_dictionary",
+    "webdav_methods": "header_rule",
+    "unicode_normalization": "url_param_context",
+    "ansi_escape": "url_param_context",
+    "log_injection": "url_param_context",
+    "jwt_alg_dir": "jwt_analyzer",
 }
 
 RE_TT = re.compile(r"\\texttt\{([^}]+)\}")
 RE_RULE = re.compile(r"(SAT-[A-Z]+-\d+|ISLAND-[A-Z0-9-]+)")
 RE_ISLAND = re.compile(r"ISLAND-([A-Z0-9-]+)")
+RE_VBIT = re.compile(r'"v(\d+)_')
+
+# Detector skeleton per hint: where the new lexeme plugs into the engine.
+DETECTOR_TEMPLATE = {
+    "header_rule": "headers",          # iterate req.headers in tokenize_request
+    "path_dictionary": "path",         # extend path regex / section E check
+    "url_param_context": "normalized", # regex over normalized_text w/ param ctx
+    "sql_grammar": "normalized",
+    "markup_grammar": "normalized",
+    "shell_grammar": "normalized",
+    "crlf_context": "normalized",
+    "mime_analyzer": "analyzer",
+    "magic_bytes": "normalized",
+    "xpath_grammar": "normalized",
+    "template_grammar": "normalized",
+    "ldap_filter": "normalized",
+    "xml_dtd": "normalized",
+    "filename_rule": "normalized",
+    "cms_path": "path",
+    "framework_signature": "path",
+    "json_operator": "analyzer",
+    "graphql_analyzer": "analyzer",
+    "jwt_analyzer": "analyzer",
+    "analyzer": "analyzer",
+    "rule_tuning": "rule_tuning",
+}
+
+ISLAND_FOR_FAMILY = {
+    "protocol_semantics": "ISLAND-PROTOCOL-SEMANTICS",
+    "request_smuggling": "ISLAND-PROTOCOL-SEMANTICS",
+    "cache_poisoning": "ISLAND-PROTOCOL-SEMANTICS",
+    "webdav": "ISLAND-PROTOCOL-SEMANTICS",
+    "oauth": "ISLAND-PROTOCOL-SEMANTICS",
+    "saml": "ISLAND-PROTOCOL-SEMANTICS",
+    "idn": "ISLAND-PROTOCOL-SEMANTICS",
+    "soap": "ISLAND-PROTOCOL-SEMANTICS",
+    "content_obfuscation": "ISLAND-CONTENT-OBFUSCATION",
+    "unicode": "ISLAND-CONTENT-OBFUSCATION",
+    "log_injection": "ISLAND-CONTENT-OBFUSCATION",
+    "redos": "ISLAND-CONTENT-OBFUSCATION",
+    "ansi": "ISLAND-CONTENT-OBFUSCATION",
+    "bidi": "ISLAND-CONTENT-OBFUSCATION",
+    "business_logic": "ISLAND-BUSINESS-RULES",
+    "mass_assignment": "ISLAND-BUSINESS-RULES",
+    "csv": "ISLAND-BUSINESS-RULES",
+}
+
+
+def next_free_bit() -> int:
+    """Scan FEATURE_NAMES in features.rs for the highest used vN index."""
+    if not FEATURES_RS.exists():
+        return 80
+    text = FEATURES_RS.read_text(encoding="utf-8")
+    used = [int(m.group(1)) for m in RE_VBIT.finditer(text)]
+    # bits are positional; the vN label matches the index for v0..v79
+    return (max(used) + 1) if used else 80
+
+
+def family_slug(family: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "_", family.lower()).strip("_")[:32] or "unknown"
+
+
+def rust_fragment(prop: dict) -> str:
+    """Emit a paste-ready Rust skeleton for the proposed lexeme."""
+    tok = prop["token_field"]
+    bit = prop["feature_bit"]
+    vname = prop["feature_name"]
+    island = prop["island"]
+    rid = prop["rule_id"]
+    det = prop["detector_kind"]
+    pts = ", ".join(prop["injection_points"][:4]) or "(none)"
+    excerpt = prop["payload_excerpt"][:120].replace('"', '\\"')
+    det_hint = {
+        "headers": "for (k, v) in &req.headers { /* match suspicious header names/values */ }",
+        "path": 'let pq = format!("{}?{}", req.path, req.query_string); /* path regex check */',
+        "normalized": "if RE_<NAME>.get().unwrap().is_match(&normalized) { tokens." + tok + " = true; tokens.active_token_names.push(\"<TOKEN_NAME>\".to_string()); }",
+        "analyzer": "// dedicated analyzer module (see ast/jwt.rs, ast/graphql.rs)",
+        "rule_tuning": "// narrow the offending rule instead of adding a lexeme",
+    }.get(det, "// custom detector")
+    return (
+        f"// === PROPOSAL {prop['proposal_id']} :: {prop['family']} ===\n"
+        f"// detector={det}  island={island}  points=[{pts}]\n"
+        f"// sample: {excerpt}\n"
+        f"//\n"
+        f"// 1) src/ast/lexer.rs — LexicalTokens field:\n"
+        f"//    pub {tok}: bool,\n"
+        f"//\n"
+        f"// 2) src/ast/lexer.rs — detection (kind '{det}'):\n"
+        f"//    {det_hint}\n"
+        f"//\n"
+        f"// 3) src/ast/features.rs — FEATURE_NAMES + binarize:\n"
+        f"//    \"{vname}\",\n"
+        f"//    if tokens.{tok} {{ fv.set({bit}); }}\n"
+        f"//\n"
+        f"// 4) src/engine/sat_solver.rs — DeductionRule + eval arm:\n"
+        f"//    rules.insert(\"{rid}\".to_string(), DeductionRule {{ ... island_id: \"{island}\" ... }});\n"
+        f"//    if tokens.{tok} {{ ... rules.get(\"{rid}\") ... }}\n"
+    )
 
 
 def now() -> str:
@@ -226,6 +351,82 @@ def cmd_report(args) -> int:
     return 0
 
 
+def cmd_propose(args) -> int:
+    """Cluster CANDIDATE misses by family and emit lexeme proposals.
+
+    Each proposal carries: next free feature bit, token field name, detector
+    kind, target island, rule id, injection points, and a Rust skeleton.
+    Proposals are NEVER auto-applied — a human/agent reviews, implements the
+    detector, replays against the benign ledger, then `promote` marks it.
+    """
+    db = load_db(Path(args.db))
+    candidates = [r for r in db.values()
+                  if r["kind"] == "miss_pattern" and r["status"] == "CANDIDATE"]
+    if not candidates:
+        print("no CANDIDATE misses to propose")
+        return 0
+
+    # Cluster by family; hits>=2 families get priority.
+    by_family: dict[str, list[dict]] = {}
+    for r in candidates:
+        by_family.setdefault(r["family"], []).append(r)
+
+    bit = next_free_bit()
+    rule_n = 1
+    proposals = []
+    fragments = []
+    for fam in sorted(by_family, key=lambda f: -sum(r["hits"] for r in by_family[f])):
+        members = by_family[fam]
+        hits = sum(r["hits"] for r in members)
+        pts = sorted({p for r in members for p in r["injection_points"]})
+        hint = DETECTOR_HINT.get(fam, members[0].get("detector_hint", "analyzer"))
+        slug = family_slug(fam)
+        token = f"has_{slug}_signal"[:48]
+        vname = f"v{bit}_{slug[:24]}"
+        # Island guess: explicit map first, else fall back by hint.
+        island = next((ISLAND_FOR_FAMILY[k] for k in ISLAND_FOR_FAMILY
+                       if k in fam.lower()), "ISLAND-PROTOCOL-SEMANTICS")
+        prop = {
+            "proposal_id": f"lex_{slug}_{bit}",
+            "family": fam,
+            "candidate_ids": [r["candidate_id"] for r in members],
+            "hits": hits,
+            "injection_points": pts[:8],
+            "payload_excerpt": members[0].get("payload_excerpt", ""),
+            "detector_kind": DETECTOR_TEMPLATE.get(hint, "analyzer"),
+            "detector_hint": hint,
+            "token_field": token,
+            "feature_bit": bit,
+            "feature_name": vname,
+            "island": island,
+            "rule_id": f"SAT-LEX-{rule_n:02d}",
+            "status": "PROPOSED",
+            "created": now(),
+        }
+        proposals.append(prop)
+        fragments.append(rust_fragment(prop))
+        bit += 1
+        rule_n += 1
+
+    out = Path(args.proposals)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    with open(out, "w", encoding="utf-8") as f:
+        for p in proposals:
+            f.write(json.dumps(p, ensure_ascii=False) + "\n")
+
+    if args.emit_rust:
+        Path(args.emit_rust).write_text("\n".join(fragments), encoding="utf-8")
+
+    print(f"proposals: {len(proposals)} -> {out}")
+    for p in proposals:
+        print(f"  {p['proposal_id']:<28} bit={p['feature_bit']:<3} hits={p['hits']:<3} "
+              f"{p['detector_kind']:<10} {p['island']:<28} {p['family'][:30]}")
+    if args.emit_rust:
+        print(f"rust skeletons -> {args.emit_rust}")
+    print("\nnext: implement detector -> replay benign ledger -> harvest -> promote")
+    return 0
+
+
 def cmd_promote(args) -> int:
     db = load_db(Path(args.db))
     rec = db.get(args.id)
@@ -269,6 +470,11 @@ def main() -> int:
     r = sub.add_parser("report", help="summarize the ledger")
     r.add_argument("--top", type=int, default=30)
     r.set_defaults(fn=cmd_report)
+
+    pr = sub.add_parser("propose", help="cluster misses into lexeme proposals")
+    pr.add_argument("--proposals", default=str(DEFAULT_PROPOSALS))
+    pr.add_argument("--emit-rust", default=None, help="write Rust skeletons to file")
+    pr.set_defaults(fn=cmd_propose)
 
     p = sub.add_parser("promote", help="mark a candidate promoted (manual approval)")
     p.add_argument("--id", required=True)
