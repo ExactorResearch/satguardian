@@ -14,6 +14,7 @@ use serde::Deserialize;
 use serde_json::json;
 use satguardian_waf::engine::SatguardianSatEngine;
 use satguardian_waf::types::HttpRequestPayload;
+use satguardian_waf::{AstLexer, FeatureBinarizer};
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::io::{BufRead, BufReader, Write};
 use std::path::{Path, PathBuf};
@@ -45,6 +46,7 @@ struct Args {
     out: Option<PathBuf>,
     engine_tag: String,
     limit: Option<usize>,
+    dump_features: Option<PathBuf>,
 }
 
 fn parse_args() -> Args {
@@ -52,6 +54,7 @@ fn parse_args() -> Args {
     let mut out = None;
     let mut engine_tag = "satguardian-edge".to_string();
     let mut limit = None;
+    let mut dump_features = None;
     let mut argv = std::env::args().skip(1);
     while let Some(flag) = argv.next() {
         let mut take = |name: &str| match argv.next() {
@@ -66,6 +69,7 @@ fn parse_args() -> Args {
                 let v = take("limit");
                 limit = Some(v.parse::<usize>().unwrap_or_else(|_| die("--limit must be a number")));
             }
+            "--dump-features" => dump_features = Some(PathBuf::from(take("dump-features"))),
             other => die(&format!("unknown argument {other}")),
         }
     }
@@ -74,6 +78,7 @@ fn parse_args() -> Args {
         out,
         engine_tag,
         limit,
+        dump_features,
     }
 }
 
@@ -259,6 +264,16 @@ fn main() {
             .unwrap_or_else(|e| die(&format!("cannot write verdicts to {}: {e}", p.display())))
     });
 
+    // Optional feature-bit dump for the offline generalizer: the exact
+    // v0..vN bitmask the engine computed for each case, with its label.
+    let mut feat_out: Option<std::fs::File> = args.dump_features.as_ref().map(|p| {
+        if let Some(dir) = p.parent() {
+            let _ = std::fs::create_dir_all(dir);
+        }
+        std::fs::File::create(p)
+            .unwrap_or_else(|e| die(&format!("cannot write features to {}: {e}", p.display())))
+    });
+
     let mut held_out = Acc::default();
     let mut tuning = Acc::default();
     let mut vendor = Acc::default();
@@ -296,6 +311,21 @@ fn main() {
         let rec = verdict_record(&args, case, proof.is_violation, &category, &reason, proof.execution_time_us);
         if let Some(f) = out.as_mut() {
             writeln!(f, "{rec}").expect("writing verdicts");
+        }
+        if let Some(f) = feat_out.as_mut() {
+            let tokens = AstLexer::tokenize_request(&payload);
+            let fv = FeatureBinarizer::binarize(&payload, &tokens);
+            let frec = json!({
+                "case_id": case.case_id,
+                "corpus": case.corpus,
+                "split": case.split,
+                "label": case.label,
+                "category": case.category,
+                "bits_lo": fv.bits as u64,
+                "bits_hi": (fv.bits >> 64) as u64,
+                "blocked": proof.is_violation,
+            });
+            writeln!(f, "{frec}").expect("writing features");
         }
     }
 
