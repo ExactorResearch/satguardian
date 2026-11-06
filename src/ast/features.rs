@@ -89,6 +89,12 @@ pub const FEATURE_NAMES: &[&str] = &[
     "v77_soap_action_abuse",
     "v78_hidden_chars",
     "v79_keyword_smuggling",
+    "v80_cache_poisoning_signal",
+    "v81_oauth_flow_anomaly",
+    "v82_mixed_script_evasion",
+    "v83_param_path_traversal",
+    "v84_cms_plugin_probe",
+    "v85_cross_param_numeric",
 ];
 
 /// Binarized request state representing a point on the Boolean Hypercube $\{0, 1\}^N$.
@@ -243,6 +249,14 @@ impl FeatureBinarizer {
         if tokens.has_soap_action_abuse { fv.set(77); }
         if tokens.has_hidden_chars { fv.set(78); }
         if tokens.has_keyword_smuggling { fv.set(79); }
+
+        // Generalized lex proposals (v6.x pipeline output)
+        if tokens.has_cache_poisoning_signal { fv.set(80); }
+        if tokens.has_oauth_oidc_signal { fv.set(81); }
+        if tokens.has_unicode_normalization_signal { fv.set(82); }
+        if tokens.has_path_traversal_signal { fv.set(83); }
+        if tokens.has_cms_wordpress_probe_signal { fv.set(84); }
+        if tokens.has_business_logic_signal { fv.set(85); }
 
         fv
     }

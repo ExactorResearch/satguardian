@@ -94,6 +94,13 @@ pub struct LexicalTokens {
     pub has_soap_action_abuse: bool,
     pub has_hidden_chars: bool,
     pub has_keyword_smuggling: bool,
+    // v6.x lex proposals (generalized detectors, bits v80-v85)
+    pub has_cache_poisoning_signal: bool,
+    pub has_oauth_oidc_signal: bool,
+    pub has_unicode_normalization_signal: bool,
+    pub has_path_traversal_signal: bool,
+    pub has_cms_wordpress_probe_signal: bool,
+    pub has_business_logic_signal: bool,
     pub active_token_names: Vec<String>,
 }
 
@@ -214,6 +221,9 @@ static RE_KEYWORD_SMUGGLE: OnceLock<Regex> = OnceLock::new();
 static RE_B64_XML_SAML: OnceLock<Regex> = OnceLock::new();
 static RE_BRAND_HOST: OnceLock<Regex> = OnceLock::new();
 static RE_CYR_BRAND: OnceLock<Regex> = OnceLock::new();
+static RE_PARAM_PAIR: OnceLock<Regex> = OnceLock::new();
+static RE_MIXED_TOKEN: OnceLock<Regex> = OnceLock::new();
+static RE_CMS_VULN_SLUG: OnceLock<Regex> = OnceLock::new();
 static RE_NUM_TINY: OnceLock<Regex> = OnceLock::new();
 static RE_APPLIANCE_CVE: OnceLock<Regex> = OnceLock::new();
 
@@ -701,6 +711,18 @@ fn init_regexes() {
     });
     let _ = RE_CYR_BRAND.get_or_init(|| {
         Regex::new(r#"аррӏе|раураӏ|googӏe"#).unwrap()
+    });
+    let _ = RE_PARAM_PAIR.get_or_init(|| {
+        // key=value / "key":"value" pairs across query strings and JSON bodies.
+        Regex::new(r#"(?i)["']?([a-z_][a-z0-9_.\-]{0,40})["']?\s*[:=]\s*["']?([^&\s"',}\]]{1,200})"#).unwrap()
+    });
+    let _ = RE_MIXED_TOKEN.get_or_init(|| {
+        // Alphanumeric tokens blending Latin with Cyrillic/Greek lookalikes.
+        Regex::new(r#"[0-9A-Za-z\u{0370}-\u{03FF}\u{0400}-\u{04FF}\u{1C80}-\u{1C8F}]+"#).unwrap()
+    });
+    let _ = RE_CMS_VULN_SLUG.get_or_init(|| {
+        // Historically vulnerable CMS plugin/action slugs (WordPress et al.).
+        Regex::new(r#"(?i)revslider|elementor|timthumb|duplicator|wp\.vcd|wp\.vcd|filemanager|wp\.file\.manager|ninja\.forms|ninja-forms|mailpoet|wpdiscuz|responsivevoice|contact\.form.?7|gravityforms|gravity\.forms|wpscan|really\.simple\.ssl|wp\.cron\.php|arbitrary\.file|show_image|image\.php\?|load-scripts|load-styles"#).unwrap()
     });
     let _ = RE_APPLIANCE_CVE.get_or_init(|| {
         // Known-vulnerable appliance/admin endpoints (PAN-OS, FortiGate,
@@ -2566,6 +2588,189 @@ impl AstLexer {
         {
             tokens.has_malicious_upload = true;
             tokens.active_token_names.push("WEBDAV_SCRIPT_WRITE".to_string());
+        }
+
+        // O. Cache poisoning via unkeyed inputs: forwarding headers a shared
+        // cache may not key on, or cache-buster params. X-Forwarded-Host is
+        // excluded (host-header rules own it; benign when it mirrors Host),
+        // utm_* excluded (marketing URLs), Accept-Encoding/Range excluded
+        // (legitimate content negotiation).
+        for (k, _) in &req.headers {
+            if matches!(
+                k.to_ascii_lowercase().as_str(),
+                "x-forwarded-scheme" | "x-forwarded-port" | "x-original-url" | "x-rewrite-url"
+            ) {
+                tokens.has_cache_poisoning_signal = true;
+                tokens.active_token_names.push("CACHE_POISONING_UNKEYED_INPUT".to_string());
+                break;
+            }
+        }
+        if !tokens.has_cache_poisoning_signal {
+            for kv in req.query_string.to_ascii_lowercase().split(['&', ';']) {
+                let key = kv.split('=').next().unwrap_or("").trim();
+                if matches!(key, "cb" | "cachebuster" | "cache_bust" | "nocache" | "_") {
+                    tokens.has_cache_poisoning_signal = true;
+                    tokens.active_token_names.push("CACHE_POISONING_UNKEYED_INPUT".to_string());
+                    break;
+                }
+            }
+        }
+
+        // P. OAuth/OIDC flow anomalies — structural protocol semantics, not
+        // payload patterns: an authorize request without `state` (CSRF-able
+        // flow) or a token request carrying `redirect_uri` (parameter belongs
+        // to the authorize step; its presence signals flow confusion).
+        {
+            let pl = req.path.to_ascii_lowercase();
+            let ql = req.query_string.to_ascii_lowercase();
+            let bl = req.body.to_ascii_lowercase();
+            let has = |needle: &str| ql.contains(needle) || bl.contains(needle);
+            let authorize_ep = pl.contains("authorize") || pl.contains("/oauth") || pl.contains("/oidc");
+            let token_ep = pl.contains("/token") || pl.contains("/oidc/token");
+            let anomaly = (authorize_ep
+                && has("redirect_uri=")
+                && has("response_type=")
+                && !has("state="))
+                || (token_ep && has("grant_type=authorization_code") && has("redirect_uri="));
+            if anomaly {
+                tokens.has_oauth_oidc_signal = true;
+                tokens.active_token_names.push("OAUTH_FLOW_ANOMALY".to_string());
+            }
+        }
+
+        // Q. Mixed-script evasion: a single alphanumeric token blending Latin
+        // with Cyrillic/Greek lookalikes (paуссword, admин). Legit bilingual
+        // text keeps scripts in separate tokens; requiring a value-ish prefix
+        // (= : " ' & ? ; ( [ ,) keeps prose mentions benign.
+        for m in RE_MIXED_TOKEN.get().unwrap().find_iter(&inspectable) {
+            let tok = m.as_str();
+            let has_latin = tok.bytes().any(|b| b.is_ascii_alphabetic());
+            let has_nonascii = tok.chars().any(|c| !c.is_ascii());
+            if !(has_latin && has_nonascii && tok.chars().count() >= 4) {
+                continue;
+            }
+            let preceded = inspectable[..m.start()]
+                .chars()
+                .last()
+                .map(|c| matches!(c, '=' | ':' | '"' | '\'' | '&' | '?' | ';' | '(' | '[' | ','))
+                .unwrap_or(true);
+            if preceded {
+                tokens.has_unicode_normalization_signal = true;
+                tokens.active_token_names.push("MIXED_SCRIPT_EVASION".to_string());
+                break;
+            }
+        }
+
+        // R/S/T. Parameter-pair analyzers over the normalized request: they
+        // see query strings and JSON bodies in one canonical form.
+        {
+            let norm = tokens.normalized_text.clone();
+            let mut param_abs_path = false;
+            let mut cms_probe = false;
+            let mut benefits: Vec<f64> = Vec::new();
+            let mut ceilings: Vec<f64> = Vec::new();
+            for cap in RE_PARAM_PAIR.get().unwrap().captures_iter(&norm) {
+                let key = cap[1].to_ascii_lowercase();
+                let val = cap[2].to_ascii_lowercase();
+                // R. Absolute/traversal path values in non-file params. An
+                // absolute path alone is benign (C:\temp\file.txt, /etc/hosts,
+                // /var/www/htdocs are legitimate references) — it only signals
+                // LFI/archive-slip when the target is executable, a sensitive
+                // file, or a log file under /var/log.
+                if !param_abs_path {
+                    let abs_sensitive = val.starts_with("/etc/")
+                        || val.starts_with("/var/")
+                        || val.starts_with("/proc/")
+                        || val.starts_with("/root/")
+                        || val.starts_with("/boot/")
+                        || val.starts_with("/dev/")
+                        || val.starts_with("/sys/");
+                    let win_drive = val.len() >= 3
+                        && val.as_bytes()[0].is_ascii_alphabetic()
+                        && val.as_bytes()[1] == b':'
+                        && (val.as_bytes()[2] == b'\\' || val.as_bytes()[2] == b'/');
+                    if abs_sensitive || win_drive {
+                        let dangerous_ext = val.ends_with(".php")
+                            || val.ends_with(".jsp")
+                            || val.ends_with(".asp")
+                            || val.ends_with(".aspx")
+                            || val.ends_with(".sh")
+                            || val.ends_with(".dll")
+                            || val.ends_with(".exe")
+                            || val.ends_with(".py")
+                            || val.ends_with(".pl")
+                            || val.ends_with(".cgi")
+                            || val.ends_with(".ps1")
+                            || val.ends_with(".bat")
+                            || val.ends_with(".cmd")
+                            || val.ends_with(".vbs")
+                            || val.ends_with(".wsf");
+                        let sensitive_base = val.contains("passwd")
+                            || val.contains("shadow")
+                            || val.contains("wp-config")
+                            || val.contains(".env")
+                            || val.contains("id_rsa")
+                            || val.contains("id_dsa")
+                            || val.contains("web.config")
+                            || val.contains("boot.ini")
+                            || val.contains(".git/");
+                        let log_target = val.contains("/var/log/") && val.ends_with(".log");
+                        if dangerous_ext || sensitive_base || log_target || val.contains("..") {
+                            param_abs_path = true;
+                        }
+                    }
+                    let trav_sensitive = val.contains("..")
+                        && (val.contains("wp-config")
+                            || val.contains(".env")
+                            || val.contains("id_rsa")
+                            || val.contains("shadow")
+                            || val.contains("passwd")
+                            || val.contains(".git")
+                            || val.contains("web.config")
+                            || val.contains("boot.ini"));
+                    if trav_sensitive {
+                        param_abs_path = true;
+                    }
+                }
+                // S. CMS action params naming vulnerable plugin slugs.
+                if !cms_probe
+                    && matches!(key.as_str(), "action" | "do" | "task" | "operation" | "plugin" | "module")
+                    && RE_CMS_VULN_SLUG.get().unwrap().is_match(&val)
+                {
+                    cms_probe = true;
+                }
+                // T. Cross-param numeric anomaly: benefit fields (gamification
+                // currency) vs declared ceilings (max*/limit/cap/...)
+                if let Ok(n) = val.trim_end_matches(|c: char| !c.is_ascii_digit() && c != '.' && c != '-').parse::<f64>() {
+                    if matches!(key.as_str(),
+                        "bonus" | "score" | "points" | "credit" | "tip" | "gift" | "reward"
+                        | "coins" | "winnings" | "payout" | "cashback" | "rebate" | "jackpot"
+                        | "multiplier" | "xp")
+                    {
+                        benefits.push(n);
+                    } else if key.starts_with("max")
+                        || matches!(key.as_str(),
+                            "limit" | "limits" | "cap" | "caps" | "ceiling" | "bound" | "threshold")
+                    {
+                        ceilings.push(n);
+                    }
+                }
+            }
+            if param_abs_path {
+                tokens.has_path_traversal_signal = true;
+                tokens.active_token_names.push("PARAM_ABS_PATH_TRAVERSAL".to_string());
+            }
+            if cms_probe {
+                tokens.has_cms_wordpress_probe_signal = true;
+                tokens.active_token_names.push("CMS_PLUGIN_PROBE_ACTION".to_string());
+            }
+            // benefit >= 100 AND exceeds every ceiling by >50x
+            if benefits.iter().any(|&b| {
+                b >= 100.0 && ceilings.iter().any(|&c| b > c.abs() * 50.0 + f64::EPSILON)
+            }) {
+                tokens.has_business_logic_signal = true;
+                tokens.active_token_names.push("CROSS_PARAM_NUMERIC_ANOMALY".to_string());
+            }
         }
 
         tokens.active_token_names.sort();
