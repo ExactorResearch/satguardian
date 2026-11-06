@@ -94,6 +94,26 @@ pub struct LexicalTokens {
     pub has_soap_action_abuse: bool,
     pub has_hidden_chars: bool,
     pub has_keyword_smuggling: bool,
+    // v6.x lex proposals (generalized detectors, bits v80-v85)
+    pub has_cache_poisoning_signal: bool,
+    pub has_oauth_oidc_signal: bool,
+    pub has_unicode_normalization_signal: bool,
+    pub has_path_traversal_signal: bool,
+    pub has_cms_wordpress_probe_signal: bool,
+    pub has_business_logic_signal: bool,
+    // v7 lex proposals (bits v86-v97)
+    pub has_parameter_pollution_signal: bool,
+    pub has_type_juggling_signal: bool,
+    pub has_protocol_injection_signal: bool,
+    pub has_connect_tunnel_signal: bool,
+    pub has_webhook_ssrf_signal: bool,
+    pub has_http2_pseudo_header: bool,
+    pub has_management_endpoint_signal: bool,
+    pub has_open_redirect_signal: bool,
+    pub has_content_type_confusion_signal: bool,
+    pub has_integer_overflow_signal: bool,
+    pub has_websocket_abuse_signal: bool,
+    pub has_spring4shell_signal: bool,
     pub active_token_names: Vec<String>,
 }
 
@@ -214,6 +234,20 @@ static RE_KEYWORD_SMUGGLE: OnceLock<Regex> = OnceLock::new();
 static RE_B64_XML_SAML: OnceLock<Regex> = OnceLock::new();
 static RE_BRAND_HOST: OnceLock<Regex> = OnceLock::new();
 static RE_CYR_BRAND: OnceLock<Regex> = OnceLock::new();
+static RE_PARAM_PAIR: OnceLock<Regex> = OnceLock::new();
+static RE_MIXED_TOKEN: OnceLock<Regex> = OnceLock::new();
+static RE_CMS_VULN_SLUG: OnceLock<Regex> = OnceLock::new();
+static RE_MAGIC_HASH: OnceLock<Regex> = OnceLock::new();
+static RE_HEX_NUM: OnceLock<Regex> = OnceLock::new();
+static RE_BRACKET_PARAM: OnceLock<Regex> = OnceLock::new();
+static RE_PRIV_LIKE_VALUE: OnceLock<Regex> = OnceLock::new();
+static RE_PROTO_LINE: OnceLock<Regex> = OnceLock::new();
+static RE_INLINE_PROTO: OnceLock<Regex> = OnceLock::new();
+static RE_INTERNAL_HOST: OnceLock<Regex> = OnceLock::new();
+static RE_SCI_NUM: OnceLock<Regex> = OnceLock::new();
+static RE_FORM_BODY: OnceLock<Regex> = OnceLock::new();
+static RE_MGMT_ENDPOINT: OnceLock<Regex> = OnceLock::new();
+static RE_PARAM_PAIR_WIDE: OnceLock<Regex> = OnceLock::new();
 static RE_NUM_TINY: OnceLock<Regex> = OnceLock::new();
 static RE_APPLIANCE_CVE: OnceLock<Regex> = OnceLock::new();
 
@@ -308,7 +342,7 @@ fn init_regexes() {
         Regex::new(r#"(?i)(?:/wp-(?:admin|login\.php|includes|content|cron\.php|config\.php)|/wp/v\d+/users(?:/|$|\?)|/wp-json/wp/v\d+/users(?:/|$|\?)|rest_route=/wp/v\d+/users|\?author=\d+|wlwmanifest\.xml|wp-trackback\.php|wp-cron\.php|wp-links-opml\.php|wp-json/oembed|/license\.txt|/readme\.html|wp-mail\.php|wp-comments-post\.php|wp-signup\.php|wp-activate\.php|wp-register\.php|wp-admin/(?:install|upgrade)\.php|author-sitemap\.xml|wp-sitemap\.xml)"#).unwrap()
     });
     let _ = RE_SENSITIVE_EXPOSURE.get_or_init(|| {
-        Regex::new(r#"(?i)(?:/\.env(?:\.[a-z0-9_-]+)?|/\.git(?:/|$|\?)|/\.aws(?:/|$|\?)|/\.ssh(?:/|$|\?)|/(?:phpmyadmin|pma|adminer\.php|actuator(?:/[a-z]+)?|swagger-ui|\.svn|\.hg|\.bzr|CVS|META-INF|docker-compose\.ya?ml|Dockerfile|\.dockerignore|dump\.sql|backup\.sql|db\.sql|database\.sql|dump\.sql\.gz|backup\.tar\.gz|site\.tar\.gz|www\.zip|public_html\.zip|backup\.zip|db\.zip|mysql\.sql|data\.sql|web\.config|app\.config|connectionstrings\.config|Web\.(?:Debug|Release)\.config|global\.asax|server-status|server-info|nginx_status|stub_status|fpm-status|balancer-manager|phpinfo(?:\.php)?|info\.php|test\.php|i\.php|phpversion\.php|elmah\.axd|trace\.axd|glimpse\.axd|elmah|glimpse|trace\.axd|ex4004|iisreset\.log|\.npmrc|\.pypirc|\.pgpass|\.my\.cnf|\.mylogin\.cnf|\.dockercfg|\.DS_Store|\.htpasswd|\.htaccess|\.user\.ini|crossdomain\.xml|clientaccesspolicy\.xml|server\.xml|WEB-INF|appsettings[^/]*\.json|terraform\.tfstate|\.tfstate|jolokia|hawtio|jmx-console|web-console|host-manager|manager/[a-z0-9_.-]+|_cat/[a-z0-9_.-]+|_cluster/[a-z0-9_.-]+|_nodes/[a-z0-9_.-]+|_(?:alias|tasks|snapshot|sql|xpack|security|watcher|ml|rollup|transform|slm|ilm|fleet|features)/?|debug/(?:pprof|vars|requests)|shell\.php|c99\.php|r57\.php|wso\.php|id_rsa|id_dsa|id_ecdsa|id_ed25519|\.bash_history|\.zsh_history|\.mysql_history|\.psql_history|\.sqlite_history|\.python_history|\.node_repl_history|\.rediscli_history|\.lesshst|\.viminfo|\.wget-hsts|\.bashrc|\.bash_profile|\.zshrc|\.profile|\.gitconfig|\.git-credentials|\.curlrc|\.inputrc|\.selected_editor|\.sudo_as_admin_successful|\.yarnrc|\.netrc|\.gem/credentials|\.cargo/credentials|\.docker/config\.json|\.kube/config|kubeconfig|\.minikube|\.helm|database\.ya?ml|secrets\.ya?ml|credentials\.json|credentials\.ya?ml|service-account\.json|firebase-adminsdk[^/]*\.json|adminsdk[^/]*\.json|key\.json|private-key\.json|client_secret[^/]*\.json|wp-config\.php[~.]|\.idea|\.vscode|\.vs|\.project|\.settings|\.classpath|\.cproject|nbproject|\.gitlab-ci\.yml|Jenkinsfile|\.travis\.yml|\.circleci/|azure-pipelines\.yml|bitbucket-pipelines\.yml|\.drone\.yml|appveyor\.yml|\.buildkite/|cloudbuild\.yaml|\.github/workflows/|values\.yaml|Chart\.yaml|firebase\.json|\.firebaserc|firestore\.rules|storage\.rules|database\.rules\.json|remoteconfig\.template\.json|serverless\.ya?ml|samconfig\.toml|template\.ya?ml|cdk\.json|amplify\.ya?ml|netlify\.toml|vercel\.json|now\.json|app\.yaml|dispatch\.yaml|cron\.yaml|queue\.yaml|datastore/index\.yaml|main\.tf|variables\.tf|outputs\.tf|terraform\.tfvars|backend\.tf|locals\.tf|Pulumi\.yaml|Pulumi\.dev\.yaml|cdktf\.json|unattend\.xml|sysprep\.inf|autounattend\.xml|sysprep\.xml|panther/unattend|solr/admin|kibana/api|consul/v1|vault/v\d+|eureka/apps|services/registry|gateway/routes|hystrix\.stream|turbine\.stream|/[^/]*\.(?:pem|key|p12|pfx|jks|keystore|ppk)$)(?:\?|/|$|\.php|\.axd|\.json|\.ya?ml|\.xml|\.tf|\.tfvars|\.toml|\.rules|\.log|\.txt|\.sql|\.zip|\.tar\.gz|\.pem|\.key|\.p12|\.pfx|\.jks|\.keystore|\.ppk|\s))"#).unwrap()
+        Regex::new(r#"(?i)(?:/\.env(?:\.[a-z0-9_-]+)?|/\.git(?:/|$|\?)|/\.aws(?:/|$|\?)|/\.ssh(?:/|$|\?)|/(?:phpmyadmin|pma|adminer\.php|actuator/(?:env|beans|configprops|heapdump|threaddump|loggers|mappings|scheduledtasks|conditions|caches|sessions|shutdown|restart|pause|resume|features|gateway|jolokia|flyway|liquibase|auditevents|httptrace|httpexchanges|integrationgraph|quartz|startup|security)|swagger-ui|\.svn|\.hg|\.bzr|CVS|META-INF|docker-compose\.ya?ml|Dockerfile|\.dockerignore|dump\.sql|backup\.sql|db\.sql|database\.sql|dump\.sql\.gz|backup\.tar\.gz|site\.tar\.gz|www\.zip|public_html\.zip|backup\.zip|db\.zip|mysql\.sql|data\.sql|web\.config|app\.config|connectionstrings\.config|Web\.(?:Debug|Release)\.config|global\.asax|server-status|server-info|nginx_status|stub_status|fpm-status|balancer-manager|phpinfo(?:\.php)?|info\.php|test\.php|i\.php|phpversion\.php|elmah\.axd|trace\.axd|glimpse\.axd|elmah|glimpse|trace\.axd|ex4004|iisreset\.log|\.npmrc|\.pypirc|\.pgpass|\.my\.cnf|\.mylogin\.cnf|\.dockercfg|\.DS_Store|\.htpasswd|\.htaccess|\.user\.ini|crossdomain\.xml|clientaccesspolicy\.xml|server\.xml|WEB-INF|appsettings[^/]*\.json|terraform\.tfstate|\.tfstate|jolokia|hawtio|jmx-console|web-console|host-manager|manager/[a-z0-9_.-]+|_cat/[a-z0-9_.-]+|_cluster/[a-z0-9_.-]+|_nodes/[a-z0-9_.-]+|_(?:alias|tasks|snapshot|sql|xpack|security|watcher|ml|rollup|transform|slm|ilm|fleet|features)/?|debug/(?:pprof|vars|requests)|shell\.php|c99\.php|r57\.php|wso\.php|id_rsa|id_dsa|id_ecdsa|id_ed25519|\.bash_history|\.zsh_history|\.mysql_history|\.psql_history|\.sqlite_history|\.python_history|\.node_repl_history|\.rediscli_history|\.lesshst|\.viminfo|\.wget-hsts|\.bashrc|\.bash_profile|\.zshrc|\.profile|\.gitconfig|\.git-credentials|\.curlrc|\.inputrc|\.selected_editor|\.sudo_as_admin_successful|\.yarnrc|\.netrc|\.gem/credentials|\.cargo/credentials|\.docker/config\.json|\.kube/config|kubeconfig|\.minikube|\.helm|database\.ya?ml|secrets\.ya?ml|credentials\.json|credentials\.ya?ml|service-account\.json|firebase-adminsdk[^/]*\.json|adminsdk[^/]*\.json|key\.json|private-key\.json|client_secret[^/]*\.json|wp-config\.php[~.]|\.idea|\.vscode|\.vs|\.project|\.settings|\.classpath|\.cproject|nbproject|\.gitlab-ci\.yml|Jenkinsfile|\.travis\.yml|\.circleci/|azure-pipelines\.yml|bitbucket-pipelines\.yml|\.drone\.yml|appveyor\.yml|\.buildkite/|cloudbuild\.yaml|\.github/workflows/|values\.yaml|Chart\.yaml|firebase\.json|\.firebaserc|firestore\.rules|storage\.rules|database\.rules\.json|remoteconfig\.template\.json|serverless\.ya?ml|samconfig\.toml|template\.ya?ml|cdk\.json|amplify\.ya?ml|netlify\.toml|vercel\.json|now\.json|app\.yaml|dispatch\.yaml|cron\.yaml|queue\.yaml|datastore/index\.yaml|main\.tf|variables\.tf|outputs\.tf|terraform\.tfvars|backend\.tf|locals\.tf|Pulumi\.yaml|Pulumi\.dev\.yaml|cdktf\.json|unattend\.xml|sysprep\.inf|autounattend\.xml|sysprep\.xml|panther/unattend|solr/admin|kibana/api|consul/v1|vault/v\d+|eureka/apps|services/registry|gateway/routes|hystrix\.stream|turbine\.stream|/[^/]*\.(?:pem|key|p12|pfx|jks|keystore|ppk)$)(?:\?|/|$|\.php|\.axd|\.json|\.ya?ml|\.xml|\.tf|\.tfvars|\.toml|\.rules|\.log|\.txt|\.sql|\.zip|\.tar\.gz|\.pem|\.key|\.p12|\.pfx|\.jks|\.keystore|\.ppk|\s))"#).unwrap()
     });
     let _ = RE_FRAMEWORK_EXPLOIT.get_or_init(|| {
         Regex::new(r#"(?i)(?:\$\{jndi:(?:ldap|rmi|dns|corba|iiop)|\$\{jndi:|\$\{(?:docker|k8s|kubernetes|spring|sys|main|bundle|web|env|lower|upper|date|hostName|ctx|sd|springProfiles|java|os|line|marker|map|jvmrunargs|base64|url|env|sys|docker|k8s|kubernetes|spring|main|bundle|web|hostName|ctx|sd|springProfiles|java|os|line|marker|map|jvmrunargs)[^}]{0,200}\}|#\{T\([a-z0-9_.]+\)|\$\{T\([a-z0-9_.]+\)|class\.module\.classLoader|class\.module\.resources|denyMethodExecution|xwork\.MethodAccessor|%\{#|_ignition/execute-solution|invokefunction&function=call_user_func|eval-stdin\.php|#post_render|#lazy_builder|\[\]\s*=\s*(?:exec|eval|assert|system|passthru|shell_exec|call_user_func|create_function|preg_replace)\b|\$\{\(|!!<tag:yaml\.org|python/object|javax\.script|ScriptEngineManager|URLClassLoader|TemplatesImpl|JdbcRowSetImpl|SnakeYAML|<!--#(?:exec|include|config|echo|printenv|set|if)\b)"#).unwrap()
@@ -666,7 +700,10 @@ fn init_regexes() {
         Regex::new(r#"["']?(?:qty|quantity|price|amount|bid|total|weight|score|bonus|discount(?:_percent)?|balance|seats|quota)["']?\s*[:=]\s*-\d"#).unwrap()
     });
     let _ = RE_NUM_BIG.get_or_init(|| {
-        Regex::new(r#"["']?(?:qty|quantity|price|amount|bid|total|weight|score|bonus|discount(?:_percent)?|balance|seats|quota)["']?\s*[:=]\s*(?:[1-9]\d{4,}|9\d{3})\b"#).unwrap()
+        // Capture group 1 = the number, so the caller can exempt canonical
+        // 32-bit boundary constants (INT32_MAX/UINT32_MAX are legitimate
+        // developer test values, unlike arbitrary huge magnitudes).
+        Regex::new(r#"["']?(?:qty|quantity|price|amount|bid|total|weight|score|bonus|discount(?:_percent)?|balance|seats|quota)["']?\s*[:=]\s*([1-9]\d{4,}|9\d{3})\b"#).unwrap()
     });
     let _ = RE_NUM_TINY.get_or_init(|| {
         // Denormal-tiny money/quantity values used for rounding exploits.
@@ -701,6 +738,62 @@ fn init_regexes() {
     });
     let _ = RE_CYR_BRAND.get_or_init(|| {
         Regex::new(r#"аррӏе|раураӏ|googӏe"#).unwrap()
+    });
+    let _ = RE_PARAM_PAIR.get_or_init(|| {
+        // key=value / "key":"value" pairs across query strings and JSON bodies.
+        Regex::new(r#"(?i)["']?([a-z_][a-z0-9_.\-]{0,40})["']?\s*[:=]\s*["']?([^&\s"',}\]]{1,200})"#).unwrap()
+    });
+    let _ = RE_MIXED_TOKEN.get_or_init(|| {
+        // Alphanumeric tokens blending Latin with Cyrillic/Greek lookalikes.
+        Regex::new(r#"[0-9A-Za-z\u{0370}-\u{03FF}\u{0400}-\u{04FF}\u{1C80}-\u{1C8F}]+"#).unwrap()
+    });
+    let _ = RE_CMS_VULN_SLUG.get_or_init(|| {
+        // Historically vulnerable CMS plugin/action slugs (WordPress et al.).
+        Regex::new(r#"(?i)revslider|elementor|timthumb|duplicator|wp\.vcd|wp\.vcd|filemanager|wp\.file\.manager|ninja\.forms|ninja-forms|mailpoet|wpdiscuz|responsivevoice|contact\.form.?7|gravityforms|gravity\.forms|wpscan|really\.simple\.ssl|wp\.cron\.php|arbitrary\.file|show_image|image\.php\?|load-scripts|load-styles"#).unwrap()
+    });
+    let _ = RE_MAGIC_HASH.get_or_init(|| {
+        // PHP loose-comparison magic hashes: 0e<digits> == 0 in PHP 7.
+        Regex::new(r#"^0e\d{3,}$"#).unwrap()
+    });
+    let _ = RE_HEX_NUM.get_or_init(|| {
+        // Hex/octal-looking numeric juggling values (0x539, 017, 0b101).
+        Regex::new(r#"^(?:0x[0-9a-f]+|0b[01]+|0[0-7]{2,})$"#).unwrap()
+    });
+    let _ = RE_BRACKET_PARAM.get_or_init(|| {
+        // PHP/Rails-style array params: key[]=v, key[0]=v, key[sub]=v.
+        Regex::new(r#"(?i)["']?([a-z_][a-z0-9_]*)\s*(?:\[\]|\[\d+\]|\[[a-z_][a-z0-9_]*\])["']?\s*[:=]\s*["']?([^&\s"',}\]]{1,120})"#).unwrap()
+    });
+    let _ = RE_PRIV_LIKE_VALUE.get_or_init(|| {
+        // Values that signal privilege/conflict intent in duplicate params.
+        Regex::new(r#"(?i)^(?:admin|administrator|root|staff|internal|support|sudo|operator|superuser|moderator|owner|manager|editor|true|yes|on|enabled?|active|verified|approved|debug|test)$"#).unwrap()
+    });
+    let _ = RE_PROTO_LINE.get_or_init(|| {
+        // Redis/Memcached/RESP command at line start (after CRLF smuggling).
+        Regex::new(r#"(?im)^\s*(?:set|get|flushall|flush_all|flushdb|config|eval|del|delete|unlink|keys|scan|hscan|sscan|zscan|incr|decr|incrby|decrby|lpush|rpush|lpushx|rpushx|linsert|lpop|rpop|rpoplpush|lrange|lrem|lset|ltrim|llen|lindex|lpos|hset|hsetnx|hmset|hget|hmget|hdel|hexists|hkeys|hlen|hvals|hincrby|hscan|sadd|srem|smove|spop|srandmember|scard|sismember|smembers|sdiff|sinter|sunion|zadd|zrem|zincrby|zrange|zrevrange|zrangebyscore|zrevrangebyscore|zrank|zrevrank|zscore|zcard|zcount|zlexcount|select|auth|expire|pexpire|expireat|persist|ttl|pttl|ping|echo|info|shutdown|slaveof|replicaof|debug|slowlog|client|cluster|migrate|rename|renamenx|sort|save|bgsave|bgrewriteaof|lastsave|monitor|sync|psync|replconf|swapdb|object|memory|xadd|xread|xrange|xlen|xtrim|publish|subscribe|psubscribe|punsubscribe|pubsub|bitcount|bitop|bitpos|getbit|setbit|dump|exists|restore|geoadd|georadius|geosearch|geopos|geodist|geohash|mget|mset|msetnx|pfadd|pfcount|pfmerge|randomkey|asking|readonly|readwrite|failover|reset|append|prepend|cas|gets|gat|touch|stats|version|quit|add|replace|getdel|getex)\b"#).unwrap()
+    });
+    let _ = RE_INLINE_PROTO.get_or_init(|| {
+        // Inline memcached/redis verb at value start (no CRLF needed).
+        Regex::new(r#"(?i)^(?:get|set|add|delete|flush_all|flushall|stats|version|quit|prepend|append|cas|gets|gat|touch|incr|decr|replace|gets)\s+\S"#).unwrap()
+    });
+    let _ = RE_INTERNAL_HOST.get_or_init(|| {
+        Regex::new(r#"(?i)(?:169\.254\.169\.254|localhost|127\.0\.0\.1|0\.0\.0\.0|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}|metadata\.google\.internal|host\.docker\.internal|kubernetes\.default|instance-data|(?:^|[^a-z0-9])(?:internal|intranet|corp|lan|home)\.)"#).unwrap()
+    });
+    let _ = RE_SCI_NUM.get_or_init(|| {
+        // Scientific-notation magnitudes: |exponent| >= 30 overflows f64/i64.
+        Regex::new(r#"(?i)^-?\d+(?:\.\d+)?[eE]([+-]?\d+)$"#).unwrap()
+    });
+    let _ = RE_FORM_BODY.get_or_init(|| {
+        // application/x-www-form-urlencoded shape: key=value&...
+        Regex::new(r#"(?i)^[a-zA-Z_][\w.\-]*="#).unwrap()
+    });
+    let _ = RE_MGMT_ENDPOINT.get_or_init(|| {
+        // Management/debug surfaces with no legitimate public exposure.
+        Regex::new(r#"(?i)/(?:api/v\d+/namespaces/|containers/json|jolokia|debug/(?:pprof|vars|requests)|_cat/|_cluster/|_nodes/|_all_docs|pprof/|_bulk|_sql\b|_xpack|_tasks|_snapshot|_aliases|_settings|_mapping)"#).unwrap()
+    });
+    let _ = RE_PARAM_PAIR_WIDE.get_or_init(|| {
+        // Like RE_PARAM_PAIR but the value may contain whitespace/CRLF —
+        // needed to see protocol commands smuggled inside a parameter.
+        Regex::new(r#"(?i)["']?([a-z_][a-z0-9_.\-]{0,40})["']?\s*[:=]\s*["']?([^&"',}\]]{1,300})"#).unwrap()
     });
     let _ = RE_APPLIANCE_CVE.get_or_init(|| {
         // Known-vulnerable appliance/admin endpoints (PAN-OS, FortiGate,
@@ -2248,9 +2341,19 @@ impl AstLexer {
 
         // 31. Data-semantic anomalies (candidate-grade heuristics).
         // Numeric: negative or absurdly large money/quantity fields.
+        // NUM_BIG captures the magnitude so canonical 32-bit boundary
+        // constants (INT32_MAX=2147483647, UINT32_MAX=4294967295) — legitimate
+        // developer test values — do not count as anomalies. 64-bit maxima
+        // still fire: no real field legitimately holds u64::MAX.
+        let num_big_hit = RE_NUM_BIG.get().unwrap().captures(&normalized).map(|c| {
+            c.get(1)
+                .and_then(|m| m.as_str().parse::<u128>().ok())
+                .map(|n| !matches!(n, 2_147_483_647 | 4_294_967_295))
+                .unwrap_or(true)
+        }).unwrap_or(false);
         if RE_NUMERIC_ANOMALY.get().unwrap().is_match(&normalized)
             && (RE_NUM_NEG.get().unwrap().is_match(&normalized)
-                || RE_NUM_BIG.get().unwrap().is_match(&normalized)
+                || num_big_hit
                 || RE_DISCOUNT100.get().unwrap().is_match(&normalized)
                 || RE_NUM_TINY.get().unwrap().is_match(&normalized))
         {
@@ -2566,6 +2669,475 @@ impl AstLexer {
         {
             tokens.has_malicious_upload = true;
             tokens.active_token_names.push("WEBDAV_SCRIPT_WRITE".to_string());
+        }
+
+        // O. Cache poisoning via unkeyed inputs: forwarding headers a shared
+        // cache may not key on, or cache-buster params. X-Forwarded-Host is
+        // excluded (host-header rules own it; benign when it mirrors Host),
+        // utm_* excluded (marketing URLs), Accept-Encoding/Range excluded
+        // (legitimate content negotiation).
+        for (k, _) in &req.headers {
+            if matches!(
+                k.to_ascii_lowercase().as_str(),
+                "x-forwarded-scheme" | "x-forwarded-port" | "x-original-url" | "x-rewrite-url"
+            ) {
+                tokens.has_cache_poisoning_signal = true;
+                tokens.active_token_names.push("CACHE_POISONING_UNKEYED_INPUT".to_string());
+                break;
+            }
+        }
+        if !tokens.has_cache_poisoning_signal {
+            for kv in req.query_string.to_ascii_lowercase().split(['&', ';']) {
+                let key = kv.split('=').next().unwrap_or("").trim();
+                if matches!(key, "cb" | "cachebuster" | "cache_bust" | "nocache" | "_") {
+                    tokens.has_cache_poisoning_signal = true;
+                    tokens.active_token_names.push("CACHE_POISONING_UNKEYED_INPUT".to_string());
+                    break;
+                }
+            }
+        }
+
+        // P. OAuth/OIDC flow anomalies — structural protocol semantics, not
+        // payload patterns: an authorize request without `state` (CSRF-able
+        // flow) or a token request carrying `redirect_uri` (parameter belongs
+        // to the authorize step; its presence signals flow confusion).
+        {
+            let pl = req.path.to_ascii_lowercase();
+            let ql = req.query_string.to_ascii_lowercase();
+            let bl = req.body.to_ascii_lowercase();
+            let has = |needle: &str| ql.contains(needle) || bl.contains(needle);
+            let authorize_ep = pl.contains("authorize") || pl.contains("/oauth") || pl.contains("/oidc");
+            let token_ep = pl.contains("/token") || pl.contains("/oidc/token");
+            let anomaly = (authorize_ep
+                && has("redirect_uri=")
+                && has("response_type=")
+                && !has("state="))
+                || (token_ep && has("grant_type=authorization_code") && has("redirect_uri="));
+            if anomaly {
+                tokens.has_oauth_oidc_signal = true;
+                tokens.active_token_names.push("OAUTH_FLOW_ANOMALY".to_string());
+            }
+        }
+
+        // Q. Mixed-script evasion: a single alphanumeric token blending Latin
+        // with Cyrillic/Greek lookalikes (paуссword, admин). Legit bilingual
+        // text keeps scripts in separate tokens; requiring a value-ish prefix
+        // (= : " ' & ? ; ( [ ,) keeps prose mentions benign.
+        for m in RE_MIXED_TOKEN.get().unwrap().find_iter(&inspectable) {
+            let tok = m.as_str();
+            let has_latin = tok.bytes().any(|b| b.is_ascii_alphabetic());
+            let has_nonascii = tok.chars().any(|c| !c.is_ascii());
+            if !(has_latin && has_nonascii && tok.chars().count() >= 4) {
+                continue;
+            }
+            let preceded = inspectable[..m.start()]
+                .chars()
+                .last()
+                .map(|c| matches!(c, '=' | ':' | '"' | '\'' | '&' | '?' | ';' | '(' | '[' | ','))
+                .unwrap_or(true);
+            if preceded {
+                tokens.has_unicode_normalization_signal = true;
+                tokens.active_token_names.push("MIXED_SCRIPT_EVASION".to_string());
+                break;
+            }
+        }
+
+        // R/S/T. Parameter-pair analyzers over the normalized request: they
+        // see query strings and JSON bodies in one canonical form.
+        {
+            let norm = tokens.normalized_text.clone();
+            let mut param_abs_path = false;
+            let mut cms_probe = false;
+            let mut benefits: Vec<f64> = Vec::new();
+            let mut ceilings: Vec<f64> = Vec::new();
+            for cap in RE_PARAM_PAIR.get().unwrap().captures_iter(&norm) {
+                let key = cap[1].to_ascii_lowercase();
+                let val = cap[2].to_ascii_lowercase();
+                // R. Absolute/traversal path values in non-file params. An
+                // absolute path alone is benign (C:\temp\file.txt, /etc/hosts,
+                // /var/www/htdocs are legitimate references) — it only signals
+                // LFI/archive-slip when the target is executable, a sensitive
+                // file, or a log file under /var/log.
+                if !param_abs_path {
+                    let abs_sensitive = val.starts_with("/etc/")
+                        || val.starts_with("/var/")
+                        || val.starts_with("/proc/")
+                        || val.starts_with("/root/")
+                        || val.starts_with("/boot/")
+                        || val.starts_with("/dev/")
+                        || val.starts_with("/sys/");
+                    let win_drive = val.len() >= 3
+                        && val.as_bytes()[0].is_ascii_alphabetic()
+                        && val.as_bytes()[1] == b':'
+                        && (val.as_bytes()[2] == b'\\' || val.as_bytes()[2] == b'/');
+                    if abs_sensitive || win_drive {
+                        let dangerous_ext = val.ends_with(".php")
+                            || val.ends_with(".jsp")
+                            || val.ends_with(".asp")
+                            || val.ends_with(".aspx")
+                            || val.ends_with(".sh")
+                            || val.ends_with(".dll")
+                            || val.ends_with(".exe")
+                            || val.ends_with(".py")
+                            || val.ends_with(".pl")
+                            || val.ends_with(".cgi")
+                            || val.ends_with(".ps1")
+                            || val.ends_with(".bat")
+                            || val.ends_with(".cmd")
+                            || val.ends_with(".vbs")
+                            || val.ends_with(".wsf");
+                        let sensitive_base = val.contains("passwd")
+                            || val.contains("shadow")
+                            || val.contains("wp-config")
+                            || val.contains(".env")
+                            || val.contains("id_rsa")
+                            || val.contains("id_dsa")
+                            || val.contains("web.config")
+                            || val.contains("boot.ini")
+                            || val.contains(".git/");
+                        let log_target = val.contains("/var/log/") && val.ends_with(".log");
+                        if dangerous_ext || sensitive_base || log_target || val.contains("..") {
+                            param_abs_path = true;
+                        }
+                    }
+                    let trav_sensitive = val.contains("..")
+                        && (val.contains("wp-config")
+                            || val.contains(".env")
+                            || val.contains("id_rsa")
+                            || val.contains("shadow")
+                            || val.contains("passwd")
+                            || val.contains(".git")
+                            || val.contains("web.config")
+                            || val.contains("boot.ini"));
+                    if trav_sensitive {
+                        param_abs_path = true;
+                    }
+                }
+                // S. CMS action params naming vulnerable plugin slugs.
+                if !cms_probe
+                    && matches!(key.as_str(), "action" | "do" | "task" | "operation" | "plugin" | "module")
+                    && RE_CMS_VULN_SLUG.get().unwrap().is_match(&val)
+                {
+                    cms_probe = true;
+                }
+                // T. Cross-param numeric anomaly: benefit fields (gamification
+                // currency) vs declared ceilings (max*/limit/cap/...)
+                if let Ok(n) = val.trim_end_matches(|c: char| !c.is_ascii_digit() && c != '.' && c != '-').parse::<f64>() {
+                    if matches!(key.as_str(),
+                        "bonus" | "score" | "points" | "credit" | "tip" | "gift" | "reward"
+                        | "coins" | "winnings" | "payout" | "cashback" | "rebate" | "jackpot"
+                        | "multiplier" | "xp")
+                    {
+                        benefits.push(n);
+                    } else if key.starts_with("max")
+                        || matches!(key.as_str(),
+                            "limit" | "limits" | "cap" | "caps" | "ceiling" | "bound" | "threshold")
+                    {
+                        ceilings.push(n);
+                    }
+                }
+            }
+            if param_abs_path {
+                tokens.has_path_traversal_signal = true;
+                tokens.active_token_names.push("PARAM_ABS_PATH_TRAVERSAL".to_string());
+            }
+            if cms_probe {
+                tokens.has_cms_wordpress_probe_signal = true;
+                tokens.active_token_names.push("CMS_PLUGIN_PROBE_ACTION".to_string());
+            }
+            // benefit >= 100 AND exceeds every ceiling by >50x
+            if benefits.iter().any(|&b| {
+                b >= 100.0 && ceilings.iter().any(|&c| b > c.abs() * 50.0 + f64::EPSILON)
+            }) {
+                tokens.has_business_logic_signal = true;
+                tokens.active_token_names.push("CROSS_PARAM_NUMERIC_ANOMALY".to_string());
+            }
+        }
+
+        // U. v7 lex proposals — parameter-level semantic anomalies.
+        {
+            let norm = tokens.normalized_text.clone();
+            let mut dup_keys: std::collections::HashMap<String, std::collections::BTreeSet<String>> =
+                std::collections::HashMap::new();
+            let mut bracket_keys: std::collections::HashMap<String, Vec<String>> =
+                std::collections::HashMap::new();
+            let mut bracket_keys_all: std::collections::HashMap<String, Vec<String>> =
+                std::collections::HashMap::new();
+            let mut magic_hash = false;
+            let mut hex_juggle = false;
+            let mut proto_inject = false;
+            let mut webhook_ssrf = false;
+            let mut open_redirect = false;
+            let mut int_overflow = false;
+            let mut classloader = false;
+
+            const SENSITIVE_KEYS: &[&str] = &[
+                "username", "user", "password", "passwd", "pass", "pwd", "email",
+                "token", "role", "admin", "account", "login", "auth", "secret",
+                "key", "permission", "permissions", "isadmin", "verified",
+                "credit", "balance", "price", "amount", "qty", "quantity",
+                "bid", "score", "bonus", "discount",
+            ];
+            const REDIRECT_KEYS: &[&str] = &[
+                "next", "redirect", "return", "url", "to", "target", "continue",
+                "continue_url", "redir", "go", "link", "out", "u", "return_url",
+                "returnto", "return_to", "dest", "destination", "redirect_url",
+                "redirect_uri", "redirect_to", "forward", "goto",
+            ];
+            const WEBHOOK_KEYS: &[&str] = &[
+                "callback", "webhook", "webhook_url", "notify_url", "notify",
+                "pingback", "endpoint", "delivery", "callback_url", "target_url",
+                "hook", "feed_url", "notify_uri", "call_back",
+            ];
+            const JUGGLE_KEYS: &[&str] = &[
+                "password", "passwd", "pass", "pwd", "token", "hash", "secret",
+                "key", "auth", "signature", "nonce", "code", "digest", "apikey",
+                "api_key", "session", "sess", "jwt", "credential", "id", "num",
+                "n", "qty", "count", "level", "pin", "otp", "year", "month",
+                "day", "version", "build",
+            ];
+            const BIG_NUM_KEYS: &[&str] = &[
+                "percent", "ratio", "multiplier", "factor", "count", "num",
+                "number", "percentage",
+            ];
+
+            for cap in RE_PARAM_PAIR.get().unwrap().captures_iter(&norm) {
+                let key = cap[1].to_ascii_lowercase();
+                let val = cap[2].to_string();
+                let vl = val.to_ascii_lowercase();
+                if !val.is_empty() {
+                    dup_keys.entry(key.clone()).or_default().insert(val.clone());
+                }
+                if !magic_hash
+                    && JUGGLE_KEYS.contains(&key.as_str())
+                    && RE_MAGIC_HASH.get().unwrap().is_match(&vl)
+                {
+                    magic_hash = true;
+                }
+                if !hex_juggle
+                    && JUGGLE_KEYS.contains(&key.as_str())
+                    && RE_HEX_NUM.get().unwrap().is_match(&vl)
+                {
+                    hex_juggle = true;
+                }
+                if !proto_inject && (vl.contains('\n') || vl.contains('\r') || vl.contains('+')) {
+                    // Wide pass below sees the full value including CRLF.
+                }
+                if !webhook_ssrf
+                    && WEBHOOK_KEYS.contains(&key.as_str())
+                    && RE_INTERNAL_HOST.get().unwrap().is_match(&vl)
+                {
+                    webhook_ssrf = true;
+                }
+                if !open_redirect && REDIRECT_KEYS.contains(&key.as_str()) {
+                    // Judge on the DECODED value: %2f%2f at value start means
+                    // protocol-relative //evil, while %3A%2F%2F is just an
+                    // https:// URL — the raw variant still holds the literal
+                    // escapes, so checking vl alone would FP on encoded URLs.
+                    let dvl = percent_decode_str(&val)
+                        .decode_utf8_lossy()
+                        .to_lowercase();
+                    if vl.starts_with("//")
+                        || dvl.starts_with("//")
+                        || dvl.contains("javascript:")
+                        || dvl.contains("data:")
+                        || dvl.contains("\\\\")
+                    {
+                        open_redirect = true;
+                    }
+                }
+                // Integer overflow: >u64::MAX all-digit values, |exp|>=30
+                // scientific notation, or extended big-number keys >= 1e6.
+                if !int_overflow {
+                    if val.bytes().all(|b| b.is_ascii_digit()) && val.len() >= 19 {
+                        if let Ok(n) = val.parse::<u128>() {
+                            if n > u64::MAX as u128 {
+                                int_overflow = true;
+                            }
+                        }
+                    }
+                    // Scientific notation only overflows when the value is
+                    // actually unrepresentable — 0e999 parses to 0.0 (benign
+                    // magic-hash shape), 1e309 parses to f64::INFINITY.
+                    if vl.parse::<f64>().map(|f| f.is_infinite()).unwrap_or(false) {
+                        int_overflow = true;
+                    }
+                    if BIG_NUM_KEYS.contains(&key.as_str()) {
+                        if let Ok(n) = vl.trim().parse::<f64>() {
+                            if n.abs() >= 1_000_000.0 {
+                                int_overflow = true;
+                            }
+                        }
+                    }
+                }
+            }
+            // Spring4Shell binding keys can exceed the pair-regex key limit
+            // (~58 chars), so check the normalized text for the
+            // classloader+pipeline signature directly.
+            if !classloader {
+                let nl = norm.to_ascii_lowercase();
+                if nl.contains("classloader")
+                    && (nl.contains("pipeline")
+                        || nl.contains("class.module")
+                        || nl.contains(".first."))
+                {
+                    classloader = true;
+                }
+            }
+            // Protocol injection needs values that may contain CRLF, which the
+            // narrow pair regex truncates at \s — use the wide variant here.
+            if !proto_inject {
+                const ALONE_PROTO: &[&str] = &[
+                    "eval", "config", "flushall", "flushdb", "flush_all",
+                    "slaveof",
+                    "replicaof", "psync", "replconf", "slowlog", "asking",
+                    "failover", "migrate", "monitor", "subscribe", "psubscribe",
+                    "pubsub", "shutdown",
+                ];
+                for cap in RE_PARAM_PAIR_WIDE.get().unwrap().captures_iter(&norm) {
+                    let vl = cap[2].to_ascii_lowercase();
+                    let vl_sp = vl.replace('+', " ");
+                    let has_nl = vl.contains('\n') || vl.contains('\r');
+                    if has_nl && RE_PROTO_LINE.get().unwrap().is_match(&vl_sp) {
+                        proto_inject = true;
+                        break;
+                    }
+                    // Dangerous-alone verbs (never legit param values) fire
+                    // when followed by arguments or a CRLF payload.
+                    let first = vl_sp.split_whitespace().next().unwrap_or("");
+                    if ALONE_PROTO.contains(&first)
+                        && (has_nl || vl_sp.split_whitespace().count() >= 2)
+                    {
+                        proto_inject = true;
+                        break;
+                    }
+                    // Inline memcached/redis verb without CRLF: argument must
+                    // look protocol-ish (/, :, RESP marker, or digit run).
+                    if !has_nl {
+                        if let Some(m) = RE_INLINE_PROTO.get().unwrap().find(&vl_sp) {
+                            let _ = m;
+                            let rest = vl_sp[m.end()..].trim_start();
+                            if rest.contains('/') || rest.contains(':') || rest.contains('*')
+                                || rest.contains('$')
+                                || rest.split_whitespace().any(|w| w.len() >= 4 && w.bytes().all(|b| b.is_ascii_digit()))
+                            {
+                                proto_inject = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            // Bracket-array params: sensitive keys (type juggling) and
+            // divergent values under one base key (pollution).
+            for cap in RE_BRACKET_PARAM.get().unwrap().captures_iter(&norm) {
+                let key = cap[1].to_ascii_lowercase();
+                let val = cap[2].to_string();
+                if SENSITIVE_KEYS.contains(&key.as_str()) {
+                    bracket_keys.entry(key.clone()).or_default().push(val.clone());
+                }
+                // Pollution view: ANY bracket base key repeating with divergent
+                // values — privilege flavor decides, not key sensitivity.
+                bracket_keys_all.entry(key).or_default().push(val);
+            }
+            // v86 pollution: same scalar key, >=2 distinct values, at least
+            // one privilege/conflict-flavored value.
+            let pollution = dup_keys.iter().any(|(_, vals)| {
+                vals.len() > 1 && vals.iter().any(|v| RE_PRIV_LIKE_VALUE.get().unwrap().is_match(v))
+            }) || bracket_keys_all.values().any(|vals| {
+                let distinct: std::collections::BTreeSet<&String> = vals.iter().collect();
+                distinct.len() > 1
+                    && vals.iter().any(|v| RE_PRIV_LIKE_VALUE.get().unwrap().is_match(v))
+            });
+            if pollution {
+                tokens.has_parameter_pollution_signal = true;
+                tokens.active_token_names.push("PARAM_VALUE_POLLUTION".to_string());
+            }
+            if magic_hash || hex_juggle || !bracket_keys.is_empty() {
+                tokens.has_type_juggling_signal = true;
+                tokens.active_token_names.push("LOOSE_TYPE_JUGGLING".to_string());
+            }
+            if proto_inject {
+                tokens.has_protocol_injection_signal = true;
+                tokens.active_token_names.push("REDIS_MEMCACHED_INJECTION".to_string());
+            }
+            if webhook_ssrf {
+                tokens.has_webhook_ssrf_signal = true;
+                tokens.active_token_names.push("WEBHOOK_CALLBACK_SSRF".to_string());
+            }
+            if open_redirect {
+                tokens.has_open_redirect_signal = true;
+                tokens.active_token_names.push("OPEN_REDIRECT_PARAM".to_string());
+            }
+            if int_overflow {
+                tokens.has_integer_overflow_signal = true;
+                tokens.active_token_names.push("INTEGER_OVERFLOW_BOUNDARY".to_string());
+            }
+            if classloader {
+                tokens.has_spring4shell_signal = true;
+                tokens.active_token_names.push("CLASSLOADER_BINDING_INJECTION".to_string());
+            }
+        }
+
+        // V. Request-level signals: CONNECT tunneling, HTTP/2 pseudo-headers,
+        // management endpoints, Content-Type confusion, WebSocket abuse.
+        if req.method.eq_ignore_ascii_case("CONNECT") {
+            tokens.has_connect_tunnel_signal = true;
+            tokens.active_token_names.push("CONNECT_TUNNEL_ABUSE".to_string());
+        }
+        for (k, _) in &req.headers {
+            if k.starts_with(':') {
+                tokens.has_http2_pseudo_header = true;
+                tokens.active_token_names.push("HTTP2_PSEUDO_HEADER_LEAK".to_string());
+                break;
+            }
+        }
+        {
+            let pq = format!("{}?{}", req.path, req.query_string).to_ascii_lowercase();
+            if RE_MGMT_ENDPOINT.get().unwrap().is_match(&pq) {
+                tokens.has_management_endpoint_signal = true;
+                tokens.active_token_names.push("MANAGEMENT_ENDPOINT_PROBE".to_string());
+            }
+            // WebSocket upgrade carrying injection-flavored subprotocols.
+            let is_ws = req.headers.iter().any(|(k, v)| {
+                k.eq_ignore_ascii_case("upgrade") && v.eq_ignore_ascii_case("websocket")
+            });
+            if is_ws {
+                for (k, v) in &req.headers {
+                    if k.eq_ignore_ascii_case("sec-websocket-protocol") {
+                        let vl = v.to_ascii_lowercase();
+                        if vl.contains("sql") || vl.contains("script") || vl.contains("exec")
+                            || vl.contains("eval") || vl.contains("admin") || vl.contains("..")
+                            || vl.contains('<') || vl.contains("javascript")
+                        {
+                            tokens.has_websocket_abuse_signal = true;
+                            tokens.active_token_names.push("WEBSOCKET_SUBPROTOCOL_ABUSE".to_string());
+                            break;
+                        }
+                    }
+                }
+            }
+            // Content-Type confusion: declared type contradicts body shape.
+            let ct = req.headers.iter()
+                .find(|(k, _)| k.eq_ignore_ascii_case("content-type"))
+                .map(|(_, v)| v.to_ascii_lowercase());
+            if let Some(ct) = ct {
+                let body_t = req.body.trim_start();
+                let first = body_t.chars().next().unwrap_or(' ');
+                let body_json = first == '{' || first == '[';
+                let body_xml = first == '<';
+                let body_form = RE_FORM_BODY.get().unwrap().is_match(body_t);
+                let json_ct = ct.contains("json");
+                let xml_ct = ct.contains("xml");
+                let form_ct = ct.contains("x-www-form-urlencoded");
+                if (json_ct && (body_xml || body_form))
+                    || (xml_ct && (body_json || body_form))
+                    || (form_ct && (body_json || body_xml))
+                {
+                    tokens.has_content_type_confusion_signal = true;
+                    tokens.active_token_names.push("CONTENT_TYPE_CONFUSION".to_string());
+                }
+            }
         }
 
         tokens.active_token_names.sort();
