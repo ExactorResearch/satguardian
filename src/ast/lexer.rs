@@ -51,6 +51,49 @@ pub struct LexicalTokens {
     pub has_wordpress_probe: bool,
     pub has_sensitive_file_probe: bool,
     pub has_framework_exploit_probe: bool,
+    // Injection coverage islands (v2)
+    pub has_nosql_operator: bool,
+    pub has_ssti_expression: bool,
+    pub has_crlf_header_injection: bool,
+    pub has_host_header_anomaly: bool,
+    pub has_malicious_upload: bool,
+    pub has_sqli_danger_func: bool,
+    pub has_xxe_entity: bool,
+    // Injection coverage islands (v3)
+    pub has_sqli_subquery: bool,
+    pub has_sqli_case_having: bool,
+    pub has_cmd_ifs_binary: bool,
+    pub has_ssti_arith: bool,
+    pub has_ssti_embedded: bool,
+    pub has_ssrf_userinfo: bool,
+    pub has_ssrf_scheme_rel: bool,
+    pub has_ldap_injection: bool,
+    pub has_deserialization: bool,
+    pub has_xpath_injection: bool,
+    pub has_host_absolute_uri: bool,
+    pub has_method_override_abuse: bool,
+    pub has_graphql_abuse: bool,
+    // v6 protocol/semantic layer
+    pub has_smuggling_desync: bool,
+    pub has_webdav_method: bool,
+    pub has_privileged_field: bool,
+    pub has_numeric_anomaly: bool,
+    pub has_nested_quantifier: bool,
+    pub has_csv_formula: bool,
+    pub has_log_forgery: bool,
+    pub has_cache_deception: bool,
+    pub has_ansi_escape: bool,
+    pub has_punycode_host: bool,
+    pub has_saml_protocol: bool,
+    pub has_oauth_redirect_abuse: bool,
+    pub has_xslt_stylesheet: bool,
+    pub has_xquery_expr: bool,
+    pub has_smtp_command: bool,
+    pub has_jsonrpc_exec: bool,
+    pub has_absolute_upload_path: bool,
+    pub has_soap_action_abuse: bool,
+    pub has_hidden_chars: bool,
+    pub has_keyword_smuggling: bool,
     pub active_token_names: Vec<String>,
 }
 
@@ -91,6 +134,88 @@ static RE_SSRF_PARAM_CONTEXT: OnceLock<Regex> = OnceLock::new();
 static RE_XSS_REMOTE_SCRIPT: OnceLock<Regex> = OnceLock::new();
 static RE_POWERSHELL_EXEC: OnceLock<Regex> = OnceLock::new();
 static RE_BASE64_DECODE: OnceLock<Regex> = OnceLock::new();
+static RE_NOSQL_JSON_OP: OnceLock<Regex> = OnceLock::new();
+static RE_NOSQL_BRACKET_OP: OnceLock<Regex> = OnceLock::new();
+static RE_SSTI_JINJA: OnceLock<Regex> = OnceLock::new();
+static RE_SSTI_FREEMARKER: OnceLock<Regex> = OnceLock::new();
+static RE_SSTI_VELOCITY: OnceLock<Regex> = OnceLock::new();
+static RE_CRLF_RESPONSE_HDR: OnceLock<Regex> = OnceLock::new();
+static RE_UPLOAD_FILENAME: OnceLock<Regex> = OnceLock::new();
+static RE_UPLOAD_CTX: OnceLock<Regex> = OnceLock::new();
+static RE_SERVER_SIDE_TAG: OnceLock<Regex> = OnceLock::new();
+static RE_SSRF_ALT_TARGET: OnceLock<Regex> = OnceLock::new();
+static RE_SSRF_INTERNAL_TLD: OnceLock<Regex> = OnceLock::new();
+static RE_WIN_SHELL_BINARY: OnceLock<Regex> = OnceLock::new();
+static RE_SHELL_METACHAR_GATE: OnceLock<Regex> = OnceLock::new();
+static RE_SQL_ERROR_FUNC: OnceLock<Regex> = OnceLock::new();
+static RE_PHP_WRAPPER: OnceLock<Regex> = OnceLock::new();
+static RE_SHELLSHOCK: OnceLock<Regex> = OnceLock::new();
+static RE_PATH_BINARY: OnceLock<Regex> = OnceLock::new();
+static RE_XXE_ENTITY: OnceLock<Regex> = OnceLock::new();
+static RE_HEX_BLOB: OnceLock<Regex> = OnceLock::new();
+static RE_JNDI_CHAR_EXTRACT: OnceLock<Regex> = OnceLock::new();
+static RE_JNDI_DATE_LOOKUP: OnceLock<Regex> = OnceLock::new();
+// Injection coverage islands (v3)
+static RE_SQL_SUBQUERY: OnceLock<Regex> = OnceLock::new();
+static RE_SQL_CASE_HAVING: OnceLock<Regex> = OnceLock::new();
+static RE_UNION_SELECT_OBF: OnceLock<Regex> = OnceLock::new();
+static RE_CMD_IFS_BINARY: OnceLock<Regex> = OnceLock::new();
+static RE_SSTI_ARITH: OnceLock<Regex> = OnceLock::new();
+static RE_SSTI_EMBEDDED: OnceLock<Regex> = OnceLock::new();
+static RE_SSTI_EXPR_PARAM: OnceLock<Regex> = OnceLock::new();
+static RE_SSRF_USERINFO: OnceLock<Regex> = OnceLock::new();
+static RE_SSRF_SCHEME_REL: OnceLock<Regex> = OnceLock::new();
+static RE_LDAP_META: OnceLock<Regex> = OnceLock::new();
+static RE_DESERIALIZATION: OnceLock<Regex> = OnceLock::new();
+static RE_PHP_FUNC_CALLBACK: OnceLock<Regex> = OnceLock::new();
+static RE_PHP_VAR_CALL: OnceLock<Regex> = OnceLock::new();
+static RE_PHP_CONCAT_ASSIGN: OnceLock<Regex> = OnceLock::new();
+static RE_WIN_LOLBIN: OnceLock<Regex> = OnceLock::new();
+static RE_XPATH_EXPR: OnceLock<Regex> = OnceLock::new();
+static RE_XPATH_FUNC: OnceLock<Regex> = OnceLock::new();
+static RE_XPATH_AXIS: OnceLock<Regex> = OnceLock::new();
+static RE_UNC_PATH: OnceLock<Regex> = OnceLock::new();
+static RE_UNC_BENIGN_EXT: OnceLock<Regex> = OnceLock::new();
+static RE_ADS_PATH: OnceLock<Regex> = OnceLock::new();
+static RE_CMD_EXEC_TRICK: OnceLock<Regex> = OnceLock::new();
+static RE_NOSQL_ADMIN_CMD: OnceLock<Regex> = OnceLock::new();
+static RE_SQL_JSON_FIELD: OnceLock<Regex> = OnceLock::new();
+static RE_CRLF_ANY_HDR: OnceLock<Regex> = OnceLock::new();
+static RE_CRLF_CONTENT_HDR: OnceLock<Regex> = OnceLock::new();
+static RE_EMAIL_ENCODED_WORD: OnceLock<Regex> = OnceLock::new();
+static RE_SSTI_SMARTY: OnceLock<Regex> = OnceLock::new();
+static RE_SSRF_CLOUD_SCHEME: OnceLock<Regex> = OnceLock::new();
+static RE_XXE_REF: OnceLock<Regex> = OnceLock::new();
+static RE_PHP_DOLLAR_BRACE_CALL: OnceLock<Regex> = OnceLock::new();
+static RE_PHP_EVAL_MODIFIER: OnceLock<Regex> = OnceLock::new();
+static RE_PHP_GADGET_CLASS: OnceLock<Regex> = OnceLock::new();
+static RE_NOSQL_DB_PATH: OnceLock<Regex> = OnceLock::new();
+static RE_NESTED_QUANT: OnceLock<Regex> = OnceLock::new();
+static RE_CSV_FORMULA: OnceLock<Regex> = OnceLock::new();
+static RE_LOG_LINE: OnceLock<Regex> = OnceLock::new();
+static RE_SAML_PROTO: OnceLock<Regex> = OnceLock::new();
+static RE_XSLT: OnceLock<Regex> = OnceLock::new();
+static RE_XQUERY: OnceLock<Regex> = OnceLock::new();
+static RE_SMTP_CMD: OnceLock<Regex> = OnceLock::new();
+static RE_JSONRPC_EXEC: OnceLock<Regex> = OnceLock::new();
+static RE_ABS_UPLOAD_PATH: OnceLock<Regex> = OnceLock::new();
+static RE_NUMERIC_ANOMALY: OnceLock<Regex> = OnceLock::new();
+static RE_PRIVILEGED_KEY: OnceLock<Regex> = OnceLock::new();
+static RE_WEBASSET_EXT: OnceLock<Regex> = OnceLock::new();
+static RE_ACCT_PATH: OnceLock<Regex> = OnceLock::new();
+static RE_REDIRECT_URI: OnceLock<Regex> = OnceLock::new();
+static RE_NUM_NEG: OnceLock<Regex> = OnceLock::new();
+static RE_NUM_BIG: OnceLock<Regex> = OnceLock::new();
+static RE_DISCOUNT100: OnceLock<Regex> = OnceLock::new();
+static RE_PRIV_VAL: OnceLock<Regex> = OnceLock::new();
+static RE_TE_VALUE: OnceLock<Regex> = OnceLock::new();
+static RE_MAIL_HDR_JSON: OnceLock<Regex> = OnceLock::new();
+static RE_KEYWORD_SMUGGLE: OnceLock<Regex> = OnceLock::new();
+static RE_B64_XML_SAML: OnceLock<Regex> = OnceLock::new();
+static RE_BRAND_HOST: OnceLock<Regex> = OnceLock::new();
+static RE_CYR_BRAND: OnceLock<Regex> = OnceLock::new();
+static RE_NUM_TINY: OnceLock<Regex> = OnceLock::new();
+static RE_APPLIANCE_CVE: OnceLock<Regex> = OnceLock::new();
 
 fn init_regexes() {
     let _ = RE_TAUT_PAIR.get_or_init(|| {
@@ -109,10 +234,11 @@ fn init_regexes() {
         Regex::new(r#"(?i)\bunion(?:\s+|/\*.*?\*/|[(])+(?:all(?:\s+|/\*.*?\*/|[(])+)?select\b"#).unwrap()
     });
     let _ = RE_SQL_SLEEP.get_or_init(|| {
-        Regex::new(r#"(?i)\b(?:sleep|waitfor\s+delay|benchmark|pg_sleep)\s*\("#).unwrap()
+        // waitfor delay takes a string literal, not parentheses; the rest are calls.
+        Regex::new(r#"(?i)\bwaitfor\s+delay\b|\b(?:sleep|benchmark|pg_sleep)\s*\("#).unwrap()
     });
     let _ = RE_STACKED_DDL.get_or_init(|| {
-        Regex::new(r#"(?i)(?:;|\bunion\b).*?\b(?:drop\s+table|truncate\s+table|alter\s+table|insert\s+into|delete\s+from)\b"#).unwrap()
+        Regex::new(r#"(?i)(?:;|\bunion\b).*?\b(?:drop\s+(?:table|database|user|index|view|procedure|function|trigger)|truncate\s+table|alter\s+table|insert\s+into|delete\s+from|create\s+(?:user|database|table|index|view|procedure|function|trigger)|grant\b|revoke\b|handler\s+\w+\s+(?:open|read|close)|call\s+\w+|do\s+\w+|exec\b|execute\b|openrowset|opendatasource|openquery|xp_\w+|sp_oa\w+|sp_addextendedproc|bulk\s+insert|json_table|get_lock|json_value|json_query|openjson)\b"#).unwrap()
     });
     let _ = RE_XSS_SCRIPT.get_or_init(|| {
         // The leading `<` alternative was removed: it turned every closing </script>
@@ -129,47 +255,49 @@ fn init_regexes() {
     });
     let _ = RE_XSS_JS_URI.get_or_init(|| {
         // Only executable data documents are flagged; image/font data URIs are benign.
-        Regex::new(r#"(?i)(?:javascript|vbscript):[^\s'"]+|data:(?:text/html|application/xhtml\+xml|image/svg\+xml|text/javascript)[^\s'"]*"#).unwrap()
+        // image/svg+xml data URIs are inert in <img>/CSS contexts (scripts only run
+        // when the SVG is loaded as a document); <svg onload> is covered separately.
+        Regex::new(r#"(?i)(?:javascript|vbscript|mocha|feed|livescript):[^\s'"]+|data:(?:text/html|application/xhtml\+xml|text/javascript)[^\s'"]*"#).unwrap()
     });
     let _ = RE_XSS_SVG.get_or_init(|| {
         Regex::new(r#"(?i)<\s*svg[\s/]+onload\s*="#).unwrap()
     });
     let _ = RE_SHELL_CHAIN.get_or_init(|| {
         // `${IFS}` is a whitespace substitute used to bypass naive shell filters.
-        Regex::new(r#"(?i)(?:;|\|\||\||&&|[\r\n]+|`|\$\([^)]+\))(?:\s|\$\{?IFS\}?)*(?:cat|bash|curl|wget|nc|whoami|id|sh|powershell|cmd\.exe|type|ls|netstat|uname|python[0-9.]*|perl|php|ruby|node)\b"#).unwrap()
+        Regex::new(r#"(?i)(?:;|\|\||\||&&|[\r\n]+|`|\$\([^)]+\))(?:\s|\$\{?IFS\}?)*(?:cat|bash|curl|wget|nc|whoami|id|sh|powershell|cmd\.exe|netstat|uname|python[0-9.]*|perl|php|ruby|node)\b"#).unwrap()
     });
     let _ = RE_BASE64_DECODE.get_or_init(|| {
         // `base64` alone is common in data URIs; only flag the decoder invocation.
         Regex::new(r#"(?i)(?:;|&&|\|\||\||[\r\n])\s*base64\s+(?:-d|--decode|-D)\b"#).unwrap()
     });
     let _ = RE_POWERSHELL_EXEC.get_or_init(|| {
-        Regex::new(r#"(?i)\b(?:powershell(?:\.exe)?|pwsh)\s+(?:-(?:nop|noprofile|enc|encodedcommand|command|executionpolicy|w|windowstyle)\b|/(?:c|k)\b)|\bcmd(?:\.exe)?\s+/c\b"#).unwrap()
+        Regex::new(r#"(?i)\b(?:powershell(?:\.exe)?|pwsh)\s+(?:-(?:nop|noprofile|enc|encodedcommand|command|executionpolicy|w|windowstyle)\b|/(?:c|k)\b)|\bcmd(?:\.exe)?\s+(?:/\w+\s+)*\/c\b"#).unwrap()
     });
     let _ = RE_SUBSHELL.get_or_init(|| {
         Regex::new(r#"(?i)(?:`[^`]+`|\$\([^)]+\))"#).unwrap()
     });
     let _ = RE_DYNAMIC_EVAL.get_or_init(|| {
         // No trailing \b: alternatives ending in `(` are followed by a non-word char.
-        Regex::new(r#"(?i)\b(?:os\.system|subprocess\.|eval\(|exec\(|runtime\.getruntime\(\)\.exec|getruntime\(\)\.exec|new\s+processbuilder|processbuilder\s*\(|passthru\(|shell_exec\()"#).unwrap()
+        Regex::new(r#"(?i)\b(?:os\.system|subprocess\.|eval\(|exec\(|system\s*\(|assert\s*\(|popen\s*\(|proc_open\s*\(|pcntl_exec\s*\(|mail\s*\(|runtime\.getruntime\(\)\.exec|getruntime\(\)\.exec|new\s+processbuilder|processbuilder\s*\(|passthru\(|shell_exec\()"#).unwrap()
     });
     let _ = RE_PATH_TRAVERSAL.get_or_init(|| {
         // Accept backslash targets and collapsed dots (`....//`) used to evade filters.
         Regex::new(r#"(?i)(?:\.\./|\.\.\\|%2e%2e%2f|%2e%2e/|\.\.%2f|%2e%2e%5c|%252e%252e%252f|(?:\.{2,}[/\\])+)(?:.*?(?:etc/passwd|etc/shadow|boot\.ini|windows[/\\]win\.ini|proc/self|winnt[/\\]win\.ini))"#).unwrap()
     });
     let _ = RE_PATH_DIRECT_SYSTEM.get_or_init(|| {
-        Regex::new(r#"(?i)(?:/proc/self/(?:environ|cmdline|maps)|/etc/passwd|/etc/shadow|/windows/win\.ini|c:[/\\]boot\.ini)"#).unwrap()
+        Regex::new(r#"(?i)(?:/proc/self/(?:environ|cmdline|maps|fd)|/proc/\d+/(?:environ|cmdline|fd)|/dev/(?:fd|stdin|stdout|stderr)(?:/|$|\s|"|')?|/etc/passwd|/etc/shadow|/windows/win\.ini|c:[/\\]boot\.ini|[a-zA-Z]:[/\\](?:windows|winnt|program files)[/\\]|[/\\]win\.ini\b|[/\\]windows[/\\]system32[/\\]|secrets/kubernetes\.io|serviceaccount/token|/var/run/secrets|/run/secrets|/var/log/[^\s"']+|/var/log/[^\s"']*\.log|(?:^|[/\\])(?:access|error|debug|mysql|postgresql|auth|syslog|messages|secure)(?:\.\d+)?\.log\b)"#).unwrap()
     });
     let _ = RE_PATH_DOTS_ONLY.get_or_init(|| {
         Regex::new(r#"(?i)(?:\.\./|\.\.\\|%2e%2e%2f|%252e%252e%252f|(?:\.{2,}[/\\])+){2,}"#).unwrap()
     });
     let _ = RE_SSRF_CLOUD.get_or_init(|| {
-        Regex::new(r#"(?i)(?:https?|gopher|dict|file)://(?:169\.254\.169\.254|169\.254\.170\.2|100\.100\.100\.200|metadata\.google\.internal|instance-data|\[fd00:ec2::254\]|2852039166)(?::\d+)?(?:/|$|\?)"#).unwrap()
+        Regex::new(r#"(?i)(?:https?|gopher|dict|file|ftp|ldap|ldaps|tftp|smb|netdoc|jar|iiop|corba|sftp|nfs|afs)://(?:169\.254\.169\.254|169\.254\.170\.2|100\.100\.100\.200|metadata\.google\.internal|instance-data|\[fd00:ec2::254\]|2852039166)(?::\d+)?(?:/|$|\?|#)"#).unwrap()
     });
     let _ = RE_SSRF_PRIVATE.get_or_init(|| {
-        Regex::new(r#"(?i)(?:https?|gopher|dict|file)://(?:127\.\d{1,3}(?:\.\d{1,3}){0,2}|localhost|0\.0\.0\.0|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|\[::1\]|\[::ffff:127\.0\.0\.1\]|\[::ffff:7f00:1\]|\[::ffff:169\.254\.169\.254\]|\[::ffff:a9fe:a9fe\]|2130706433|0x7f000001)(?::\d+)?(?:/|$|\?)"#).unwrap()
+        Regex::new(r#"(?i)(?:https?|gopher|dict|file|ftp|ldap|ldaps|tftp|smb|netdoc|jar|iiop|corba|sftp|nfs|afs)://(?:127\.\d{1,3}(?:\.\d{1,3}){0,2}|localhost|0\.0\.0\.0|\[::\]|\[::1\]|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|\[::ffff:127\.0\.0\.1\]|\[::ffff:7f00:1\]|\[::ffff:169\.254\.169\.254\]|\[::ffff:a9fe:a9fe\]|\[(?:fe80|fe90|fea0|feb0|fec0|fed0|fee0|fef0|fc|fd)[0-9a-f:]*\]|2130706433|0x7f000001)(?::\d+)?(?:/|$|\?|#)"#).unwrap()
     });
     let _ = RE_SSRF_PARAM_CONTEXT.get_or_init(|| {
-        Regex::new(r#"(?i)(?:^|[^a-z0-9_])(?:url|uri|host|hostname|redirect|redirect_uri|redirecturl|return|returnurl|next|continue|callback|callbackurl|webhook|webhookurl|target|targeturl|dest|destination|proxy|fetch|src|source|image|img|file|path|domain|endpoint|check|connect)\s*['"]?\s*[=:]\s*['"]?$"#).unwrap()
+        Regex::new(r#"(?i)(?:^|[^a-z0-9_])(?:url|uri|urls?|host|hostname|redirect|redirect_uri|redirecturl|return|returnurl|next|continue|callback|callbackurl|webhook|hook|webhookurl|target|targeturl|dest|destination|proxy|fetch|src|source|image|img|file|path|domain|endpoint|check|connect|origem|origen|u|to|link|go|redir|feed)\s*['"]?\s*[=:]\s*['"\[\{,]*$"#).unwrap()
     });
     let _ = RE_COMMENT_STRIP.get_or_init(|| {
         Regex::new(r#"/\*.*?\*/"#).unwrap()
@@ -177,13 +305,13 @@ fn init_regexes() {
     let _ = RE_WORDPRESS_PROBE.get_or_init(|| {
         // Generic index.php/wp.php are NOT WordPress-specific and used to flag ThinkPHP probes
         // as CMS reconnaissance. Keep only unambiguous WordPress paths.
-        Regex::new(r#"(?i)(?:/wp-(?:admin|login\.php|includes|content|cron\.php|config\.php|json)|xmlrpc\.php|\?author=\d+|wlwmanifest\.xml)"#).unwrap()
+        Regex::new(r#"(?i)(?:/wp-(?:admin|login\.php|includes|content|cron\.php|config\.php)|/wp/v\d+/users(?:/|$|\?)|/wp-json/wp/v\d+/users(?:/|$|\?)|rest_route=/wp/v\d+/users|\?author=\d+|wlwmanifest\.xml|wp-trackback\.php|wp-cron\.php|wp-links-opml\.php|wp-json/oembed|/license\.txt|/readme\.html|wp-mail\.php|wp-comments-post\.php|wp-signup\.php|wp-activate\.php|wp-register\.php|wp-admin/(?:install|upgrade)\.php|author-sitemap\.xml|wp-sitemap\.xml)"#).unwrap()
     });
     let _ = RE_SENSITIVE_EXPOSURE.get_or_init(|| {
-        Regex::new(r#"(?i)(?:/\.env(?:\.[a-z0-9_-]+)?|/\.git(?:/|$|\?)|/\.aws/credentials|/(?:phpmyadmin|pma|adminer\.php|actuator(?:/[a-z]+)?|swagger-ui|\.svn|docker-compose\.ya?ml|Dockerfile|dump\.sql|backup\.sql|web\.config))"#).unwrap()
+        Regex::new(r#"(?i)(?:/\.env(?:\.[a-z0-9_-]+)?|/\.git(?:/|$|\?)|/\.aws(?:/|$|\?)|/\.ssh(?:/|$|\?)|/(?:phpmyadmin|pma|adminer\.php|actuator(?:/[a-z]+)?|swagger-ui|\.svn|\.hg|\.bzr|CVS|META-INF|docker-compose\.ya?ml|Dockerfile|\.dockerignore|dump\.sql|backup\.sql|db\.sql|database\.sql|dump\.sql\.gz|backup\.tar\.gz|site\.tar\.gz|www\.zip|public_html\.zip|backup\.zip|db\.zip|mysql\.sql|data\.sql|web\.config|app\.config|connectionstrings\.config|Web\.(?:Debug|Release)\.config|global\.asax|server-status|server-info|nginx_status|stub_status|fpm-status|balancer-manager|phpinfo(?:\.php)?|info\.php|test\.php|i\.php|phpversion\.php|elmah\.axd|trace\.axd|glimpse\.axd|elmah|glimpse|trace\.axd|ex4004|iisreset\.log|\.npmrc|\.pypirc|\.pgpass|\.my\.cnf|\.mylogin\.cnf|\.dockercfg|\.DS_Store|\.htpasswd|\.htaccess|\.user\.ini|crossdomain\.xml|clientaccesspolicy\.xml|server\.xml|WEB-INF|appsettings[^/]*\.json|terraform\.tfstate|\.tfstate|jolokia|hawtio|jmx-console|web-console|host-manager|manager/[a-z0-9_.-]+|_cat/[a-z0-9_.-]+|_cluster/[a-z0-9_.-]+|_nodes/[a-z0-9_.-]+|_(?:alias|tasks|snapshot|sql|xpack|security|watcher|ml|rollup|transform|slm|ilm|fleet|features)/?|debug/(?:pprof|vars|requests)|shell\.php|c99\.php|r57\.php|wso\.php|id_rsa|id_dsa|id_ecdsa|id_ed25519|\.bash_history|\.zsh_history|\.mysql_history|\.psql_history|\.sqlite_history|\.python_history|\.node_repl_history|\.rediscli_history|\.lesshst|\.viminfo|\.wget-hsts|\.bashrc|\.bash_profile|\.zshrc|\.profile|\.gitconfig|\.git-credentials|\.curlrc|\.inputrc|\.selected_editor|\.sudo_as_admin_successful|\.yarnrc|\.netrc|\.gem/credentials|\.cargo/credentials|\.docker/config\.json|\.kube/config|kubeconfig|\.minikube|\.helm|database\.ya?ml|secrets\.ya?ml|credentials\.json|credentials\.ya?ml|service-account\.json|firebase-adminsdk[^/]*\.json|adminsdk[^/]*\.json|key\.json|private-key\.json|client_secret[^/]*\.json|wp-config\.php[~.]|\.idea|\.vscode|\.vs|\.project|\.settings|\.classpath|\.cproject|nbproject|\.gitlab-ci\.yml|Jenkinsfile|\.travis\.yml|\.circleci/|azure-pipelines\.yml|bitbucket-pipelines\.yml|\.drone\.yml|appveyor\.yml|\.buildkite/|cloudbuild\.yaml|\.github/workflows/|values\.yaml|Chart\.yaml|firebase\.json|\.firebaserc|firestore\.rules|storage\.rules|database\.rules\.json|remoteconfig\.template\.json|serverless\.ya?ml|samconfig\.toml|template\.ya?ml|cdk\.json|amplify\.ya?ml|netlify\.toml|vercel\.json|now\.json|app\.yaml|dispatch\.yaml|cron\.yaml|queue\.yaml|datastore/index\.yaml|main\.tf|variables\.tf|outputs\.tf|terraform\.tfvars|backend\.tf|locals\.tf|Pulumi\.yaml|Pulumi\.dev\.yaml|cdktf\.json|unattend\.xml|sysprep\.inf|autounattend\.xml|sysprep\.xml|panther/unattend|solr/admin|kibana/api|consul/v1|vault/v\d+|eureka/apps|services/registry|gateway/routes|hystrix\.stream|turbine\.stream|/[^/]*\.(?:pem|key|p12|pfx|jks|keystore|ppk)$)(?:\?|/|$|\.php|\.axd|\.json|\.ya?ml|\.xml|\.tf|\.tfvars|\.toml|\.rules|\.log|\.txt|\.sql|\.zip|\.tar\.gz|\.pem|\.key|\.p12|\.pfx|\.jks|\.keystore|\.ppk|\s))"#).unwrap()
     });
     let _ = RE_FRAMEWORK_EXPLOIT.get_or_init(|| {
-        Regex::new(r#"(?i)(?:\$\{jndi:(?:ldap|rmi|dns|corba|iiop)|#\{T\([a-z0-9_.]+\)|\$\{T\([a-z0-9_.]+\)|_ignition/execute-solution|invokefunction&function=call_user_func)"#).unwrap()
+        Regex::new(r#"(?i)(?:\$\{jndi:(?:ldap|rmi|dns|corba|iiop)|\$\{jndi:|\$\{(?:docker|k8s|kubernetes|spring|sys|main|bundle|web|env|lower|upper|date|hostName|ctx|sd|springProfiles|java|os|line|marker|map|jvmrunargs|base64|url|env|sys|docker|k8s|kubernetes|spring|main|bundle|web|hostName|ctx|sd|springProfiles|java|os|line|marker|map|jvmrunargs)[^}]{0,200}\}|#\{T\([a-z0-9_.]+\)|\$\{T\([a-z0-9_.]+\)|class\.module\.classLoader|class\.module\.resources|denyMethodExecution|xwork\.MethodAccessor|%\{#|_ignition/execute-solution|invokefunction&function=call_user_func|eval-stdin\.php|#post_render|#lazy_builder|\[\]\s*=\s*(?:exec|eval|assert|system|passthru|shell_exec|call_user_func|create_function|preg_replace)\b|\$\{\(|!!<tag:yaml\.org|python/object|javax\.script|ScriptEngineManager|URLClassLoader|TemplatesImpl|JdbcRowSetImpl|SnakeYAML|<!--#(?:exec|include|config|echo|printenv|set|if)\b)"#).unwrap()
     });
     let _ = RE_MYSQL_EXEC_COMMENT.get_or_init(|| {
         // /*!50000UNION*/ is executed by MySQL, so its content must be inspected, not stripped.
@@ -218,6 +346,366 @@ fn init_regexes() {
     });
     let _ = RE_IIS_BACKSLASH.get_or_init(|| {
         Regex::new(r#"(?i)%u2216|%u005c|%uff3c"#).unwrap()
+    });
+    let _ = RE_NOSQL_JSON_OP.get_or_init(|| {
+        // MongoDB operator keys in JSON position: {"$ne": ...}, {"$where": ...}
+        Regex::new(r#""\$(?:ne|gt|gte|lt|lte|in|nin|regex|where|exists|expr|not|mod|all|size|elemMatch|type|options|jsonSchema|text|lookup|function|accumulator|facet|merge|out|group|project|densify|redact|documents|let|graphLookup|unionWith|search|searchMeta|vectorSearch|changeStream|listCollections)"\s*:"#).unwrap()
+    });
+    let _ = RE_NOSQL_BRACKET_OP.get_or_init(|| {
+        // PHP/Express bracket operator injection: email[$ne]=1&clave[$gt]=
+        Regex::new(r#"\[\s*\$(?:ne|gt|gte|lt|lte|in|nin|regex|where|exists|expr|not)\s*\]"#).unwrap()
+    });
+    let _ = RE_SSTI_JINJA.get_or_init(|| {
+        // Jinja/Twig/Nunjucks/Tornado delimiters coupled with template engine sinks.
+        // Plain {{ }} without a sink stays benign (JS template objects, docs).
+        Regex::new(r#"(?s)\{\{[^{}]{0,800}?(?:_self\b|self\.|env\.|request\.|config\.|session\.|cycler|joiner|namespace|lipsum|forName|getRuntime|__class__|__mro__|__subclasses__|__globals__|__builtins__|__import__|os\.|subprocess|popen|['"](?:system|exec|eval|passthru|shell_exec|popen|proc_open|assert|create_function|call_user_func)['"]|\|(?:map|filter|reduce)\s*\(|child_process|execSync|mainModule|process\.mainModule|global\.process|constructor\s*\()[^{}]{0,800}?\}\}"#).unwrap()
+    });
+    let _ = RE_SSTI_FREEMARKER.get_or_init(|| {
+        // FreeMarker ${...} expressions invoking Java reflection or template utils.
+        Regex::new(r#"(?s)(?:\$\{[^{}]{0,800}?(?:\?new\b|new_interpreter|Execute|\.evaluate\(|forName|getRuntime|\.exec\(|\?api|\?html|\?js_string|\w+\s*\([^)]{0,120}\))[^{}]{0,800}?\}|<#[a-zA-Z]+[^>]{0,400}?(?:\?new\s*\(|freemarker\.template\.utility|\.exec\s*\(|\bExecute\b)[^>]{0,400}?>)"#).unwrap()
+    });
+    let _ = RE_SSTI_VELOCITY.get_or_init(|| {
+        // Velocity directives reaching Java runtime objects (#set($x=$class...)).
+        Regex::new(r#"(?i)(?:#(?:set|if|elseif|foreach|evaluate|include|parse|define|macro)\b[^#\n]{0,400}?\$(?:class|runtime|request|session|application|esc|date|math)\b|#(?:evaluate|include|parse|define)\s*\(\s*\$[a-zA-Z_]\w*)"#).unwrap()
+    });
+    let _ = RE_CRLF_RESPONSE_HDR.get_or_init(|| {
+        // CRLF followed by a response-header name. Multipart request bodies carry
+        // Content-Type/Content-Disposition legitimately, so those are excluded.
+        Regex::new(r#"(?i)(?:\r\n|\r|\n)[ \t]*(?:(?:set-cookie|location|refresh|www-authenticate|content-security-policy|strict-transport-security|x-frame-options|x-content-type-options|x-xss-protection|server|x-powered-by|x-aspnet[a-z-]*|x-generator|content-length|etag|last-modified|cache-control|bcc|cc|to|from|reply-to|resent-[a-z]+|sender|return-path|subject|x-mailer|x-priority|importance|message-id|in-reply-to|references|mime-version|content-transfer-encoding|x-envelope-[a-z]+|x-original-to|x-sender|x-recipients|errors-to|disposition-notification-to|envelope-to|x-failed-recipients|x-complaints-to|return-receipt-to|x-autoreply|x-autorespond|x-autoresponse|x-autoresponder|list-unsubscribe|list-help|list-post|list-owner|list-subscribe|precedence|x-msmail-priority|x-gm-thrid|x-gm-message-state|x-google-smtp-source|x-receipt|x-verified|x-original-authentication-results|authentication-results|arc-message-signature|dkim-signature|received-spf|x-spam|x-virus|x-barracuda|x-proofpoint|x-messagelab|x-campaign|x-mailgun|x-sendgrid|x-postmark|x-ses|x-mandrill|x-sparkpost|x-mailchimp|x-originating-ip|x-originating-email|x-evidence|x-hashtags|x-social|x-groups|x-complaints|x-abuse|x-notice|x-warning|x-error|x-failure|x-status|x-result|x-response|x-request|x-reply|x-forward|x-resent|apparently-to|delivered-to|x-actual-recipient|original-recipient|final-recipient|reporting-mta|x-qa|x-dsn|x-bounce|x-failed|x-accel-redirect|x-sendfile|x-lighttpd-redirect|x-rewrite-url|x-original-url)[ \t]*:|HTTP/\d(?:\.\d)?\s+\d{3})"#).unwrap()
+    });
+    let _ = RE_UPLOAD_FILENAME.get_or_init(|| {
+        // filename= parameter pointing at an executable/server-parsed extension
+        // or Apache override files (.htaccess, .user.ini).
+        Regex::new(r#"(?i)(?:file_?name|filename|filepath|upload_?file|attachment_?name)\s*=\s*["']?[^"'\s&;]*?(?:\.(?:php[0-9]?|phtml|phar|asp|aspx|ashx|jsp|jspx|cgi|pl|shtml?|cfm|cfc|cdx|asa|ini|docm|xlsm|pptm|dotm|xltm|xlam|ppsm|potm|sldm|xlsb|docb|xlwb|hta|vbs|wsf|ps1)\b|\.htaccess\b|\.user\.ini\b)"#).unwrap()
+    });
+    let _ = RE_UPLOAD_CTX.get_or_init(|| {
+        Regex::new(r#"(?i)(?:filename|content|file|upload|attach|multipart)"#).unwrap()
+    });
+    let _ = RE_SERVER_SIDE_TAG.get_or_init(|| {
+        // Server-side script open tags: PHP (<?php, <?=), ASP (<%...), JSP (<%=).
+        // <?xml is deliberately excluded.
+        Regex::new(r#"<\?(?:php\b|=)|<%[@=a-zA-Z]|<cf[a-z]|<cfscript"#).unwrap()
+    });
+    let _ = RE_SSRF_ALT_TARGET.get_or_init(|| {
+        // Loopback expressed as 0, hex or octal; DNS-rebinding wildcard domains.
+        Regex::new(r#"(?i)(?:https?|gopher|dict|file|ftp)://(?:0(?::\d+)?(?:/|$|\?)|0x[0-9a-f]{1,8}(?::\d+)?(?:/|$|\?)|0[0-7]{1,3}(?:\.[0-7]{1,3}){3}(?::\d+)?(?:/|$|\?)|(?:[0-9a-z-]+(?:\.[0-9a-z-]+)*\.)?(?:nip\.io|sslip\.io|xip\.io|localtest\.me|lvh\.me|vcap\.me|localdomain\.com|127\.0\.0\.1\.nip\.io)(?::\d+)?(?:/|$|\?))"#).unwrap()
+    });
+    let _ = RE_SSRF_INTERNAL_TLD.get_or_init(|| {
+        // Internal-only TLDs reachable through URL-shaped parameters.
+        Regex::new(r#"(?i)(?:(?:https?|gopher|dict|file|ftp)://[a-z0-9][a-z0-9.-]*\.(?:local|internal|lan|corp|home|intranet|svc|consul|cluster\.local|home\.arpa)(?::\d+)?(?:/|$|\?)|(?:https?|gopher|dict|file|ftp)://(?:metadata|instance-data|kubernetes|docker)(?::\d+)?(?:/|$|\?))"#).unwrap()
+    });
+    let _ = RE_WIN_SHELL_BINARY.get_or_init(|| {
+        // Windows-native post-exploitation binaries and commands.
+        Regex::new(r#"(?i)\b(?:net\s+(?:user|localgroup|view|share|group|accounts|stat|time|use|session|config|stop|start)|ipconfig|tasklist|systeminfo|qwinsta|quser|nltest|mshta|rundll32|regsvr32|certutil|bitsadmin|schtasks|wmic|vssadmin|bcdedit|netsh|reg\s+(?:add|query|delete|import)|arp\s+-a|route\s+print|netstat)(?:\s|$|[|&;),])"#).unwrap()
+    });
+    let _ = RE_SHELL_METACHAR_GATE.get_or_init(|| {
+        Regex::new(r#"(?:;|&&|\|\||\||&\s|`|\$\(|[\r\n])"#).unwrap()
+    });
+    let _ = RE_SQL_ERROR_FUNC.get_or_init(|| {
+        // Error-based / blind / file-write SQL primitives beyond UNION SELECT.
+        Regex::new(r#"(?i)\b(?:extractvalue|updatexml|exp|floor|rand|name_const|make_set|procedure\s+analyse|load_file|json_keys|json_extract|gtid_subset|gtid_subtract|jsonb_path_query|get_lock|json_table|json_value|json_query|openjson|xp_\w+|openrowset|opendatasource|openquery|sp_oa\w+|sp_addextendedproc|bulk\s+insert|handler\s+\w+)\s*\(|\bwaitfor\s+delay\b|\binto\s+(?:out|dump)file\b"#).unwrap()
+    });
+    let _ = RE_PHP_WRAPPER.get_or_init(|| {
+        // PHP stream wrappers abused for command exec or arbitrary file read.
+        Regex::new(r#"(?i)\b(?:expect|php|glob|phar|zip|ogg|rar|ssh2\.(?:exec|shell|tunnel|sftp))://"#).unwrap()
+    });
+    let _ = RE_SHELLSHOCK.get_or_init(|| {
+        // Bash function export injection: () { :;}; <command>
+        Regex::new(r#"(?i)\(\)\s*\{[^}\n]{0,120}\}\s*;"#).unwrap()
+    });
+    let _ = RE_PATH_BINARY.get_or_init(|| {
+        // Absolute-path binaries (/bin/sh, /usr/bin/curl) and busybox applets
+        // behind a shell metacharacter.
+        Regex::new(r#"(?i)(?:/|\b)(?:usr/)?(?:bin|sbin|local/bin)/[a-z0-9][a-z0-9._-]*|\bbusybox\s+[a-z0-9._-]+|/dev/(?:tcp|udp)/[\d.a-fA-F:]+/\d+"#).unwrap()
+    });
+    let _ = RE_XXE_ENTITY.get_or_init(|| {
+        // External/parameter entities reaching SYSTEM or PUBLIC identifiers.
+        Regex::new(r#"(?i)<!ENTITY[^>]{0,300}?(?:SYSTEM|PUBLIC)\s*["']|<!DOCTYPE[^>]{0,400}?<!ENTITY|<!DOCTYPE\s+[\w:.-]+\s+(?:SYSTEM|PUBLIC)\s*["'][^"']{0,300}?["']"#).unwrap()
+    });
+    let _ = RE_HEX_BLOB.get_or_init(|| {
+        // Long 0x-prefixed hex literals that may carry encoded SQL text.
+        Regex::new(r#"(?i)\b0x[0-9a-f]{16,}\b"#).unwrap()
+    });
+    let _ = RE_JNDI_CHAR_EXTRACT.get_or_init(|| {
+        // Log4j char-extraction obfuscation: ${::-j}${::-n}${::-d}${::-i} -> jndi
+        Regex::new(r#"\$\{::-([a-zA-Z0-9])\}"#).unwrap()
+    });
+    let _ = RE_JNDI_DATE_LOOKUP.get_or_init(|| {
+        // Log4j date-lookup obfuscation: ${date:'j'} -> j
+        Regex::new(r#"\$\{date:'(.)'\}"#).unwrap()
+    });
+
+    // --- Injection coverage islands (v3) ---
+
+    // UNION ... SELECT with optional /* */ comments between any letters
+    // (`UN/**/ION/**/SEL/**/ECT`). Built programmatically since the pattern is
+    // per-letter repetitive.
+    let _ = RE_UNION_SELECT_OBF.get_or_init(|| {
+        let kw = |word: &str| -> String {
+            word.chars()
+                .map(|c| format!("{}(?:/\\*.*?\\*/)?", c))
+                .collect::<Vec<_>>()
+                .join("")
+        };
+        let pat = format!(
+            r"(?i)\b{}(?:\s|/\*.*?\*/|\(+)+(?:{}(?:\s|/\*.*?\*/|\()+)?{}(?:\s|/\*.*?\*/|\()+?\b",
+            kw("union"),
+            kw("all"),
+            kw("select")
+        );
+        Regex::new(&pat).unwrap()
+    });
+    let _ = RE_SQL_SUBQUERY.get_or_init(|| {
+        // Quote-free subquery injection: =(SELECT ... FROM ...), ' AND (SELECT ...)
+        Regex::new(r#"(?i)(?:'|")?\s*(?:\bAND\b|\bOR\b|\bXOR\b|=\s*\(|\(|\bWHERE\b|\bHAVING\b|\bORDER\s+BY\b|\bGROUP\s+BY\b|\bSET\b|\bVALUES\b|\bIN\b|\bBETWEEN\b|\bRLIKE\b|\bREGEXP\b|\bLIKE\b)\s*\(?\s*SELECT\s+.{0,300}?(?:\bFROM\b|\))"#).unwrap()
+    });
+    let _ = RE_SQL_CASE_HAVING.get_or_init(|| {
+        // Blind ORDER BY/CASE and HAVING tautologies without UNION.
+        Regex::new(r#"(?i)\bCASE\s+WHEN\s*\([^)]{0,120}\)\s*THEN\b[^;]{0,300}?\bELSE\b|(?:'|")\s*HAVING\s+[\w'"]|\bHAVING\s+\d+\s*(?:=|!=|<|>|<=|>=)"#).unwrap()
+    });
+    let _ = RE_CMD_IFS_BINARY.get_or_init(|| {
+        // Command binary glued to ${IFS}/$IFS whitespace substitution.
+        Regex::new(r#"(?i)\b(?:ls|cat|id|whoami|uname|pwd|env|printenv|wget|curl|nc|ncat|netcat|bash|sh|dash|zsh|php|python[0-9.]*|perl|ruby|node|find|xargs|awk|sed|chmod|chown|rm|mv|cp|tar|zip|unzip|base64|openssl|ssh|scp|ftp|tftp|telnet|ping|traceroute|nslookup|dig|host|arp|ifconfig|route|iptables|sudo|mount|umount|dd|ps|top|kill|killall|crontab|nohup|which|whereis|locate|make|gcc|cc|strings|head|tail|sort|uniq|grep|egrep|fgrep|wc|date|source|eval|exec)\s*\$\{?IFS\}?"#).unwrap()
+    });
+    let _ = RE_SSTI_ARITH.get_or_init(|| {
+        // Delimited arithmetic probes: {{7*7}}, ${7*7}, <%=7*7%>, #{7*7}, *{7*7}
+        Regex::new(r#"(?i)(?:\{\{|\$\{?|<%=?|#\{|\*\{)\s*\d{1,6}\s*[-+*/%]\s*\d{1,6}\s*(?:\}\}?|%>?|\*\})?"#).unwrap()
+    });
+    let _ = RE_SSTI_EMBEDDED.get_or_init(|| {
+        // ERB/EJS/JSP-style executable tags: <%= system("id") %>, <% Runtime...
+        Regex::new(r#"<%\s*[=\-]?\s*(?:eval|exec|system|require|include|load|spawn|`|Runtime|ProcessBuilder|new\s+[A-Z]|javax\.script|ScriptEngine|getRuntime)"#).unwrap()
+    });
+    let _ = RE_SSTI_EXPR_PARAM.get_or_init(|| {
+        // Bare arithmetic in an expression-named parameter: expr=7*7, calc=2+2
+        Regex::new(r#"(?i)(?:^|[?&\s"'{(,])(?:expr|eval|template|tpl|view|render|calc|formula|expression|engine|preview|compile|callback|handler)\s*[=:]\s*["']?\s*\d{1,6}\s*[-+*/%]\s*\d{1,6}\s*(?:&|$|\s|"|'|\)|\}|,|;)"#).unwrap()
+    });
+    let _ = RE_SSRF_USERINFO.get_or_init(|| {
+        // http://evil.com@127.0.0.1/ — credentials smuggle the real host after @
+        Regex::new(r#"(?i)(?:https?|gopher|dict|file|ftp)://[^/\s'"@]*@(?:127\.|10\.|172\.(?:1[6-9]|2\d|3[01])\.|192\.168\.|169\.254\.|0\.0\.0\.0|localhost|\[::)"#).unwrap()
+    });
+    let _ = RE_SSRF_SCHEME_REL.get_or_init(|| {
+        // Scheme-relative URL //127.0.0.1:8080/ (the char before // must not be ':')
+        Regex::new(r#"(?i)//(?:127\.\d{1,3}(?:\.\d{1,3}){0,2}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|169\.254\.\d{1,3}\.\d{1,3}|0\.0\.0\.0|localhost|\[::1\])(?::\d+)?(?:/|$|\?)"#).unwrap()
+    });
+    let _ = RE_LDAP_META.get_or_init(|| {
+        // LDAP filter metacharacters: *)( , )(| , (=*) , *)(
+        Regex::new(r#"(?i)\)\s*\(\s*[|&*!]|=\s*\*\s*\)|\(\s*[|&]\s*\(|\*\s*\)\s*\(|(?:^|[?&\s"'(,])(?:user|uid|login|username|cn|samaccountname|mail|dn|telephonenumber|telephone|mobile|pager|roomnumber|secretary|manager|directreports|seealso|usercertificate|usersmimecertificate|userpkcs12|audio|businesscategory|carlicense|departmentnumber|employeenumber|employeetype|facsimiletelephonenumber|homephone|homepostaladdress|initials|jpegphoto|labeleduri|physicaldeliveryofficename|postaladdress|postalcode|preferredlanguage|registeredaddress|sn|st|street|title|distinguishedname|memberof|ou)\s*=\s*\*+"#).unwrap()
+    });
+    let _ = RE_DESERIALIZATION.get_or_init(|| {
+        // Java (rO0AB = base64 AC ED 00 05), PHP object (O:8:"Class":...) and
+        // array (a:2:{i:0;...}) serialization, .NET ViewState (/wEP...) and
+        // BinaryFormatter (AAEAAAD) markers.
+        Regex::new(r#"(?i)\brO0AB[A-Za-z0-9+/=]{8,}|\bO:\d+:"[A-Za-z_\\]{1,64}":\d+:\{|\ba:\d+:\{|/wE[PD][A-Za-z0-9+/=]{16,}|\bAAEAAAD[A-Za-z0-9+/=]{8,}|\baced[0-9a-fA-F]{4}\b|\bH4sI[A-Za-z0-9+/=]{4,}|_\$\$ND_FUNC\$\$|\bC:\+?\d+:"[A-Za-z_\\]{1,64}":\d+:\{|\bS:\+?\d+:"|__PHP_Incomplete_Class|\b(?:cos|posix|nt|os|subprocess|c__builtin__|__builtin__|copy_reg|pickle|dill|shelve|joblib|marshal|numpy|pandas|torch|tensorflow)\r?\n(?:system|exec|eval|popen|spawn|call|run|Popen|check_output|getoutput|getstatusoutput|loads|dumps|save|load)\r?\n"#).unwrap()
+    });
+    let _ = RE_PHP_FUNC_CALLBACK.get_or_init(|| {
+        // PHP higher-order functions invoked with a dangerous callable name.
+        Regex::new(r#"(?i)\b(?:array_map|array_filter|usort|uasort|uksort|array_reduce|call_user_func|call_user_func_array|call_user_method|call_user_method_array|forward_static_call|forward_static_call_array|register_shutdown_function|register_tick_function|set_error_handler|spl_autoload_register|iterator_apply|preg_replace_callback|array_walk|array_walk_recursive|mb_ereg_replace|preg_filter|FFI::cdef|ffi::cdef|ReflectionFunction|ReflectionMethod|Closure::fromCallable)\s*\(\s*['"](?:system|exec|shell_exec|passthru|popen|proc_open|assert|eval|create_function)['"]"#).unwrap()
+    });
+    let _ = RE_PHP_VAR_CALL.get_or_init(|| {
+        // Variable-function invocation with a string literal: $f('id'), $f(`id`)
+        Regex::new(r#"(?i)\$[a-zA-Z_]\w{0,4}\s*\(\s*['"`][^'"`]{1,60}['"`]\s*\)"#).unwrap()
+    });
+    let _ = RE_PHP_CONCAT_ASSIGN.get_or_init(|| {
+        // $f='sys'.'tem' string-concat obfuscation feeding a later $f(...) call.
+        Regex::new(r#"(?i)\$[a-zA-Z_]\w*\s*=\s*['"][a-zA-Z_]{2,20}['"]\s*\.\s*['"][a-zA-Z_]{2,20}['"]"#).unwrap()
+    });
+    let _ = RE_WIN_LOLBIN.get_or_init(|| {
+        // Living-off-the-land binaries that are hostile even without a metachar:
+        // certutil -decode, bitsadmin /transfer, mshta, rundll32, wmic process call.
+        Regex::new(r#"(?i)\b(?:certutil\s+(?:-decode|-encode|-urlcache|-verifyctl)|bitsadmin\s+/|mshta\s+(?:javascript|vbscript|http)|rundll32\s+\w+\s*,|regsvr32\s+/|wmic\s+process\s+call|psexec(?:\.exe)?\s|schtasks\s+/create|at\s+\d{1,2}:\d{2}|msbuild(?:\.exe)?(?:\s|$|[/?&"'<>])|installutil(?:\.exe)?(?:\s|$|[/?&"'<>])|regasm(?:\.exe)?(?:\s|$|[/?&"'<>])|regsvcs(?:\.exe)?(?:\s|$|[/?&"'<>])|msxsl(?:\.exe)?(?:\s|$|[/?&"'<>])|ieexec(?:\.exe)?(?:\s|$|[/?&"'<>])|fodhelper(?:\.exe)?(?:\s|$|[/?&"'<>])|computerdefaults(?:\.exe)?(?:\s|$|[/?&"'<>])|forfiles(?:\.exe)?(?:\s|$|[/?&"'<>])|pcalua(?:\.exe)?(?:\s|$|[/?&"'<>])|sdclt(?:\.exe)?(?:\s|$|[/?&"'<>])|slui(?:\.exe)?(?:\s|$|[/?&"'<>])|wsreset(?:\.exe)?(?:\s|$|[/?&"'<>])|dfsvc(?:\.exe)?(?:\s|$|[/?&"'<>])|desktopimgdownldr(?:\.exe)?(?:\s|$|[/?&"'<>])|syncappvpublishingserver(?:\.exe)?(?:\s|$|[/?&"'<>])|eventvwr(?:\.exe)?\s+[^\s]*\.msc|presentationhost(?:\.exe)?(?:\s|$|[/?&"'<>])|runscripthelper(?:\.exe)?(?:\s|$|[/?&"'<>])|msdt(?:\.exe)?(?:\s|$|[/?&"'<>])|pcwrun(?:\.exe)?(?:\s|$|[/?&"'<>])|xwizard(?:\.exe)?(?:\s|$|[/?&"'<>])|ie4uinit(?:\.exe)?(?:\s|$|[/?&"'<>])|infdefaultinstall(?:\.exe)?(?:\s|$|[/?&"'<>])|gonext(?:\.exe)?(?:\s|$|[/?&"'<>]))"#).unwrap()
+    });
+    let _ = RE_XPATH_EXPR.get_or_init(|| {
+        // XPath location paths and function/predicate probes. Single-segment
+        // paths like //user stay benign; two-segment paths, //x(), //x[],
+        // //*, (//, quote-or-and //, position()/last() predicates and [@attr=]
+        // are flagged.
+        Regex::new(r#"(?i)//[a-zA-Z_@*-][\w*-]*(?:/[\w.*-]+)+(?:\[[^\]]{0,120}\])?|//[a-zA-Z_@*-][\w*-]*(?:\(\)|\[[^\]]{0,120}\])|//\*|\(\s*//|['"]\s*(?:or|and)\s+//|\[\s*(?:position|last)\s*\(\s*\)\s*[=\]]|\[\s*@[\w:.-]+\s*="#).unwrap()
+    });
+    let _ = RE_XPATH_FUNC.get_or_init(|| {
+        // XPath function names — fire only when //, ::, or a quote is also
+        // present (the conjunction lives in tokenize()).
+        // XPath-distinctive names plus the ambiguous-but-real XPath functions
+        // id/key/document/text — those get a "."-prefix guard in tokenize()
+        // so JS method calls (el.text(), obj.key()) do not fire.
+        Regex::new(r#"(?i)\b(?:concat|contains|starts-with|ends-with|substring|substring-before|substring-after|normalize-space|string-length|translate|generate-id|processing-instruction|namespace-uri|local-name|position|last|id|key|document|text)\s*\("#).unwrap()
+    });
+    let _ = RE_XPATH_AXIS.get_or_init(|| {
+        // XPath axis specifiers: ancestor::, attribute::, child::, etc.
+        Regex::new(r#"(?i)\b(?:ancestor|ancestor-or-self|attribute|child|descendant|descendant-or-self|following|following-sibling|namespace|parent|preceding|preceding-sibling|self)::"#).unwrap()
+    });
+
+    let _ = RE_UNC_PATH.get_or_init(|| {
+        // Windows UNC paths: \\host\share and scheme-relative //host.tld/path
+        // used as file targets.
+        Regex::new(r#"(?i)\\\\[a-z0-9_.-]{1,64}\\[a-z0-9_./\\ -]{0,120}|//[a-z0-9][a-z0-9.-]{0,80}\.[a-z]{2,10}/[a-z0-9_./~%-]{0,120}"#).unwrap()
+    });
+    let _ = RE_UNC_BENIGN_EXT.get_or_init(|| {
+        // A UNC/scheme-relative match ending in a common document, media or
+        // archive extension is a file reference, not a payload drop. Executables,
+        // scripts, configs and extension-less shares stay hostile.
+        Regex::new(r#"(?i)\.(?:xlsx|xls|docx|doc|pdf|csv|pptx|ppt|rtf|odt|ods|odp|txt|png|jpe?g|gif|bmp|webp|svg|mp3|mp4|mov|avi|zip|rar|7z|tar|gz|log)(?:[\s/?&#"')\]},;]|$)"#).unwrap()
+    });
+    let _ = RE_ADS_PATH.get_or_init(|| {
+        // NTFS alternate data streams: file.txt:streamname
+        Regex::new(r#"(?i)[a-z0-9_.-]+\.[a-z0-9]{1,10}:[a-z_][a-z0-9_.$-]{2,39}"#).unwrap()
+    });
+    let _ = RE_CMD_EXEC_TRICK.get_or_init(|| {
+        // Config/exec tricks that need no shell metacharacter:
+        // sed -e 'e cmd', tar --checkpoint-action, find -exec, git core.pager,
+        // awk BEGIN{system}, openssl s_client, telnet host port, whois $var.
+        Regex::new(r#"(?i)\bsed\s+-[a-z]*e\b|--checkpoint-action|find\s+[^|]*?-exec\b|core\.pager\s*=|BEGIN\s*\{\s*system|s_client\b|telnet\s+[a-z0-9.-]+\s+\d{2,5}\b|whois\s+\$|nslookup\s+\$|ping\s+-c\d+\s+\$"#).unwrap()
+    });
+    let _ = RE_NOSQL_ADMIN_CMD.get_or_init(|| {
+        // MongoDB diagnostic/admin commands and CouchDB/Elasticsearch/SQL
+        // query documents that carry no $ operator.
+        Regex::new(r#"(?i)"(?:\$currentOp|buildInfo|serverStatus|whatsmyuri|hostInfo|cpuInfo|diagnosticData|connPoolStats|indexStats|planCacheStats|listSessions|currentOp|collStats|dbStats|top|killOp|killAllOperations|setParameter|getCmdLineOpts|getLog|logRotate|rotateCertificates|replSetGetStatus|replSetGetConfig|listDatabases|listCollections|validate|repairDatabase|setProfilingLevel|fsyncLocked|unlock|lock|applyOps|appendOplogNote|connectionStatus|isMaster|hello|saslStart|saslContinue|createUser|updateUser|dropUser|grantRolesToUser|revokeRolesFromUser|rolesInfo|logout|authenticate|ping|fsync|shutdown|compact)"\s*:|"script"\s*:\s*\{[^}]{0,300}?"source"\s*:"#).unwrap()
+    });
+    let _ = RE_SQL_JSON_FIELD.get_or_init(|| {
+        // SQL statement smuggled inside a JSON string field: {"query":"SELECT ..."}
+        Regex::new(r#"(?i)"(?:query|filter|where|sql|statement|command|q|search|criteria|selector|expression|predicate|commandText|cmd)"\s*:\s*"[^"]{0,400}?\b(?:select|insert|update|delete|drop|exec|execute|truncate|alter|create|grant|revoke)\b"#).unwrap()
+    });
+    let _ = RE_CRLF_ANY_HDR.get_or_init(|| {
+        // Strict \r\n followed by any header-shaped token (2-40 chars + ':').
+        // Multipart bodies legitimately carry Content-Type/Content-Disposition;
+        // those are filtered out in tokenize() when multipart is detected.
+        Regex::new(r#"(?i)\r\n[ \t]*[A-Za-z][A-Za-z0-9_-]{1,40}[ \t]*:"#).unwrap()
+    });
+    let _ = RE_CRLF_CONTENT_HDR.get_or_init(|| {
+        // Content-* headers after CRLF — only hostile outside multipart bodies.
+        Regex::new(r#"(?i)(?:\r\n|\r|\n)[ \t]*(?:content-type|content-disposition|content-location|content-range|content-md5)[ \t]*:"#).unwrap()
+    });
+    let _ = RE_EMAIL_ENCODED_WORD.get_or_init(|| {
+        // RFC 2047 encoded-word header injection: =?UTF-8?B?...?=
+        Regex::new(r#"(?i)=\?(?:utf-?7|x-[a-z0-9-]{1,20}|unknown-8bit)\?[BbQq]\?[^?\s]{2,200}\?="#).unwrap()
+    });
+    let _ = RE_SSTI_SMARTY.get_or_init(|| {
+        // Smarty template tags reaching PHP or file sinks.
+        Regex::new(r#"(?i)\{(?:eval|insert|fetch|include|php|ldelim|rdelim)\b[^}\n]{0,300}?\}|\{if\s+[^}\n]{0,200}?(?:phpinfo|system|exec|eval|`)[^}\n]{0,200}?\}"#).unwrap()
+    });
+    let _ = RE_SSRF_CLOUD_SCHEME.get_or_init(|| {
+        // Cloud/exfil-capable URL schemes behind a URL-ish parameter.
+        Regex::new(r#"(?i)(?:s3|gs|az|oss|ssh2|nfs|sftp|smb|netdoc|jar|iiop|corba|tftp|ldap|ldaps|gopher|dict|php|expect|zip|phar|glob|rar|ogg|ssh|snews|nntp|news|mid|cid|magnet|bitcoin|chrome|view-source|feed|z39\.50|prospero|wais|imap|pop3|smtp|snmp|rtsp|rtmp|mms)://|jrt:/"#).unwrap()
+    });
+    let _ = RE_XXE_REF.get_or_init(|| {
+        // External references that resolve attacker-controlled resources without
+        // a DOCTYPE: xml-stylesheet href, xml:base, xi:include href.
+        Regex::new(r#"(?i)(?:xml-stylesheet[^>]{0,300}?href\s*=\s*["']\s*(?:https?|file|php|expect|glob|phar|rar|ogg|ssh2|zip)|xml:base\s*=\s*["']\s*https?://|xi?:?include[^>]{0,300}?href\s*=\s*["']\s*(?:https?|file|php|expect|glob|phar|rar|ogg|ssh2|zip))"#).unwrap()
+    });
+    let _ = RE_PHP_DOLLAR_BRACE_CALL.get_or_init(|| {
+        // Complex variable-function call: ${'_GET'['a']}('id'), ${'sys'.'tem'}('id')
+        Regex::new(r#"(?i)\$\{[^}\n]{1,120}\}\s*\(|\$\{[^}\n]{1,120}?\(\s*['"`][^'"`]{1,60}['"`]\s*\)[^}\n]{0,60}?\}"#).unwrap()
+    });
+    let _ = RE_PHP_EVAL_MODIFIER.get_or_init(|| {
+        // preg_replace/preg_filter/mb_ereg_replace with the 'e' (eval) modifier.
+        Regex::new(r#"(?i)\b(?:mb_ereg_replace|preg_replace|preg_filter)\s*\([^)]{0,200}?,\s*['"]e['"]"#).unwrap()
+    });
+    let _ = RE_NOSQL_DB_PATH.get_or_init(|| {
+        // CouchDB/Elasticsearch/Mongo data-plane endpoints in the path.
+        Regex::new(r#"(?i)/(?:_all_docs|_find|_search|_bulk|_sql|_xpack|_alias|_tasks|_snapshot|_security|_watcher|_ml|_rollup|_transform|_slm|_ilm|_fleet|_features)(?:/|\?|&|$|\s)"#).unwrap()
+    });
+    let _ = RE_PHP_GADGET_CLASS.get_or_init(|| {
+        // PHP unserialize gadget classes reachable via iterator/object APIs.
+        Regex::new(r#"(?i)\b(?:RecursiveArrayIterator|RecursiveIteratorIterator|SplFileObject|SplTempFileObject|FilesystemIterator|RecursiveDirectoryIterator|GlobIterator|SplObjectStorage|ArrayObject|ArrayIterator)\s*\("#).unwrap()
+    });
+    // ---- v6 protocol/semantic layer ----
+    let _ = RE_NESTED_QUANT.get_or_init(|| {
+        // ReDoS shape: quantifier or ambiguous alternation inside a group that
+        // itself carries an outer quantifier: (a+)+, (.*)*, (a|a)*, ([a-z]+)*
+        Regex::new(r#"\([^()\n]{1,80}(?:[+*]|\|)[^()\n]{0,80}\)\s*(?:[+*]|\{\d)"#).unwrap()
+    });
+    let _ = RE_CSV_FORMULA.get_or_init(|| {
+        // Spreadsheet formula injection at the start of a cell value.
+        Regex::new(r#"(?i)["'\s,=](?:cmd\||powershell|importxml|hyperlink|sum\s*\(|evaluate\s*\(|exec\s*\(|[+\-@]\s*[A-Za-z0-9(])"#).unwrap()
+    });
+    let _ = RE_LOG_LINE.get_or_init(|| {
+        // Forged log line: real or JSON-escaped newline followed by a
+        // timestamped level, bracketed level, or forged separator banner.
+        // JSON bodies carry literal \n (backslash-n), so both forms match.
+        Regex::new(r#"(?:\r\n|\r|\n|\\r\\n|\\n|\\r)\s*\[?\s*(?:\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(?::\d{2})?|\d{4}-\d{2}-\d{2}[\s\]]+(?:INFO|ERROR|WARN(?:ING)?|DEBUG|TRACE|FATAL|CRITICAL|NOTICE|ALERT|EMERG)|INFO|ERROR|WARN(?:ING)?|DEBUG|TRACE|FATAL|CRITICAL|NOTICE|ALERT|EMERG|panic|fatal)\b|(?:\r\n|\r|\n|\\r\\n|\\n|\\r)\s*(?:\s*at\s+[\w.$]+\s*\(|-{2,}\s*(?:SYSTEM|ADMIN|ROOT|ALERT|WARNING|ERROR|INFO|DEBUG))"#).unwrap()
+    });
+    let _ = RE_SAML_PROTO.get_or_init(|| {
+        // SAML protocol markers: unsigned assertions/responses are the attack surface.
+        Regex::new(r#"(?i)samlp?:[A-Za-z]|SAMLResponse=|SAMLRequest=|\bSAML(?:Request|Response)\s*:|saml:Assertion|samlp:Response"#).unwrap()
+    });
+    let _ = RE_XSLT.get_or_init(|| {
+        Regex::new(r#"<xsl:(?:stylesheet|transform|value-of|apply-imports|include|import|copy-of)"#).unwrap()
+    });
+    let _ = RE_XQUERY.get_or_init(|| {
+        Regex::new(r#"\b(?:declare\s+(?:variable|function)\s+\$|for\s+\$\w+\s+in\b|collection\s*\(|fn:doc\s*\(|doc\s*\(\s*["'](?:file:|https?:))"#).unwrap()
+    });
+    let _ = RE_SMTP_CMD.get_or_init(|| {
+        // Raw SMTP verbs at line start inside a request body.
+        Regex::new(r#"(?im)^\s*(?:EHLO|HELO|MAIL\s+FROM|RCPT\s+TO|DATA|VRFY|EXPN|AUTH|QUIT|RSET|NOOP|STARTTLS)\b[ :<]"#).unwrap()
+    });
+    let _ = RE_JSONRPC_EXEC.get_or_init(|| {
+        // JSON-RPC / RPC-style method dispatch to dangerous primitives.
+        Regex::new(r#"["']?(?:method|action|command|cmd|func|function)["']?\s*:\s*["'](?:system|exec|shell|cmd|passthru|eval|popen|call_user_func|proc_open|assert)[."']"#).unwrap()
+    });
+    let _ = RE_ABS_UPLOAD_PATH.get_or_init(|| {
+        // filename= pointing at an absolute server path (archive slip vector).
+        Regex::new(r#"(?i)filename\s*=\s*["']?(?:/etc/|/var/|/tmp/|/usr/|/bin/|/sbin/|/opt/|/root/|/home/|/proc/|/sys/|[a-zA-Z]:[\\/])"#).unwrap()
+    });
+    let _ = RE_NUMERIC_ANOMALY.get_or_init(|| {
+        // Numeric fields whose value is a signed/decimal token (checked in code).
+        Regex::new(r#"["']?(?:qty|quantity|price|amount|bid|total|weight|score|bonus|discount(?:_percent)?|balance|seats|quota)["']?\s*[:=]\s*-?\d"#).unwrap()
+    });
+    let _ = RE_PRIVILEGED_KEY.get_or_init(|| {
+        // Privileged JSON keys (value checked in code to stay conservative).
+        Regex::new(r#"["']?(?:role|isadmin|is_admin|admin|permissions?|owner_?id|verified|moderated|approved|is_staff|admin_override|group|account_?type|billing|features|debug|shell)["']?\s*:"#).unwrap()
+    });
+    let _ = RE_WEBASSET_EXT.get_or_init(|| {
+        Regex::new(r#"(?i)\.(?:css|js|mjs|map|png|jpe?g|gif|svg|ico|webp|avif|woff2?|ttf|eot|otf|mp4|webm|mp3|wav|pdf|txt|xml|json)$"#).unwrap()
+    });
+    let _ = RE_ACCT_PATH.get_or_init(|| {
+        Regex::new(r#"(?i)/(?:account|profile|settings|user|admin|dashboard|private|secure|billing|orders?|cart|checkout|member)s?/"#).unwrap()
+    });
+    let _ = RE_REDIRECT_URI.get_or_init(|| {
+        Regex::new(r#"(?i)redirect_uri\s*=\s*([^&\s"']+)"#).unwrap()
+    });
+    let _ = RE_NUM_NEG.get_or_init(|| {
+        Regex::new(r#"["']?(?:qty|quantity|price|amount|bid|total|weight|score|bonus|discount(?:_percent)?|balance|seats|quota)["']?\s*[:=]\s*-\d"#).unwrap()
+    });
+    let _ = RE_NUM_BIG.get_or_init(|| {
+        Regex::new(r#"["']?(?:qty|quantity|price|amount|bid|total|weight|score|bonus|discount(?:_percent)?|balance|seats|quota)["']?\s*[:=]\s*(?:[1-9]\d{4,}|9\d{3})\b"#).unwrap()
+    });
+    let _ = RE_NUM_TINY.get_or_init(|| {
+        // Denormal-tiny money/quantity values used for rounding exploits.
+        Regex::new(r#"["']?(?:qty|quantity|price|amount|bid|total|weight|score|bonus|balance|quota)["']?\s*[:=]\s*0\.0{3,}\d"#).unwrap()
+    });
+    let _ = RE_DISCOUNT100.get_or_init(|| {
+        Regex::new(r#"["']?discount(?:_percent)?["']?\s*[:=]\s*(?:1\d\d|[2-9]\d\d)"#).unwrap()
+    });
+    let _ = RE_PRIV_VAL.get_or_init(|| {
+        Regex::new(r#"(?i)["']?(?:role|group|account_?type)["']?\s*:\s*["']?(?:admin|administrator|root|superuser|owner)\b|["']?(?:isadmin|is_admin|admin|verified|moderated|approved|is_staff|admin_override|debug|shell)["']?\s*:\s*(?:true|1\b)|permissions["']?\s*:\s*\[[^\]]*["']\*|owner_?id["']?\s*:"#).unwrap()
+    });
+    let _ = RE_TE_VALUE.get_or_init(|| {
+        Regex::new(r#"(?i)^\s*chunked\s*$"#).unwrap()
+    });
+    let _ = RE_MAIL_HDR_JSON.get_or_init(|| {
+        // Mail-header keys smuggled inside JSON API payloads.
+        Regex::new(r#"(?i)["'](?:received|x-original-to|return-path|errors-to|resent-from|resent-to|delivered-to|x-envelope-from)["']\s*:"#).unwrap()
+    });
+    let _ = RE_KEYWORD_SMUGGLE.get_or_init(|| {
+        // Canonical keywords that only become dangerous AFTER confusable fold —
+        // gated on is_obfuscated so plain search text stays benign.
+        Regex::new(r#"(?i)\b(?:select[\s+]+[\w*]+[\s+]+from|union[\s+]+(?:all[\s+]+)?select|password|passwd|admin|secret|token|api[_-]?key|credential|shadow|key)\b"#).unwrap()
+    });
+    let _ = RE_B64_XML_SAML.get_or_init(|| {
+        // Base64 blob that decodes to an XML document carrying SAML markers.
+        // PD94bWwg = "<?xml "; the SAML namespace survives base64 in several
+        // alignments so we match the raw blob against loose fragments.
+        Regex::new(r#"[A-Za-z0-9+/=]{200,}"#).unwrap()
+    });
+    let _ = RE_BRAND_HOST.get_or_init(|| {
+        Regex::new(r#"(?i)pple|g00gle|paypa|amaz|neta|micros|faceb|insta|dropb|ebay|walmrt|app1e"#).unwrap()
+    });
+    let _ = RE_CYR_BRAND.get_or_init(|| {
+        Regex::new(r#"аррӏе|раураӏ|googӏe"#).unwrap()
+    });
+    let _ = RE_APPLIANCE_CVE.get_or_init(|| {
+        // Known-vulnerable appliance/admin endpoints (PAN-OS, FortiGate,
+        // Cisco ASA/AnyConnect, Pulse, Ivanti, Citrix, F5, Exchange, Atlassian).
+        Regex::new(r#"(?i)/(?:remote/login|remote/logincheck|dana-na/|\+CSCOE\+|global-protect/|cgi-bin/login\.cgi|owa/|ecp/|autodiscover/|mifs/|console/|por/login|webconsole/|saml/metadata|plugins/servlet/gadgets|secure/QueryComponent|rest/api/2/user\?|rest/api/2/dashboard|rest/tinymce|_/download/resources/com\.atlassian|jira/secure|confluence/display|solr/admin/info/system|geoserver/web|actuator/gateway|nacos/v1|druid/|xxl-job-admin|apisix/admin|apisix/dashboard|grafana/api|kibana/app|portainer/|rancher/|proxmox/|unifi/|truenas/|freenas/|openmediavault/|cockpit/|webmin/|user/login|manager/html|host-manager/html|jmx-console/|web-console/|invoker/JMXInvokerServlet|jbpm-console|admin-console/|status\?full=true|server-info|server-status)"#).unwrap()
     });
 }
 
@@ -286,9 +774,103 @@ impl AstLexer {
                     is_obfuscated = true;
                     d4.push('.');
                 }
+                '\u{3002}' | '\u{FF61}' => {
+                    // Ideographic full stop / halfwidth ideographic full stop
+                    is_obfuscated = true;
+                    d4.push('.');
+                }
+                '\u{2028}' | '\u{2029}' => {
+                    // Line/paragraph separator — normalize to LF so CRLF checks see it
+                    is_obfuscated = true;
+                    d4.push('\n');
+                }
+                '\u{24EA}' | '\u{24FF}' => {
+                    // Circled / negative-circled digit zero
+                    is_obfuscated = true;
+                    d4.push('0');
+                }
+                '\u{2460}'..='\u{2473}' => {
+                    // Circled digits ①-⑳ -> 1-20 (multi-digit values emit both chars)
+                    is_obfuscated = true;
+                    let n = c as u32 - 0x245F;
+                    if n <= 9 {
+                        d4.push(char::from_digit(n, 10).unwrap_or(c));
+                    } else {
+                        d4.push_str(&n.to_string());
+                    }
+                }
+                '\u{2474}'..='\u{2487}' => {
+                    // Parenthesized digits ⑴-⒇ -> 1-20
+                    is_obfuscated = true;
+                    let n = c as u32 - 0x2473;
+                    if n <= 9 {
+                        d4.push(char::from_digit(n, 10).unwrap_or(c));
+                    } else {
+                        d4.push_str(&n.to_string());
+                    }
+                }
+                '\u{24F5}'..='\u{24FE}' => {
+                    // Circled small digits ⓵-⓾ -> 1-9,0
+                    is_obfuscated = true;
+                    let n = c as u32 - 0x24F4;
+                    if n <= 9 {
+                        d4.push(char::from_digit(n, 10).unwrap_or(c));
+                    } else {
+                        d4.push('0');
+                    }
+                }
+                '\u{2776}'..='\u{277F}' => {
+                    // Negative circled digits ❶-❿ -> 1-10
+                    is_obfuscated = true;
+                    let n = c as u32 - 0x2775;
+                    if n <= 9 {
+                        d4.push(char::from_digit(n, 10).unwrap_or(c));
+                    } else {
+                        d4.push_str("10");
+                    }
+                }
                 '\0' => {
                     is_obfuscated = true;
-                    d4.push(' ');
+                    // Null byte: map to '/' so ..%00/etc becomes ..//etc traversal
+                    d4.push('/');
+                }
+                // Cyrillic/Greek homoglyph fold: attackers spell keywords with
+                // lookalike letters (ѕеlесt, раураӏ). Fold to ASCII so the
+                // existing detectors see the canonical keyword.
+                'а' | 'А' => { is_obfuscated = true; d4.push('a'); }
+                'с' | 'С' => { is_obfuscated = true; d4.push('c'); }
+                'е' | 'Е' | 'ё' | 'Ё' => { is_obfuscated = true; d4.push('e'); }
+                'о' | 'О' => { is_obfuscated = true; d4.push('o'); }
+                'р' | 'Р' => { is_obfuscated = true; d4.push('p'); }
+                'х' | 'Х' => { is_obfuscated = true; d4.push('x'); }
+                'у' | 'У' => { is_obfuscated = true; d4.push('y'); }
+                'і' | 'І' => { is_obfuscated = true; d4.push('i'); }
+                'ј' | 'Ј' => { is_obfuscated = true; d4.push('j'); }
+                'ѕ' | 'Ѕ' => { is_obfuscated = true; d4.push('s'); }
+                'һ' | 'Һ' => { is_obfuscated = true; d4.push('h'); }
+                'ԁ' | 'ԃ' => { is_obfuscated = true; d4.push('d'); }
+                'ԛ' | 'Ԛ' => { is_obfuscated = true; d4.push('q'); }
+                'ԝ' | 'Ԝ' => { is_obfuscated = true; d4.push('w'); }
+                'в' | 'В' => { is_obfuscated = true; d4.push('b'); }
+                'к' | 'К' => { is_obfuscated = true; d4.push('k'); }
+                'м' | 'М' => { is_obfuscated = true; d4.push('m'); }
+                'н' | 'Н' => { is_obfuscated = true; d4.push('h'); }
+                'т' | 'Т' => { is_obfuscated = true; d4.push('t'); }
+                'ӏ' => { is_obfuscated = true; d4.push('l'); }
+                'ſ' => { is_obfuscated = true; d4.push('s'); }
+                'K' => { is_obfuscated = true; d4.push('k'); }
+                // Invisible/bidi controls: strip so `un<U+200B>ion` collapses
+                // to `union` and bidi-reordered `java<U+202E>script` loses its
+                // smuggling power. Emoji ZWJ is collateral — acceptable, the
+                // original bytes still reach upstream untouched.
+                '\u{200B}' | '\u{200C}' | '\u{200D}' | '\u{2060}' | '\u{FEFF}'
+                | '\u{202A}'..='\u{202E}' | '\u{2066}'..='\u{2069}'
+                | '\u{E0000}'..='\u{E007F}' => {
+                    is_obfuscated = true;
+                }
+                // Combining marks (accents stacked on base letters)
+                '\u{0300}'..='\u{036F}' => {
+                    is_obfuscated = true;
                 }
                 _ => d4.push(c),
             }
@@ -296,11 +878,43 @@ impl AstLexer {
 
         // Pass 5: Decode JSON/Unicode/Hex escapes (\uXXXX and \xXX) in any case, including dots, quotes, slashes, brackets
         let mut d5 = d4.clone();
-        if d5.contains("\\u") || d5.contains("\\U") || d5.contains("\\x") || d5.contains("\\X") {
+        if d5.contains("\\u")
+            || d5.contains("\\U")
+            || d5.contains("\\x")
+            || d5.contains("\\X")
+            || d5.contains("\\r")
+            || d5.contains("\\n")
+            || d5.contains("\\t")
+            || d5.contains("\\b")
+            || d5.contains("\\f")
+            || d5.contains("\\/")
+            || d5.contains("\\\"")
+            || d5.contains("\\\\")
+        {
             let mut decoded = String::with_capacity(d5.len());
             let chars: Vec<char> = d5.chars().collect();
             let mut i = 0;
             while i < chars.len() {
+                // JSON simple escapes: \r \n \t \b \f \/ \" \\ — decoded so
+                // CRLF smuggled inside JSON string values becomes visible.
+                if i + 1 < chars.len() && chars[i] == '\\' {
+                    let esc = match chars[i + 1] {
+                        'r' => Some('\r'),
+                        'n' => Some('\n'),
+                        't' => Some('\t'),
+                        'b' => Some('\u{8}'),
+                        'f' => Some('\u{c}'),
+                        '/' => Some('/'),
+                        '"' => Some('"'),
+                        '\\' => Some('\\'),
+                        _ => None,
+                    };
+                    if let Some(ch) = esc {
+                        decoded.push(ch);
+                        i += 2;
+                        continue;
+                    }
+                }
                 if i + 5 < chars.len() && chars[i] == '\\' && (chars[i + 1] == 'u' || chars[i + 1] == 'U') {
                     let hex_str: String = chars[i + 2..=i + 5].iter().collect();
                     if let Ok(code) = u32::from_str_radix(&hex_str, 16) {
@@ -332,6 +946,20 @@ impl AstLexer {
             is_obfuscated = true;
         }
 
+        // Pass 7: `+` is a space in query strings but a literal elsewhere; keep a
+        // decoded variant so `net+user` and `;+cat` resolve like their spaced form.
+        let d7 = if raw_path.contains('+') {
+            raw_path.replace('+', " ")
+        } else {
+            raw_path.clone()
+        };
+
+        // Pass 8: Long 0x-hex literals may carry ASCII-encoded SQL (`0x556e696f6e...`).
+        let (d8, hex_changed) = Self::decode_hex_blobs(&raw_path);
+        if hex_changed {
+            is_obfuscated = true;
+        }
+
         // Only keep distinct variants: identical copies multiply regex scan time and can
         // create matches that do not exist in any single interpretation of the payload.
         let mut parts: Vec<&str> = vec![raw];
@@ -345,12 +973,51 @@ impl AstLexer {
             d4.as_str(),
             d5.as_str(),
             d6.as_str(),
+            d7.as_str(),
+            d8.as_str(),
         ] {
             if !parts.contains(&variant) {
                 parts.push(variant);
             }
         }
         (parts.join(" "), is_obfuscated)
+    }
+
+    /// Replaces printable `0x<hex>{16,}` blobs with their ASCII decode so encoded
+    /// SQL text (`0x556e696f6e...` -> "Union ...") becomes visible to the lexer.
+    fn decode_hex_blobs(text: &str) -> (String, bool) {
+        if !text.contains("0x") && !text.contains("0X") {
+            return (text.to_string(), false);
+        }
+        let re = RE_HEX_BLOB.get().unwrap();
+        let mut out = String::with_capacity(text.len());
+        let mut last = 0;
+        let mut changed = false;
+        for m in re.find_iter(text) {
+            out.push_str(&text[last..m.start()]);
+            let hex = &m.as_str()[2..];
+            let decoded: Vec<u8> = (0..hex.len() / 2)
+                .filter_map(|i| u8::from_str_radix(&hex[i * 2..i * 2 + 2], 16).ok())
+                .collect();
+            let printable = !decoded.is_empty()
+                && decoded
+                    .iter()
+                    .filter(|b| b.is_ascii_graphic() || **b == b' ')
+                    .count()
+                    * 10
+                    >= decoded.len() * 8;
+            if printable {
+                out.push(' ');
+                out.push_str(&String::from_utf8_lossy(&decoded));
+                out.push(' ');
+                changed = true;
+            } else {
+                out.push_str(m.as_str());
+            }
+            last = m.end();
+        }
+        out.push_str(&text[last..]);
+        (out, changed)
     }
 
     fn decode_overlong_encodings(raw: &str) -> String {
@@ -467,15 +1134,24 @@ impl AstLexer {
 
     fn expand_jndi_obfuscation(text: &str) -> String {
         let lower = text.to_ascii_lowercase();
-        if !lower.contains("${lower:") && !lower.contains("${upper:") && !lower.contains("${env:") {
+        if !lower.contains("${lower:")
+            && !lower.contains("${upper:")
+            && !lower.contains("${env:")
+            && !lower.contains("${date:")
+            && !lower.contains("${::-")
+        {
             return text.to_string();
         }
         let casing = RE_JNDI_OBFUSCATION.get().unwrap();
         let env = RE_JNDI_ENV_LOOKUP.get().unwrap();
+        let char_extract = RE_JNDI_CHAR_EXTRACT.get().unwrap();
+        let date = RE_JNDI_DATE_LOOKUP.get().unwrap();
         let mut current = text.to_string();
         for _ in 0..4 {
+            let next = char_extract.replace_all(&current, "$1").to_string();
+            let next = date.replace_all(&next, "$1").to_string();
             let next = casing
-                .replace_all(&current, |caps: &regex::Captures| {
+                .replace_all(&next, |caps: &regex::Captures| {
                     let mode = caps.get(1).map(|m| m.as_str()).unwrap_or("");
                     let body = caps.get(2).map(|m| m.as_str()).unwrap_or("");
                     if mode.eq_ignore_ascii_case("lower") {
@@ -508,6 +1184,153 @@ impl AstLexer {
             }
         }
         false
+    }
+
+    fn has_internal_host_context(text: &str) -> bool {
+        let internal = RE_SSRF_INTERNAL_TLD.get().unwrap();
+        let context = RE_SSRF_PARAM_CONTEXT.get().unwrap();
+        for matched in internal.find_iter(text) {
+            let start = matched.start();
+            let mut window_start = start.saturating_sub(64);
+            while window_start > 0 && !text.is_char_boundary(window_start) {
+                window_start -= 1;
+            }
+            if context.is_match(&text[window_start..start]) {
+                return true;
+            }
+        }
+        false
+    }
+
+    /// Host / forwarding-header integrity check. An IP literal in `Host`, or a
+    /// forwarding header (`X-Forwarded-Host`, `X-Host`, `Forwarded`) that
+    /// disagrees with it, is how password-reset and cache-poisoning attacks
+    /// smuggle attacker-controlled hostnames.
+    fn analyze_host_headers(headers: &HashMap<String, String>) -> bool {
+        let mut host_value = "";
+        for (k, v) in headers {
+            if k.eq_ignore_ascii_case("host") {
+                host_value = v.trim();
+                break;
+            }
+        }
+        let host_is_ip = Self::is_ip_literal(host_value) || Self::is_internal_hostname(host_value);
+        if host_is_ip {
+            return true;
+        }
+        for (k, v) in headers {
+            let kl = k.to_ascii_lowercase();
+            let val = v.trim();
+            if val.is_empty() {
+                continue;
+            }
+            match kl.as_str() {
+                "x-forwarded-host" | "x-host" | "x-original-host" | "x-forwarded-server"
+                | "x-http-host-forwarded" | "front-end-https" | "x-http-host-override"
+                | "x-rewrite-host" | "x-http-host" | "x-server-name" => {
+                    // A forwarding header alone is normal proxy traffic; it is
+                    // hostile when it is an IP literal, disagrees with Host, or
+                    // arrives with no Host at all on a spoof-prone header name.
+                    let spoof_prone = matches!(
+                        kl.as_str(),
+                        "x-forwarded-host" | "x-host" | "x-original-host" | "x-forwarded-server"
+                            | "x-http-host-override" | "x-rewrite-host" | "x-http-host"
+                            | "x-server-name"
+                    );
+                    if Self::is_ip_literal(val)
+                        || Self::is_internal_hostname(val)
+                        || (!host_value.is_empty()
+                            && !val.eq_ignore_ascii_case(host_value))
+                        || (host_value.is_empty() && spoof_prone)
+                    {
+                        return true;
+                    }
+                }
+                "x-original-url" | "x-rewrite-url" | "x-override-url" | "x-original-uri" => {
+                    // URL-rewrite headers can silently reroute the request;
+                    // hostile when absolute or pointing at privileged paths.
+                    let lv = val.to_ascii_lowercase();
+                    if lv.contains("://")
+                        || lv.contains("/admin")
+                        || lv.contains("wp-admin")
+                        || lv.contains("phpmyadmin")
+                        || lv.contains("/actuator")
+                        || lv.contains("/.git")
+                        || lv.contains("/server-status")
+                    {
+                        return true;
+                    }
+                }
+                "forwarded" => {
+                    // RFC 7239: Forwarded: for=...;host=example.com;proto=https
+                    for part in val.split(';') {
+                        if let Some((name, value)) = part.split_once('=') {
+                            if name.trim().eq_ignore_ascii_case("host") {
+                                let fwd_host = value.trim().trim_matches('"');
+                                if Self::is_ip_literal(fwd_host)
+                                    || (!host_value.is_empty()
+                                        && !fwd_host.eq_ignore_ascii_case(host_value))
+                                {
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+        false
+    }
+
+    fn is_ip_literal(value: &str) -> bool {
+        if value.is_empty() {
+            return false;
+        }
+        let v = value.trim().trim_start_matches('[').trim_end_matches(']');
+        // Dotted-quad IPv4 (optionally with :port or decimal/hex single forms).
+        // Short forms like 127.1 and 127.0.1 are also IP literals.
+        let quad = v.split(':').next().unwrap_or(v);
+        if quad.contains('.') {
+            let parts: Vec<&str> = quad.split('.').collect();
+            return parts.len() >= 2
+                && parts.len() <= 4
+                && parts.iter().all(|p| {
+                    !p.is_empty()
+                        && p.len() <= 4
+                        && p.bytes().all(|b| b.is_ascii_digit())
+                        && (p.len() <= 3 || p.starts_with('0'))
+                });
+        }
+        // Bare integer / hex IP or IPv6 literal
+        if v.bytes().all(|b| b.is_ascii_digit()) && !v.is_empty() {
+            return true;
+        }
+        if v.starts_with("0x") || v.contains(':') {
+            return true;
+        }
+        false
+    }
+
+    /// Internal-only hostnames that should never appear in a public Host header
+    /// or forwarding header at the edge.
+    fn is_internal_hostname(value: &str) -> bool {
+        let v = value.trim().trim_start_matches('[').trim_end_matches(']');
+        let host = v.split(':').next().unwrap_or(v).to_ascii_lowercase();
+        host == "localhost"
+            || host.ends_with(".localhost")
+            || host.ends_with(".local")
+            || host.ends_with(".internal")
+            || host.ends_with(".lan")
+            || host.ends_with(".corp")
+            || host.ends_with(".home")
+            || host.ends_with(".intranet")
+            || host.ends_with(".svc")
+            || host.ends_with(".consul")
+            || host == "metadata"
+            || host == "instance-data"
+            || host == "kubernetes"
+            || host == "docker"
     }
 
     /// Computes Shannon entropy of payload to detect encrypted or obfuscated binary shells.
@@ -597,9 +1420,20 @@ impl AstLexer {
             tokens.active_token_names.push("TAUTOLOGY_NUMERIC_COMMENT".to_string());
         }
         if RE_UNION_SELECT.get().unwrap().is_match(&normalized) {
-            tokens.has_union_select = true;
-            tokens.active_token_names.push("UNION_CLAUSE".to_string());
-            tokens.active_token_names.push("SELECT_PROJECTION".to_string());
+            // Bare "union select" is also a legitimate search phrase; require
+            // projection/table context (quote, FROM, NULL, comment, wildcard).
+            let union_ctx = normalized.contains('\'')
+                || normalized.contains('"')
+                || norm_lower.contains(" from ")
+                || norm_lower.contains("null")
+                || norm_lower.contains("--")
+                || norm_lower.contains("/*")
+                || normalized.contains("*");
+            if union_ctx {
+                tokens.has_union_select = true;
+                tokens.active_token_names.push("UNION_CLAUSE".to_string());
+                tokens.active_token_names.push("SELECT_PROJECTION".to_string());
+            }
         }
         if RE_SQL_SLEEP.get().unwrap().is_match(&normalized) {
             tokens.has_time_delay = true;
@@ -610,29 +1444,47 @@ impl AstLexer {
             tokens.active_token_names.push("STACKED_DDL".to_string());
         }
 
-        // 2. XSS Tokens
-        if RE_XSS_SCRIPT.get().unwrap().is_match(&normalized) {
+        // 2. XSS Tokens. Gate: every XSS pattern needs markup or a URI scheme.
+        let has_markup_or_uri = normalized.contains('<')
+            || normalized.contains("javascript:")
+            || normalized.contains("vbscript:")
+            || normalized.contains("data:");
+        if has_markup_or_uri && RE_XSS_SCRIPT.get().unwrap().is_match(&normalized) {
             tokens.has_script_tag = true;
             tokens.active_token_names.push("SCRIPT_ELEMENT".to_string());
         }
-        if RE_XSS_REMOTE_SCRIPT.get().unwrap().is_match(&normalized) {
+        if has_markup_or_uri && RE_XSS_REMOTE_SCRIPT.get().unwrap().is_match(&normalized) {
             tokens.has_script_tag = true;
             tokens.active_token_names.push("REMOTE_SCRIPT_INCLUDE".to_string());
         }
-        if RE_XSS_EVENT.get().unwrap().is_match(&normalized) {
+        if has_markup_or_uri && RE_XSS_EVENT.get().unwrap().is_match(&normalized) {
             tokens.has_event_handler = true;
             tokens.active_token_names.push("INLINE_EVENT_HANDLER".to_string());
         }
-        if RE_XSS_SVG.get().unwrap().is_match(&normalized) {
+        if has_markup_or_uri && RE_XSS_SVG.get().unwrap().is_match(&normalized) {
             tokens.has_svg_onload = true;
             tokens.active_token_names.push("SVG_ONLOAD".to_string());
         }
-        if RE_XSS_JS_URI.get().unwrap().is_match(&normalized) {
+        if has_markup_or_uri && RE_XSS_JS_URI.get().unwrap().is_match(&normalized) {
             tokens.has_js_scheme = true;
             tokens.active_token_names.push("JS_URI_SCHEME".to_string());
         }
 
-        // 3. Command Injection / RCE Tokens
+        // 3. Command Injection / RCE Tokens. Gate: shell metacharacters, or the
+        // interpreter names that can appear bare in a parameter value.
+        let has_shell_byte = normalized
+            .bytes()
+            .any(|b| matches!(b, b';' | b'|' | b'&' | b'`' | b'$' | b'\n' | b'\r' | b'('));
+        let has_interpreter_name = norm_lower.contains("powershell")
+            || norm_lower.contains("base64")
+            || norm_lower.contains("cmd")
+            || norm_lower.contains("certutil")
+            || norm_lower.contains("mshta")
+            || norm_lower.contains("rundll32")
+            || norm_lower.contains("regsvr32")
+            || norm_lower.contains("wmic")
+            || norm_lower.contains("bitsadmin");
+        if has_shell_byte || has_interpreter_name {
         if RE_SHELL_CHAIN.get().unwrap().is_match(&normalized) {
             tokens.has_shell_chain = true;
             tokens.active_token_names.push("SHELL_METACHAR".to_string());
@@ -657,16 +1509,66 @@ impl AstLexer {
             tokens.has_shell_chain = true;
             tokens.active_token_names.push("BASE64_DECODE_EXECUTION".to_string());
         }
+        }
 
-        // 4. Path Traversal Tokens
-        if RE_PATH_TRAVERSAL.get().unwrap().is_match(&normalized)
-            || (RE_PATH_DOTS_ONLY.get().unwrap().is_match(&normalized)
-                && (raw_text.contains('/') || raw_text.contains('\\') || raw_text.contains('%')))
+        // 4. Path Traversal Tokens. Gate: traversal always involves dots,
+        // percent-encoding, or a known filesystem root.
+        let has_traversal_hint = normalized.contains("..")
+            || normalized.contains("%2")
+            || normalized.contains("etc")
+            || normalized.contains("proc")
+            || normalized.contains("winnt")
+            || normalized.contains("system32")
+            || normalized.contains("win.ini")
+            || norm_lower.contains("kubernetes")
+            || normalized.contains("secrets/")
+            || norm_lower.contains("windows")
+            || normalized.contains("boot")
+            || normalized.contains("/dev/")
+            || normalized.contains("\\\\")
+            || normalized.contains("=//");
+        if has_traversal_hint
+            && (RE_PATH_TRAVERSAL.get().unwrap().is_match(&normalized)
+                || (RE_PATH_DOTS_ONLY.get().unwrap().is_match(&normalized)
+                    && (raw_text.contains('/') || raw_text.contains('\\') || raw_text.contains('%'))))
         {
             tokens.has_path_traversal = true;
             tokens.active_token_names.push("DIR_TRAVERSAL_DOT_DOT".to_string());
         }
-        if RE_PATH_DIRECT_SYSTEM.get().unwrap().is_match(&normalized) {
+        // Tomcat-style `..;/` and `..%3B/` path-parameter traversal variants.
+        if normalized.contains("..;/") || normalized.contains("..%3b") || normalized.contains("..%3B") {
+            tokens.has_path_traversal = true;
+            tokens.active_token_names.push("DIR_TRAVERSAL_PATH_PARAM".to_string());
+        }
+        // UNC paths (\\host\share) and scheme-relative file targets (//host.tld/path)
+        // in file-ish positions. normalize_string() joins the raw payload with
+        // every decoded variant, so JSON-escaped \\ survives verbatim; a UNC
+        // match that ends in a common document/media extension is a legitimate
+        // file reference (\\server\share\report.xlsx), not a payload drop.
+        if normalized.contains("\\\\") || normalized.contains("=//") {
+            let unc_hit = RE_UNC_PATH.get().unwrap().find_iter(&normalized).any(|m| {
+                !RE_UNC_BENIGN_EXT.get().unwrap().is_match(m.as_str())
+            });
+            if unc_hit {
+                tokens.has_path_traversal = true;
+                tokens.active_token_names.push("UNC_PATH_TARGET".to_string());
+            }
+        }
+        // NTFS alternate data streams: file.txt:streamname
+        if RE_ADS_PATH.get().unwrap().is_match(&normalized)
+            && (has_traversal_hint
+                || norm_lower.contains("file")
+                || norm_lower.contains("upload")
+                || norm_lower.contains("attach")
+                || norm_lower.contains("doc")
+                || norm_lower.contains("name=")
+                || norm_lower.contains("path=")
+                || norm_lower.contains("f="))
+        {
+            tokens.has_path_traversal = true;
+            tokens.active_token_names.push("NTFS_ADS_STREAM".to_string());
+        }
+        if has_traversal_hint && RE_PATH_DIRECT_SYSTEM.get().unwrap().is_match(&normalized) {
             tokens.has_sensitive_system_path = true;
             tokens.active_token_names.push("DIRECT_SYSTEM_FILE_TARGET".to_string());
         }
@@ -674,7 +1576,18 @@ impl AstLexer {
         // 5. SSRF Tokens. Cloud metadata is always a violation. Loopback/RFC1918
         // targets are only violations when they appear in a URL-like parameter,
         // otherwise documentation and issue text trigger false positives.
-        if RE_SSRF_CLOUD.get().unwrap().is_match(&normalized) {
+        // Gate: every SSRF signature is an IP literal, localhost, or metadata host.
+        let has_ssrf_hint = normalized.contains("://")
+            || normalized.contains("127.")
+            || normalized.contains("10.")
+            || normalized.contains("192.168")
+            || normalized.contains("169.254")
+            || normalized.contains("0.0.0.0")
+            || norm_lower.contains("localhost")
+            || norm_lower.contains("metadata");
+        if !has_ssrf_hint {
+            // skip both SSRF checks
+        } else if RE_SSRF_CLOUD.get().unwrap().is_match(&normalized) {
             tokens.has_ssrf_metadata = true;
             tokens.active_token_names.push("CLOUD_METADATA_ENDPOINT".to_string());
         } else if RE_SSRF_PRIVATE.get().unwrap().is_match(&normalized)
@@ -696,6 +1609,10 @@ impl AstLexer {
         }
         if gql.has_batching {
             tokens.has_graphql_batching = true;
+            tokens.active_token_names.extend(gql.active_tokens.clone());
+        }
+        if gql.has_abuse {
+            tokens.has_graphql_abuse = true;
             tokens.active_token_names.extend(gql.active_tokens.clone());
         }
 
@@ -727,7 +1644,23 @@ impl AstLexer {
         }
 
         // 9. Modular Protection Island Tokens
-        if RE_WORDPRESS_PROBE.get().unwrap().is_match(&normalized) {
+        // admin-ajax.php is legitimate functional traffic (heartbeat, plugin
+        // actions), not a reconnaissance probe; keep it out of the shield.
+        if RE_WORDPRESS_PROBE.get().unwrap().is_match(&normalized)
+            && !norm_lower.contains("admin-ajax.php")
+        {
+            tokens.has_wordpress_probe = true;
+            tokens.active_token_names.push("WORDPRESS_RECON_PROBE".to_string());
+        }
+        // xmlrpc.php is only a probe when it carries an actual XML-RPC method
+        // call; bare GETs (?rsd discovery) are legitimate.
+        if !tokens.has_wordpress_probe
+            && normalized.contains("xmlrpc.php")
+            && (normalized.contains("methodCall")
+                || norm_lower.contains("wp.get")
+                || norm_lower.contains("system.listMethods")
+                || norm_lower.contains("pingback.ping"))
+        {
             tokens.has_wordpress_probe = true;
             tokens.active_token_names.push("WORDPRESS_RECON_PROBE".to_string());
         }
@@ -740,6 +1673,598 @@ impl AstLexer {
             tokens.active_token_names.push("FRAMEWORK_EXPLOIT_PAYLOAD".to_string());
         }
 
+        // 10. NoSQL Injection Tokens: Mongo-style operator keys in JSON or bracket form.
+        // Gate: a `$` byte is mandatory for every operator form.
+        if normalized.contains('$')
+            && (RE_NOSQL_JSON_OP.get().unwrap().is_match(&normalized)
+                || RE_NOSQL_BRACKET_OP.get().unwrap().is_match(&normalized))
+        {
+            tokens.has_nosql_operator = true;
+            tokens.active_token_names.push("NOSQL_OPERATOR_INJECTION".to_string());
+        }
+        // MongoDB diagnostic/admin commands (no $ prefix), CouchDB/Elasticsearch
+        // data endpoints, and SQL statements inside JSON fields.
+        if RE_NOSQL_ADMIN_CMD.get().unwrap().is_match(&normalized)
+            || RE_NOSQL_DB_PATH.get().unwrap().is_match(&normalized)
+        {
+            tokens.has_nosql_operator = true;
+            tokens.active_token_names.push("NOSQL_ADMIN_COMMAND".to_string());
+        }
+        if normalized.contains('{')
+            && RE_SQL_JSON_FIELD.get().unwrap().is_match(&normalized)
+        {
+            tokens.has_sqli_subquery = true;
+            tokens.active_token_names.push("SQLI_JSON_FIELD".to_string());
+        }
+
+        // 11. Server-Side Template Injection Tokens: engine delimiters coupled with sinks.
+        // Gate: every template family needs a delimiter byte.
+        if (normalized.contains("{{")
+            || normalized.contains("${")
+            || normalized.contains("#set")
+            || normalized.contains("#if")
+            || normalized.contains("#foreach")
+            || normalized.contains("#evaluate")
+            || normalized.contains("#include")
+            || normalized.contains("#parse")
+            || normalized.contains("#define")
+            || normalized.contains("#macro")
+            || normalized.contains("#elseif")
+            || normalized.contains("#assign")
+            || normalized.contains("<#"))
+            && (RE_SSTI_JINJA.get().unwrap().is_match(&normalized)
+                || RE_SSTI_FREEMARKER.get().unwrap().is_match(&normalized)
+                || RE_SSTI_VELOCITY.get().unwrap().is_match(&normalized))
+        {
+            tokens.has_ssti_expression = true;
+            tokens.active_token_names.push("SSTI_TEMPLATE_EXPRESSION".to_string());
+        }
+
+        // 12. HTTP Response Splitting: decoded CRLF introducing a response header.
+        // Multipart bodies legitimately carry Content-Type/Content-Disposition
+        // after CRLF, so generic header matching excludes those there.
+        let is_multipart = norm_lower.contains("content-disposition")
+            && norm_lower.contains("form-data");
+        let mut crlf_hit = (normalized.contains('\r') || normalized.contains('\n'))
+            && RE_CRLF_RESPONSE_HDR.get().unwrap().is_match(&normalized);
+        if !crlf_hit && normalized.contains("\r\n") {
+            // Strict CRLF + any header-shaped token, gated on mail/upload-ish
+            // context to avoid flagging YAML/JSON line breaks.
+            let mailish = norm_lower.contains("mime")
+                || norm_lower.contains("boundary")
+                || norm_lower.contains("filename")
+                || norm_lower.contains("attachment")
+                || norm_lower.contains("subject")
+                || norm_lower.contains("content-type")
+                || norm_lower.contains("content-disposition")
+                || norm_lower.contains('@');
+            for m in RE_CRLF_ANY_HDR.get().unwrap().find_iter(&normalized) {
+                // Parameter-assignment context: an '=' in the 64 chars before
+                // the CRLF indicates a query/body value, not a YAML/JSON break.
+                let wstart = m.start().saturating_sub(64);
+                let window = &normalized[wstart..m.start()];
+                let param_eq = window.rfind('=').map(|i| {
+                    let tail = &window[i..];
+                    !tail.contains('\n') && !tail.contains('\r') && !tail.contains('{')
+                }).unwrap_or(false);
+                if !mailish && !param_eq {
+                    continue;
+                }
+                // Extract the header name after \r\n[ \t]*
+                let tail = &normalized[m.start()..];
+                let name_end = tail
+                    .trim_start_matches("\r\n")
+                    .trim_start_matches(|c: char| c == ' ' || c == '\t')
+                    .find(':')
+                    .unwrap_or(0);
+                let name = tail
+                    .trim_start_matches("\r\n")
+                    .trim_start_matches(|c: char| c == ' ' || c == '\t')
+                    .get(..name_end)
+                    .unwrap_or("")
+                    .to_ascii_lowercase();
+                if is_multipart
+                    && (name == "content-type"
+                        || name == "content-disposition"
+                        || name == "content-location"
+                        || name == "content-range"
+                        || name == "content-md5")
+                {
+                    continue;
+                }
+                // MIME part-header sequence: filename="x"\r\nContent-Type: ...
+                // is how multipart bodies are serialized even when the request
+                // headers don't declare multipart/form-data (raw MIME posts).
+                if (name == "content-type" || name == "content-disposition")
+                    && normalized[..m.start()]
+                        .rfind("filename=")
+                        .map(|i| m.start() - i < 200)
+                        .unwrap_or(false)
+                {
+                    continue;
+                }
+                crlf_hit = true;
+                break;
+            }
+        }
+        if !crlf_hit
+            && !is_multipart
+            && (normalized.contains('\r') || normalized.contains('\n'))
+        {
+            // Same MIME part-header exemption as the ANY_HDR loop: a
+            // filename="x"\r\nContent-Type: sequence is a serialized body
+            // part, not response splitting.
+            crlf_hit = RE_CRLF_CONTENT_HDR.get().unwrap().find_iter(&normalized).any(|m| {
+                normalized[..m.start()]
+                    .rfind("filename=")
+                    .map(|i| m.start() - i >= 200)
+                    .unwrap_or(true)
+            });
+        }
+        if RE_EMAIL_ENCODED_WORD.get().unwrap().is_match(&normalized) {
+            crlf_hit = true;
+        }
+        // RFC 2047 Q-encoded CRLF inside an encoded-word: =?UTF-8?Q?...=0D=0A...
+        // decodes to a raw header break server-side regardless of charset.
+        if norm_lower.contains("=?")
+            && (norm_lower.contains("=0d=0a") || norm_lower.contains("=0a=0d"))
+        {
+            crlf_hit = true;
+        }
+        if crlf_hit {
+            tokens.has_crlf_header_injection = true;
+            tokens.active_token_names.push("CRLF_RESPONSE_HEADER_INJECTION".to_string());
+        }
+
+        // 13. Malicious Upload: executable filename, or server-side tag in upload context.
+        // Gate: filename params and server-side tags are the only entry points.
+        if (norm_lower.contains("filename")
+            || norm_lower.contains("file_name")
+            || norm_lower.contains("filepath")
+            || norm_lower.contains("upload")
+            || normalized.contains("<?")
+            || normalized.contains("<%"))
+            && (RE_UPLOAD_FILENAME.get().unwrap().is_match(&normalized)
+                || (RE_SERVER_SIDE_TAG.get().unwrap().is_match(&normalized)
+                    && RE_UPLOAD_CTX.get().unwrap().is_match(&normalized)))
+        {
+            tokens.has_malicious_upload = true;
+            tokens.active_token_names.push("MALICIOUS_UPLOAD_PAYLOAD".to_string());
+        }
+
+        // 14. Expanded SSRF Targets: alternate loopback encodings, rebinding domains,
+        // and internal-only TLDs (the last only inside URL-shaped parameters).
+        // jrt:/ uses a single slash, so the gate also accepts it.
+        // Gate: every SSRF pattern is scheme-prefixed.
+        if normalized.contains("://") || normalized.contains("jrt:/") {
+            if RE_SSRF_ALT_TARGET.get().unwrap().is_match(&normalized) {
+                tokens.has_ssrf_metadata = true;
+                tokens.active_token_names.push("ALTERNATE_NETWORK_TARGET".to_string());
+            }
+            if RE_SSRF_INTERNAL_TLD.get().unwrap().is_match(&normalized)
+                && Self::has_internal_host_context(&normalized)
+            {
+                tokens.has_ssrf_metadata = true;
+                tokens.active_token_names.push("INTERNAL_TLD_ENDPOINT".to_string());
+            }
+            // Cloud/exfil-capable schemes (s3://, gs://, ssh2://, ldap://, ...) behind
+            // a URL-shaped parameter.
+            for m in RE_SSRF_CLOUD_SCHEME.get().unwrap().find_iter(&normalized) {
+                let start = m.start();
+                let mut ws = start.saturating_sub(64);
+                while ws > 0 && !normalized.is_char_boundary(ws) {
+                    ws -= 1;
+                }
+                if RE_SSRF_PARAM_CONTEXT
+                    .get()
+                    .unwrap()
+                    .is_match(&normalized[ws..start])
+                {
+                    tokens.has_ssrf_metadata = true;
+                    tokens.active_token_names.push("CLOUD_SCHEME_ENDPOINT".to_string());
+                    break;
+                }
+            }
+        }
+
+        // 15. Windows-native shell binaries behind a metacharacter gate.
+        if RE_WIN_SHELL_BINARY.get().unwrap().is_match(&normalized)
+            && RE_SHELL_METACHAR_GATE.get().unwrap().is_match(&normalized)
+        {
+            tokens.has_shell_chain = true;
+            tokens.active_token_names.push("WINDOWS_SYSTEM_BINARY".to_string());
+            tokens.active_token_names.push("SHELL_METACHAR".to_string());
+        }
+
+        // 15b. Config/exec tricks needing no metacharacter: sed -e 'e', tar
+        // --checkpoint-action, find -exec, git core.pager, BEGIN{system},
+        // openssl s_client, telnet host port, whois/nslookup/ping $var.
+        if RE_CMD_EXEC_TRICK.get().unwrap().is_match(&normalized) {
+            tokens.has_shell_chain = true;
+            tokens.active_token_names.push("CMD_EXEC_TRICK".to_string());
+        }
+
+        // 16. Error-based / blind / file-write SQL primitives need an injection
+        // context (quote, comment, UNION or SELECT) to avoid flagging prose.
+        // Gate: every listed function is invoked with `(`.
+        if RE_SQL_ERROR_FUNC.get().unwrap().is_match(&normalized)
+            && (normalized.contains('(')
+                || norm_lower.contains("into outfile")
+                || norm_lower.contains("into dumpfile")
+                || norm_lower.contains("waitfor delay"))
+            && (tokens.has_quote
+                || tokens.has_union_select
+                || tokens.has_stacked_ddl
+                || normalized.contains("--")
+                || norm_lower.contains("select"))
+        {
+            tokens.has_sqli_danger_func = true;
+            tokens.active_token_names.push("SQLI_DANGER_FUNCTION".to_string());
+        }
+
+        // 17. PHP stream wrappers abused for command exec or arbitrary file read.
+        // Gate: wrappers are always scheme-prefixed.
+        if normalized.contains("://")
+            && RE_PHP_WRAPPER.get().unwrap().is_match(&normalized)
+        {
+            tokens.has_path_traversal = true;
+            tokens.active_token_names.push("PHP_STREAM_WRAPPER".to_string());
+        }
+
+        // 18. Shellshock function export: () { :;}; <command>
+        // Gate: the signature requires braces.
+        if normalized.contains('{')
+            && RE_SHELLSHOCK.get().unwrap().is_match(&normalized)
+        {
+            tokens.has_shell_chain = true;
+            tokens.active_token_names.push("SHELLSHOCK_FUNCTION_EXPORT".to_string());
+        }
+
+        // 19. Absolute-path binaries and busybox applets behind a metacharacter.
+        // Gate: both alternatives require `/` or the literal `busybox`.
+        if (normalized.contains('/') || norm_lower.contains("busybox"))
+            && RE_PATH_BINARY.get().unwrap().is_match(&normalized)
+            && RE_SHELL_METACHAR_GATE.get().unwrap().is_match(&normalized)
+        {
+            tokens.has_shell_chain = true;
+            tokens.active_token_names.push("ABSOLUTE_PATH_BINARY".to_string());
+            tokens.active_token_names.push("SHELL_METACHAR".to_string());
+        }
+
+        // 20. XXE external / parameter entities reaching SYSTEM or PUBLIC ids,
+        // plus external refs that resolve attacker resources without a DOCTYPE
+        // (xml-stylesheet href, xml:base, xi:include href).
+        if normalized.contains("<!")
+            && RE_XXE_ENTITY.get().unwrap().is_match(&normalized)
+        {
+            tokens.has_xxe_entity = true;
+            tokens.active_token_names.push("XXE_EXTERNAL_ENTITY".to_string());
+        }
+        if normalized.contains('<')
+            && RE_XXE_REF.get().unwrap().is_match(&normalized)
+        {
+            tokens.has_xxe_entity = true;
+            tokens.active_token_names.push("XXE_EXTERNAL_REFERENCE".to_string());
+        }
+
+        // 21. Quote-free SQLi: subqueries, CASE WHEN and HAVING tautologies.
+        if norm_lower.contains("select")
+            && RE_SQL_SUBQUERY.get().unwrap().is_match(&normalized)
+        {
+            tokens.has_sqli_subquery = true;
+            tokens.active_token_names.push("SQLI_SUBQUERY".to_string());
+        }
+        if (norm_lower.contains("case") || norm_lower.contains("having"))
+            && RE_SQL_CASE_HAVING.get().unwrap().is_match(&normalized)
+        {
+            tokens.has_sqli_case_having = true;
+            tokens.active_token_names.push("SQLI_CASE_HAVING".to_string());
+        }
+        // UNION/SELECT with /* */ comments inside the keywords themselves.
+        if normalized.contains("/**/")
+            && RE_UNION_SELECT_OBF.get().unwrap().is_match(&normalized)
+        {
+            tokens.has_union_select = true;
+            tokens.active_token_names.push("UNION_SELECT_OBFUSCATED".to_string());
+        }
+
+        // 22. Command binary glued to ${IFS} whitespace substitution.
+        if norm_lower.contains("ifs")
+            && RE_CMD_IFS_BINARY.get().unwrap().is_match(&normalized)
+        {
+            tokens.has_cmd_ifs_binary = true;
+            tokens.has_shell_chain = true;
+            tokens.active_token_names.push("CMD_IFS_BINARY".to_string());
+            tokens.active_token_names.push("SHELL_METACHAR".to_string());
+            tokens.active_token_names.push("SYSTEM_BINARY_INVOCATION".to_string());
+        }
+
+        // 23. SSTI arithmetic probes and embedded template tags.
+        if (normalized.contains("{{")
+            || normalized.contains("${")
+            || normalized.contains("<%")
+            || normalized.contains("#{")
+            || normalized.contains("*{")
+            || norm_lower.contains("expr")
+            || norm_lower.contains("template")
+            || norm_lower.contains("eval"))
+            && (RE_SSTI_ARITH.get().unwrap().is_match(&normalized)
+                || RE_SSTI_EXPR_PARAM.get().unwrap().is_match(&normalized))
+        {
+            tokens.has_ssti_arith = true;
+            tokens.active_token_names.push("SSTI_ARITHMETIC_PROBE".to_string());
+        }
+        if normalized.contains("<%")
+            && RE_SSTI_EMBEDDED.get().unwrap().is_match(&normalized)
+        {
+            tokens.has_ssti_embedded = true;
+            tokens.active_token_names.push("SSTI_EMBEDDED_TAG".to_string());
+        }
+        // Smarty single-brace tags: {eval}, {php}, {insert}, {fetch}, {include}
+        if normalized.contains('{')
+            && RE_SSTI_SMARTY.get().unwrap().is_match(&normalized)
+        {
+            tokens.has_ssti_expression = true;
+            tokens.active_token_names.push("SSTI_SMARTY_TAG".to_string());
+        }
+
+        // 24. SSRF via userinfo trick and scheme-relative URLs.
+        if normalized.contains("://")
+            && normalized.contains('@')
+            && RE_SSRF_USERINFO.get().unwrap().is_match(&normalized)
+        {
+            tokens.has_ssrf_userinfo = true;
+            tokens.has_ssrf_metadata = true;
+            tokens.active_token_names.push("SSRF_USERINFO_TRICK".to_string());
+        }
+        if normalized.contains("//") {
+            for m in RE_SSRF_SCHEME_REL.get().unwrap().find_iter(&normalized) {
+                let start = m.start();
+                let mut ws = start.saturating_sub(64);
+                while ws > 0 && !normalized.is_char_boundary(ws) {
+                    ws -= 1;
+                }
+                if RE_SSRF_PARAM_CONTEXT
+                    .get()
+                    .unwrap()
+                    .is_match(&normalized[ws..start])
+                {
+                    tokens.has_ssrf_scheme_rel = true;
+                    tokens.has_ssrf_metadata = true;
+                    tokens.active_token_names.push("SSRF_SCHEME_RELATIVE".to_string());
+                    break;
+                }
+            }
+        }
+
+        // 25. LDAP filter injection: metacharacters plus directory attribute context.
+        if (normalized.contains(")(")
+            || normalized.contains("(|")
+            || normalized.contains("*)")
+            || normalized.contains("=*")
+            || normalized.contains("(&"))
+            && RE_LDAP_META.get().unwrap().is_match(&normalized)
+            && (norm_lower.contains("uid")
+                || norm_lower.contains("cn=")
+                || norm_lower.contains("objectclass")
+                || norm_lower.contains("userpassword")
+                || norm_lower.contains("samaccountname")
+                || norm_lower.contains("distinguishedname")
+                || norm_lower.contains("memberof")
+                || norm_lower.contains("dn=")
+                || norm_lower.contains("ou=")
+                || norm_lower.contains("mail=")
+                || norm_lower.contains("sn=")
+                || norm_lower.contains("givenname")
+                || norm_lower.contains("displayname")
+                || norm_lower.contains("user")
+                || norm_lower.contains("login")
+                || norm_lower.contains("pass")
+                || norm_lower.contains("filter")
+                || norm_lower.contains("search")
+                || norm_lower.contains("directory")
+                || norm_lower.contains("telephonenumber"))
+        {
+            tokens.has_ldap_injection = true;
+            tokens.active_token_names.push("LDAP_FILTER_INJECTION".to_string());
+        }
+        // Hex-escaped LDAP wildcard: \2a decodes to '*' server-side. Legitimate
+        // filters write '*' literally, so the escape itself is the signal.
+        if norm_lower.contains("\\2a")
+            && (norm_lower.contains("\"u\"")
+                || norm_lower.contains("u=")
+                || norm_lower.contains("uid")
+                || norm_lower.contains("user")
+                || norm_lower.contains("login")
+                || norm_lower.contains("cn=")
+                || norm_lower.contains("dn=")
+                || norm_lower.contains("mail")
+                || norm_lower.contains("telephonenumber")
+                || norm_lower.contains("auth"))
+        {
+            tokens.has_ldap_injection = true;
+            tokens.active_token_names.push("LDAP_HEX_WILDCARD_ESCAPE".to_string());
+        }
+
+        // 26. Insecure deserialization object markers (Java/PHP/.NET/Python/Node).
+        if (norm_lower.contains("ro0ab")
+            || norm_lower.contains("/wep")
+            || norm_lower.contains("aaeaaad")
+            || norm_lower.contains("a:")
+            || norm_lower.contains("o:")
+            || norm_lower.contains("aced")
+            || norm_lower.contains("h4si")
+            || norm_lower.contains("_$$nd_func")
+            || norm_lower.contains("__php_incomplete")
+            || norm_lower.contains("c:")
+            || norm_lower.contains("s:")
+            || normalized.contains('\n'))
+            && RE_DESERIALIZATION.get().unwrap().is_match(&normalized)
+        {
+            tokens.has_deserialization = true;
+            tokens.active_token_names.push("INSECURE_DESERIALIZATION".to_string());
+        }
+
+        // 27. PHP higher-order callables + variable-function invocation.
+        if normalized.contains('(')
+            && (RE_PHP_FUNC_CALLBACK.get().unwrap().is_match(&normalized)
+                || RE_PHP_DOLLAR_BRACE_CALL.get().unwrap().is_match(&normalized)
+                || RE_PHP_EVAL_MODIFIER.get().unwrap().is_match(&normalized)
+                || RE_PHP_GADGET_CLASS.get().unwrap().is_match(&normalized)
+                || (normalized.contains("$")
+                    && (RE_PHP_CONCAT_ASSIGN.get().unwrap().is_match(&normalized)
+                        || RE_PHP_VAR_CALL.get().unwrap().is_match(&normalized))))
+        {
+            tokens.has_dynamic_eval = true;
+            tokens.active_token_names.push("PHP_CALLABLE_INJECTION".to_string());
+        }
+
+        // 28. Windows living-off-the-land binaries (hostile without metachars).
+        if RE_WIN_LOLBIN.get().unwrap().is_match(&normalized) {
+            tokens.has_shell_chain = true;
+            tokens.active_token_names.push("WINDOWS_LOLBIN".to_string());
+        }
+
+        // 29. XPath location-path / function / axis injection.
+        // Path regex fires on structural probes; function names need a //, ::,
+        // or quote context; axes (::) are self-contained. Matches whose // is
+        // part of a scheme:// URL are skipped (char before // must not be ':').
+        let xpath_path_hit = RE_XPATH_EXPR.get().unwrap().find_iter(&normalized).any(|m| {
+            let before = m.start().saturating_sub(1);
+            normalized.as_bytes().get(before) != Some(&b':')
+        });
+        if xpath_path_hit
+            || RE_XPATH_AXIS.get().unwrap().is_match(&normalized)
+            || norm_lower.contains("generate-id(")
+            || norm_lower.contains("processing-instruction(")
+            || (RE_XPATH_FUNC.get().unwrap().find_iter(&normalized).any(|m| {
+                // Skip JS method calls: el.text(), obj.key(), node.id()
+                m.start() == 0 || normalized.as_bytes()[m.start() - 1] != b'.'
+            }) && (normalized.contains("//")
+                    || normalized.contains("::")
+                    || normalized.contains('\'')
+                    || normalized.contains('"')))
+        {
+            tokens.has_xpath_injection = true;
+            tokens.active_token_names.push("XPATH_INJECTION".to_string());
+        }
+
+        // 30. v6 transport/content obfuscation layer.
+        if normalized.contains('\u{1b}') {
+            tokens.has_ansi_escape = true;
+            tokens.active_token_names.push("ANSI_ESCAPE_SEQUENCE".to_string());
+        }
+        if RE_NESTED_QUANT.get().unwrap().is_match(&normalized) {
+            tokens.has_nested_quantifier = true;
+            tokens.active_token_names.push("REDOS_NESTED_QUANTIFIER".to_string());
+        }
+        if RE_SAML_PROTO.get().unwrap().is_match(&normalized) {
+            tokens.has_saml_protocol = true;
+            tokens.active_token_names.push("SAML_PROTOCOL_MESSAGE".to_string());
+        }
+        if RE_XSLT.get().unwrap().is_match(&normalized) {
+            tokens.has_xslt_stylesheet = true;
+            tokens.active_token_names.push("XSLT_STYLESHEET".to_string());
+        }
+        if RE_XQUERY.get().unwrap().is_match(&normalized) {
+            tokens.has_xquery_expr = true;
+            tokens.active_token_names.push("XQUERY_EXPRESSION".to_string());
+        }
+        if RE_SMTP_CMD.get().unwrap().is_match(&normalized) {
+            tokens.has_smtp_command = true;
+            tokens.active_token_names.push("SMTP_COMMAND_INJECTION".to_string());
+        }
+        if RE_JSONRPC_EXEC.get().unwrap().is_match(&normalized) {
+            tokens.has_jsonrpc_exec = true;
+            tokens.active_token_names.push("RPC_METHOD_ABUSE".to_string());
+        }
+        if RE_ABS_UPLOAD_PATH.get().unwrap().is_match(&normalized) {
+            tokens.has_absolute_upload_path = true;
+            tokens.active_token_names.push("ABSOLUTE_UPLOAD_PATH".to_string());
+        }
+        // CSV formula: only fires when the text smells like a spreadsheet export
+        // context (cell/export/csv/sheet/download), never in arbitrary prose.
+        let csv_ctx = norm_lower.contains("cell")
+            || norm_lower.contains("export")
+            || norm_lower.contains("csv")
+            || norm_lower.contains("sheet")
+            || norm_lower.contains("download");
+        if csv_ctx && RE_CSV_FORMULA.get().unwrap().is_match(&normalized) {
+            tokens.has_csv_formula = true;
+            tokens.active_token_names.push("CSV_FORMULA_INJECTION".to_string());
+        }
+        // Log forging: newline+timestamp/level/stack frame, or forged ANSI paint.
+        if RE_LOG_LINE.get().unwrap().is_match(&normalized) {
+            tokens.has_log_forgery = true;
+            tokens.active_token_names.push("LOG_LINE_FORGERY".to_string());
+        }
+        // Invisible tag characters (U+E0000–E007F) and bidi overrides present
+        // in the RAW input — after folding they vanish, so evidence must be
+        // captured before normalization.
+        if raw_text.chars().any(|c| {
+            matches!(c,
+                '\u{E0000}'..='\u{E007F}'
+                | '\u{202A}'..='\u{202E}'
+                | '\u{2066}'..='\u{2069}'
+                | '\u{200B}'..='\u{200D}'
+                | '\u{2060}'
+                | '\u{FEFF}')
+        }) {
+            tokens.has_hidden_chars = true;
+            tokens.active_token_names.push("INVISIBLE_CHAR_SMEUGLING".to_string());
+        }
+        // Mail-header keys smuggled as JSON fields.
+        if RE_MAIL_HDR_JSON.get().unwrap().is_match(&normalized) {
+            tokens.has_smtp_command = true;
+            tokens.active_token_names.push("MAIL_HEADER_JSON_INJECTION".to_string());
+        }
+        // Base64-encoded XML carrying SAML markers (SAMLResponse posted raw).
+        if normalized.len() > 200
+            && RE_B64_XML_SAML.get().unwrap().is_match(&normalized)
+        {
+            // Cheap pre-filter: the blob must contain SAML-ish base64 fragments
+            // or the PD94bWwg ("<?xml ") prolog in any alignment.
+            let low = normalized.to_ascii_lowercase();
+            if low.contains("pd94bw") || low.contains("c2ftb") || low.contains("u0fud") {
+                tokens.has_saml_protocol = true;
+                tokens.active_token_names.push("SAML_BASE64_ASSERTION".to_string());
+            }
+        }
+        // Keyword smuggling: a confusable/homoglyph-folded keyword appearing in
+        // the canonical text. Only fires when the raw input was obfuscated AND
+        // the keyword sits in a parameter-value position (preceded by '='),
+        // so path segments (/wp-admin/) and JSON string values stay benign.
+        if is_obfuscated {
+            let kw_hit = RE_KEYWORD_SMUGGLE.get().unwrap().find_iter(&normalized).any(|m| {
+                normalized[..m.start()]
+                    .trim_end()
+                    .ends_with('=')
+            });
+            if kw_hit {
+                tokens.has_keyword_smuggling = true;
+                tokens.active_token_names.push("CONFUSABLE_KEYWORD_SMEUGGLE".to_string());
+            }
+        }
+
+        // 31. Data-semantic anomalies (candidate-grade heuristics).
+        // Numeric: negative or absurdly large money/quantity fields.
+        if RE_NUMERIC_ANOMALY.get().unwrap().is_match(&normalized)
+            && (RE_NUM_NEG.get().unwrap().is_match(&normalized)
+                || RE_NUM_BIG.get().unwrap().is_match(&normalized)
+                || RE_DISCOUNT100.get().unwrap().is_match(&normalized)
+                || RE_NUM_TINY.get().unwrap().is_match(&normalized))
+        {
+            tokens.has_numeric_anomaly = true;
+            tokens.active_token_names.push("NUMERIC_FIELD_ANOMALY".to_string());
+        }
+        // Privileged fields: key present AND value looks like privilege grant.
+        if RE_PRIVILEGED_KEY.get().unwrap().is_match(&normalized)
+            && RE_PRIV_VAL.get().unwrap().is_match(&normalized)
+        {
+            tokens.has_privileged_field = true;
+            tokens.active_token_names.push("PRIVILEGED_FIELD_ASSIGNMENT".to_string());
+        }
+
         tokens.active_token_names.sort();
         tokens.active_token_names.dedup();
         tokens
@@ -747,7 +2272,16 @@ impl AstLexer {
 
     /// Full-fidelity HTTP request tokenizer combining headers, body, framing, and AST grammars.
     pub fn tokenize_request(req: &HttpRequestPayload) -> LexicalTokens {
-        let inspectable = req.full_inspectable_string();
+        // Scan every header, not only the whitelisted ones: CRLF injection and
+        // framework exploits routinely arrive in custom headers (X-*, Spring
+        // function-routing, etc.).
+        let mut inspectable = req.full_inspectable_string();
+        for (k, v) in &req.headers {
+            inspectable.push(' ');
+            inspectable.push_str(k);
+            inspectable.push_str(": ");
+            inspectable.push_str(v);
+        }
         let mut tokens = Self::tokenize(&inspectable);
 
         // A. GraphQL AST Grammar Analyzer
@@ -760,6 +2294,9 @@ impl AstLexer {
         }
         if gql.has_batching {
             tokens.has_graphql_batching = true;
+        }
+        if gql.has_abuse {
+            tokens.has_graphql_abuse = true;
         }
         tokens.active_token_names.extend(gql.active_tokens);
 
@@ -800,7 +2337,19 @@ impl AstLexer {
 
         // E. Direct Target & Path Specific Island Checks (ensures exact URI match)
         let path_and_query = format!("{}?{}", req.path, req.query_string);
-        if RE_WORDPRESS_PROBE.get().unwrap().is_match(&path_and_query) {
+        if RE_WORDPRESS_PROBE.get().unwrap().is_match(&path_and_query)
+            && !path_and_query.to_ascii_lowercase().contains("admin-ajax.php")
+        {
+            tokens.has_wordpress_probe = true;
+            tokens.active_token_names.push("WORDPRESS_RECON_PROBE".to_string());
+        }
+        if !tokens.has_wordpress_probe
+            && path_and_query.contains("xmlrpc.php")
+            && (req.body.contains("methodCall")
+                || req.body.contains("wp.get")
+                || req.body.contains("system.listMethods")
+                || req.body.contains("pingback.ping"))
+        {
             tokens.has_wordpress_probe = true;
             tokens.active_token_names.push("WORDPRESS_RECON_PROBE".to_string());
         }
@@ -808,10 +2357,215 @@ impl AstLexer {
             tokens.has_sensitive_file_probe = true;
             tokens.active_token_names.push("SENSITIVE_FILE_EXPOSURE_PROBE".to_string());
         }
+        // Appliance/CVE admin endpoints (PAN-OS, FortiGate, ASA, Pulse, Citrix,
+        // Exchange, Atlassian, Solr, Nacos, XXL-Job, etc.).
+        if RE_APPLIANCE_CVE.get().unwrap().is_match(&path_and_query) {
+            tokens.has_sensitive_file_probe = true;
+            tokens.active_token_names.push("APPLIANCE_CVE_ENDPOINT_PROBE".to_string());
+        }
         let re_framework = RE_FRAMEWORK_EXPLOIT.get().unwrap();
         if re_framework.is_match(&path_and_query) || (!req.body.is_empty() && re_framework.is_match(&req.body)) {
             tokens.has_framework_exploit_probe = true;
             tokens.active_token_names.push("FRAMEWORK_EXPLOIT_PAYLOAD".to_string());
+        }
+
+        // F. Host / Forwarded header integrity (password-reset & cache poisoning)
+        if Self::analyze_host_headers(&req.headers) {
+            tokens.has_host_header_anomaly = true;
+            tokens.active_token_names.push("HOST_HEADER_INJECTION".to_string());
+        }
+        // Method-override headers smuggle privileged verbs (PUT/DELETE/PATCH)
+        // past front-end method restrictions; TRACE/CONNECT enable cross-site
+        // tracing and tunnel abuse.
+        for (k, v) in &req.headers {
+            let kl = k.to_ascii_lowercase();
+            if matches!(
+                kl.as_str(),
+                "x-http-method-override" | "x-http-method" | "x-method-override" | "x-original-method"
+            ) {
+                let vl = v.trim().to_ascii_uppercase();
+                if matches!(vl.as_str(), "PUT" | "DELETE" | "PATCH" | "TRACE" | "CONNECT" | "DEBUG") {
+                    tokens.has_method_override_abuse = true;
+                    tokens.active_token_names.push("METHOD_OVERRIDE_ABUSE".to_string());
+                    break;
+                }
+            }
+        }
+        // Absolute-URI request targets (GET http://evil/x) smuggle a foreign host
+        // into origin-form requests; legitimate only on explicit forward proxies.
+        if req.path.starts_with("http://") || req.path.starts_with("https://") {
+            tokens.has_host_absolute_uri = true;
+            tokens.has_host_header_anomaly = true;
+            tokens.active_token_names.push("ABSOLUTE_URI_HOST".to_string());
+        }
+
+        // G. Request smuggling / desync: framing-header contradictions.
+        // CL+TE together, malformed CL/TE values, duplicate divergent values,
+        // and non-standard underscore header names are all desync surfaces.
+        {
+            let mut te_present = false;
+            let mut cl_values: Vec<String> = Vec::new();
+            let mut te_values: Vec<String> = Vec::new();
+            let mut odd_framing = false;
+            for (k, v) in &req.headers {
+                let kl = k.to_ascii_lowercase();
+                if kl == "transfer-encoding" {
+                    te_present = true;
+                    te_values.push(v.clone());
+                    // TE must be exactly "chunked" (modulo whitespace). Padded
+                    // or obfuscated values desync front/back parsers.
+                    if !RE_TE_VALUE.get().unwrap().is_match(v) || v != v.trim() {
+                        odd_framing = true;
+                    }
+                } else if kl == "content-length" {
+                    cl_values.push(v.clone());
+                    let t = v.trim();
+                    if t.is_empty()
+                        || !t.bytes().all(|b| b.is_ascii_digit())
+                        || (t.len() > 1 && t.starts_with('0'))
+                        || t.starts_with('+')
+                        || v != v.trim()
+                    {
+                        odd_framing = true;
+                    }
+                } else if kl == "transfer_encoding" || kl == "content_length" {
+                    odd_framing = true;
+                }
+            }
+            let cl_dup = cl_values.len() > 1
+                && cl_values.iter().any(|v| v.trim() != cl_values[0].trim());
+            let te_dup = te_values.len() > 1
+                && te_values.iter().any(|v| v.trim() != te_values[0].trim());
+            if (te_present && !cl_values.is_empty()) || odd_framing || cl_dup || te_dup {
+                tokens.has_smuggling_desync = true;
+                tokens.active_token_names.push("HTTP_DESYNC_FRAMING".to_string());
+            }
+        }
+
+        // H. WebDAV / non-REST methods reaching REST endpoints.
+        {
+            let m = req.method.to_ascii_uppercase();
+            if matches!(
+                m.as_str(),
+                "PROPFIND" | "PROPPATCH" | "MKCOL" | "COPY" | "MOVE" | "LOCK" | "UNLOCK"
+                    | "SEARCH" | "REPORT" | "ACL" | "BASELINE-CONTROL" | "LABEL"
+            ) {
+                tokens.has_webdav_method = true;
+                tokens.active_token_names.push("WEBDAV_METHOD_ABUSE".to_string());
+            }
+        }
+
+        // I. Cache deception: account-ish path served with a static-asset
+        // extension (cache keys on extension, app keys on auth).
+        {
+            let p = req.path.to_ascii_lowercase();
+            if RE_WEBASSET_EXT.get().unwrap().is_match(&p)
+                && RE_ACCT_PATH.get().unwrap().is_match(&p)
+            {
+                tokens.has_cache_deception = true;
+                tokens.active_token_names.push("CACHE_DECEPTION_PATH".to_string());
+            }
+        }
+
+        // J. OAuth/OIDC redirect_uri abuse: userinfo tricks, protocol-relative,
+        // javascript:/data: schemes, backslashes.
+        {
+            let hay = format!("{}?{}", req.path, req.query_string);
+            if let Some(re) = RE_REDIRECT_URI.get() {
+                for cap in re.captures_iter(&hay) {
+                    let val = cap.get(1).map(|m| m.as_str()).unwrap_or("");
+                    let vl = val.to_ascii_lowercase();
+                    if vl.contains('@')
+                        || vl.starts_with("//")
+                        || vl.contains("javascript:")
+                        || vl.contains("data:")
+                        || vl.contains('\\')
+                        || vl.contains("%2f%2f")
+                    {
+                        tokens.has_oauth_redirect_abuse = true;
+                        tokens.active_token_names.push("OAUTH_REDIRECT_URI_ABUSE".to_string());
+                        break;
+                    }
+                }
+            }
+            // ROPC/password grant with elevated scope.
+            let ql = req.query_string.to_ascii_lowercase();
+            let bl = req.body.to_ascii_lowercase();
+            if (ql.contains("grant_type=password") || bl.contains("grant_type=password"))
+                && (ql.contains("scope=admin") || bl.contains("scope=admin")
+                    || ql.contains("scope=*admin") || bl.contains("scope=*admin"))
+            {
+                tokens.has_oauth_redirect_abuse = true;
+                tokens.active_token_names.push("OAUTH_SCOPE_ESCALATION".to_string());
+            }
+        }
+
+        // K. IDN homograph / punycode: xn-- hosts inside URL-ish params, or
+        // brand names written with Cyrillic lookalikes.
+        {
+            let pq = format!("{}?{}", req.path, req.query_string);
+            let raw_l = pq.to_ascii_lowercase();
+            let brand = RE_BRAND_HOST.get().unwrap();
+            let cyr = RE_CYR_BRAND.get().unwrap();
+            // Param-context punycode: url=/host=/redirect=/link=/to=/callback=
+            let urlish = raw_l.contains("url=")
+                || raw_l.contains("host=")
+                || raw_l.contains("redirect")
+                || raw_l.contains("link=")
+                || raw_l.contains("to=")
+                || raw_l.contains("callback=")
+                || raw_l.contains("return=");
+            if (raw_l.contains("xn--") && (urlish || brand.is_match(&raw_l)))
+                || (cyr.is_match(&pq) && raw_l.contains('.'))
+            {
+                tokens.has_punycode_host = true;
+                tokens.active_token_names.push("PUNYCODE_HOMOGRAPH_HOST".to_string());
+            }
+        }
+
+        // L. SAML endpoint probing: /saml metadata/login/acs paths are the
+        // assertion-receiving surface; unsigned or wrapped assertions arrive
+        // here. Deployments with real SAML can disable the island.
+        {
+            let pl = req.path.to_ascii_lowercase();
+            if pl.contains("/saml") || pl.contains("/sso/saml") {
+                tokens.has_saml_protocol = true;
+                tokens.active_token_names.push("SAML_ENDPOINT_PROBE".to_string());
+            }
+        }
+
+        // M. SOAPAction header abuse: wildcard actions, exec/admin keywords,
+        // or non-HTTP schemes smuggled into the action URI.
+        for (k, v) in &req.headers {
+            if k.eq_ignore_ascii_case("soapaction") {
+                let vl = v.trim().to_ascii_lowercase();
+                let suspicious = vl == "*"
+                    || vl.contains("javascript:")
+                    || vl.contains("data:")
+                    || vl.contains("exec")
+                    || vl.contains("admin")
+                    || vl.contains("shell")
+                    || vl.contains("cmd")
+                    || vl.contains("system")
+                    || vl.contains("upload")
+                    || vl.contains("delete")
+                    || vl.contains("invoke");
+                if suspicious {
+                    tokens.has_soap_action_abuse = true;
+                    tokens.active_token_names.push("SOAP_ACTION_ABUSE".to_string());
+                    break;
+                }
+            }
+        }
+
+        // N. PUT with server-side script body = WebDAV-style write abuse even
+        // though PUT alone is a legitimate REST verb.
+        if req.method.eq_ignore_ascii_case("PUT")
+            && (req.body.contains("<?php") || req.body.contains("<?=")
+                || req.body.contains("<jsp:") || req.body.contains("<%"))
+        {
+            tokens.has_malicious_upload = true;
+            tokens.active_token_names.push("WEBDAV_SCRIPT_WRITE".to_string());
         }
 
         tokens.active_token_names.sort();

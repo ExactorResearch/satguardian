@@ -8,6 +8,7 @@ pub struct GraphqlTokens {
     pub has_introspection: bool,
     pub has_deep_nesting: bool,
     pub has_batching: bool,
+    pub has_abuse: bool,
     pub max_depth: usize,
     pub active_tokens: Vec<String>,
 }
@@ -15,6 +16,11 @@ pub struct GraphqlTokens {
 static RE_GQL_INTROSPECTION: OnceLock<Regex> = OnceLock::new();
 static RE_GQL_BATCH_ARRAY: OnceLock<Regex> = OnceLock::new();
 static RE_GQL_ALIAS_BATCH: OnceLock<Regex> = OnceLock::new();
+static RE_GQL_ALIAS_FLOOD: OnceLock<Regex> = OnceLock::new();
+static RE_GQL_FRAGMENT_TYPENAME: OnceLock<Regex> = OnceLock::new();
+static RE_GQL_DANGEROUS_MUTATION: OnceLock<Regex> = OnceLock::new();
+static RE_GQL_SENSITIVE_FIELD: OnceLock<Regex> = OnceLock::new();
+static RE_GQL_BARE_TYPENAME: OnceLock<Regex> = OnceLock::new();
 
 fn init_graphql_regexes() {
     let _ = RE_GQL_INTROSPECTION.get_or_init(|| {
@@ -25,6 +31,28 @@ fn init_graphql_regexes() {
     });
     let _ = RE_GQL_ALIAS_BATCH.get_or_init(|| {
         Regex::new(r#"\b([a-zA-Z0-9_]+)\s*:\s*([a-zA-Z0-9_]+)\s*\("#).unwrap()
+    });
+    let _ = RE_GQL_ALIAS_FLOOD.get_or_init(|| {
+        // Field aliases without call parens: a1:user{...}a2:user{...}
+        Regex::new(r#"\b[a-zA-Z_]\w*\s*:\s*[a-zA-Z_]\w*\s*[{(\s]"#).unwrap()
+    });
+    let _ = RE_GQL_FRAGMENT_TYPENAME.get_or_init(|| {
+        // Inline fragment carrying __typename = schema recon via fragments.
+        Regex::new(r#"(?s)\.\.\.\s*on\s+[A-Za-z_][\w.]*[^}]{0,200}?__typename"#).unwrap()
+    });
+    let _ = RE_GQL_DANGEROUS_MUTATION.get_or_init(|| {
+        // Destructive mutation operations — normal CRUD mutations stay allowed.
+        Regex::new(r#"(?i)mutation\s*[{(\s][^}]{0,300}?\b(?:delete|drop|remove|destroy|truncate|admin|impersonate|resetPassword|changePassword|grant|revoke|exec|eval|system|importAll|exportAll|backup|restore|purge|wipe|nuke)\w*\s*[(]?"#).unwrap()
+    });
+    let _ = RE_GQL_SENSITIVE_FIELD.get_or_init(|| {
+        // Credential/secret fields in a selection set. The field must be
+        // followed by {, (, whitespace, }, comma or EOS — never ':' — so
+        // arguments like login(password:"x") stay benign.
+        Regex::new(r#"(?i)(?:^|[{(\s,])(?:password|passwd|secret|ssn|creditCard|credit_card|apiKey|api_key|privateKey|private_key|salt|hash|dob|birthdate|socialSecurity|cvv|cardNumber|pin)\s*(?:[{(\s},]|$)"#).unwrap()
+    });
+    let _ = RE_GQL_BARE_TYPENAME.get_or_init(|| {
+        // A query whose only field is __typename is a schema-recon probe.
+        Regex::new(r#"(?s)^\s*\{\s*__typename\s*\}?\s*$"#).unwrap()
     });
 }
 
@@ -108,6 +136,40 @@ impl GraphqlAstAnalyzer {
             if re.is_match(body) && !tokens.has_batching {
                 tokens.has_batching = true;
                 tokens.active_tokens.push("GRAPHQL_BATCH_ARRAY_OVERLOAD".to_string());
+            }
+        }
+        // Alias flood: >=5 aliased fields in one operation = amplification probe.
+        if let Some(re) = RE_GQL_ALIAS_FLOOD.get() {
+            if re.find_iter(&raw_query).count() >= 5 {
+                tokens.has_batching = true;
+                tokens.active_tokens.push("GRAPHQL_ALIAS_FLOOD".to_string());
+            }
+        }
+
+        // 4. Abuse probes: bare __typename recon, destructive mutations, and
+        // credential fields in the projection.
+        if let Some(re) = RE_GQL_BARE_TYPENAME.get() {
+            if re.is_match(raw_query.trim()) {
+                tokens.has_abuse = true;
+                tokens.active_tokens.push("GRAPHQL_BARE_TYPENAME_RECON".to_string());
+            }
+        }
+        if let Some(re) = RE_GQL_DANGEROUS_MUTATION.get() {
+            if re.is_match(&raw_query) {
+                tokens.has_abuse = true;
+                tokens.active_tokens.push("GRAPHQL_DESTRUCTIVE_MUTATION".to_string());
+            }
+        }
+        if let Some(re) = RE_GQL_SENSITIVE_FIELD.get() {
+            if re.is_match(&raw_query) {
+                tokens.has_abuse = true;
+                tokens.active_tokens.push("GRAPHQL_SENSITIVE_FIELD_PROJECTION".to_string());
+            }
+        }
+        if let Some(re) = RE_GQL_FRAGMENT_TYPENAME.get() {
+            if re.is_match(&raw_query) {
+                tokens.has_abuse = true;
+                tokens.active_tokens.push("GRAPHQL_FRAGMENT_TYPENAME_PROBE".to_string());
             }
         }
 

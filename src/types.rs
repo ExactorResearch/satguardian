@@ -20,7 +20,19 @@ pub enum AttackCategory {
     CmsWordpressProbe,
     SensitiveExposureProbe,
     FrameworkExploitProbe,
+    Ssti,
+    #[serde(rename = "nosql_injection")]
+    NoSqlInjection,
+    HttpResponseSplitting,
+    HostHeaderInjection,
+    MaliciousUpload,
+    Xxe,
+    LdapInjection,
+    Deserialization,
+    XpathInjection,
     BusinessRuleViolation,
+    ProtocolSemantics,
+    ContentObfuscation,
     Unknown,
 }
 
@@ -42,7 +54,18 @@ impl AttackCategory {
             AttackCategory::CmsWordpressProbe => "cms_wordpress_probe",
             AttackCategory::SensitiveExposureProbe => "sensitive_exposure_probe",
             AttackCategory::FrameworkExploitProbe => "framework_exploit_probe",
+            AttackCategory::Ssti => "ssti",
+            AttackCategory::NoSqlInjection => "nosql_injection",
+            AttackCategory::HttpResponseSplitting => "http_response_splitting",
+            AttackCategory::HostHeaderInjection => "host_header_injection",
+            AttackCategory::MaliciousUpload => "malicious_upload",
+            AttackCategory::Xxe => "xxe",
+            AttackCategory::LdapInjection => "ldap_injection",
+            AttackCategory::Deserialization => "deserialization",
+            AttackCategory::XpathInjection => "xpath_injection",
             AttackCategory::BusinessRuleViolation => "business_rule_violation",
+            AttackCategory::ProtocolSemantics => "protocol_semantics",
+            AttackCategory::ContentObfuscation => "content_obfuscation",
             AttackCategory::Unknown => "unknown",
         }
     }
@@ -64,7 +87,20 @@ impl AttackCategory {
             "cms_wordpress_probe" => AttackCategory::CmsWordpressProbe,
             "sensitive_exposure_probe" => AttackCategory::SensitiveExposureProbe,
             "framework_exploit_probe" => AttackCategory::FrameworkExploitProbe,
+            "ssti" | "template_injection" => AttackCategory::Ssti,
+            "nosql_injection" | "no_sql_injection" => AttackCategory::NoSqlInjection,
+            "http_response_splitting" | "response_splitting" => AttackCategory::HttpResponseSplitting,
+            "host_header_injection" => AttackCategory::HostHeaderInjection,
+            "malicious_upload" | "unrestricted_upload" => AttackCategory::MaliciousUpload,
+            "xxe" | "xml_external_entity" | "xxe_injection" => AttackCategory::Xxe,
+            "ldap_injection" | "ldap_filter_injection" => AttackCategory::LdapInjection,
+            "deserialization" | "insecure_deserialization" | "object_injection" => {
+                AttackCategory::Deserialization
+            }
+            "xpath_injection" | "xpath" => AttackCategory::XpathInjection,
             "business_rule_violation" => AttackCategory::BusinessRuleViolation,
+            "protocol_semantics" | "request_smuggling" | "cache_poisoning" | "webdav" => AttackCategory::ProtocolSemantics,
+            "content_obfuscation" | "unicode_normalization" | "log_injection" | "redos" => AttackCategory::ContentObfuscation,
             _ => AttackCategory::Unknown,
         }
     }
@@ -86,7 +122,18 @@ impl AttackCategory {
             AttackCategory::CmsWordpressProbe => "WORDPRESS RECONNAISSANCE / CMS PROBE",
             AttackCategory::SensitiveExposureProbe => "SENSITIVE FILE / BACKDOOR EXPOSURE PROBE",
             AttackCategory::FrameworkExploitProbe => "FRAMEWORK EXPLOIT PROBE (LOG4J/SPRING/LARAVEL)",
+            AttackCategory::Ssti => "SERVER-SIDE TEMPLATE INJECTION (SSTI)",
+            AttackCategory::NoSqlInjection => "NOSQL INJECTION / OPERATOR ABUSE",
+            AttackCategory::HttpResponseSplitting => "HTTP RESPONSE SPLITTING / CRLF INJECTION",
+            AttackCategory::HostHeaderInjection => "HOST / FORWARDED HEADER INJECTION",
+            AttackCategory::MaliciousUpload => "MALICIOUS FILE UPLOAD",
+            AttackCategory::Xxe => "XML EXTERNAL ENTITY INJECTION (XXE)",
+            AttackCategory::LdapInjection => "LDAP FILTER INJECTION",
+            AttackCategory::Deserialization => "INSECURE DESERIALIZATION / OBJECT INJECTION",
+            AttackCategory::XpathInjection => "XPATH INJECTION",
             AttackCategory::BusinessRuleViolation => "CUSTOMER BUSINESS POLICY VIOLATION",
+            AttackCategory::ProtocolSemantics => "PROTOCOL SEMANTICS ABUSE (SMUGGLING/WEBDAV/OAUTH/SAML)",
+            AttackCategory::ContentObfuscation => "CONTENT OBFUSCATION / FORGERY",
             AttackCategory::Unknown => "UNKNOWN ANOMALY",
         }
     }

@@ -48,13 +48,22 @@ fn category_specificity(category: AttackCategory) -> u8 {
         AttackCategory::GrpcSmuggling => 4,
         AttackCategory::GraphqlAbuse => 5,
         AttackCategory::PrototypePollution => 6,
-        AttackCategory::BusinessRuleViolation => 7,
-        AttackCategory::Ssrf => 8,
-        AttackCategory::CommandInjection => 9,
-        AttackCategory::PathTraversal => 10,
-        AttackCategory::Xss => 11,
-        AttackCategory::SqlInjection => 12,
-        _ => 13,
+        AttackCategory::Ssti => 7,
+        AttackCategory::NoSqlInjection => 8,
+        AttackCategory::HostHeaderInjection => 9,
+        AttackCategory::HttpResponseSplitting => 10,
+        AttackCategory::MaliciousUpload => 11,
+        AttackCategory::Xxe => 12,
+        AttackCategory::BusinessRuleViolation => 13,
+        AttackCategory::LdapInjection => 13,
+        AttackCategory::Deserialization => 13,
+        AttackCategory::XpathInjection => 13,
+        AttackCategory::Ssrf => 14,
+        AttackCategory::CommandInjection => 15,
+        AttackCategory::PathTraversal => 16,
+        AttackCategory::Xss => 17,
+        AttackCategory::SqlInjection => 18,
+        _ => 19,
     }
 }
 
@@ -205,6 +214,105 @@ impl SatguardianSatEngine {
                 category: AttackCategory::FrameworkExploitProbe,
                 description: "Deterministic island neutralizing known framework vulnerabilities including Log4j JNDI injection, Spring Expression Language, and Laravel Ignition RCE.".to_string(),
                 formal_invariant: r"\mathcal{I}_{\text{Framework}} \equiv \neg (Token(\text{FRAMEWORK\_EXPLOIT}) \land \text{IslandsConfig.framework\_shield})".to_string(),
+                confidence: 1.0,
+            },
+        );
+        islands.insert(
+            "ISLAND-NOSQL".to_string(),
+            CertaintyIsland {
+                island_id: "ISLAND-NOSQL".to_string(),
+                name: "NoSQL Operator Injection Island".to_string(),
+                category: AttackCategory::NoSqlInjection,
+                description: "Deterministic island covering MongoDB-style operator injection via JSON keys ($ne, $gt, $regex, $where) and bracket query parameters.".to_string(),
+                formal_invariant: r"\mathcal{I}_{\text{NoSQL}} \equiv \neg (Token(\text{NOSQL\_OPERATOR}) \land \text{JSON\_OR\_QUERY\_CONTEXT})".to_string(),
+                confidence: 1.0,
+            },
+        );
+        islands.insert(
+            "ISLAND-SSTI".to_string(),
+            CertaintyIsland {
+                island_id: "ISLAND-SSTI".to_string(),
+                name: "Server-Side Template Injection Island".to_string(),
+                category: AttackCategory::Ssti,
+                description: "Deterministic island covering template engine expressions (Jinja {{ }}, FreeMarker ${ }, Velocity #set) that reach reflection or runtime sinks.".to_string(),
+                formal_invariant: r"\mathcal{I}_{\text{SSTI}} \equiv \neg (Token(\text{TEMPLATE\_DELIMITER}) \land Token(\text{ENGINE\_SINK}))".to_string(),
+                confidence: 1.0,
+            },
+        );
+        islands.insert(
+            "ISLAND-HEADER-INJECTION".to_string(),
+            CertaintyIsland {
+                island_id: "ISLAND-HEADER-INJECTION".to_string(),
+                name: "HTTP Header Integrity Island".to_string(),
+                category: AttackCategory::HttpResponseSplitting,
+                description: "Deterministic island covering CRLF response splitting and Host/Forwarded header manipulation used in password-reset and cache-poisoning attacks.".to_string(),
+                formal_invariant: r"\mathcal{I}_{\text{Header}} \equiv \neg (Token(\text{CRLF\_RESPONSE\_HDR}) \lor Token(\text{HOST\_HEADER\_ANOMALY}))".to_string(),
+                confidence: 1.0,
+            },
+        );
+        islands.insert(
+            "ISLAND-UPLOAD".to_string(),
+            CertaintyIsland {
+                island_id: "ISLAND-UPLOAD".to_string(),
+                name: "Malicious File Upload Island".to_string(),
+                category: AttackCategory::MaliciousUpload,
+                description: "Deterministic island covering uploads with executable/server-parsed extensions and server-side script tags in upload contexts.".to_string(),
+                formal_invariant: r"\mathcal{I}_{\text{Upload}} \equiv \neg (Token(\text{EXECUTABLE\_FILENAME}) \lor (Token(\text{SERVER\_SIDE\_TAG}) \land Token(\text{UPLOAD\_CTX})))".to_string(),
+                confidence: 1.0,
+            },
+        );
+        islands.insert(
+            "ISLAND-XML-ENTITY".to_string(),
+            CertaintyIsland {
+                island_id: "ISLAND-XML-ENTITY".to_string(),
+                name: "XML External Entity Island".to_string(),
+                category: AttackCategory::Xxe,
+                description: "Deterministic island covering XML documents declaring external or parameter entities that reach SYSTEM/PUBLIC identifiers (XXE, OOB exfiltration).".to_string(),
+                formal_invariant: r"\mathcal{I}_{\text{XXE}} \equiv \neg (Token(\text{DOCTYPE}) \land Token(\text{ENTITY}_{\text{SYSTEM}/\text{PUBLIC}}))".to_string(),
+                confidence: 1.0,
+            },
+        );
+        islands.insert(
+            "ISLAND-LDAP-INJECTION".to_string(),
+            CertaintyIsland {
+                island_id: "ISLAND-LDAP-INJECTION".to_string(),
+                name: "LDAP Filter Injection Island".to_string(),
+                category: AttackCategory::LdapInjection,
+                description: "Deterministic island covering LDAP filter metacharacters ( *)(, )(|, (=*) coupled with directory attribute context in authentication or search parameters.".to_string(),
+                formal_invariant: r"\mathcal{I}_{\text{LDAP}} \equiv \neg (Token(\text{LDAP\_FILTER\_META}) \land Token(\text{DIRECTORY\_ATTR\_CTX}))".to_string(),
+                confidence: 1.0,
+            },
+        );
+        islands.insert(
+            "ISLAND-DESERIALIZATION".to_string(),
+            CertaintyIsland {
+                island_id: "ISLAND-DESERIALIZATION".to_string(),
+                name: "Insecure Deserialization Island".to_string(),
+                category: AttackCategory::Deserialization,
+                description: "Deterministic island covering serialized object markers for Java (rO0AB), PHP (O:n:\"Class\"), .NET ViewState (/wEP) and BinaryFormatter (AAEAAAD) payloads.".to_string(),
+                formal_invariant: r"\mathcal{I}_{\text{Deser}} \equiv \neg Token(\text{SERIALIZED\_OBJECT\_MARKER})".to_string(),
+                confidence: 1.0,
+            },
+        );
+        islands.insert(
+            "ISLAND-PROTOCOL-SEMANTICS".to_string(),
+            CertaintyIsland {
+                island_id: "ISLAND-PROTOCOL-SEMANTICS".to_string(),
+                name: "Protocol Semantics & Identity Island".to_string(),
+                category: AttackCategory::ProtocolSemantics,
+                description: "Deterministic island covering HTTP desync framing contradictions, WebDAV verbs on REST endpoints, OAuth redirect_uri abuse, SAML assertion smuggling, cache deception paths, and IDN homograph hosts.".to_string(),
+                formal_invariant: r"\mathcal{I}_{\text{Proto}} \equiv \neg Token(\text{DESYNC} \lor \text{WEBDAV} \lor \text{OAUTH\_ABUSE} \lor \text{SAML} \lor \text{DECEPTION} \lor \text{HOMOGRAPH})".to_string(),
+                confidence: 1.0,
+            },
+        );
+        islands.insert(
+            "ISLAND-CONTENT-OBFUSCATION".to_string(),
+            CertaintyIsland {
+                island_id: "ISLAND-CONTENT-OBFUSCATION".to_string(),
+                name: "Content Obfuscation & Forgery Island".to_string(),
+                category: AttackCategory::ContentObfuscation,
+                description: "Deterministic island covering ANSI escape sequences, forged log lines, nested-quantifier ReDoS payloads, raw SMTP command injection, JSON-RPC dangerous dispatch, and absolute upload paths.".to_string(),
+                formal_invariant: r"\mathcal{I}_{\text{Obf}} \equiv \neg Token(\text{ANSI} \lor \text{LOG\_FORGE} \lor \text{NESTED\_QUANT} \lor \text{SMTP} \lor \text{RPC\_EXEC} \lor \text{ABS\_UPLOAD})".to_string(),
                 confidence: 1.0,
             },
         );
@@ -425,6 +533,19 @@ impl SatguardianSatEngine {
             },
         );
 
+        rules.insert(
+            "SAT-GQL-04".to_string(),
+            DeductionRule {
+                rule_id: "SAT-GQL-04".to_string(),
+                island_id: "ISLAND-GRAPHQL".to_string(),
+                category: AttackCategory::GraphqlAbuse,
+                name: "GraphQL Abuse Probe (Recon / Destructive Mutation / Secret Projection)".to_string(),
+                description: "Detects bare __typename recon, destructive mutation operations, or credential fields projected in a GraphQL selection set.".to_string(),
+                invariant_formula: r"Token(\text{GRAPHQL\_ABUSE\_PROBE})".to_string(),
+                confidence: 1.0,
+            },
+        );
+
         // JSON & Prototype Rules
         rules.insert(
             "SAT-JSON-01".to_string(),
@@ -607,6 +728,177 @@ impl SatguardianSatEngine {
             },
         );
 
+        rules.insert(
+            "SAT-SQLI-05".to_string(),
+            DeductionRule {
+                rule_id: "SAT-SQLI-05".to_string(),
+                island_id: "ISLAND-SQLI".to_string(),
+                category: AttackCategory::SqlInjection,
+                name: "Error-Based / Blind SQLi Function Invariant".to_string(),
+                description: "Detects error-based extraction (extractvalue, updatexml), blind timing (waitfor delay) and file-write primitives (into outfile, load_file) inside an injection context.".to_string(),
+                invariant_formula: r"Token(\text{SQLI\_FUNC}: \text{extractvalue}/\text{updatexml}/\text{waitfor}/\text{outfile}) \land \text{InjectionContext}".to_string(),
+                confidence: 1.0,
+            },
+        );
+        rules.insert(
+            "SAT-XML-01".to_string(),
+            DeductionRule {
+                rule_id: "SAT-XML-01".to_string(),
+                island_id: "ISLAND-XML-ENTITY".to_string(),
+                category: AttackCategory::Xxe,
+                name: "XXE External Entity Invariant".to_string(),
+                description: "Detects DOCTYPE/ENTITY declarations resolving SYSTEM or PUBLIC identifiers, enabling file read and out-of-band exfiltration.".to_string(),
+                invariant_formula: r"Token(\text{ENTITY}_{\text{SYSTEM}/\text{PUBLIC}}) \land Token(\text{DOCTYPE}\text{\_BLOCK})".to_string(),
+                confidence: 1.0,
+            },
+        );
+
+        // NoSQL / SSTI / Header / Upload coverage rules
+        rules.insert(
+            "SAT-NOSQL-01".to_string(),
+            DeductionRule {
+                rule_id: "SAT-NOSQL-01".to_string(),
+                island_id: "ISLAND-NOSQL".to_string(),
+                category: AttackCategory::NoSqlInjection,
+                name: "NoSQL Operator Injection Invariant".to_string(),
+                description: "Detects MongoDB-style query operators ($ne, $gt, $regex, $where) smuggled as JSON keys or bracket parameters to bypass authentication and filters.".to_string(),
+                invariant_formula: r"Token(\text{NOSQL\_OPERATOR}: \text{\$ne}/\text{\$gt}/\text{\$regex}/\text{\$where}) \land \text{JSON\_or\_bracket\_context}".to_string(),
+                confidence: 1.0,
+            },
+        );
+        rules.insert(
+            "SAT-SSTI-01".to_string(),
+            DeductionRule {
+                rule_id: "SAT-SSTI-01".to_string(),
+                island_id: "ISLAND-SSTI".to_string(),
+                category: AttackCategory::Ssti,
+                name: "Server-Side Template Expression Invariant".to_string(),
+                description: "Detects template engine delimiters (Jinja {{ }}, FreeMarker ${ }, Velocity #set) coupled with reflection or runtime sinks.".to_string(),
+                invariant_formula: r"Token(\text{TEMPLATE\_DELIMITER}) \land Token(\text{ENGINE\_SINK}: \_self/\?new/\$class/forName)".to_string(),
+                confidence: 1.0,
+            },
+        );
+        rules.insert(
+            "SAT-HDR-01".to_string(),
+            DeductionRule {
+                rule_id: "SAT-HDR-01".to_string(),
+                island_id: "ISLAND-HEADER-INJECTION".to_string(),
+                category: AttackCategory::HttpResponseSplitting,
+                name: "CRLF Response Header Injection Invariant".to_string(),
+                description: "Detects decoded CRLF sequences introducing forged response headers (Set-Cookie, Location, X-*) into redirects or reflections.".to_string(),
+                invariant_formula: r"Token(\text{CRLF}) \land Token(\text{RESPONSE\_HEADER\_NAME})".to_string(),
+                confidence: 1.0,
+            },
+        );
+        rules.insert(
+            "SAT-HDR-02".to_string(),
+            DeductionRule {
+                rule_id: "SAT-HDR-02".to_string(),
+                island_id: "ISLAND-HEADER-INJECTION".to_string(),
+                category: AttackCategory::HostHeaderInjection,
+                name: "Host / Forwarded Header Manipulation Invariant".to_string(),
+                description: "Detects IP literals in the Host header or forwarding headers (X-Forwarded-Host, Forwarded) that disagree with it.".to_string(),
+                invariant_formula: r"Token(\text{HOST}=\text{IP\_LITERAL}) \lor Token(\text{XFH} \neq \text{HOST})".to_string(),
+                confidence: 1.0,
+            },
+        );
+        rules.insert(
+            "SAT-UP-01".to_string(),
+            DeductionRule {
+                rule_id: "SAT-UP-01".to_string(),
+                island_id: "ISLAND-UPLOAD".to_string(),
+                category: AttackCategory::MaliciousUpload,
+                name: "Malicious Upload Payload Invariant".to_string(),
+                description: "Detects uploads carrying executable/server-parsed extensions (.php, .phtml, .htaccess) or server-side script tags in upload context.".to_string(),
+                invariant_formula: r"Token(\text{EXECUTABLE\_FILENAME}) \lor (Token(\text{SERVER\_SIDE\_TAG}) \land Token(\text{UPLOAD\_CTX}))".to_string(),
+                confidence: 1.0,
+            },
+        );
+        rules.insert(
+            "SAT-SQLI-06".to_string(),
+            DeductionRule {
+                rule_id: "SAT-SQLI-06".to_string(),
+                island_id: "ISLAND-SQLI".to_string(),
+                category: AttackCategory::SqlInjection,
+                name: "Quote-Free SQLi Subquery / Blind Tautology Invariant".to_string(),
+                description: "Detects subquery injection (=(SELECT ... FROM ...)), CASE WHEN conditional expressions and HAVING tautologies that carry no quote or UNION keyword.".to_string(),
+                invariant_formula: r"Token(\text{SQLI\_SUBQUERY}: \text{SELECT..FROM\_in\_expr}) \lor Token(\text{SQLI\_CASE\_HAVING})".to_string(),
+                confidence: 1.0,
+            },
+        );
+        rules.insert(
+            "SAT-RCE-04".to_string(),
+            DeductionRule {
+                rule_id: "SAT-RCE-04".to_string(),
+                island_id: "ISLAND-RCE".to_string(),
+                category: AttackCategory::CommandInjection,
+                name: "IFS-Substitution Command Invocation Invariant".to_string(),
+                description: "Detects shell command binaries separated by ${IFS}/$IFS whitespace substitution, a filter-evasion form of command injection.".to_string(),
+                invariant_formula: r"Token(\text{CMD\_BINARY}) \land Token(\text{IFS\_SEPARATOR})".to_string(),
+                confidence: 1.0,
+            },
+        );
+        rules.insert(
+            "SAT-SSTI-02".to_string(),
+            DeductionRule {
+                rule_id: "SAT-SSTI-02".to_string(),
+                island_id: "ISLAND-SSTI".to_string(),
+                category: AttackCategory::Ssti,
+                name: "SSTI Arithmetic / Embedded Tag Invariant".to_string(),
+                description: "Detects template arithmetic probes ({{7*7}}, ${7*7}, <%=7*7%>) and embedded executable tags (<%= system() %>, <% Runtime %>) used to confirm or exploit SSTI.".to_string(),
+                invariant_formula: r"Token(\text{TEMPLATE\_ARITHMETIC}) \lor Token(\text{EMBEDDED\_EXEC\_TAG})".to_string(),
+                confidence: 1.0,
+            },
+        );
+        rules.insert(
+            "SAT-SSRF-02".to_string(),
+            DeductionRule {
+                rule_id: "SAT-SSRF-02".to_string(),
+                island_id: "ISLAND-SSRF".to_string(),
+                category: AttackCategory::Ssrf,
+                name: "SSRF Userinfo / Scheme-Relative Invariant".to_string(),
+                description: "Detects private-network targets smuggled via URL userinfo (http://evil@127.0.0.1/) or scheme-relative //host syntax inside URL parameters.".to_string(),
+                invariant_formula: r"Token(\text{URL\_USERINFO}) \land Token(\text{PRIVATE\_TARGET}) \lor Token(\text{SCHEME\_RELATIVE}) \land Token(\text{URL\_PARAM})".to_string(),
+                confidence: 1.0,
+            },
+        );
+        rules.insert(
+            "SAT-LDAP-01".to_string(),
+            DeductionRule {
+                rule_id: "SAT-LDAP-01".to_string(),
+                island_id: "ISLAND-LDAP-INJECTION".to_string(),
+                category: AttackCategory::LdapInjection,
+                name: "LDAP Filter Metacharacter Invariant".to_string(),
+                description: "Detects LDAP filter injection sequences ( *)(, )(|, (=*)) coupled with directory attribute names (uid, cn, objectClass, userPassword) in auth or search parameters.".to_string(),
+                invariant_formula: r"Token(\text{LDAP\_FILTER\_META}) \land Token(\text{DIRECTORY\_ATTR\_CTX})".to_string(),
+                confidence: 1.0,
+            },
+        );
+        rules.insert(
+            "SAT-DESER-01".to_string(),
+            DeductionRule {
+                rule_id: "SAT-DESER-01".to_string(),
+                island_id: "ISLAND-DESERIALIZATION".to_string(),
+                category: AttackCategory::Deserialization,
+                name: "Serialized Object Marker Invariant".to_string(),
+                description: "Detects serialized object markers for Java (rO0AB), PHP (O:n:\"Class\"), .NET ViewState (/wEP) and BinaryFormatter (AAEAAAD) enabling remote code execution via gadget chains.".to_string(),
+                invariant_formula: r"Token(\text{SERIALIZED\_OBJECT\_MARKER}: \text{JAVA}/\text{PHP}/\text{DOTNET})".to_string(),
+                confidence: 1.0,
+            },
+        );
+        rules.insert(
+            "SAT-XPATH-01".to_string(),
+            DeductionRule {
+                rule_id: "SAT-XPATH-01".to_string(),
+                island_id: "ISLAND-SQLI".to_string(),
+                category: AttackCategory::XpathInjection,
+                name: "XPath Expression Injection Invariant".to_string(),
+                description: "Detects XPath location paths (//a/b, //*, (//expr) coupled with quote/boolean context or XPath function names (substring, contains, name, position).".to_string(),
+                invariant_formula: r"Token(\text{XPATH\_LOCATION\_EXPR}) \land Token(\text{QUOTE/BOOLEAN\_CTX})".to_string(),
+                confidence: 1.0,
+            },
+        );
+
         // Customer Business Rules
         rules.insert(
             "SAT-BIZ-01".to_string(),
@@ -654,6 +946,79 @@ impl SatguardianSatEngine {
                 description: "Request payload size exceeds customer-defined maximum byte threshold for this endpoint.".to_string(),
                 invariant_formula: r"Expression(\text{BodySize} > \text{MaxBodyBytes})".to_string(),
                 confidence: 1.0,
+            },
+        );
+
+        rules.insert(
+            "SAT-SEM-01".to_string(),
+            DeductionRule {
+                rule_id: "SAT-SEM-01".to_string(),
+                island_id: "ISLAND-PROTOCOL-SEMANTICS".to_string(),
+                category: AttackCategory::ProtocolSemantics,
+                name: "HTTP Desync / WebDAV / Cache Deception Invariant".to_string(),
+                description: "Framing-header contradictions (CL+TE, malformed/duplicated lengths), non-REST WebDAV verbs, or account paths served as static assets.".to_string(),
+                invariant_formula: r"Token(\text{DESYNC} \lor \text{WEBDAV} \lor \text{DECEPTION})".to_string(),
+                confidence: 1.0,
+            },
+        );
+        rules.insert(
+            "SAT-SEM-02".to_string(),
+            DeductionRule {
+                rule_id: "SAT-SEM-02".to_string(),
+                island_id: "ISLAND-PROTOCOL-SEMANTICS".to_string(),
+                category: AttackCategory::ProtocolSemantics,
+                name: "Identity Protocol Abuse Invariant".to_string(),
+                description: "OAuth redirect_uri userinfo/protocol-relative/scheme abuse, SAML assertion messages, or IDN homograph/punycode hosts.".to_string(),
+                invariant_formula: r"Token(\text{OAUTH\_ABUSE} \lor \text{SAML} \lor \text{HOMOGRAPH})".to_string(),
+                confidence: 1.0,
+            },
+        );
+        rules.insert(
+            "SAT-SEM-03".to_string(),
+            DeductionRule {
+                rule_id: "SAT-SEM-03".to_string(),
+                island_id: "ISLAND-BUSINESS-RULES".to_string(),
+                category: AttackCategory::BusinessRuleViolation,
+                name: "Privileged Field / Numeric Anomaly / CSV Formula Invariant".to_string(),
+                description: "Mass-assignment privileged keys with grant values, impossible numeric fields (negative qty/price, discount>100), or spreadsheet formula cells.".to_string(),
+                invariant_formula: r"Token(\text{PRIVILEGED\_FIELD} \lor \text{NUMERIC\_ANOMALY} \lor \text{CSV\_FORMULA})".to_string(),
+                confidence: 0.9,
+            },
+        );
+        rules.insert(
+            "SAT-SEM-04".to_string(),
+            DeductionRule {
+                rule_id: "SAT-SEM-04".to_string(),
+                island_id: "ISLAND-CONTENT-OBFUSCATION".to_string(),
+                category: AttackCategory::ContentObfuscation,
+                name: "ANSI Escape / Log Forgery / Nested Quantifier Invariant".to_string(),
+                description: "Terminal escape sequences, forged timestamped log lines, or catastrophic-backtracking regex shapes in parameters.".to_string(),
+                invariant_formula: r"Token(\text{ANSI} \lor \text{LOG\_FORGE} \lor \text{NESTED\_QUANT})".to_string(),
+                confidence: 0.95,
+            },
+        );
+        rules.insert(
+            "SAT-SEM-05".to_string(),
+            DeductionRule {
+                rule_id: "SAT-SEM-05".to_string(),
+                island_id: "ISLAND-CONTENT-OBFUSCATION".to_string(),
+                category: AttackCategory::CommandInjection,
+                name: "SMTP / RPC Dispatch / Absolute Upload Path Invariant".to_string(),
+                description: "Raw SMTP verbs at line start, JSON-RPC dispatch to exec/shell primitives, or filename= pointing at absolute server paths.".to_string(),
+                invariant_formula: r"Token(\text{SMTP} \lor \text{RPC\_EXEC} \lor \text{ABS\_UPLOAD})".to_string(),
+                confidence: 0.95,
+            },
+        );
+        rules.insert(
+            "SAT-SEM-06".to_string(),
+            DeductionRule {
+                rule_id: "SAT-SEM-06".to_string(),
+                island_id: "ISLAND-XML-ENTITY".to_string(),
+                category: AttackCategory::Xxe,
+                name: "XSLT / XQuery Expression Invariant".to_string(),
+                description: "Server-side stylesheet or query language expressions (xsl:, doc(), collection(), declare variable) reaching file/network sinks.".to_string(),
+                invariant_formula: r"Token(\text{XSLT} \lor \text{XQUERY})".to_string(),
+                confidence: 0.9,
             },
         );
 
@@ -910,6 +1275,13 @@ impl SatguardianSatEngine {
                 deduction_steps.push("[ISLAND-GRAPHQL] GraphQL batch array or alias multiplexing amplification detected.".to_string());
             }
         }
+        if tokens.has_graphql_abuse {
+            if let Some(r) = self.rules.get("SAT-GQL-04") {
+                matched_rules.push(r.clone());
+                active_islands.push("ISLAND-GRAPHQL".to_string());
+                deduction_steps.push("[ISLAND-GRAPHQL] GraphQL abuse probe: bare __typename recon, destructive mutation, or secret-field projection.".to_string());
+            }
+        }
 
         // 7. ISLAND-JSON-PROTO evaluation
         if tokens.has_proto_pollution {
@@ -1127,6 +1499,178 @@ impl SatguardianSatEngine {
                         break;
                     }
                 }
+            }
+        }
+
+        // 14a-bis. ISLAND-SQLI extended coverage (error-based / blind functions)
+        if tokens.has_sqli_danger_func {
+            if let Some(r) = self.rules.get("SAT-SQLI-05") {
+                matched_rules.push(r.clone());
+                active_islands.push("ISLAND-SQLI".to_string());
+                deduction_steps.push("[ISLAND-SQLI] Error-based/blind SQLi primitive (extractvalue/updatexml/waitfor/outfile) inside injection context.".to_string());
+            }
+        }
+
+        // 14b. ISLAND-NOSQL evaluation
+        if tokens.has_nosql_operator {
+            if let Some(r) = self.rules.get("SAT-NOSQL-01") {
+                matched_rules.push(r.clone());
+                active_islands.push("ISLAND-NOSQL".to_string());
+                deduction_steps.push("[ISLAND-NOSQL] NoSQL operator key ($ne/$gt/$regex/$where) detected in JSON document or bracket query parameter.".to_string());
+            }
+        }
+
+        // 14c. ISLAND-SSTI evaluation
+        if tokens.has_ssti_expression {
+            if let Some(r) = self.rules.get("SAT-SSTI-01") {
+                matched_rules.push(r.clone());
+                active_islands.push("ISLAND-SSTI".to_string());
+                deduction_steps.push("[ISLAND-SSTI] Template engine delimiters coupled with reflection/runtime sink detected (Jinja/FreeMarker/Velocity).".to_string());
+            }
+        }
+
+        // 14d. ISLAND-HEADER-INJECTION evaluation
+        if tokens.has_crlf_header_injection {
+            if let Some(r) = self.rules.get("SAT-HDR-01") {
+                matched_rules.push(r.clone());
+                active_islands.push("ISLAND-HEADER-INJECTION".to_string());
+                deduction_steps.push("[ISLAND-HEADER-INJECTION] Decoded CRLF introduces a forged response header (response splitting).".to_string());
+            }
+        }
+        if tokens.has_host_header_anomaly || tokens.has_method_override_abuse {
+            if let Some(r) = self.rules.get("SAT-HDR-02") {
+                matched_rules.push(r.clone());
+                active_islands.push("ISLAND-HEADER-INJECTION".to_string());
+                deduction_steps.push("[ISLAND-HEADER-INJECTION] Host header carries an IP literal, forwarding header disagrees with it, or method-override header smuggles a privileged verb.".to_string());
+            }
+        }
+
+        // 14e. ISLAND-UPLOAD evaluation
+        if tokens.has_malicious_upload {
+            if let Some(r) = self.rules.get("SAT-UP-01") {
+                matched_rules.push(r.clone());
+                active_islands.push("ISLAND-UPLOAD".to_string());
+                deduction_steps.push("[ISLAND-UPLOAD] Upload payload carries executable extension or server-side script tag in upload context.".to_string());
+            }
+        }
+
+        // 14f. ISLAND-XML-ENTITY evaluation
+        if tokens.has_xxe_entity {
+            if let Some(r) = self.rules.get("SAT-XML-01") {
+                matched_rules.push(r.clone());
+                active_islands.push("ISLAND-XML-ENTITY".to_string());
+                deduction_steps.push("[ISLAND-XML-ENTITY] XML DOCTYPE declares external/parameter ENTITY resolving SYSTEM or PUBLIC identifier.".to_string());
+            }
+        }
+
+        // 14g. ISLAND-SQLI extended coverage (subquery / CASE / HAVING)
+        if tokens.has_sqli_subquery || tokens.has_sqli_case_having {
+            if let Some(r) = self.rules.get("SAT-SQLI-06") {
+                matched_rules.push(r.clone());
+                active_islands.push("ISLAND-SQLI".to_string());
+                deduction_steps.push("[ISLAND-SQLI] Quote-free SQLi primitive: subquery expression, CASE WHEN conditional or HAVING tautology.".to_string());
+            }
+        }
+
+        // 14h. ISLAND-RCE extended coverage (${IFS} command invocation)
+        if tokens.has_cmd_ifs_binary {
+            if let Some(r) = self.rules.get("SAT-RCE-04") {
+                matched_rules.push(r.clone());
+                active_islands.push("ISLAND-RCE".to_string());
+                deduction_steps.push("[ISLAND-RCE] Shell command binary separated by ${IFS} whitespace substitution.".to_string());
+            }
+        }
+
+        // 14i. ISLAND-SSTI extended coverage (arithmetic probes / embedded tags)
+        if tokens.has_ssti_arith || tokens.has_ssti_embedded {
+            if let Some(r) = self.rules.get("SAT-SSTI-02") {
+                matched_rules.push(r.clone());
+                active_islands.push("ISLAND-SSTI".to_string());
+                deduction_steps.push("[ISLAND-SSTI] Template arithmetic probe or embedded executable tag (<%= system() %>).".to_string());
+            }
+        }
+
+        // 14j. ISLAND-SSRF extended coverage (userinfo trick / scheme-relative)
+        if tokens.has_ssrf_userinfo || tokens.has_ssrf_scheme_rel {
+            if let Some(r) = self.rules.get("SAT-SSRF-02") {
+                matched_rules.push(r.clone());
+                active_islands.push("ISLAND-SSRF".to_string());
+                deduction_steps.push("[ISLAND-SSRF] Private-network target smuggled via URL userinfo or scheme-relative syntax.".to_string());
+            }
+        }
+
+        // 14k. ISLAND-LDAP-INJECTION evaluation
+        if tokens.has_ldap_injection {
+            if let Some(r) = self.rules.get("SAT-LDAP-01") {
+                matched_rules.push(r.clone());
+                active_islands.push("ISLAND-LDAP-INJECTION".to_string());
+                deduction_steps.push("[ISLAND-LDAP-INJECTION] LDAP filter metacharacters coupled with directory attribute context.".to_string());
+            }
+        }
+
+        // 14l. ISLAND-DESERIALIZATION evaluation
+        if tokens.has_deserialization {
+            if let Some(r) = self.rules.get("SAT-DESER-01") {
+                matched_rules.push(r.clone());
+                active_islands.push("ISLAND-DESERIALIZATION".to_string());
+                deduction_steps.push("[ISLAND-DESERIALIZATION] Serialized object marker detected (Java/PHP/.NET) — gadget-chain RCE vector.".to_string());
+            }
+        }
+
+        // 14m. ISLAND-SQLI (XPath variant) evaluation
+        if tokens.has_xpath_injection {
+            if let Some(r) = self.rules.get("SAT-XPATH-01") {
+                matched_rules.push(r.clone());
+                active_islands.push("ISLAND-SQLI".to_string());
+                deduction_steps.push("[ISLAND-SQLI/XPATH] XPath location-path expression coupled with quote/boolean context.".to_string());
+            }
+        }
+
+        // 14n. ISLAND-PROTOCOL-SEMANTICS / CONTENT-OBFUSCATION (v6 layer)
+        if tokens.has_smuggling_desync || tokens.has_webdav_method || tokens.has_cache_deception {
+            if let Some(r) = self.rules.get("SAT-SEM-01") {
+                matched_rules.push(r.clone());
+                active_islands.push("ISLAND-PROTOCOL-SEMANTICS".to_string());
+                deduction_steps.push("[ISLAND-PROTOCOL-SEMANTICS] Framing desync, WebDAV verb on REST endpoint, or cache-deception asset path detected.".to_string());
+            }
+        }
+        if tokens.has_oauth_redirect_abuse || tokens.has_saml_protocol || tokens.has_punycode_host
+            || tokens.has_soap_action_abuse
+        {
+            if let Some(r) = self.rules.get("SAT-SEM-02") {
+                matched_rules.push(r.clone());
+                active_islands.push("ISLAND-PROTOCOL-SEMANTICS".to_string());
+                deduction_steps.push("[ISLAND-PROTOCOL-SEMANTICS] OAuth redirect_uri abuse, SAML message, or IDN homograph host detected.".to_string());
+            }
+        }
+        if tokens.has_privileged_field || tokens.has_numeric_anomaly || tokens.has_csv_formula {
+            if let Some(r) = self.rules.get("SAT-SEM-03") {
+                matched_rules.push(r.clone());
+                active_islands.push("ISLAND-BUSINESS-RULES".to_string());
+                deduction_steps.push("[ISLAND-BUSINESS-RULES] Privileged-field assignment, impossible numeric value, or spreadsheet formula cell detected.".to_string());
+            }
+        }
+        if tokens.has_ansi_escape || tokens.has_log_forgery || tokens.has_nested_quantifier
+            || tokens.has_hidden_chars || tokens.has_keyword_smuggling
+        {
+            if let Some(r) = self.rules.get("SAT-SEM-04") {
+                matched_rules.push(r.clone());
+                active_islands.push("ISLAND-CONTENT-OBFUSCATION".to_string());
+                deduction_steps.push("[ISLAND-CONTENT-OBFUSCATION] ANSI escape sequence, forged log line, or nested-quantifier ReDoS shape detected.".to_string());
+            }
+        }
+        if tokens.has_smtp_command || tokens.has_jsonrpc_exec || tokens.has_absolute_upload_path {
+            if let Some(r) = self.rules.get("SAT-SEM-05") {
+                matched_rules.push(r.clone());
+                active_islands.push("ISLAND-CONTENT-OBFUSCATION".to_string());
+                deduction_steps.push("[ISLAND-CONTENT-OBFUSCATION] Raw SMTP verbs, dangerous RPC dispatch, or absolute upload path detected.".to_string());
+            }
+        }
+        if tokens.has_xslt_stylesheet || tokens.has_xquery_expr {
+            if let Some(r) = self.rules.get("SAT-SEM-06") {
+                matched_rules.push(r.clone());
+                active_islands.push("ISLAND-XML-ENTITY".to_string());
+                deduction_steps.push("[ISLAND-XML-ENTITY] XSLT stylesheet or XQuery expression reaching file/network sinks detected.".to_string());
             }
         }
 

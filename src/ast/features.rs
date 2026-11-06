@@ -46,6 +46,49 @@ pub const FEATURE_NAMES: &[&str] = &[
     "v37_sensitive_exposure",
     "v38_framework_exploit",
     "v39_business_violation",
+    // Injection coverage islands (v2)
+    "v40_nosql_operator",
+    "v41_ssti_expression",
+    "v42_crlf_header_injection",
+    "v43_host_header_anomaly",
+    "v44_malicious_upload",
+    "v45_sqli_danger_func",
+    "v46_xxe_entity",
+    // Injection coverage islands (v3)
+    "v47_sqli_subquery",
+    "v48_sqli_case_having",
+    "v49_cmd_ifs_binary",
+    "v50_ssti_arith",
+    "v51_ssti_embedded",
+    "v52_ssrf_userinfo",
+    "v53_ssrf_scheme_rel",
+    "v54_ldap_injection",
+    "v55_deserialization",
+    "v56_host_absolute_uri",
+    "v57_xpath_injection",
+    "v58_graphql_abuse",
+    "v59_method_override_abuse",
+    // Protocol/semantic layer (v6)
+    "v60_smuggling_desync",
+    "v61_webdav_method",
+    "v62_privileged_field",
+    "v63_numeric_anomaly",
+    "v64_nested_quantifier",
+    "v65_csv_formula",
+    "v66_log_forgery",
+    "v67_cache_deception",
+    "v68_ansi_escape",
+    "v69_punycode_host",
+    "v70_saml_protocol",
+    "v71_oauth_redirect_abuse",
+    "v72_xslt_stylesheet",
+    "v73_xquery_expr",
+    "v74_smtp_command",
+    "v75_jsonrpc_exec",
+    "v76_absolute_upload_path",
+    "v77_soap_action_abuse",
+    "v78_hidden_chars",
+    "v79_keyword_smuggling",
 ];
 
 /// Binarized request state representing a point on the Boolean Hypercube $\{0, 1\}^N$.
@@ -154,6 +197,52 @@ impl FeatureBinarizer {
         if tokens.has_wordpress_probe { fv.set(36); }
         if tokens.has_sensitive_file_probe { fv.set(37); }
         if tokens.has_framework_exploit_probe { fv.set(38); }
+
+        // Injection coverage islands (v2)
+        if tokens.has_nosql_operator { fv.set(40); }
+        if tokens.has_ssti_expression { fv.set(41); }
+        if tokens.has_crlf_header_injection { fv.set(42); }
+        if tokens.has_host_header_anomaly { fv.set(43); }
+        if tokens.has_malicious_upload { fv.set(44); }
+        if tokens.has_sqli_danger_func { fv.set(45); }
+        if tokens.has_xxe_entity { fv.set(46); }
+
+        // Injection coverage islands (v3)
+        if tokens.has_sqli_subquery { fv.set(47); }
+        if tokens.has_sqli_case_having { fv.set(48); }
+        if tokens.has_cmd_ifs_binary { fv.set(49); }
+        if tokens.has_ssti_arith { fv.set(50); }
+        if tokens.has_ssti_embedded { fv.set(51); }
+        if tokens.has_ssrf_userinfo { fv.set(52); }
+        if tokens.has_ssrf_scheme_rel { fv.set(53); }
+        if tokens.has_ldap_injection { fv.set(54); }
+        if tokens.has_deserialization { fv.set(55); }
+        if tokens.has_host_absolute_uri { fv.set(56); }
+        if tokens.has_xpath_injection { fv.set(57); }
+        if tokens.has_graphql_abuse { fv.set(58); }
+        if tokens.has_method_override_abuse { fv.set(59); }
+
+        // Protocol/semantic layer (v6)
+        if tokens.has_smuggling_desync { fv.set(60); }
+        if tokens.has_webdav_method { fv.set(61); }
+        if tokens.has_privileged_field { fv.set(62); }
+        if tokens.has_numeric_anomaly { fv.set(63); }
+        if tokens.has_nested_quantifier { fv.set(64); }
+        if tokens.has_csv_formula { fv.set(65); }
+        if tokens.has_log_forgery { fv.set(66); }
+        if tokens.has_cache_deception { fv.set(67); }
+        if tokens.has_ansi_escape { fv.set(68); }
+        if tokens.has_punycode_host { fv.set(69); }
+        if tokens.has_saml_protocol { fv.set(70); }
+        if tokens.has_oauth_redirect_abuse { fv.set(71); }
+        if tokens.has_xslt_stylesheet { fv.set(72); }
+        if tokens.has_xquery_expr { fv.set(73); }
+        if tokens.has_smtp_command { fv.set(74); }
+        if tokens.has_jsonrpc_exec { fv.set(75); }
+        if tokens.has_absolute_upload_path { fv.set(76); }
+        if tokens.has_soap_action_abuse { fv.set(77); }
+        if tokens.has_hidden_chars { fv.set(78); }
+        if tokens.has_keyword_smuggling { fv.set(79); }
 
         fv
     }

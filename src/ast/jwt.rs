@@ -43,12 +43,23 @@ impl JwtTamperingAnalyzer {
             }
         }
 
-        // Also check full_text for raw tokens starting with eyJ
+        // Also check full_text for raw tokens starting with eyJ. Tokens embedded
+        // in query params (`token=eyJ...`) or JSON values don't start the word,
+        // so also probe every `eyJ` occurrence inside each word.
         if potential_tokens.is_empty() {
             for word in full_text.split_whitespace() {
                 let w = word.trim_matches(|c| c == '"' || c == '\'' || c == ',' || c == ';');
                 if w.starts_with("eyJ") && w.contains('.') {
                     potential_tokens.push(w);
+                    continue;
+                }
+                if let Some(pos) = w.find("eyJ") {
+                    let cand = w[pos..].trim_end_matches(|c: char| {
+                        !c.is_ascii_alphanumeric() && c != '.' && c != '-' && c != '_'
+                    });
+                    if cand.contains('.') {
+                        potential_tokens.push(cand);
+                    }
                 }
             }
         }
@@ -66,6 +77,13 @@ impl JwtTamperingAnalyzer {
         // A JWT must have at least 2 parts (header.payload) or 3 parts (header.payload.signature)
         if parts_len < 2 {
             return;
+        }
+        // JWS compact = 3 segments, JWE compact = 5. Four segments (or more
+        // than five) is structurally invalid — classic token-in-token smuggling
+        // hides a second JWT in the extra slot.
+        if parts_len == 4 || parts_len > 5 {
+            tokens.has_header_injection = true;
+            tokens.active_tokens.push("JWT_ANOMALOUS_SEGMENT_COUNT".to_string());
         }
 
         let header_b64 = parts[0];
@@ -85,6 +103,16 @@ impl JwtTamperingAnalyzer {
                         if trimmed_alg.is_empty() || trimmed_alg.eq_ignore_ascii_case("none") {
                             tokens.has_alg_none = true;
                             tokens.active_tokens.push("JWT_ALG_NONE_VULNERABILITY".to_string());
+                        }
+                        // alg:"dir" = JWE direct key agreement: payload integrity
+                        // collapses to the CEK itself — a known key-management
+                        // confusion downgrade. Only flag when the token is a
+                        // compact JWE shape (5 segments) or enc is present.
+                        if trimmed_alg.eq_ignore_ascii_case("dir")
+                            && (parts.len() == 5 || header_json.get("enc").is_some())
+                        {
+                            tokens.has_header_injection = true;
+                            tokens.active_tokens.push("JWT_ALG_DIR_KEY_CONFUSION".to_string());
                         }
                     }
                     None if alg_val.is_none() => {
@@ -106,11 +134,48 @@ impl JwtTamperingAnalyzer {
                     tokens.has_header_injection = true;
                     tokens.active_tokens.push("JWT_EMBEDDED_JWK_KEY_SPOOFING".to_string());
                 }
+                // RFC 7515 crit extension: verifiers may skip checks for listed
+                // header params; attacker-controlled crit is a known downgrade vector.
+                if header_json.get("crit").is_some() {
+                    tokens.has_header_injection = true;
+                    tokens.active_tokens.push("JWT_CRIT_HEADER_EXTENSION".to_string());
+                }
                 if let Some(jku) = header_json.get("jku").and_then(|j| j.as_str()) {
-                    // Remote JWK URL probe / SSRF
-                    if jku.contains("169.254") || jku.contains("localhost") || jku.contains("http://") {
+                    // Remote JWK URL probe / SSRF. Cleartext http and internal
+                    // targets are always hostile; arbitrary https domains are
+                    // allowed pending an operator-managed key-server allowlist.
+                    let jl = jku.to_ascii_lowercase();
+                    if jl.contains("169.254")
+                        || jl.contains("localhost")
+                        || jl.contains("127.")
+                        || jl.contains("0.0.0.0")
+                        || jl.contains(".local")
+                        || jl.contains(".internal")
+                        || jl.contains(".svc")
+                        || jl.contains("http://")
+                        || jl.starts_with("data:")
+                        || jl.starts_with("file:")
+                        || jl.starts_with("php:")
+                        || jl.starts_with("expect:")
+                        || jl.starts_with("glob:")
+                        || jl.starts_with("phar:")
+                    {
                         tokens.has_header_injection = true;
                         tokens.active_tokens.push("JWT_JKU_REMOTE_KEY_SSRF".to_string());
+                    }
+                }
+                if let Some(x5u) = header_json.get("x5u").and_then(|j| j.as_str()) {
+                    let xl = x5u.to_ascii_lowercase();
+                    if xl.contains("169.254")
+                        || xl.contains("localhost")
+                        || xl.contains("127.")
+                        || xl.contains("http://")
+                        || xl.starts_with("file:")
+                        || xl.starts_with("data:")
+                        || xl.starts_with("php:")
+                    {
+                        tokens.has_header_injection = true;
+                        tokens.active_tokens.push("JWT_X5U_REMOTE_KEY_SSRF".to_string());
                     }
                 }
                 if let Some(kid) = header_json.get("kid").and_then(|k| k.as_str()) {
@@ -123,6 +188,36 @@ impl JwtTamperingAnalyzer {
                     } else if kid_lower.contains("union") || kid_norm.contains('\'') || kid_norm.contains('"') || kid_norm.contains('|') || kid_lower.contains("waitfor") {
                         tokens.has_header_injection = true;
                         tokens.active_tokens.push("JWT_KID_SQLI_COMMAND_INJECTION".to_string());
+                    }
+                }
+
+                // b64:false — unencoded payload header (JWE-style) smuggles raw
+                // content past signature verification expectations.
+                if header_json.get("b64").and_then(|b| b.as_bool()) == Some(false) {
+                    tokens.has_header_injection = true;
+                    tokens.active_tokens.push("JWT_B64_FALSE_UNENCODED_PAYLOAD".to_string());
+                }
+
+                // Nested JWT: the payload segment decodes to a JSON string that
+                // itself carries an eyJ...eyJ... token (token-in-token smuggling).
+                if let Some(payload_bytes) = Self::base64url_decode(parts[1]) {
+                    if let Ok(p) = String::from_utf8(payload_bytes) {
+                        let pb = p.as_bytes();
+                        'outer: for (i, _) in p.match_indices("eyJ") {
+                            let seg = &pb[i..pb.len().min(i + 4096)];
+                            if let Some(d1) = seg.iter().position(|&c| c == b'.') {
+                                if d1 > 10 && d1 < 2000 {
+                                    if let Some(d2rel) = seg[d1 + 1..].iter().position(|&c| c == b'.') {
+                                        let d2 = d1 + 1 + d2rel;
+                                        if d2 > d1 + 10 && d2 < 3000 {
+                                            tokens.has_header_injection = true;
+                                            tokens.active_tokens.push("JWT_NESTED_TOKEN".to_string());
+                                            break 'outer;
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
