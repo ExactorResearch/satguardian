@@ -286,6 +286,10 @@ def cmd_harvest(args) -> int:
             continue
         req = case.get("request", {})
         fam = case.get("category") or v.get("true_category") or "unknown"
+        # CRS rule ids are 6-digit (942100 = SQLi group 942); cluster at
+        # the 3-digit rule-group level or propose emits one proposal per rule.
+        if fam.isdigit() and len(fam) >= 6:
+            fam = fam[:3] + "xxx"
         pts = injection_points(req)
         excerpt = payload_excerpt(req)
 
