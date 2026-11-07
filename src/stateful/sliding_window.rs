@@ -63,7 +63,8 @@ impl SlidingWindowRingCounter {
     /// Computes the sum of counts across all buckets valid in [now - window_secs, now].
     pub fn get_window_count(&self, now_secs: u64) -> u32 {
         let current_slot = now_secs / self.bucket_duration_secs;
-        let oldest_valid_slot = now_secs.saturating_sub(self.window_secs) / self.bucket_duration_secs;
+        let oldest_valid_slot =
+            now_secs.saturating_sub(self.window_secs) / self.bucket_duration_secs;
 
         let mut sum = 0u32;
         for b in self.buckets.iter() {

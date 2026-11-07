@@ -54,9 +54,7 @@ pub fn parse_t1k_request(
     extra_bytes: Option<&[u8]>,
 ) -> (HttpRequestPayload, T1kExtraMetadata) {
     let header_str = String::from_utf8_lossy(header_bytes);
-    let extra_meta = extra_bytes
-        .map(T1kExtraMetadata::parse)
-        .unwrap_or_default();
+    let extra_meta = extra_bytes.map(T1kExtraMetadata::parse).unwrap_or_default();
 
     let mut lines = header_str.lines();
 
@@ -128,6 +126,9 @@ mod tests {
         assert_eq!(payload.id, "event-123456");
         assert_eq!(payload.client_ip, Some("10.0.1.20".to_string()));
         assert_eq!(meta.remote_port, Some(49152));
-        assert_eq!(payload.headers.get("host").map(String::as_str), Some("example.com"));
+        assert_eq!(
+            payload.headers.get("host").map(String::as_str),
+            Some("example.com")
+        );
     }
 }

@@ -85,11 +85,18 @@ impl BenchmarkSuite {
         println!("============================================================");
         println!("SATGuardian Edge WAF: In-Memory Engine Benchmark");
         println!("   Engine        : deterministic SAT + Certainty Islands (Rust)");
-        println!("   Corpus        : corpus/independent_v1.json ({})", corpus.version);
+        println!(
+            "   Corpus        : corpus/independent_v1.json ({})",
+            corpus.version
+        );
         println!(
             "   Cases         : {} ({} labelled attacks, {} benign)",
             corpus.cases.len(),
-            corpus.cases.iter().filter(|c| c.label == "malicious").count(),
+            corpus
+                .cases
+                .iter()
+                .filter(|c| c.label == "malicious")
+                .count(),
             corpus.cases.iter().filter(|c| c.label == "benign").count()
         );
         println!("   Requests      : {} (corpus cycled)", num_requests);
@@ -162,10 +169,29 @@ impl BenchmarkSuite {
         let p99 = percentile(0.99);
 
         println!("Detection on the labelled corpus (in-sample regression):");
-        println!("   True positives       : {} / {}", true_positives, malicious);
-        println!("   False negatives      : {}{}", false_negatives.len(), if false_negatives.is_empty() { String::new() } else { format!(" -> {}", false_negatives.join(", ")) });
+        println!(
+            "   True positives       : {} / {}",
+            true_positives, malicious
+        );
+        println!(
+            "   False negatives      : {}{}",
+            false_negatives.len(),
+            if false_negatives.is_empty() {
+                String::new()
+            } else {
+                format!(" -> {}", false_negatives.join(", "))
+            }
+        );
         println!("   True negatives       : {} / {}", true_negatives, benign);
-        println!("   False positives      : {}{}", false_positives.len(), if false_positives.is_empty() { String::new() } else { format!(" -> {}", false_positives.join(", ")) });
+        println!(
+            "   False positives      : {}{}",
+            false_positives.len(),
+            if false_positives.is_empty() {
+                String::new()
+            } else {
+                format!(" -> {}", false_positives.join(", "))
+            }
+        );
         println!("   Recall               : {:.2}%", recall * 100.0);
         println!("   False-positive rate  : {:.2}%", fpr * 100.0);
         println!("   Category mismatches  : {}", category_mismatches);
@@ -177,12 +203,21 @@ impl BenchmarkSuite {
         println!("   p90                  : {:>10.2} µs", p90);
         println!("   p99                  : {:>10.2} µs", p99);
         println!("   Max                  : {:>10.2} µs", max_lat);
-        println!("   Throughput           : {:>10.2} req/sec (single thread)", throughput);
+        println!(
+            "   Throughput           : {:>10.2} req/sec (single thread)",
+            throughput
+        );
         println!();
         if p99 < 50.0 {
-            println!("Verification: p99 engine latency {:.2} µs is under the 50 µs target.", p99);
+            println!(
+                "Verification: p99 engine latency {:.2} µs is under the 50 µs target.",
+                p99
+            );
         } else {
-            println!("Verification: p99 engine latency is {:.2} µs, above the 50 µs target.", p99);
+            println!(
+                "Verification: p99 engine latency is {:.2} µs, above the 50 µs target.",
+                p99
+            );
         }
         println!("Do not compare these numbers with the Python benchmark harness: its");
         println!("Coraza/SafeLine/Regex agents are Python stand-ins, not the real products.");

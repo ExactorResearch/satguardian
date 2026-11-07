@@ -204,7 +204,10 @@ fn corpus_files_are_versioned_and_labelled() {
             corpus.get("version").and_then(|v| v.as_str()).is_some(),
             "{name} must declare a version"
         );
-        assert!(corpus.get("provenance").is_some(), "{name} must declare provenance");
+        assert!(
+            corpus.get("provenance").is_some(),
+            "{name} must declare provenance"
+        );
         let cases = corpus
             .get("cases")
             .and_then(|c| c.as_array())
@@ -215,14 +218,20 @@ fn corpus_files_are_versioned_and_labelled() {
         );
 
         for case in cases {
-            let id = case.get("id").and_then(|v| v.as_str()).unwrap_or("<missing id>");
+            let id = case
+                .get("id")
+                .and_then(|v| v.as_str())
+                .unwrap_or("<missing id>");
             let label = case.get("label").and_then(|v| v.as_str()).unwrap_or("");
             assert!(
                 label == "malicious" || label == "benign",
                 "{name} case {id} has label {label:?}; expected malicious or benign"
             );
             let note = case.get("note").and_then(|v| v.as_str()).unwrap_or("");
-            assert!(!note.trim().is_empty(), "{name} case {id} needs a note for review");
+            assert!(
+                !note.trim().is_empty(),
+                "{name} case {id} needs a note for review"
+            );
             assert!(
                 case.get("request").and_then(|r| r.get("method")).is_some(),
                 "{name} case {id} needs a request with a method"
@@ -239,12 +248,15 @@ fn corpus_files_are_versioned_and_labelled() {
 #[test]
 fn published_heldout_numbers_match_the_committed_report() {
     let root = repo_root();
-    let report: serde_json::Value = serde_json::from_str(&read(&root.join("corpus/heldout_v2_report.json")))
-        .expect("corpus/heldout_v2_report.json must be valid JSON");
+    let report: serde_json::Value =
+        serde_json::from_str(&read(&root.join("corpus/heldout_v2_report.json")))
+            .expect("corpus/heldout_v2_report.json must be valid JSON");
     let counts = &report["counts"];
     let detected = counts["detected"].as_u64().expect("counts.detected");
     let attacks = counts["attacks"].as_u64().expect("counts.attacks");
-    let blocked = counts["blocked_controls"].as_u64().expect("counts.blocked_controls");
+    let blocked = counts["blocked_controls"]
+        .as_u64()
+        .expect("counts.blocked_controls");
     let controls = counts["controls"].as_u64().expect("counts.controls");
 
     let recall = format!("{:.1}", detected as f64 / attacks as f64 * 100.0);
@@ -252,8 +264,14 @@ fn published_heldout_numbers_match_the_committed_report() {
 
     for name in ["STATUS.md", "docs/status.md", "corpus/README.md"] {
         let text = read(&root.join(name));
-        assert!(text.contains(&format!("{recall}%")), "{name} does not carry the measured recall ({recall}%)");
-        assert!(text.contains(&format!("{fpr}%")), "{name} does not carry the measured false-positive rate ({fpr}%)");
+        assert!(
+            text.contains(&format!("{recall}%")),
+            "{name} does not carry the measured recall ({recall}%)"
+        );
+        assert!(
+            text.contains(&format!("{fpr}%")),
+            "{name} does not carry the measured false-positive rate ({fpr}%)"
+        );
         assert!(
             text.to_lowercase().contains("held-out") && text.to_lowercase().contains("in-sample"),
             "{name} must keep both the held-out and the in-sample numbers, and say which is which"
@@ -290,7 +308,10 @@ fn python_harness_labels_stand_ins_and_provenance() {
     }
 
     let metrics = read(&root.join("satguardian_waf/benchmark/metrics.py"));
-    assert!(!metrics.contains("0.999"), "metrics.py must not cap reported values");
+    assert!(
+        !metrics.contains("0.999"),
+        "metrics.py must not cap reported values"
+    );
     assert!(
         !metrics.to_ascii_lowercase().contains("floor("),
         "metrics.py must not floor reported error rates"
@@ -313,15 +334,29 @@ fn retired_narrative_phrases_do_not_reappear() {
     let root = repo_root();
     let mut files = Vec::new();
     collect_scannable(&root, &mut files);
-    assert!(files.len() >= 50, "expected to scan docs and source, found only {} files", files.len());
+    assert!(
+        files.len() >= 50,
+        "expected to scan docs and source, found only {} files",
+        files.len()
+    );
 
     let mut violations = Vec::new();
     for file in &files {
-        let rel = file.strip_prefix(&root).unwrap_or(file).display().to_string();
+        let rel = file
+            .strip_prefix(&root)
+            .unwrap_or(file)
+            .display()
+            .to_string();
         for (idx, line) in read(file).to_ascii_lowercase().lines().enumerate() {
             for phrase in BANNED_NARRATIVE {
                 if line.contains(phrase) {
-                    violations.push(format!("{}:{}: retired framing {:?} -> {}", rel, idx + 1, phrase, line.trim()));
+                    violations.push(format!(
+                        "{}:{}: retired framing {:?} -> {}",
+                        rel,
+                        idx + 1,
+                        phrase,
+                        line.trim()
+                    ));
                 }
             }
         }
@@ -347,7 +382,10 @@ fn cloud_review_stays_opt_in_and_never_applies_by_itself() {
         .unwrap_or("")
         .trim()
         .to_string();
-    assert_eq!(default_body, "false", "cloud auto-sync must stay off by default");
+    assert_eq!(
+        default_body, "false",
+        "cloud auto-sync must stay off by default"
+    );
 
     let shipped_config = read(&root.join("waf_config.toml"));
     assert!(
@@ -362,7 +400,10 @@ fn cloud_review_stays_opt_in_and_never_applies_by_itself() {
         "approve_dynamic_clause",
         "reject_dynamic_clause",
     ] {
-        assert!(ledger.contains(method), "ledger lost the {method} approval boundary");
+        assert!(
+            ledger.contains(method),
+            "ledger lost the {method} approval boundary"
+        );
     }
     assert!(
         !ledger.contains("pub async fn save_dynamic_clause"),

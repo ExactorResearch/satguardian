@@ -2,7 +2,7 @@ use clap::{Parser, Subcommand};
 use satguardian_waf::api::create_api_router;
 use satguardian_waf::ast::features::FeatureBinarizer;
 use satguardian_waf::benchmark::BenchmarkSuite;
-use satguardian_waf::cloud::{SatguardianCloudClient, SimplifyRequest};
+use satguardian_waf::cloud::{SatguardianCloudClient, SimplifyRequest, CLOUD_SYNC_VARIABLE_COUNT};
 use satguardian_waf::config::WafConfig;
 use satguardian_waf::engine::SatguardianSatEngine;
 use satguardian_waf::envoy::{create_envoy_authz_router, EnvoyAuthzState};
@@ -140,9 +140,7 @@ enum Commands {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     tracing_subscriber::fmt()
-        .with_env_filter(
-            EnvFilter::from_default_env().add_directive("info".parse().unwrap()),
-        )
+        .with_env_filter(EnvFilter::from_default_env().add_directive("info".parse().unwrap()))
         .init();
 
     let cli = Cli::parse();
@@ -162,12 +160,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             BenchmarkSuite::run_benchmark(requests);
             Ok(())
         }
-        Some(Commands::Entitlement) => {
-            run_check_entitlement(&config).await
-        }
-        Some(Commands::SyncSimplify { limit }) => {
-            run_sync_simplify(&config, limit).await
-        }
+        Some(Commands::Entitlement) => run_check_entitlement(&config).await,
+        Some(Commands::SyncSimplify { limit }) => run_sync_simplify(&config, limit).await,
         Some(Commands::Clauses { action, id }) => run_clauses(&config, &action, id).await,
         Some(Commands::T1kServer {
             listen,
@@ -259,7 +253,8 @@ async fn run_server(config: WafConfig) -> Result<(), Box<dyn std::error::Error +
             .unwrap_or_else(|| "disabled (WAF_ADMIN_LISTEN_ADDR=off)".to_string())
     );
 
-    if !(config.upstream_url.starts_with("http://") || config.upstream_url.starts_with("https://")) {
+    if !(config.upstream_url.starts_with("http://") || config.upstream_url.starts_with("https://"))
+    {
         return Err(std::io::Error::new(
             std::io::ErrorKind::InvalidInput,
             format!(
@@ -286,7 +281,9 @@ async fn run_server(config: WafConfig) -> Result<(), Box<dyn std::error::Error +
             info!(target: "satguardian::server", "Loaded {} approved dynamic clauses", loaded);
         }
         Ok(_) => {}
-        Err(e) => warn!(target: "satguardian::server", "Could not load persisted dynamic clauses: {}", e),
+        Err(e) => {
+            warn!(target: "satguardian::server", "Could not load persisted dynamic clauses: {}", e)
+        }
     }
     match ledger.load_pending_clauses().await {
         Ok(pending) if !pending.is_empty() => info!(
@@ -340,7 +337,8 @@ async fn run_server(config: WafConfig) -> Result<(), Box<dyn std::error::Error +
                             count = pending.len(),
                             "Cloud review worker: sending novel anomaly minterms to the configured endpoint"
                         );
-                        let vars = FeatureBinarizer::get_variable_catalog(40);
+                        let vars =
+                            FeatureBinarizer::get_variable_catalog(CLOUD_SYNC_VARIABLE_COUNT);
                         let req = SimplifyRequest {
                             variables: vars.clone(),
                             minterms: pending.clone(),
@@ -363,11 +361,7 @@ async fn run_server(config: WafConfig) -> Result<(), Box<dyn std::error::Error +
                                             }
                                         }
                                         if let Err(e) = bg_ledger
-                                            .record_simplification(
-                                                &resp,
-                                                vars.len(),
-                                                pending.len(),
-                                            )
+                                            .record_simplification(&resp, vars.len(), pending.len())
                                             .await
                                         {
                                             error!(
@@ -375,9 +369,8 @@ async fn run_server(config: WafConfig) -> Result<(), Box<dyn std::error::Error +
                                                 "Failed to record simplification history: {}", e
                                             );
                                         }
-                                        if let Err(e) = bg_ledger
-                                            .mark_anomalies_simplified(&pending)
-                                            .await
+                                        if let Err(e) =
+                                            bg_ledger.mark_anomalies_simplified(&pending).await
                                         {
                                             error!(
                                                 target: "satguardian::ledger",
@@ -530,7 +523,9 @@ async fn run_server(config: WafConfig) -> Result<(), Box<dyn std::error::Error +
 }
 
 /// Runs the standalone T1K Acceleration Co-Processor daemon for SafeLine.
-async fn run_t1k_standalone(config: WafConfig) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+async fn run_t1k_standalone(
+    config: WafConfig,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     println!(
         r#"
    ███████╗ █████╗ ████████╗ ██████╗ ██╗   ██╗ █████╗ ██████╗ ██████╗ ██╗ █████╗ ███╗   ██╗
@@ -606,7 +601,8 @@ fn run_cli_inspect(config: &WafConfig, method: &str, path: &str, query: &str, bo
         client_ip: None,
     };
 
-    let engine = SatguardianSatEngine::with_config(config.islands.clone(), config.business_rules.clone());
+    let engine =
+        SatguardianSatEngine::with_config(config.islands.clone(), config.business_rules.clone());
     let proof = engine.evaluate_payload(&payload);
 
     println!("\n🔍 SATGuardian Edge WAF: Payload Inspection Report");
@@ -616,7 +612,11 @@ fn run_cli_inspect(config: &WafConfig, method: &str, path: &str, query: &str, bo
     println!("Query String     : {}", payload.query_string);
     println!("Action Decision  : {:?}", proof.action);
     println!("Attack Category  : {}", proof.category.display_name());
-    println!("Latency          : {:.2} µs ({:.4} ms)", proof.execution_time_us, proof.execution_time_us / 1000.0);
+    println!(
+        "Latency          : {:.2} µs ({:.4} ms)",
+        proof.execution_time_us,
+        proof.execution_time_us / 1000.0
+    );
     println!("Active Tokens    : {:?}", proof.active_tokens);
     println!("Certainty Islands: {:?}", proof.active_islands);
     println!("------------------------------------------------------------");
@@ -641,17 +641,40 @@ async fn run_check_entitlement(
     match cloud.get_entitlement().await {
         Ok(ent) => {
             println!("\n✅ Entitlement verified successfully!");
-            println!("   Edge Traffic Inspection : {}", if ent.edge_traffic_unlimited { "UNLIMITED & FREE (Open Source Edge)" } else { "Restricted" });
-            println!("   Cloud Synthesis Service : {}", if ent.cloud_synthesis_enabled { "ACTIVE" } else { "PAUSED (Quota reached - edge keeps serving with last rules)" });
+            println!(
+                "   Edge Traffic Inspection : {}",
+                if ent.edge_traffic_unlimited {
+                    "UNLIMITED & FREE (Open Source Edge)"
+                } else {
+                    "Restricted"
+                }
+            );
+            println!(
+                "   Cloud Synthesis Service : {}",
+                if ent.cloud_synthesis_enabled {
+                    "ACTIVE"
+                } else {
+                    "PAUSED (Quota reached - edge keeps serving with last rules)"
+                }
+            );
             println!("   Subscription Tier       : {}", ent.subscription_tier);
-            println!("   Security Units (SU)     : {} SU available", ent.su_available);
-            println!("   Included Monthly SU     : {} SU/month", ent.included_su_month);
+            println!(
+                "   Security Units (SU)     : {} SU available",
+                ent.su_available
+            );
+            println!(
+                "   Included Monthly SU     : {} SU/month",
+                ent.included_su_month
+            );
             if let Some(rate) = ent.overage_usd_per_1k_su {
                 println!("   Overage Rate            : ${:.2} USD per 1,000 SU", rate);
             } else {
                 println!("   Overage Policy          : Hard cap (Optimization pauses; Edge inspection never stops)");
             }
-            println!("   Max Synthesis Variables : {} variables", ent.max_variables);
+            println!(
+                "   Max Synthesis Variables : {} variables",
+                ent.max_variables
+            );
             if let Some(m) = ent.max_minterms {
                 println!("   Max Synthesis Minterms  : {} minterms", m);
             }
@@ -664,8 +687,12 @@ async fn run_check_entitlement(
         }
         Err(e) => {
             eprintln!("\n⚠️ Entitlement check query returned: {}", e);
-            eprintln!("   Note: Local Edge WAF continues operating locally with unlimited requests.");
-            eprintln!("   Ensure SATGUARDIAN_API_KEY is configured to enable Cloud Boolean Synthesis.");
+            eprintln!(
+                "   Note: Local Edge WAF continues operating locally with unlimited requests."
+            );
+            eprintln!(
+                "   Ensure SATGUARDIAN_API_KEY is configured to enable Cloud Boolean Synthesis."
+            );
         }
     }
 
@@ -684,7 +711,10 @@ async fn run_sync_simplify(
     let pending = ledger.get_pending_anomalies(limit).await?;
 
     if pending.is_empty() {
-        println!("ℹ️  No pending novel anomalies found in {}.", config.database_path);
+        println!(
+            "ℹ️  No pending novel anomalies found in {}.",
+            config.database_path
+        );
         return Ok(());
     }
 
@@ -694,7 +724,7 @@ async fn run_sync_simplify(
         config.satguardian_api_token.clone(),
     );
 
-    let vars = FeatureBinarizer::get_variable_catalog(40);
+    let vars = FeatureBinarizer::get_variable_catalog(CLOUD_SYNC_VARIABLE_COUNT);
     let req = SimplifyRequest {
         variables: vars.clone(),
         minterms: pending.clone(),
@@ -770,7 +800,10 @@ async fn run_clauses(
             for (clause, created_at) in pending {
                 println!(
                     "  {}  [{}]  proposed {}  {}",
-                    clause.clause_id, clause.category.as_str(), created_at, clause.description
+                    clause.clause_id,
+                    clause.category.as_str(),
+                    created_at,
+                    clause.description
                 );
             }
             println!("Apply with `satguardian-waf clauses apply <id>`.");
@@ -785,7 +818,10 @@ async fn run_clauses(
                      approve through POST /api/waf/clauses/{}/apply to apply immediately.",
                     clause.description, id
                 ),
-                None => println!("ℹ️  No pending proposal with id {}. Active rules are not changed here.", id),
+                None => println!(
+                    "ℹ️  No pending proposal with id {}. Active rules are not changed here.",
+                    id
+                ),
             }
         }
         "reject" => {
@@ -793,19 +829,33 @@ async fn run_clauses(
                 return Err("clauses reject needs a clause id".into());
             };
             if ledger.reject_dynamic_clause(&id).await? {
-                println!("🗑️  Proposal {} discarded. Protection already in force is untouched.", id);
+                println!(
+                    "🗑️  Proposal {} discarded. Protection already in force is untouched.",
+                    id
+                );
             } else {
-                println!("ℹ️  No pending proposal with id {}. Only proposals can be rejected.", id);
+                println!(
+                    "ℹ️  No pending proposal with id {}. Only proposals can be rejected.",
+                    id
+                );
             }
         }
-        other => return Err(format!("Unknown clauses action '{}'. Use list, apply or reject.", other).into()),
+        other => {
+            return Err(format!(
+                "Unknown clauses action '{}'. Use list, apply or reject.",
+                other
+            )
+            .into())
+        }
     }
 
     Ok(())
 }
 
 /// Runs the standalone Envoy ext_authz verification service.
-async fn run_envoy_authz_standalone(config: WafConfig) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+async fn run_envoy_authz_standalone(
+    config: WafConfig,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     println!(
         r#"
    ███████╗ █████╗ ████████╗ ██████╗ ██╗   ██╗ █████╗ ██████╗ ██████╗ ██╗ █████╗ ███╗   ██╗
@@ -840,14 +890,9 @@ async fn run_envoy_authz_standalone(config: WafConfig) -> Result<(), Box<dyn std
     let trusted_proxies = TrustedProxies::parse(&config.trusted_proxies)
         .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidInput, e))?;
 
-    let envoy_state = EnvoyAuthzState::new(
-        engine,
-        ledger,
-        stateful_limiter,
-        config.mode.clone(),
-    )
-    .with_stealth(config.stealth_mode)
-    .with_trusted_proxies(trusted_proxies);
+    let envoy_state = EnvoyAuthzState::new(engine, ledger, stateful_limiter, config.mode.clone())
+        .with_stealth(config.stealth_mode)
+        .with_trusted_proxies(trusted_proxies);
 
     let app = create_envoy_authz_router(envoy_state);
 

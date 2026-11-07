@@ -1,33 +1,33 @@
+use axum::body::Body;
+use axum::http::{Request, StatusCode};
 use satguardian_waf::config::WafConfig;
 use satguardian_waf::engine::SatguardianSatEngine;
 use satguardian_waf::envoy::{create_envoy_authz_router, EnvoyAuthzState};
 use satguardian_waf::ledger::SqliteLedger;
 use satguardian_waf::stateful::StatefulRateLimiter;
-use axum::body::Body;
-use axum::http::{Request, StatusCode};
 use std::sync::Arc;
 use tower::ServiceExt;
 
 async fn setup_test_router(db_path: &str) -> axum::Router {
-    let ledger = SqliteLedger::init(db_path).await.expect("Failed to init test db");
+    let ledger = SqliteLedger::init(db_path)
+        .await
+        .expect("Failed to init test db");
     let config = WafConfig::default();
     let stateful_limiter = Arc::new(StatefulRateLimiter::new(config.to_stateful_config()));
     let engine = Arc::new(SatguardianSatEngine::new());
 
-    let state = EnvoyAuthzState::new(
-        engine,
-        ledger,
-        stateful_limiter,
-        "block".to_string(),
-    )
-    .with_stealth(false);
+    let state = EnvoyAuthzState::new(engine, ledger, stateful_limiter, "block".to_string())
+        .with_stealth(false);
 
     create_envoy_authz_router(state)
 }
 
 #[tokio::test]
 async fn test_envoy_ext_authz_benign_request_allowed() {
-    let db_path = format!("target/test_envoy_{}.db", &uuid::Uuid::new_v4().to_string()[..8]);
+    let db_path = format!(
+        "target/test_envoy_{}.db",
+        &uuid::Uuid::new_v4().to_string()[..8]
+    );
     let app = setup_test_router(&db_path).await;
 
     let req = Request::builder()
@@ -61,7 +61,10 @@ async fn test_envoy_ext_authz_benign_request_allowed() {
 
 #[tokio::test]
 async fn test_envoy_ext_authz_sqli_blocked_with_proof() {
-    let db_path = format!("target/test_envoy_{}.db", &uuid::Uuid::new_v4().to_string()[..8]);
+    let db_path = format!(
+        "target/test_envoy_{}.db",
+        &uuid::Uuid::new_v4().to_string()[..8]
+    );
     let app = setup_test_router(&db_path).await;
 
     let req = Request::builder()
@@ -84,10 +87,7 @@ async fn test_envoy_ext_authz_sqli_blocked_with_proof() {
         response.headers().get("x-satguardian-blocked").unwrap(),
         "true"
     );
-    assert_eq!(
-        response.headers().get("x-exactor-blocked").unwrap(),
-        "true"
-    );
+    assert_eq!(response.headers().get("x-exactor-blocked").unwrap(), "true");
     assert_eq!(
         response.headers().get("x-envoy-waf-category").unwrap(),
         "sql_injection"
@@ -104,7 +104,10 @@ async fn test_envoy_ext_authz_sqli_blocked_with_proof() {
 
 #[tokio::test]
 async fn test_envoy_ext_authz_post_body_xss_blocked() {
-    let db_path = format!("target/test_envoy_{}.db", &uuid::Uuid::new_v4().to_string()[..8]);
+    let db_path = format!(
+        "target/test_envoy_{}.db",
+        &uuid::Uuid::new_v4().to_string()[..8]
+    );
     let app = setup_test_router(&db_path).await;
 
     let xss_body = "{\"comment\": \"<script>alert('XSS')</script>\"}";
@@ -130,10 +133,7 @@ async fn test_envoy_ext_authz_post_body_xss_blocked() {
         response.headers().get("x-satguardian-blocked").unwrap(),
         "true"
     );
-    assert_eq!(
-        response.headers().get("x-exactor-blocked").unwrap(),
-        "true"
-    );
+    assert_eq!(response.headers().get("x-exactor-blocked").unwrap(), "true");
     assert_eq!(
         response.headers().get("x-envoy-waf-category").unwrap(),
         "xss"
@@ -142,8 +142,5 @@ async fn test_envoy_ext_authz_post_body_xss_blocked() {
         response.headers().get("x-satguardian-category").unwrap(),
         "xss"
     );
-    assert_eq!(
-        response.headers().get("x-exactor-category").unwrap(),
-        "xss"
-    );
+    assert_eq!(response.headers().get("x-exactor-category").unwrap(), "xss");
 }

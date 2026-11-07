@@ -83,8 +83,7 @@ fn load_jsonl(path: &Path) -> Vec<Record> {
         std::fs::File::open(path).unwrap_or_else(|e| panic!("cannot read {}: {e}", path.display()));
     let mut out = Vec::new();
     for (n, line) in BufReader::new(file).lines().enumerate() {
-        let line =
-            line.unwrap_or_else(|e| panic!("{} line {}: {e}", path.display(), n + 1));
+        let line = line.unwrap_or_else(|e| panic!("{} line {}: {e}", path.display(), n + 1));
         if line.trim().is_empty() {
             continue;
         }
@@ -154,7 +153,10 @@ impl Tally {
         self.latency_us.push(latency_us);
         if record.label == "malicious" {
             self.attacks += 1;
-            let entry = self.per_category.entry(record.category.clone()).or_insert((0, 0));
+            let entry = self
+                .per_category
+                .entry(record.category.clone())
+                .or_insert((0, 0));
             entry.1 += 1;
             if blocked {
                 self.detected.push(record.case_id.clone());
@@ -330,36 +332,50 @@ fn tuning_sets_are_a_regression_floor_not_an_accuracy_claim() {
     println!("  latency: {}", t.latency());
 }
 
+/// The held-out estimate of record is the newest frozen batch. heldout_v2's report stays in
+/// `corpus/` as provenance for the 56.1%/7.0% figure it produced, but its cases are now tuning
+/// inputs, so this test reproduces v8 — the batch that was labelled before the engine ever saw it.
 #[test]
-fn heldout_v2_reproduction_matches_the_published_report() {
+fn heldout_v8_reproduction_matches_the_published_report() {
     let published: serde_json::Value = serde_json::from_str(
-        &std::fs::read_to_string(repo_root().join("corpus/heldout_v2_report.json"))
-            .expect("corpus/heldout_v2_report.json is the committed one-shot measurement"),
+        &std::fs::read_to_string(repo_root().join("corpus/heldout_v8_report.json"))
+            .expect("corpus/heldout_v8_report.json is the committed one-shot measurement"),
     )
-    .expect("heldout_v2_report.json is not valid JSON");
+    .expect("heldout_v8_report.json is not valid JSON");
 
-    let records = load_unified();
-    let held_out: Vec<&Record> = records.iter().filter(|r| r.split == "held_out").collect();
+    let records =
+        load_jsonl(&repo_root().join("benchmarks/real_comparative/corpus/heldout_v8.jsonl"));
     assert_eq!(
-        held_out.len(),
+        records.len(),
         published["counts"]["attacks"].as_u64().unwrap() as usize
             + published["counts"]["controls"].as_u64().unwrap() as usize,
-        "the held-out slice and the published report disagree about how many cases exist"
+        "the held-out corpus and the published report disagree about how many cases exist"
     );
 
+    let held_out: Vec<&Record> = records.iter().collect();
     let t = tally(&held_out);
     assert_eq!(t.detected.len(), published["counts"]["detected"].as_u64().unwrap() as usize, concat!(
         "The engine's behaviour on held-out cases changed.\n",
-        "That is allowed, but it spends this batch: the numbers in corpus/heldout_v2_report.json are no\n",
-        "longer an estimate of anything. Produce heldout_v3, run it once, and update the report and every\n",
-        "document that quotes 56.1% recall / 7.0% false positives before changing src/engine again."
+        "That is allowed, but it spends this batch: the numbers in corpus/heldout_v8_report.json are no\n",
+        "longer an estimate of anything. Produce heldout_v9, run it once, and update the report and every\n",
+        "document that quotes the v8 figures before changing src/engine again."
     ));
-    assert_eq!(t.blocked.len(), published["counts"]["blocked_controls"].as_u64().unwrap() as usize, concat!(
+    assert_eq!(
+        t.blocked.len(),
+        published["counts"]["blocked_controls"].as_u64().unwrap() as usize,
+        concat!(
         "The false-positive behaviour on held-out controls changed.\n",
-        "Same consequence: the batch is spent. Build heldout_v3 before quoting 7.0% anywhere."
-    ));
-    assert_eq!(t.missed.len(), published["counts"]["missed"].as_u64().unwrap() as usize);
-    assert_eq!(t.cleared, published["counts"]["cleared"].as_u64().unwrap() as usize);
+        "Same consequence: the batch is spent. Build heldout_v9 before quoting the v8 FPR anywhere."
+    )
+    );
+    assert_eq!(
+        t.missed.len(),
+        published["counts"]["missed"].as_u64().unwrap() as usize
+    );
+    assert_eq!(
+        t.cleared,
+        published["counts"]["cleared"].as_u64().unwrap() as usize
+    );
 
     let (lo, hi) = wilson(t.detected.len(), t.attacks);
     assert!(
@@ -426,7 +442,11 @@ fn vendor_crs_batch_is_measured_only_never_asserted() {
         lo,
         hi
     );
-    println!("  {} unlabelled stages scored by no engine; {}", unlabelled, t.latency());
+    println!(
+        "  {} unlabelled stages scored by no engine; {}",
+        unlabelled,
+        t.latency()
+    );
     for group in [&t.missed[..], &t.blocked[..]] {
         for case_id in group.iter().take(20) {
             println!("  {case_id}");

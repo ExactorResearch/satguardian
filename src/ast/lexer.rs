@@ -125,6 +125,11 @@ pub struct LexicalTokens {
     pub has_lfi_extended_signal: bool,
     pub has_rfi_scheme_signal: bool,
     pub has_session_token_url_signal: bool,
+    // Java attack split: gadget-class names are deserialization evidence;
+    // runtime exec sinks (Runtime.exec, ProcessBuilder, Class.forName) are
+    // command-injection evidence, not serialization markers.
+    pub has_java_deserialization_signal: bool,
+    pub has_java_runtime_sink: bool,
     pub active_token_names: Vec<String>,
 }
 
@@ -289,6 +294,9 @@ static RE_HEX_PAIRS: OnceLock<Regex> = OnceLock::new();
 static RE_IPV6_LITERAL: OnceLock<Regex> = OnceLock::new();
 static RE_LOCALHOST_DNS: OnceLock<Regex> = OnceLock::new();
 static RE_PHP_INI_KEY: OnceLock<Regex> = OnceLock::new();
+static RE_JAVA_GADGET: OnceLock<Regex> = OnceLock::new();
+static RE_JAVA_SINK: OnceLock<Regex> = OnceLock::new();
+static RE_DATA_URI_MARKUP: OnceLock<Regex> = OnceLock::new();
 static RE_MULTIPART_BAD_FN: OnceLock<Regex> = OnceLock::new();
 static RE_NESTED_PARAM: OnceLock<Regex> = OnceLock::new();
 static RE_OCTAL_IP: OnceLock<Regex> = OnceLock::new();
@@ -296,6 +304,12 @@ static RE_ENTITY_NAME: OnceLock<Regex> = OnceLock::new();
 static RE_SQL_ERROR_MSG: OnceLock<Regex> = OnceLock::new();
 static RE_CRLF_HEADER: OnceLock<Regex> = OnceLock::new();
 static RE_CRLF_PARAM: OnceLock<Regex> = OnceLock::new();
+static RE_TEMPLATE_DIR: OnceLock<Regex> = OnceLock::new();
+static RE_PHP_INI_ASSIGN: OnceLock<Regex> = OnceLock::new();
+static RE_SENSITIVE_FILE: OnceLock<Regex> = OnceLock::new();
+static RE_ERROR_REFLECT: OnceLock<Regex> = OnceLock::new();
+static RE_CRED_QUERY: OnceLock<Regex> = OnceLock::new();
+static RE_IPV6_URL: OnceLock<Regex> = OnceLock::new();
 
 fn init_regexes() {
     let _ = RE_TAUT_PAIR.get_or_init(|| {
@@ -311,7 +325,8 @@ fn init_regexes() {
         ]
     });
     let _ = RE_UNION_SELECT.get_or_init(|| {
-        Regex::new(r#"(?i)\bunion(?:\s+|/\*.*?\*/|[(])+(?:all(?:\s+|/\*.*?\*/|[(])+)?select\b"#).unwrap()
+        Regex::new(r#"(?i)\bunion(?:\s+|/\*.*?\*/|[(])+(?:all(?:\s+|/\*.*?\*/|[(])+)?select\b"#)
+            .unwrap()
     });
     let _ = RE_SQL_SLEEP.get_or_init(|| {
         // waitfor delay takes a string literal, not parentheses; the rest are calls.
@@ -323,7 +338,10 @@ fn init_regexes() {
     let _ = RE_XSS_SCRIPT.get_or_init(|| {
         // The leading `<` alternative was removed: it turned every closing </script>
         // into an XSS match and blocked legitimate script includes.
-        Regex::new(r#"(?is)<\s*script[^>]*>.*?(?:alert|eval|document|window|fetch|prompt|location)"#).unwrap()
+        Regex::new(
+            r#"(?is)<\s*script[^>]*>.*?(?:alert|eval|document|window|fetch|prompt|location)"#,
+        )
+        .unwrap()
     });
     let _ = RE_XSS_REMOTE_SCRIPT.get_or_init(|| {
         // Remote HTTPS includes are common in CMS content; plain HTTP and protocol-relative
@@ -339,9 +357,7 @@ fn init_regexes() {
         // when the SVG is loaded as a document); <svg onload> is covered separately.
         Regex::new(r#"(?i)(?:javascript|vbscript|mocha|feed|livescript):[^\s'"]+|data:(?:text/html|application/xhtml\+xml|text/javascript)[^\s'"]*"#).unwrap()
     });
-    let _ = RE_XSS_SVG.get_or_init(|| {
-        Regex::new(r#"(?i)<\s*svg[\s/]+onload\s*="#).unwrap()
-    });
+    let _ = RE_XSS_SVG.get_or_init(|| Regex::new(r#"(?i)<\s*svg[\s/]+onload\s*="#).unwrap());
     let _ = RE_SHELL_CHAIN.get_or_init(|| {
         // `${IFS}` is a whitespace substitute used to bypass naive shell filters.
         Regex::new(r#"(?i)(?:;|\|\||\||&&|[\r\n]+|`|\$\([^)]+\))(?:\s|\$\{?IFS\}?)*(?:cat|bash|curl|wget|nc|whoami|id|sh|powershell|cmd\.exe|netstat|uname|python[0-9.]*|perl|php|ruby|node)\b"#).unwrap()
@@ -353,9 +369,7 @@ fn init_regexes() {
     let _ = RE_POWERSHELL_EXEC.get_or_init(|| {
         Regex::new(r#"(?i)\b(?:powershell(?:\.exe)?|pwsh)\s+(?:-(?:nop|noprofile|enc|encodedcommand|command|executionpolicy|w|windowstyle)\b|/(?:c|k)\b)|\bcmd(?:\.exe)?\s+(?:/\w+\s+)*\/c\b"#).unwrap()
     });
-    let _ = RE_SUBSHELL.get_or_init(|| {
-        Regex::new(r#"(?i)(?:`[^`]+`|\$\([^)]+\))"#).unwrap()
-    });
+    let _ = RE_SUBSHELL.get_or_init(|| Regex::new(r#"(?i)(?:`[^`]+`|\$\([^)]+\))"#).unwrap());
     let _ = RE_DYNAMIC_EVAL.get_or_init(|| {
         // No trailing \b: alternatives ending in `(` are followed by a non-word char.
         Regex::new(r#"(?i)\b(?:os\.system|subprocess\.|eval\(|exec\(|system\s*\(|assert\s*\(|popen\s*\(|proc_open\s*\(|pcntl_exec\s*\(|mail\s*\(|runtime\.getruntime\(\)\.exec|getruntime\(\)\.exec|new\s+processbuilder|processbuilder\s*\(|passthru\(|shell_exec\()"#).unwrap()
@@ -368,7 +382,8 @@ fn init_regexes() {
         Regex::new(r#"(?i)(?:/proc/self/(?:environ|cmdline|maps|fd)|/proc/\d+/(?:environ|cmdline|fd)|/dev/(?:fd|stdin|stdout|stderr)(?:/|$|\s|"|')?|/etc/passwd|/etc/shadow|/windows/win\.ini|c:[/\\]boot\.ini|[a-zA-Z]:[/\\](?:windows|winnt|program files)[/\\]|[/\\]win\.ini\b|[/\\]windows[/\\]system32[/\\]|secrets/kubernetes\.io|serviceaccount/token|/var/run/secrets|/run/secrets|/var/log/[^\s"']+|/var/log/[^\s"']*\.log|(?:^|[/\\])(?:access|error|debug|mysql|postgresql|auth|syslog|messages|secure)(?:\.\d+)?\.log\b)"#).unwrap()
     });
     let _ = RE_PATH_DOTS_ONLY.get_or_init(|| {
-        Regex::new(r#"(?i)(?:\.\./|\.\.\\|%2e%2e%2f|%252e%252e%252f|(?:\.{2,}[/\\])+){2,}"#).unwrap()
+        Regex::new(r#"(?i)(?:\.\./|\.\.\\|%2e%2e%2f|%252e%252e%252f|(?:\.{2,}[/\\])+){2,}"#)
+            .unwrap()
     });
     let _ = RE_SSRF_CLOUD.get_or_init(|| {
         Regex::new(r#"(?i)(?:https?|gopher|dict|file|ftp|ldap|ldaps|tftp|smb|netdoc|jar|iiop|corba|sftp|nfs|afs)://(?:169\.254\.169\.254|169\.254\.170\.2|100\.100\.100\.200|metadata\.google\.internal|instance-data|\[fd00:ec2::254\]|2852039166)(?::\d+)?(?:/|$|\?|#)"#).unwrap()
@@ -379,9 +394,7 @@ fn init_regexes() {
     let _ = RE_SSRF_PARAM_CONTEXT.get_or_init(|| {
         Regex::new(r#"(?i)(?:^|[^a-z0-9_])(?:url|uri|urls?|host|hostname|redirect|redirect_uri|redirecturl|return|returnurl|next|continue|callback|callbackurl|webhook|hook|webhookurl|target|targeturl|dest|destination|proxy|fetch|src|source|image|img|file|path|domain|endpoint|check|connect|origem|origen|u|to|link|go|redir|feed)\s*['"]?\s*[=:]\s*['"\[\{,]*$"#).unwrap()
     });
-    let _ = RE_COMMENT_STRIP.get_or_init(|| {
-        Regex::new(r#"/\*.*?\*/"#).unwrap()
-    });
+    let _ = RE_COMMENT_STRIP.get_or_init(|| Regex::new(r#"/\*.*?\*/"#).unwrap());
     let _ = RE_WORDPRESS_PROBE.get_or_init(|| {
         // Generic index.php/wp.php are NOT WordPress-specific and used to flag ThinkPHP probes
         // as CMS reconnaissance. Keep only unambiguous WordPress paths.
@@ -397,64 +410,51 @@ fn init_regexes() {
         // /*!50000UNION*/ is executed by MySQL, so its content must be inspected, not stripped.
         Regex::new(r#"/\*![0-9]*\s*([\s\S]*?)\*/"#).unwrap()
     });
-    let _ = RE_JNDI_OBFUSCATION.get_or_init(|| {
-        Regex::new(r#"(?i)\$\{(lower|upper):([^}]*)\}"#).unwrap()
-    });
-    let _ = RE_JNDI_ENV_LOOKUP.get_or_init(|| {
-        Regex::new(r#"(?i)\$\{env:[^}]*:-([^}]*)\}"#).unwrap()
-    });
+    let _ = RE_JNDI_OBFUSCATION
+        .get_or_init(|| Regex::new(r#"(?i)\$\{(lower|upper):([^}]*)\}"#).unwrap());
+    let _ =
+        RE_JNDI_ENV_LOOKUP.get_or_init(|| Regex::new(r#"(?i)\$\{env:[^}]*:-([^}]*)\}"#).unwrap());
     let _ = RE_TAUT_NUMERIC.get_or_init(|| {
-        Regex::new(r#"(?i)(?:or|and|\|\|)\s*\(?\s*(\d{1,10})\s*(>=|<=|>|<|!=)\s*(\d{1,10})\s*\)?"#).unwrap()
+        Regex::new(r#"(?i)(?:or|and|\|\|)\s*\(?\s*(\d{1,10})\s*(>=|<=|>|<|!=)\s*(\d{1,10})\s*\)?"#)
+            .unwrap()
     });
     let _ = RE_OR_NUMERIC_COMMENT.get_or_init(|| {
         Regex::new(r#"(?i)['"]?\s*(?:or|and|\|\|)\s+\d{1,10}\s*(?:--|#|/\*)"#).unwrap()
     });
-    let _ = RE_OVERLONG_DOT.get_or_init(|| {
-        Regex::new(r#"(?i)%(?:c0|c1)%(?:ae|2e)|%e0%80%ae|%f0%80%80%ae"#).unwrap()
-    });
+    let _ = RE_OVERLONG_DOT
+        .get_or_init(|| Regex::new(r#"(?i)%(?:c0|c1)%(?:ae|2e)|%e0%80%ae|%f0%80%80%ae"#).unwrap());
     let _ = RE_OVERLONG_SLASH.get_or_init(|| {
         Regex::new(r#"(?i)%(?:c0|c1)%(?:af|2f|bc)|%e0%80%af|%f0%80%80%af"#).unwrap()
     });
     let _ = RE_OVERLONG_BACKSLASH.get_or_init(|| {
         Regex::new(r#"(?i)%(?:c0|c1)%(?:5c|9c|dc)|%e0%80%9c|%f0%80%80%9c"#).unwrap()
     });
-    let _ = RE_IIS_DOT.get_or_init(|| {
-        Regex::new(r#"(?i)%uff0e|%u002e"#).unwrap()
-    });
-    let _ = RE_IIS_SLASH.get_or_init(|| {
-        Regex::new(r#"(?i)%u2215|%u002f|%uff0f"#).unwrap()
-    });
-    let _ = RE_IIS_BACKSLASH.get_or_init(|| {
-        Regex::new(r#"(?i)%u2216|%u005c|%uff3c"#).unwrap()
-    });
+    let _ = RE_IIS_DOT.get_or_init(|| Regex::new(r#"(?i)%uff0e|%u002e"#).unwrap());
+    let _ = RE_IIS_SLASH.get_or_init(|| Regex::new(r#"(?i)%u2215|%u002f|%uff0f"#).unwrap());
+    let _ = RE_IIS_BACKSLASH.get_or_init(|| Regex::new(r#"(?i)%u2216|%u005c|%uff3c"#).unwrap());
     let _ = RE_IIS_LT.get_or_init(|| {
         // %u2039 = ‹ used as a fake '<' in IIS-unicode XSS probes.
         Regex::new(r#"(?i)%u2039|%u3008|%uff1c"#).unwrap()
     });
-    let _ = RE_IIS_GT.get_or_init(|| {
-        Regex::new(r#"(?i)%u203a|%u3009|%uff1e"#).unwrap()
-    });
+    let _ = RE_IIS_GT.get_or_init(|| Regex::new(r#"(?i)%u203a|%u3009|%uff1e"#).unwrap());
     let _ = RE_IIS_SQUOTE.get_or_init(|| {
         // Typographic quotes used as SQL quote substitutes in IIS unicode.
         Regex::new(r#"(?i)%u2018|%u2019|%u02bc|%u02b9"#).unwrap()
     });
-    let _ = RE_IIS_DQUOTE.get_or_init(|| {
-        Regex::new(r#"(?i)%u201c|%u201d|%u2033|%u2036"#).unwrap()
-    });
+    let _ = RE_IIS_DQUOTE.get_or_init(|| Regex::new(r#"(?i)%u201c|%u201d|%u2033|%u2036"#).unwrap());
     let _ = RE_IIS_GUILLEMET_L.get_or_init(|| {
         // « = fake '<' (IIS unicode XSS probes).
         Regex::new(r#"(?i)%u00ab|%u300a|%uff1a"#).unwrap()
     });
-    let _ = RE_IIS_GUILLEMET_R.get_or_init(|| {
-        Regex::new(r#"(?i)%u00bb|%u300b|%uff1b"#).unwrap()
-    });
+    let _ = RE_IIS_GUILLEMET_R.get_or_init(|| Regex::new(r#"(?i)%u00bb|%u300b|%uff1b"#).unwrap());
     let _ = RE_NOSQL_JSON_OP.get_or_init(|| {
         // MongoDB operator keys in JSON position: {"$ne": ...}, {"$where": ...}
         Regex::new(r#""\$(?:ne|gt|gte|lt|lte|in|nin|regex|where|exists|expr|not|mod|all|size|elemMatch|type|options|jsonSchema|text|lookup|function|accumulator|facet|merge|out|group|project|densify|redact|documents|let|graphLookup|unionWith|search|searchMeta|vectorSearch|changeStream|listCollections)"\s*:"#).unwrap()
     });
     let _ = RE_NOSQL_BRACKET_OP.get_or_init(|| {
         // PHP/Express bracket operator injection: email[$ne]=1&clave[$gt]=
-        Regex::new(r#"\[\s*\$(?:ne|gt|gte|lt|lte|in|nin|regex|where|exists|expr|not)\s*\]"#).unwrap()
+        Regex::new(r#"\[\s*\$(?:ne|gt|gte|lt|lte|in|nin|regex|where|exists|expr|not)\s*\]"#)
+            .unwrap()
     });
     let _ = RE_SSTI_JINJA.get_or_init(|| {
         // Jinja/Twig/Nunjucks/Tornado delimiters coupled with template engine sinks.
@@ -499,16 +499,18 @@ fn init_regexes() {
         // Windows-native post-exploitation binaries and commands.
         Regex::new(r#"(?i)\b(?:net\s+(?:user|localgroup|view|share|group|accounts|stat|time|use|session|config|stop|start)|ipconfig|tasklist|systeminfo|qwinsta|quser|nltest|mshta|rundll32|regsvr32|certutil|bitsadmin|schtasks|wmic|vssadmin|bcdedit|netsh|reg\s+(?:add|query|delete|import)|arp\s+-a|route\s+print|netstat)(?:\s|$|[|&;),])"#).unwrap()
     });
-    let _ = RE_SHELL_METACHAR_GATE.get_or_init(|| {
-        Regex::new(r#"(?:;|&&|\|\||\||&\s|`|\$\(|[\r\n])"#).unwrap()
-    });
+    let _ = RE_SHELL_METACHAR_GATE
+        .get_or_init(|| Regex::new(r#"(?:;|&&|\|\||\||&\s|`|\$\(|[\r\n])"#).unwrap());
     let _ = RE_SQL_ERROR_FUNC.get_or_init(|| {
         // Error-based / blind / file-write SQL primitives beyond UNION SELECT.
         Regex::new(r#"(?i)\b(?:extractvalue|updatexml|exp|floor|rand|name_const|make_set|procedure\s+analyse|load_file|json_keys|json_extract|gtid_subset|gtid_subtract|jsonb_path_query|get_lock|json_table|json_value|json_query|openjson|xp_\w+|openrowset|opendatasource|openquery|sp_oa\w+|sp_addextendedproc|bulk\s+insert|handler\s+\w+)\s*\(|\bwaitfor\s+delay\b|\binto\s+(?:out|dump)file\b"#).unwrap()
     });
     let _ = RE_PHP_WRAPPER.get_or_init(|| {
         // PHP stream wrappers abused for command exec or arbitrary file read.
-        Regex::new(r#"(?i)\b(?:expect|php|glob|phar|zip|ogg|rar|ssh2\.(?:exec|shell|tunnel|sftp))://"#).unwrap()
+        Regex::new(
+            r#"(?i)\b(?:expect|php|glob|phar|zip|ogg|rar|ssh2\.(?:exec|shell|tunnel|sftp))://"#,
+        )
+        .unwrap()
     });
     let _ = RE_SHELLSHOCK.get_or_init(|| {
         // Bash function export injection: () { :;}; <command>
@@ -608,7 +610,10 @@ fn init_regexes() {
     });
     let _ = RE_PHP_CONCAT_ASSIGN.get_or_init(|| {
         // $f='sys'.'tem' string-concat obfuscation feeding a later $f(...) call.
-        Regex::new(r#"(?i)\$[a-zA-Z_]\w*\s*=\s*['"][a-zA-Z_]{2,20}['"]\s*\.\s*['"][a-zA-Z_]{2,20}['"]"#).unwrap()
+        Regex::new(
+            r#"(?i)\$[a-zA-Z_]\w*\s*=\s*['"][a-zA-Z_]{2,20}['"]\s*\.\s*['"][a-zA-Z_]{2,20}['"]"#,
+        )
+        .unwrap()
     });
     let _ = RE_WIN_LOLBIN.get_or_init(|| {
         // Living-off-the-land binaries that are hostile even without a metachar:
@@ -677,7 +682,8 @@ fn init_regexes() {
     });
     let _ = RE_EMAIL_ENCODED_WORD.get_or_init(|| {
         // RFC 2047 encoded-word header injection: =?UTF-8?B?...?=
-        Regex::new(r#"(?i)=\?(?:utf-?7|x-[a-z0-9-]{1,20}|unknown-8bit)\?[BbQq]\?[^?\s]{2,200}\?="#).unwrap()
+        Regex::new(r#"(?i)=\?(?:utf-?7|x-[a-z0-9-]{1,20}|unknown-8bit)\?[BbQq]\?[^?\s]{2,200}\?="#)
+            .unwrap()
     });
     let _ = RE_SSTI_SMARTY.get_or_init(|| {
         // Smarty template tags reaching PHP or file sinks.
@@ -698,7 +704,10 @@ fn init_regexes() {
     });
     let _ = RE_PHP_EVAL_MODIFIER.get_or_init(|| {
         // preg_replace/preg_filter/mb_ereg_replace with the 'e' (eval) modifier.
-        Regex::new(r#"(?i)\b(?:mb_ereg_replace|preg_replace|preg_filter)\s*\([^)]{0,200}?,\s*['"]e['"]"#).unwrap()
+        Regex::new(
+            r#"(?i)\b(?:mb_ereg_replace|preg_replace|preg_filter)\s*\([^)]{0,200}?,\s*['"]e['"]"#,
+        )
+        .unwrap()
     });
     let _ = RE_NOSQL_DB_PATH.get_or_init(|| {
         // CouchDB/Elasticsearch/Mongo data-plane endpoints in the path.
@@ -729,7 +738,8 @@ fn init_regexes() {
         Regex::new(r#"(?i)samlp?:[A-Za-z]|SAMLResponse=|SAMLRequest=|\bSAML(?:Request|Response)\s*:|saml:Assertion|samlp:Response"#).unwrap()
     });
     let _ = RE_XSLT.get_or_init(|| {
-        Regex::new(r#"<xsl:(?:stylesheet|transform|value-of|apply-imports|include|import|copy-of)"#).unwrap()
+        Regex::new(r#"<xsl:(?:stylesheet|transform|value-of|apply-imports|include|import|copy-of)"#)
+            .unwrap()
     });
     let _ = RE_XQUERY.get_or_init(|| {
         Regex::new(r#"\b(?:declare\s+(?:variable|function)\s+\$|for\s+\$\w+\s+in\b|collection\s*\(|fn:doc\s*\(|doc\s*\(\s*["'](?:file:|https?:))"#).unwrap()
@@ -760,9 +770,8 @@ fn init_regexes() {
     let _ = RE_ACCT_PATH.get_or_init(|| {
         Regex::new(r#"(?i)/(?:account|profile|settings|user|admin|dashboard|private|secure|billing|orders?|cart|checkout|member)s?/"#).unwrap()
     });
-    let _ = RE_REDIRECT_URI.get_or_init(|| {
-        Regex::new(r#"(?i)redirect_uri\s*=\s*([^&\s"']+)"#).unwrap()
-    });
+    let _ = RE_REDIRECT_URI
+        .get_or_init(|| Regex::new(r#"(?i)redirect_uri\s*=\s*([^&\s"']+)"#).unwrap());
     let _ = RE_NUM_NEG.get_or_init(|| {
         Regex::new(r#"["']?(?:qty|quantity|price|amount|bid|total|weight|score|bonus|discount(?:_percent)?|balance|seats|quota)["']?\s*[:=]\s*-\d"#).unwrap()
     });
@@ -782,9 +791,7 @@ fn init_regexes() {
     let _ = RE_PRIV_VAL.get_or_init(|| {
         Regex::new(r#"(?i)["']?(?:role|group|account_?type)["']?\s*:\s*["']?(?:admin|administrator|root|superuser|owner)\b|["']?(?:isadmin|is_admin|admin|verified|moderated|approved|is_staff|admin_override|debug|shell)["']?\s*:\s*(?:true|1\b)|permissions["']?\s*:\s*\[[^\]]*["']\*|owner_?id["']?\s*:"#).unwrap()
     });
-    let _ = RE_TE_VALUE.get_or_init(|| {
-        Regex::new(r#"(?i)^\s*chunked\s*$"#).unwrap()
-    });
+    let _ = RE_TE_VALUE.get_or_init(|| Regex::new(r#"(?i)^\s*chunked\s*$"#).unwrap());
     let _ = RE_MAIL_HDR_JSON.get_or_init(|| {
         // Mail-header keys smuggled inside JSON API payloads.
         Regex::new(r#"(?i)["'](?:received|x-original-to|return-path|errors-to|resent-from|resent-to|delivered-to|x-envelope-from)["']\s*:"#).unwrap()
@@ -801,14 +808,16 @@ fn init_regexes() {
         Regex::new(r#"[A-Za-z0-9+/=]{200,}"#).unwrap()
     });
     let _ = RE_BRAND_HOST.get_or_init(|| {
-        Regex::new(r#"(?i)pple|g00gle|paypa|amaz|neta|micros|faceb|insta|dropb|ebay|walmrt|app1e"#).unwrap()
+        Regex::new(r#"(?i)pple|g00gle|paypa|amaz|neta|micros|faceb|insta|dropb|ebay|walmrt|app1e"#)
+            .unwrap()
     });
-    let _ = RE_CYR_BRAND.get_or_init(|| {
-        Regex::new(r#"аррӏе|раураӏ|googӏe"#).unwrap()
-    });
+    let _ = RE_CYR_BRAND.get_or_init(|| Regex::new(r#"аррӏе|раураӏ|googӏe"#).unwrap());
     let _ = RE_PARAM_PAIR.get_or_init(|| {
         // key=value / "key":"value" pairs across query strings and JSON bodies.
-        Regex::new(r#"(?i)["']?([a-z_][a-z0-9_.\-]{0,40})["']?\s*[:=]\s*["']?([^&\s"',}\]]{1,200})"#).unwrap()
+        Regex::new(
+            r#"(?i)["']?([a-z_][a-z0-9_.\-]{0,40})["']?\s*[:=]\s*["']?([^&\s"',}\]]{1,200})"#,
+        )
+        .unwrap()
     });
     let _ = RE_MIXED_TOKEN.get_or_init(|| {
         // Alphanumeric tokens blending Latin with Cyrillic/Greek lookalikes.
@@ -862,12 +871,12 @@ fn init_regexes() {
         // has no legitimate place in an HTTP parameter or JSON/XML body.
         // "@type" alone is JSON-LD schema markup — only flag when the value is
         // a Java-ish class name (fastjson/jackson gadget style).
-        Regex::new(r#"(?i)\b(?:java|javax|sun|com\.sun|oracle|ognl|javassist|xstream|fastjson|mvel|spel|groovy|aspectjweaver|beanshell|jython|mozilla\.rhino)\.[a-z]|org\.apache\.commons|com\.opensymphony|org\.springframework|com\.thoughtworks|org\.yaml\.snakeyaml|flex\.messaging|org\.jsecurity|com\.alibaba\.fastjson|xwork\.|struts|webwork|rO0AB|"@type"\s*:\s*"[^"]*(?:java|com\.sun|oracle|ognl|xstream|fastjson|javassist|aspectj|beanshell|jython|rhino|groovy|mvel|spel|opensymphony|springframework)|invokertransformer|templatesimpl|jdbcrowsetimpl|jdk\.internal|clonefactory|ognl\.|spel\.|mvel\.|#\{[a-zA-Z_]|\$\{[a-zA-Z_]+\.(?:get|set|eval|exec|runtime|process|class|forname|newinstance)|class\.forname|runtime\.getruntime|runtime\.exec|processbuilder|process\s*\.\s*builder"#).unwrap()
+        Regex::new(r#"(?i)\b(?:java|javax|sun|com\.sun|oracle|ognl|javassist|xstream|fastjson|mvel|spel|groovy|aspectjweaver|beanshell|jython|mozilla\.rhino|org\.omg|org\.apache\.ibatis|com\.mchange|org\.slf4j|ch\.qos|log4j|org\.apache\.logging|org\.eclipse)\.[a-z]|org\.apache\.commons|com\.opensymphony|org\.springframework|com\.thoughtworks|org\.yaml\.snakeyaml|flex\.messaging|org\.jsecurity|com\.alibaba\.fastjson|xwork\.|struts|webwork|rO0AB|"@type"\s*:\s*"[^"]*(?:java|com\.sun|oracle|ognl|xstream|fastjson|javassist|aspectj|beanshell|jython|rhino|groovy|mvel|spel|opensymphony|springframework)|invokertransformer|templatesimpl|jdbcrowsetimpl|jdk\.internal|clonefactory|ognl\.|spel\.|mvel\.|#\{[a-zA-Z_]|\$\{[a-zA-Z_]+\.(?:get|set|eval|exec|runtime|process|class|forname|newinstance)|class\.forname|runtime\.getruntime|runtime\.exec|processbuilder|process\s*\.\s*builder"#).unwrap()
     });
     let _ = RE_SQL_EXTENDED.get_or_init(|| {
         // DBMS-specific functions reachable only through injection: Oracle,
         // MySQL file/network exfil, MSSQL xp_*/openrowset, Postgres file/dblink.
-        Regex::new(r#"(?i)\b(?:unistr|updatexml|extractvalue|xmltype|ordsys|ctxsys|dbms_\w+|utl_\w+|load_file|benchmark|xp_cmdshell|xp_reg\w+|xp_dirtree|xp_fileexist|xp_subdirs|openrowset|opendatasource|sp_executesql|sp_oacreate|sp_oamethod|sp_makewebtask|pg_read_file|pg_ls_dir|pg_read_binary_file|pg_stat_file|dblink|dblink_exec|dblink_connect|lo_import|lo_export|generate_series|dbms_pipe|dbms_lock|dbms_aw|dbms_xmlgen|dbms_scheduler|dbms_alert|dbms_output|utl_http|utl_inaddr|utl_file|utl_smtp|utl_tcp|ordsys\.|ctxsys\.|concat_ws|ifnull|nullif|coalesce|greatest|least|locate|instr|to_char|to_date|to_number|to_timestamp|date_format|str_to_date|unix_timestamp|from_unixtime|collate|soundex|difference|lpad|rpad|quote|unhex|octet_length|bit_length|char_length|character_length|initcap|ucase|lcase|substring_index|make_set|export_set|find_in_set|substr|substring|floor|ceil|left|right|ltrim|rtrim|crc32|unhex|oct|conv|elt|field|soundex|difference|make_set|export_set|find_in_set|compress|uncompress)\s*\(|\/\*\+|\binformation_schema\b|\bperformance_schema\b|\bsys\.schema|\barray\s*\[\s*['"]|\blike\s*\(|'\s*union\s+[a-z]+\s*(?:--|#|\/\*|\)|$)|(?:\bor|\band|\bxor)\s*['"]?\s*$|\bor\s*\?\s*--|::(?:int|integer|bigint|smallint|text|varchar|char|numeric|decimal|float|double|real|bool|boolean|date|time|timestamp|interval|json|jsonb|xml|uuid|inet|cidr|macaddr|point|line|lseg|box|path|polygon|circle|money|bit|varbit|tsvector|tsquery|regclass|bytea|name|oid)\b|\blike\s+null\b|\bnot\s+like\s+null\b"#).unwrap()
+        Regex::new(r#"(?i)\b(?:unistr|updatexml|extractvalue|xmltype|ordsys|ctxsys|dbms_\w+|utl_\w+|load_file|benchmark|xp_cmdshell|xp_reg\w+|xp_dirtree|xp_fileexist|xp_subdirs|openrowset|opendatasource|sp_executesql|sp_oacreate|sp_oamethod|sp_makewebtask|pg_read_file|pg_ls_dir|pg_read_binary_file|pg_stat_file|dblink|dblink_exec|dblink_connect|lo_import|lo_export|generate_series|dbms_pipe|dbms_lock|dbms_aw|dbms_xmlgen|dbms_scheduler|dbms_alert|dbms_output|utl_http|utl_inaddr|utl_file|utl_smtp|utl_tcp|ordsys\.|ctxsys\.|concat_ws|ifnull|nullif|coalesce|greatest|least|locate|instr|to_char|to_date|to_number|to_timestamp|date_format|str_to_date|unix_timestamp|from_unixtime|collate|soundex|difference|lpad|rpad|quote|unhex|octet_length|bit_length|char_length|character_length|initcap|ucase|lcase|substring_index|make_set|export_set|find_in_set|substr|substring|floor|ceil|left|right|ltrim|rtrim|crc32|unhex|oct|conv|elt|field|soundex|difference|make_set|export_set|find_in_set|compress|uncompress)\s*\(|\/\*\+|\binformation_schema\b|\bperformance_schema\b|\bsys\.schema|\barray\s*\[\s*['"]|\blike\s*\(|'\s*union\s+[a-z]+\s*(?:--|#|\/\*|\)|$)|(?:\bor|\band|\bxor)\s*['"]?\s*$|\bor\s*\?\s*--|\bor\s*\(\s*\d+\s*[:=<>!]\s*\d+|\bxor\s+[\w\x0b\x0c]+\s*\d*\s*[<>=!]|\bselect\s*\(\s*case\b|\bcase\s+when\b[^)]*\bthen\b|::(?:int|integer|bigint|smallint|text|varchar|char|numeric|decimal|float|double|real|bool|boolean|date|time|timestamp|interval|json|jsonb|xml|uuid|inet|cidr|macaddr|point|line|lseg|box|path|polygon|circle|money|bit|varbit|tsvector|tsquery|regclass|bytea|name|oid)\b|\blike\s+null\b|\bnot\s+like\s+null\b"#).unwrap()
     });
     let _ = RE_SQL_TAUTOLOGY.get_or_init(|| {
         // Quote-flanked numeric tautologies: ' and 526=527 / " or 1=1.
@@ -882,7 +891,7 @@ fn init_regexes() {
     let _ = RE_RCE_EXTENDED.get_or_init(|| {
         // Windows command constructs and shell-variable indirection that the
         // POSIX chaining rules do not model.
-        Regex::new(r#"(?i)\b(?:if\s+(?:not\s+)?exist\b|for\s+%.{1,4}\s+in\b|choice\s+/c|timeout\s+/t|%comspec%|%windir%|%systemroot%|\$\{?IFS\}?|\$SHELL\s+-c|cmd(?:\.exe)?\s+/[ck]\b|forfiles(?:\.exe)?\s+/p|pcalua(?:\.exe)?\s+-a|syncappvpublishingserver|desktopimgdownldr|eventvwr(?:\.exe)?\s+[^\s]*\.msc|presentationhost(?:\.exe)?\s|runscripthelper|msdt(?:\.exe)?\s|pcwrun|xwizard|ie4uinit|infdefaultinstall|gonext|control\.exe\s+[^\s]*\.cpl|invoke-webrequest|invoke-expression|invoke-command|invoke-item|invoke-restmethod|invoke-wmimethod|powershell(?:\.exe)?\s+-\w|pwsh(?:\.exe)?\s+-\w|iex\s*\(|iex\s+-|enter-pssession|new-object|net\.webclient|system\.net\.webclient|downloadstring|downloadfile|get-wmiobject|start-bitstransfer|alias\s+[a-z_]\w*\s*=|!\s*-\d|\btime\s+[a-z_][\w./-]*\s|(?:ba|da|z|k)?sh\s+-c\b|python[0-9.]*\s+-c\b|perl\s+-e\b|ruby\s+-e\b|node\s+-e\b|php\s+-r\b|lua\s+-e\b|tclsh\b|cscli\s|ansible|c89\s|\|\s*(?:vi|vim|nano|emacs|less|more|man|top|htop|mc|ftp|sftp|ssh|telnet|nc|ncat|netcat|socat|awk|gawk|nawk|sed|ed|ex|vi|vim)\b|cmdextversion|\bgoto\s+[a-z_]|\bcall\s+[a-z_%.]|\bstart\s+/|\bif\s+[^\n|]{0,50}==|(?:^|[\s|;&])~[+-]|[|;&]\s*\$[a-zA-Z_]\w*\s+\S|\b(?:dsquery|ntdsutil|dsadd|dsmod|dsrm|netdom|csvde|ldifde|adfind|admod|qwinsta|rwinsta|chgport|dfsvc|ieexec|msbuild|installutil|regasm|regsvcs|sqldmdr|smsdbsrv|cscript|wscript)\b|\bset\s+-o\s+\w+|%[@*]\d?|[a-z]\{[a-z][a-z0-9]*,[a-z0-9,]+\}[a-z]|\b(?:nc|ncat|netcat)\s+-[a-zA-Z]*l[a-zA-Z]*\s+\d{2,5})"#).unwrap()
+        Regex::new(r#"(?i)\b(?:if\s+(?:not\s+)?exist\b|for\s+%.{1,4}\s+in\b|choice\s+/c|timeout\s+/t|%comspec%|%windir%|%systemroot%|\$\{?IFS\}?|\$SHELL\s+-c|cmd(?:\.exe)?\s+/[ck]\b|forfiles(?:\.exe)?\s+/p|pcalua(?:\.exe)?\s+-a|syncappvpublishingserver|desktopimgdownldr|eventvwr(?:\.exe)?\s+[^\s]*\.msc|presentationhost(?:\.exe)?\s|runscripthelper|msdt(?:\.exe)?\s|pcwrun|xwizard|ie4uinit|infdefaultinstall|gonext|control\.exe\s+[^\s]*\.cpl|invoke-webrequest|invoke-expression|invoke-command|invoke-item|invoke-restmethod|invoke-wmimethod|powershell(?:\.exe)?\s+-\w|pwsh(?:\.exe)?\s+-\w|iex\s*\(|iex\s+-|enter-pssession|new-object|net\.webclient|system\.net\.webclient|downloadstring|downloadfile|get-wmiobject|start-bitstransfer|alias\s+[a-z_]\w*\s*=|!\s*-\d|\btime\s+[a-z_][\w./-]*\s|(?:ba|da|z|k)?sh\s+-c\b|python[0-9.]*\s+-c\b|perl\s+-e\b|ruby\s+-e\b|node\s+-e\b|php\s+-r\b|lua\s+-e\b|tclsh\b|cscli\s|ansible|c89\s|\|\s*(?:vi|vim|nano|emacs|less|more|man|top|htop|mc|ftp|sftp|ssh|telnet|nc|ncat|netcat|socat|awk|gawk|nawk|sed|ed|ex|vi|vim)\b|cmdextversion|\bgoto\s+[a-z_]|\bcall\s+[a-z_%.]|\bstart\s+/|\bif\s+[^\n|]{0,50}==|(?:^|[\s|;&])~[+-]|[|;&]\s*\$[a-zA-Z_]\w*\s+\S|\b(?:dsquery|ntdsutil|dsadd|dsmod|dsrm|netdom|csvde|ldifde|adfind|admod|qwinsta|rwinsta|chgport|dfsvc|ieexec|msbuild|installutil|regasm|regsvcs|sqldmdr|smsdbsrv|cscript|wscript|bcdboot|bcdedit|bootsect|diskpart|schtasks|regsvr32|mshta|wmic|fsutil|takeown|icacls|cacls|compact|cipher|makecab|extrac32|lpq|lpr|rsh|rexec|rlogin)\b|\bif\s+"[^"]{1,30}"\s+(?:geq|leq|gtr|lss|equ|neq)\b|\bset\s+-o\s+\w+|%[@*]\d?|[a-z]\{[a-z][a-z0-9]*,[a-z0-9,]+\}[a-z]|\b(?:nc|ncat|netcat)\s+-[a-zA-Z]*l[a-zA-Z]*\s+\d{2,5}|;\s*set\b)"#).unwrap()
     });
     let _ = RE_METHOD_OVERRIDE_PARAM.get_or_init(|| {
         // _method=PUT/DELETE/PROPFIND style verb tunneling inside the body/qs.
@@ -895,17 +904,33 @@ fn init_regexes() {
     });
     let _ = RE_PHP_VAR_SHAPE.get_or_init(|| {
         // PHP variable-function / variable-variable call shapes: $a(...), $$x, ${...}
-        Regex::new(r#"(?i)\$\s*\w*\s*\(|\$\$|\$\s*\{|\$\s*\[|->\s*\$\w+|\$\w+\s*->\s*\w+\s*\(|\$\w+\s*\[[^\]]*\]\s*\(|["'][a-zA-Z_]\w*["']\s*\("#).unwrap()
+        Regex::new(r#"(?i)\$\s*\w*\s*\(|\$\$|\$\s*\{|\$\s*\[|->\s*\$\w+|\$\w+\s*->\s*\w+\s*\(|\$\w+\s*\[[^\]]*\]\s*\(|["'][a-zA-Z_]\w*["']\s*\(|(?:^|[^.\w])define\s*\("#).unwrap()
     });
     let _ = RE_NODEJS_ABUSE.get_or_init(|| {
         // Node.js runtime/module surfaces with no place in HTTP parameters.
-        Regex::new(r#"(?i)\b(?:require\s*\(|import\s*\(|child_process|process\.(?:env|argv|binding|_linkedbinding|dlopen|exit|kill)|process\s*\[|global\.(?:process|require|buffer|__dirname)|__dirname|__filename|module\.exports|buffer\.from|vm\.runin|vm\.createcontext|worker_threads|cluster\.|fs\.(?:readfile|writefile|createreadstream|createwritestream)|net\.(?:connect|createconnection|createserver)|dgram\.|__proto__|constructor\s*\[|prototype\s*\[|process\[req\.|console\.|__js_function|globalthis|globaleval|this\.constructor|constructor\.constructor|while\s*\(\s*(?:true|!0|1|!!)\s*\)?\s*;|for\s*\(\s*;\s*;|while\s*\(\s*(?:Infinity|NaN|undefined)\s*\)|atob\s*\(|btoa\s*\(|data:(?:text|application|multipart|image/svg)/|(?:=|:|=>|return\s+|[(,]\s*)function\s*\([^)]*\)\s*\{|import\s*[{*][^;]{0,300}?\bfrom\b)"#).unwrap()
+        Regex::new(r#"(?i)\b(?:require\s*\(|import\s*\(|child_process|process\.(?:env|argv|binding|_linkedbinding|dlopen|exit|kill)|process\s*\[|global\.(?:process|require|buffer|__dirname)|__dirname|__filename|module\.exports|buffer\.from|vm\.runin|vm\.createcontext|worker_threads|cluster\.|fs\.(?:readfile|writefile|createreadstream|createwritestream)|net\.(?:connect|createconnection|createserver)|dgram\.|__proto__|constructor\s*\[|prototype\s*\[|process\[req\.|console\.|__js_function|globalthis|globaleval|this\.constructor|constructor\.constructor|while\s*\(\s*(?:true|!0|1|!!)\s*\)?\s*;|for\s*\(\s*;\s*;|while\s*\(\s*(?:\+?1|true|!0|!!|Infinity|NaN|undefined)\s*\)|atob\s*\(|btoa\s*\(|(?:=|:|=>|return\s+|[(,]\s*)function\s*\([^)]*\)\s*\{|import\s*[{*][^;]{0,300}?\bfrom\b)"#).unwrap()
+    });
+    // NOTE: data: URIs were removed from RE_NODEJS_ABUSE — they are markup
+    // evidence (XSS), not Node runtime abuse, and matched benign data: blobs.
+    let _ = RE_JAVA_GADGET.get_or_init(|| {
+        // Gadget-class / package vocabulary of RE_JAVA_ATTACK minus the
+        // runtime-exec sinks — deserialization evidence only.
+        Regex::new(r#"(?i)\b(?:java|javax|sun|com\.sun|oracle|ognl|javassist|xstream|fastjson|mvel|spel|groovy|aspectjweaver|beanshell|jython|mozilla\.rhino|org\.omg|org\.apache\.ibatis|com\.mchange|org\.slf4j|ch\.qos|log4j|org\.apache\.logging|org\.eclipse)\.[a-z]|org\.apache\.commons|com\.opensymphony|org\.springframework|com\.thoughtworks|org\.yaml\.snakeyaml|flex\.messaging|org\.jsecurity|com\.alibaba\.fastjson|xwork\.|struts|webwork|rO0AB|"@type"\s*:\s*"[^"]*(?:java|com\.sun|oracle|ognl|xstream|fastjson|javassist|aspectj|beanshell|jython|rhino|groovy|mvel|spel|opensymphony|springframework)|invokertransformer|templatesimpl|jdbcrowsetimpl|jdk\.internal|clonefactory|ognl\.|spel\.|mvel\.|#\{[a-zA-Z_]|\$\{[a-zA-Z_]+\.(?:get|set|eval|exec|runtime|process|class|forname|newinstance)"#).unwrap()
+    });
+    let _ = RE_JAVA_SINK.get_or_init(|| {
+        // Java runtime exec/loading sinks — command-injection evidence.
+        Regex::new(r#"(?i)\b(?:class\s*\.\s*forname|runtime\s*\.\s*getruntime|runtime\s*\.\s*exec|processbuilder|process\s*\.\s*builder)\b"#).unwrap()
+    });
+    let _ = RE_DATA_URI_MARKUP.get_or_init(|| {
+        // data: URIs whose payload is executable markup/script — an XSS
+        // vector, not a Node.js runtime signal.
+        Regex::new(r#"(?i)\bdata:(?:text/html|text/javascript|application/(?:javascript|x-javascript|ecmascript)|image/svg\+xml)/"#).unwrap()
     });
     let _ = RE_XSS_EXTENDED.get_or_init(|| {
         // JavaScript runtime constructs and executable markup that survive
         // outside <script> tags: new Function, document./window. sinks,
         // dynamic import(), legacy plugin tags.
-        Regex::new(r#"(?i)new\s+function\s*\(|document\.(?:cookie|write|writeln|location|domain|referrer|body|forms|images|links|scripts|all|layers|plugins|url|documenturi|baseuri)|window\.(?:location|open|name|top|parent|frames|self|document|opener|event)|window\s*\[|document\s*\[|self\s*\[|top\s*\[|parent\s*\[|frames\s*\[|globalEval|globalThis|setTimeout\s*\(|setInterval\s*\(|queueMicrotask|requestAnimationFrame|eval\s*\(|import\s*\(|confirm\s*\(|prompt\s*\(|alert\s*\(|atob\s*\(|btoa\s*\(|!\[\]|javascript&#\d|\\x[0-9a-f]{2}(?:script|iframe|img|svg|details|video|audio|object|embed|style|link|form|isindex|keygen|marquee|template|noscript|xmp|plaintext|listing)\\x|\b(?:formaction|srcdoc|dynsrc|lowsrc|xlink:href)\s*=|<\s*(?:object|applet|isindex|keygen|menuitem|embed|bgsound|ilayer|layer|comment|xml|xss|v:|o:|st1:|w:|rs:)\b|\bon\w{0,30}(?:change|load|play|toggle|focus|blur|error|click|submit|animation|transition|pointer|touch|key|mouse|drag|drop|copy|paste|cut|wheel|scroll|resize|hashchange|popstate|message|open|close|cancel|canplay|ended|pause|seeked|seeking|stalled|suspend|timeupdate|volumechange|waiting|fullscreen|availability|targetavailability)\w{0,20}\s*="#).unwrap()
+        Regex::new(r#"(?i)new\s+function\s*\(|document\s*\.\s*(?:cookie|write|writeln|location|domain|referrer|body|forms|images|links|scripts|all|layers|plugins|url|documenturi|baseuri)|window\s*\.\s*(?:location|open|name|top|parent|frames|self|document|opener|event)|window\s*\[|document\s*\[|self\s*\[|top\s*\[|parent\s*\[|frames\s*\[|globalEval|globalThis|setTimeout\s*\(|setInterval\s*\(|queueMicrotask|requestAnimationFrame|eval\s*\(|import\s*\(|confirm\s*\(|prompt\s*\(|alert\s*\(|atob\s*\(|btoa\s*\(|!\[\]|javascript&#\d|\\x[0-9a-f]{2}(?:script|iframe|img|svg|details|video|audio|object|embed|style|link|form|isindex|keygen|marquee|template|noscript|xmp|plaintext|listing)\\x|\b(?:formaction|srcdoc|dynsrc|lowsrc|xlink:href|-moz-binding|expression)\s*[=(]|\bon[a-z]{15,}\s*=|(?:^|[\s"'])[<>!]{0,4}-{2,}>|(?:^|[\s"'(<])!--|<\s*(?:object|applet|isindex|keygen|menuitem|embed|bgsound|ilayer|layer|comment|xml|xss|v:|o:|st1:|w:|rs:)\b|\bon\w{0,30}(?:change|load|play|toggle|focus|blur|error|click|submit|animation|transition|pointer|touch|key|mouse|drag|drop|copy|paste|cut|wheel|scroll|resize|hashchange|popstate|message|open|close|cancel|canplay|ended|pause|seeked|seeking|stalled|suspend|timeupdate|volumechange|waiting|fullscreen|availability|targetavailability)\w{0,20}\s*="#).unwrap()
     });
     let _ = RE_LFI_EXTENDED.get_or_init(|| {
         // Backslash traversal the forward-slash rules do not model. Bare
@@ -925,7 +950,7 @@ fn init_regexes() {
         // Session identifiers carried in the URL query — fixation/leakage
         // class. Checked against query_string only, never request bodies.
         // query_string arrives without the leading '?', so anchor on ^ too.
-        Regex::new(r#"(?i)(?:^|[?&;\s"'])(jsessionid|phpsessid|sessid|sessionid|session_id|aspsessionid|asp\.net_sessionid|phpsessionid|cfid|cftoken|connect\.sid|play_session|phpsession|session_token|rack\.session|_rails_session|rails_session|cakephp|jwsession|cfsid|zend_session_id|symfony_session|laravel_session|django_session|wp-settings|wordpress_logged_in|woocommerce_items_in_cart)="#).unwrap()
+        Regex::new(r#"(?i)(?:^|[?&;\s"'])(jsessionid|phpsessid|sessid|sessionid|session_id|aspsessionid|asp\.net_sessionid|phpsessionid|cfid|cftoken|connect\.sid|play_session|phpsession|session_token|rack\.session|_rails_session|rails_session|cakephp|jwsession|cfsid|zend_session_id|symfony_session|laravel_session|django_session|wp-settings|wordpress_logged_in|woocommerce_items_in_cart|jservsession|_session_id|sails\.sid|koa[:.]sess|next-auth\.session|__host-)="#).unwrap()
     });
     let _ = RE_BAD_CHARSET.get_or_init(|| {
         // Exotic/mutable charsets used for parser-differential evasion.
@@ -964,7 +989,7 @@ fn init_regexes() {
     let _ = RE_PHP_INI_KEY.get_or_init(|| {
         // PHP ini-style dotted keys reaching ini_set/config: opcache.jit_*,
         // disable_functions.*, session.*, upload_tmp_dir.* etc.
-        Regex::new(r#"(?i)(?:opcache|apc|xcache|wincache|eaccelerator|hhvm|newrelic|datadog|blackfire|xdebug|uopz|suhosin|runkit|zend|ffi|phar|session|upload_tmp_dir|sys_temp_dir|include_path|open_basedir|disable_functions|allow_url_fopen|allow_url_include|auto_prepend_file|auto_append_file|error_log|display_errors|expose_php|mail|intl|mbstring|pdo|mysqli|mysql|pgsql|sqlite|soap|curl|openssl|zlib|bcmath|gmp|date|exif|filter|iconv|json|ldap|libxml|fastcgi|realpath_cache)\.[a-z_]"#).unwrap()
+        Regex::new(r#"(?i)(?:opcache|apc|xcache|wincache|eaccelerator|hhvm|newrelic|datadog|blackfire|xdebug|uopz|suhosin|runkit|zend|ffi|phar|session|upload_tmp_dir|sys_temp_dir|include_path|open_basedir|disable_functions|allow_url_fopen|allow_url_include|auto_prepend_file|auto_append_file|error_log|display_errors|expose_php|mail|intl|mbstring|pdo|mysqli|mysqlnd|pgsql|sqlite|soap|curl|openssl|zlib|bcmath|gmp|date|exif|filter|iconv|json|ldap|libxml|fastcgi|realpath_cache)\.[a-z_]"#).unwrap()
     });
     let _ = RE_MULTIPART_BAD_FN.get_or_init(|| {
         // Multipart filename carrying = ; | & % — parser-differential names.
@@ -977,7 +1002,10 @@ fn init_regexes() {
     let _ = RE_ENTITY_NAME.get_or_init(|| {
         // Bare HTML-entity fragments (amp; lt; gt; quot; apos;) inside quoted
         // multipart/form field names — desync bait between parsers.
-        Regex::new(r#"(?i)(?:name|filename)\s*=\s*"[^"]*(?:amp|lt|gt|quot|apos|nbsp|copy|reg);[^"]*""#).unwrap()
+        Regex::new(
+            r#"(?i)(?:name|filename)\s*=\s*"[^"]*(?:amp|lt|gt|quot|apos|nbsp|copy|reg);[^"]*""#,
+        )
+        .unwrap()
     });
     let _ = RE_SQL_ERROR_MSG.get_or_init(|| {
         // Database error strings reflected inside request bodies — inbound
@@ -992,6 +1020,34 @@ fn init_regexes() {
         // Decoded LF/CRLF splitting a value into what looks like k=v pairs.
         Regex::new(r#"(?i)[\r\n]+\s*[a-zA-Z_][\w.-]{0,30}\s*="#).unwrap()
     });
+    let _ = RE_TEMPLATE_DIR.get_or_init(|| {
+        // FreeMarker/Velocity/Thymeleaf directive syntax in param values.
+        Regex::new(r#"(?i)#(?:foreach|list|if|elseif|else|set|assign|macro|function|include|parse|evaluate|define|literal|compress|escape|noescape|nested|sep|switch|case|default|recurse|visit|attempt|recover|import|global|local|stop|break|continue|return|t|rt|lt|noparse)\s*[({$]|\$[a-z]\w{0,20}\.(?:invoke|eval|exec|runtime|getruntime|processbuilder)\s*\("#).unwrap()
+    });
+    let _ = RE_PHP_INI_ASSIGN.get_or_init(|| {
+        // php.ini-style key=value assignments smuggled in params (no dotted
+        // prefix needed — precision=, arg_separator.output=, etc.).
+        Regex::new(r#"(?i)(?:^|[?&\s"'{};,])(?:precision|serialize_precision|arg_separator\.input|arg_separator\.output|variables_order|request_order|auto_prepend_file|auto_append_file|docref_root|user_dir|upload_tmp_dir|sys_temp_dir|include_path|open_basedir|disable_classes|disable_functions|allow_url_fopen|allow_url_include|display_errors|error_log|expose_php|max_execution_time|max_input_time|memory_limit|post_max_size|upload_max_filesize|file_uploads|short_open_tag|asp_tags|zend\.assertions|opcache\.[a-z_]+|apc\.[a-z_]+|xcache\.[a-z_]+|wincache\.[a-z_]+|eaccelerator\.[a-z_]+|hhvm\.[a-z_]+|newrelic\.[a-z_]+|xdebug\.[a-z_]+|uopz\.[a-z_]+|suhosin\.[a-z_]+|runkit\.[a-z_]+|ffi\.[a-z_]+|phar\.[a-z_]+|session\.[a-z_]+|intl\.[a-z_]+|mbstring\.[a-z_]+|pdo\.[a-z_]+|mysqli?\.[a-z_]+|pgsql\.[a-z_]+|sqlite3?\.[a-z_]+|soap\.[a-z_]+|curl\.[a-z_]+|openssl\.[a-z_]+|zlib\.[a-z_]+|bcmath\.[a-z_]+|gmp\.[a-z_]+|exif\.[a-z_]+|filter\.[a-z_]+|iconv\.[a-z_]+|ldap\.[a-z_]+|libxml\.[a-z_]+|fastcgi\.[a-z_]+|realpath_cache\.[a-z_]+)\s*="#).unwrap()
+    });
+    let _ = RE_SENSITIVE_FILE.get_or_init(|| {
+        // High-value local files reachable through traversal/LFI probes.
+        Regex::new(r#"(?i)(?:subuid|subgid|backup\.[\w.-]+\.(?:zip|tar|gz|tgz|sql|bak|7z|rar)|\.docker/secrets|\.git-credentials|\.aws/credentials|\.ssh/id_|\.kube/config|\.npmrc|\.pypirc|\.dockercfg|\.pgpass|\.my\.cnf|\.netrc|\.htpasswd|\.htaccess|\.git/config|\.svn/entries|\.hg/store|\.bzr/|\.idea/|\.vscode/|composer\.(?:json|lock)|package-lock\.json|yarn\.lock|Gemfile\.lock|poetry\.lock|Pipfile\.lock|go\.sum|Cargo\.lock|\.env\.(?:local|prod|dev|production|staging)?|\.env$|\.env\b|web\.config|appsettings\.(?:json|Development\.json)|settings\.py|database\.yml|database\.yaml|secrets?\.(?:json|ya?ml|toml|env)|credentials?\.(?:json|xml|ini|cfg|conf)|id_rsa|id_dsa|id_ecdsa|id_ed25519|\.pem$|\.key$|\.p12$|\.pfx$|\.keystore$|\.jks$|\.kdbx$)"#).unwrap()
+    });
+    let _ = RE_ERROR_REFLECT.get_or_init(|| {
+        // Framework/runtime exception names and stack frames reflected in
+        // request bodies (outbound-error replay / error-oracle probes).
+        Regex::new(r#"(?i)\b(?:Http\w*(?:Exception|Error)|HttpSessionState\w*|HttpParse\w*|HttpCompile\w*|HttpStaticObjects\w*|System\.[\w.]*Exception|\w+Exception\s*:|at\s+[\w.$]+\([\w.$]+:\d+\)|\{\s*"status"\s*:\s*5\d\d\s*\}|\bstatus["']?\s*[:=]\s*5\d\d\b|Internal Server Error|Stack Trace|NullPointerException|ClassCastException|SQLException|PersistenceException|TransactionSystemException)"#).unwrap()
+    });
+    let _ = RE_CRED_QUERY.get_or_init(|| {
+        // Credentials transported in the URL query string — session/credential
+        // material must never appear in URLs (logs, referers, history).
+        Regex::new(r#"(?i)(?:^|[?&;\s"'])(?:password|passwd|user_password|user_pass|login_password|pwd|pass)\s*="#).unwrap()
+    });
+    let _ = RE_IPV6_URL.get_or_init(|| {
+        // Bracketed IPv6 literal behind a scheme — param-value regexes stop
+        // at ']' so this must run on the whole normalized text.
+        Regex::new(r#"(?i)://\[([0-9a-fA-F:]{2,}(?::[0-9a-fA-F]{0,4})*)\]"#).unwrap()
+    });
     let _ = RE_LOCALHOST_DNS.get_or_init(|| {
         // Public DNS names / TLDs that resolve to loopback or private space.
         Regex::new(r#"(?i)(?:\b(?:lvh|vcap|localtest|lacolhost)\.me\b|\b(?:nip|sslip|xip)\.io\b|\bmetadata\.packet\.net\b|\bmetadata\.google\.internal\b|\binstance-data\b|\.(?:localhost|local|internal|lan|corp|home|intranet|svc|consul)\b)"#).unwrap()
@@ -999,7 +1055,8 @@ fn init_regexes() {
     let _ = RE_PARAM_PAIR_WIDE.get_or_init(|| {
         // Like RE_PARAM_PAIR but the value may contain whitespace/CRLF —
         // needed to see protocol commands smuggled inside a parameter.
-        Regex::new(r#"(?i)["']?([a-z_][a-z0-9_.\-]{0,40})["']?\s*[:=]\s*["']?([^&"',}\]]{1,300})"#).unwrap()
+        Regex::new(r#"(?i)["']?([a-z_][a-z0-9_.\-]{0,40})["']?\s*[:=]\s*["']?([^&"',}\]]{1,300})"#)
+            .unwrap()
     });
     let _ = RE_APPLIANCE_CVE.get_or_init(|| {
         // Known-vulnerable appliance/admin endpoints (PAN-OS, FortiGate,
@@ -1055,7 +1112,9 @@ impl AstLexer {
         }
 
         // Pass 1: Decode
-        let d1 = percent_decode_str(&raw_path).decode_utf8_lossy().to_string();
+        let d1 = percent_decode_str(&raw_path)
+            .decode_utf8_lossy()
+            .to_string();
         // Pass 2: Nested decode
         let d2 = percent_decode_str(&d1).decode_utf8_lossy().to_string();
         // Pass 3: MySQL executable comments run on the server; unwrap them, then strip plain comments.
@@ -1160,34 +1219,105 @@ impl AstLexer {
                 // Cyrillic/Greek homoglyph fold: attackers spell keywords with
                 // lookalike letters (ѕеlесt, раураӏ). Fold to ASCII so the
                 // existing detectors see the canonical keyword.
-                'а' | 'А' => { is_obfuscated = true; d4.push('a'); }
-                'с' | 'С' => { is_obfuscated = true; d4.push('c'); }
-                'е' | 'Е' | 'ё' | 'Ё' => { is_obfuscated = true; d4.push('e'); }
-                'о' | 'О' => { is_obfuscated = true; d4.push('o'); }
-                'р' | 'Р' => { is_obfuscated = true; d4.push('p'); }
-                'х' | 'Х' => { is_obfuscated = true; d4.push('x'); }
-                'у' | 'У' => { is_obfuscated = true; d4.push('y'); }
-                'і' | 'І' => { is_obfuscated = true; d4.push('i'); }
-                'ј' | 'Ј' => { is_obfuscated = true; d4.push('j'); }
-                'ѕ' | 'Ѕ' => { is_obfuscated = true; d4.push('s'); }
-                'һ' | 'Һ' => { is_obfuscated = true; d4.push('h'); }
-                'ԁ' | 'ԃ' => { is_obfuscated = true; d4.push('d'); }
-                'ԛ' | 'Ԛ' => { is_obfuscated = true; d4.push('q'); }
-                'ԝ' | 'Ԝ' => { is_obfuscated = true; d4.push('w'); }
-                'в' | 'В' => { is_obfuscated = true; d4.push('b'); }
-                'к' | 'К' => { is_obfuscated = true; d4.push('k'); }
-                'м' | 'М' => { is_obfuscated = true; d4.push('m'); }
-                'н' | 'Н' => { is_obfuscated = true; d4.push('h'); }
-                'т' | 'Т' => { is_obfuscated = true; d4.push('t'); }
-                'ӏ' => { is_obfuscated = true; d4.push('l'); }
-                'ſ' => { is_obfuscated = true; d4.push('s'); }
-                'K' => { is_obfuscated = true; d4.push('k'); }
+                'а' | 'А' => {
+                    is_obfuscated = true;
+                    d4.push('a');
+                }
+                'с' | 'С' => {
+                    is_obfuscated = true;
+                    d4.push('c');
+                }
+                'е' | 'Е' | 'ё' | 'Ё' => {
+                    is_obfuscated = true;
+                    d4.push('e');
+                }
+                'о' | 'О' => {
+                    is_obfuscated = true;
+                    d4.push('o');
+                }
+                'р' | 'Р' => {
+                    is_obfuscated = true;
+                    d4.push('p');
+                }
+                'х' | 'Х' => {
+                    is_obfuscated = true;
+                    d4.push('x');
+                }
+                'у' | 'У' => {
+                    is_obfuscated = true;
+                    d4.push('y');
+                }
+                'і' | 'І' => {
+                    is_obfuscated = true;
+                    d4.push('i');
+                }
+                'ј' | 'Ј' => {
+                    is_obfuscated = true;
+                    d4.push('j');
+                }
+                'ѕ' | 'Ѕ' => {
+                    is_obfuscated = true;
+                    d4.push('s');
+                }
+                'һ' | 'Һ' => {
+                    is_obfuscated = true;
+                    d4.push('h');
+                }
+                'ԁ' | 'ԃ' => {
+                    is_obfuscated = true;
+                    d4.push('d');
+                }
+                'ԛ' | 'Ԛ' => {
+                    is_obfuscated = true;
+                    d4.push('q');
+                }
+                'ԝ' | 'Ԝ' => {
+                    is_obfuscated = true;
+                    d4.push('w');
+                }
+                'в' | 'В' => {
+                    is_obfuscated = true;
+                    d4.push('b');
+                }
+                'к' | 'К' => {
+                    is_obfuscated = true;
+                    d4.push('k');
+                }
+                'м' | 'М' => {
+                    is_obfuscated = true;
+                    d4.push('m');
+                }
+                'н' | 'Н' => {
+                    is_obfuscated = true;
+                    d4.push('h');
+                }
+                'т' | 'Т' => {
+                    is_obfuscated = true;
+                    d4.push('t');
+                }
+                'ӏ' => {
+                    is_obfuscated = true;
+                    d4.push('l');
+                }
+                'ſ' => {
+                    is_obfuscated = true;
+                    d4.push('s');
+                }
+                'K' => {
+                    is_obfuscated = true;
+                    d4.push('k');
+                }
                 // Invisible/bidi controls: strip so `un<U+200B>ion` collapses
                 // to `union` and bidi-reordered `java<U+202E>script` loses its
                 // smuggling power. Emoji ZWJ is collateral — acceptable, the
                 // original bytes still reach upstream untouched.
-                '\u{200B}' | '\u{200C}' | '\u{200D}' | '\u{2060}' | '\u{FEFF}'
-                | '\u{202A}'..='\u{202E}' | '\u{2066}'..='\u{2069}'
+                '\u{200B}'
+                | '\u{200C}'
+                | '\u{200D}'
+                | '\u{2060}'
+                | '\u{FEFF}'
+                | '\u{202A}'..='\u{202E}'
+                | '\u{2066}'..='\u{2069}'
                 | '\u{E0000}'..='\u{E007F}' => {
                     is_obfuscated = true;
                 }
@@ -1238,7 +1368,10 @@ impl AstLexer {
                         continue;
                     }
                 }
-                if i + 5 < chars.len() && chars[i] == '\\' && (chars[i + 1] == 'u' || chars[i + 1] == 'U') {
+                if i + 5 < chars.len()
+                    && chars[i] == '\\'
+                    && (chars[i + 1] == 'u' || chars[i + 1] == 'U')
+                {
                     let hex_str: String = chars[i + 2..=i + 5].iter().collect();
                     if let Ok(code) = u32::from_str_radix(&hex_str, 16) {
                         if let Some(ch) = char::from_u32(code) {
@@ -1247,7 +1380,10 @@ impl AstLexer {
                             continue;
                         }
                     }
-                } else if i + 3 < chars.len() && chars[i] == '\\' && (chars[i + 1] == 'x' || chars[i + 1] == 'X') {
+                } else if i + 3 < chars.len()
+                    && chars[i] == '\\'
+                    && (chars[i + 1] == 'x' || chars[i + 1] == 'X')
+                {
                     let hex_str: String = chars[i + 2..=i + 3].iter().collect();
                     if let Ok(code) = u32::from_str_radix(&hex_str, 16) {
                         if let Some(ch) = char::from_u32(code) {
@@ -1276,6 +1412,14 @@ impl AstLexer {
         } else {
             raw_path.clone()
         };
+        // Combined variant: percent-decoded AND plus-as-space. Without it,
+        // `Uncompress+%28` keeps `+` literal in d1/d2 and keeps `%28` encoded
+        // in d7 — the payload slips between the two interpretations.
+        let d7b = if d3.contains('+') {
+            d3.replace('+', " ")
+        } else {
+            d3.clone()
+        };
 
         // Pass 8: Long 0x-hex literals may carry ASCII-encoded SQL (`0x556e696f6e...`).
         let (d8, hex_changed) = Self::decode_hex_blobs(&raw_path);
@@ -1297,6 +1441,7 @@ impl AstLexer {
             d5.as_str(),
             d6.as_str(),
             d7.as_str(),
+            d7b.as_str(),
             d8.as_str(),
         ] {
             if !parts.contains(&variant) {
@@ -1347,18 +1492,66 @@ impl AstLexer {
         if !raw.contains('%') {
             return raw.to_string();
         }
-        let mut decoded = RE_OVERLONG_DOT.get().unwrap().replace_all(raw, ".").to_string();
-        decoded = RE_OVERLONG_SLASH.get().unwrap().replace_all(&decoded, "/").to_string();
-        decoded = RE_OVERLONG_BACKSLASH.get().unwrap().replace_all(&decoded, "\\").to_string();
-        decoded = RE_IIS_DOT.get().unwrap().replace_all(&decoded, ".").to_string();
-        decoded = RE_IIS_SLASH.get().unwrap().replace_all(&decoded, "/").to_string();
-        decoded = RE_IIS_BACKSLASH.get().unwrap().replace_all(&decoded, "\\").to_string();
-        decoded = RE_IIS_LT.get().unwrap().replace_all(&decoded, "<").to_string();
-        decoded = RE_IIS_GT.get().unwrap().replace_all(&decoded, ">").to_string();
-        decoded = RE_IIS_SQUOTE.get().unwrap().replace_all(&decoded, "'").to_string();
-        decoded = RE_IIS_DQUOTE.get().unwrap().replace_all(&decoded, "\"").to_string();
-        decoded = RE_IIS_GUILLEMET_L.get().unwrap().replace_all(&decoded, "<").to_string();
-        RE_IIS_GUILLEMET_R.get().unwrap().replace_all(&decoded, ">").to_string()
+        let mut decoded = RE_OVERLONG_DOT
+            .get()
+            .unwrap()
+            .replace_all(raw, ".")
+            .to_string();
+        decoded = RE_OVERLONG_SLASH
+            .get()
+            .unwrap()
+            .replace_all(&decoded, "/")
+            .to_string();
+        decoded = RE_OVERLONG_BACKSLASH
+            .get()
+            .unwrap()
+            .replace_all(&decoded, "\\")
+            .to_string();
+        decoded = RE_IIS_DOT
+            .get()
+            .unwrap()
+            .replace_all(&decoded, ".")
+            .to_string();
+        decoded = RE_IIS_SLASH
+            .get()
+            .unwrap()
+            .replace_all(&decoded, "/")
+            .to_string();
+        decoded = RE_IIS_BACKSLASH
+            .get()
+            .unwrap()
+            .replace_all(&decoded, "\\")
+            .to_string();
+        decoded = RE_IIS_LT
+            .get()
+            .unwrap()
+            .replace_all(&decoded, "<")
+            .to_string();
+        decoded = RE_IIS_GT
+            .get()
+            .unwrap()
+            .replace_all(&decoded, ">")
+            .to_string();
+        decoded = RE_IIS_SQUOTE
+            .get()
+            .unwrap()
+            .replace_all(&decoded, "'")
+            .to_string();
+        decoded = RE_IIS_DQUOTE
+            .get()
+            .unwrap()
+            .replace_all(&decoded, "\"")
+            .to_string();
+        decoded = RE_IIS_GUILLEMET_L
+            .get()
+            .unwrap()
+            .replace_all(&decoded, "<")
+            .to_string();
+        RE_IIS_GUILLEMET_R
+            .get()
+            .unwrap()
+            .replace_all(&decoded, ">")
+            .to_string()
     }
 
     /// Decode JSON-style `\uXXXX` escapes (incl. surrogate pairs) found in
@@ -1442,7 +1635,9 @@ impl AstLexer {
                 }
                 if j < chars.len() && chars[j] == ';' && j > i + 1 {
                     let body: String = chars[i + 1..j].iter().collect();
-                    let decoded = if let Some(hex) = body.strip_prefix("#x").or_else(|| body.strip_prefix("#X")) {
+                    let decoded = if let Some(hex) =
+                        body.strip_prefix("#x").or_else(|| body.strip_prefix("#X"))
+                    {
                         u32::from_str_radix(hex, 16).ok().and_then(char::from_u32)
                     } else if let Some(dec) = body.strip_prefix('#') {
                         dec.parse::<u32>().ok().and_then(char::from_u32)
@@ -1487,7 +1682,10 @@ impl AstLexer {
     }
 
     fn collapse_intra_word_controls(text: &str) -> String {
-        if !text.bytes().any(|b| b == b'\t' || b == b'\n' || b == b'\r' || b == 0) {
+        if !text
+            .bytes()
+            .any(|b| b == b'\t' || b == b'\n' || b == b'\r' || b == 0)
+        {
             return text.to_string();
         }
         let chars: Vec<char> = text.chars().collect();
@@ -1604,22 +1802,33 @@ impl AstLexer {
                 continue;
             }
             match kl.as_str() {
-                "x-forwarded-host" | "x-host" | "x-original-host" | "x-forwarded-server"
-                | "x-http-host-forwarded" | "front-end-https" | "x-http-host-override"
-                | "x-rewrite-host" | "x-http-host" | "x-server-name" => {
+                "x-forwarded-host"
+                | "x-host"
+                | "x-original-host"
+                | "x-forwarded-server"
+                | "x-http-host-forwarded"
+                | "front-end-https"
+                | "x-http-host-override"
+                | "x-rewrite-host"
+                | "x-http-host"
+                | "x-server-name" => {
                     // A forwarding header alone is normal proxy traffic; it is
                     // hostile when it is an IP literal, disagrees with Host, or
                     // arrives with no Host at all on a spoof-prone header name.
                     let spoof_prone = matches!(
                         kl.as_str(),
-                        "x-forwarded-host" | "x-host" | "x-original-host" | "x-forwarded-server"
-                            | "x-http-host-override" | "x-rewrite-host" | "x-http-host"
+                        "x-forwarded-host"
+                            | "x-host"
+                            | "x-original-host"
+                            | "x-forwarded-server"
+                            | "x-http-host-override"
+                            | "x-rewrite-host"
+                            | "x-http-host"
                             | "x-server-name"
                     );
                     if Self::is_ip_literal(val)
                         || Self::is_internal_hostname(val)
-                        || (!host_value.is_empty()
-                            && !val.eq_ignore_ascii_case(host_value))
+                        || (!host_value.is_empty() && !val.eq_ignore_ascii_case(host_value))
                         || (host_value.is_empty() && spoof_prone)
                     {
                         return true;
@@ -1707,22 +1916,36 @@ impl AstLexer {
             // hex form ::ffff:a9fe:a9fe — last 32 bits as two hextets.
             let parts: Vec<&str> = tail.split(':').collect();
             if parts.len() == 2 {
-                if let (Ok(hi), Ok(lo)) = (u16::from_str_radix(parts[0], 16), u16::from_str_radix(parts[1], 16)) {
-                    let ip = format!("{}.{}.{}.{}", (hi >> 8) as u8, (hi & 0xff) as u8, (lo >> 8) as u8, (lo & 0xff) as u8);
+                if let (Ok(hi), Ok(lo)) = (
+                    u16::from_str_radix(parts[0], 16),
+                    u16::from_str_radix(parts[1], 16),
+                ) {
+                    let ip = format!(
+                        "{}.{}.{}.{}",
+                        (hi >> 8) as u8,
+                        (hi & 0xff) as u8,
+                        (lo >> 8) as u8,
+                        (lo & 0xff) as u8
+                    );
                     return Self::is_internal_ipv4_str(&ip);
                 }
             }
             return false;
         }
         // fe80::/10 link-local, fc00::/7 ULA, fec0::/10 site-local, ff00::/8 multicast.
-        lower.starts_with("fe8") || lower.starts_with("fe9") || lower.starts_with("fea") || lower.starts_with("feb")
-            || lower.starts_with("fc") || lower.starts_with("fd") || lower.starts_with("fec")
+        lower.starts_with("fe8")
+            || lower.starts_with("fe9")
+            || lower.starts_with("fea")
+            || lower.starts_with("feb")
+            || lower.starts_with("fc")
+            || lower.starts_with("fd")
+            || lower.starts_with("fec")
             || lower.starts_with("ff")
     }
 
     /// IPv4 private/loopback/link-local/reserved check for mapped forms.
     fn is_internal_ipv4_str(ip: &str) -> bool {
-        let mut it = ip.split('.');
+        let it = ip.split('.');
         let octets: Vec<u8> = it.filter_map(|p| p.parse::<u8>().ok()).collect();
         if octets.len() != 4 {
             return false;
@@ -1801,7 +2024,9 @@ impl AstLexer {
                 if let (Some(left), Some(right)) = (cap.get(1), cap.get(2)) {
                     if left.as_str().eq_ignore_ascii_case(right.as_str()) {
                         tokens.has_tautology = true;
-                        tokens.active_token_names.push("TAUTOLOGY_EQUALS".to_string());
+                        tokens
+                            .active_token_names
+                            .push("TAUTOLOGY_EQUALS".to_string());
                         break;
                     }
                 }
@@ -1812,7 +2037,9 @@ impl AstLexer {
                 for taut in statics {
                     if taut.is_match(&normalized) {
                         tokens.has_tautology = true;
-                        tokens.active_token_names.push("TAUTOLOGY_EQUALS".to_string());
+                        tokens
+                            .active_token_names
+                            .push("TAUTOLOGY_EQUALS".to_string());
                         break;
                     }
                 }
@@ -1834,7 +2061,9 @@ impl AstLexer {
                     };
                     if always_true {
                         tokens.has_tautology = true;
-                        tokens.active_token_names.push("TAUTOLOGY_NUMERIC".to_string());
+                        tokens
+                            .active_token_names
+                            .push("TAUTOLOGY_NUMERIC".to_string());
                         break;
                     }
                 }
@@ -1842,7 +2071,9 @@ impl AstLexer {
         }
         if !tokens.has_tautology && RE_OR_NUMERIC_COMMENT.get().unwrap().is_match(&normalized) {
             tokens.has_tautology = true;
-            tokens.active_token_names.push("TAUTOLOGY_NUMERIC_COMMENT".to_string());
+            tokens
+                .active_token_names
+                .push("TAUTOLOGY_NUMERIC_COMMENT".to_string());
         }
         if RE_UNION_SELECT.get().unwrap().is_match(&normalized) {
             // Bare "union select" is also a legitimate search phrase; require
@@ -1857,12 +2088,16 @@ impl AstLexer {
             if union_ctx {
                 tokens.has_union_select = true;
                 tokens.active_token_names.push("UNION_CLAUSE".to_string());
-                tokens.active_token_names.push("SELECT_PROJECTION".to_string());
+                tokens
+                    .active_token_names
+                    .push("SELECT_PROJECTION".to_string());
             }
         }
         if RE_SQL_SLEEP.get().unwrap().is_match(&normalized) {
             tokens.has_time_delay = true;
-            tokens.active_token_names.push("TIME_DELAY_FUNCTION".to_string());
+            tokens
+                .active_token_names
+                .push("TIME_DELAY_FUNCTION".to_string());
         }
         if RE_STACKED_DDL.get().unwrap().is_match(&normalized) {
             tokens.has_stacked_ddl = true;
@@ -1880,11 +2115,15 @@ impl AstLexer {
         }
         if has_markup_or_uri && RE_XSS_REMOTE_SCRIPT.get().unwrap().is_match(&normalized) {
             tokens.has_script_tag = true;
-            tokens.active_token_names.push("REMOTE_SCRIPT_INCLUDE".to_string());
+            tokens
+                .active_token_names
+                .push("REMOTE_SCRIPT_INCLUDE".to_string());
         }
         if has_markup_or_uri && RE_XSS_EVENT.get().unwrap().is_match(&normalized) {
             tokens.has_event_handler = true;
-            tokens.active_token_names.push("INLINE_EVENT_HANDLER".to_string());
+            tokens
+                .active_token_names
+                .push("INLINE_EVENT_HANDLER".to_string());
         }
         if has_markup_or_uri && RE_XSS_SVG.get().unwrap().is_match(&normalized) {
             tokens.has_svg_onload = true;
@@ -1910,30 +2149,40 @@ impl AstLexer {
             || norm_lower.contains("wmic")
             || norm_lower.contains("bitsadmin");
         if has_shell_byte || has_interpreter_name {
-        if RE_SHELL_CHAIN.get().unwrap().is_match(&normalized) {
-            tokens.has_shell_chain = true;
-            tokens.active_token_names.push("SHELL_METACHAR".to_string());
-            tokens.active_token_names.push("SYSTEM_BINARY_INVOCATION".to_string());
-        }
-        if RE_SUBSHELL.get().unwrap().is_match(&normalized) {
-            let has_bin = ["cat", "curl", "wget", "id", "whoami", "uname", "ls", "bash", "sh"]
+            if RE_SHELL_CHAIN.get().unwrap().is_match(&normalized) {
+                tokens.has_shell_chain = true;
+                tokens.active_token_names.push("SHELL_METACHAR".to_string());
+                tokens
+                    .active_token_names
+                    .push("SYSTEM_BINARY_INVOCATION".to_string());
+            }
+            if RE_SUBSHELL.get().unwrap().is_match(&normalized) {
+                let has_bin = [
+                    "cat", "curl", "wget", "id", "whoami", "uname", "ls", "bash", "sh",
+                ]
                 .iter()
                 .any(|&bin| norm_lower.contains(bin));
-            if has_bin {
-                tokens.has_subshell = true;
-                tokens.active_token_names.push("SUBSHELL_EXPANSION".to_string());
+                if has_bin {
+                    tokens.has_subshell = true;
+                    tokens
+                        .active_token_names
+                        .push("SUBSHELL_EXPANSION".to_string());
+                }
             }
-        }
-        if RE_DYNAMIC_EVAL.get().unwrap().is_match(&normalized)
-            || RE_POWERSHELL_EXEC.get().unwrap().is_match(&normalized)
-        {
-            tokens.has_dynamic_eval = true;
-            tokens.active_token_names.push("DYNAMIC_CODE_RUNTIME".to_string());
-        }
-        if RE_BASE64_DECODE.get().unwrap().is_match(&normalized) {
-            tokens.has_shell_chain = true;
-            tokens.active_token_names.push("BASE64_DECODE_EXECUTION".to_string());
-        }
+            if RE_DYNAMIC_EVAL.get().unwrap().is_match(&normalized)
+                || RE_POWERSHELL_EXEC.get().unwrap().is_match(&normalized)
+            {
+                tokens.has_dynamic_eval = true;
+                tokens
+                    .active_token_names
+                    .push("DYNAMIC_CODE_RUNTIME".to_string());
+            }
+            if RE_BASE64_DECODE.get().unwrap().is_match(&normalized) {
+                tokens.has_shell_chain = true;
+                tokens
+                    .active_token_names
+                    .push("BASE64_DECODE_EXECUTION".to_string());
+            }
         }
 
         // 4. Path Traversal Tokens. Gate: traversal always involves dots,
@@ -1955,15 +2204,24 @@ impl AstLexer {
         if has_traversal_hint
             && (RE_PATH_TRAVERSAL.get().unwrap().is_match(&normalized)
                 || (RE_PATH_DOTS_ONLY.get().unwrap().is_match(&normalized)
-                    && (raw_text.contains('/') || raw_text.contains('\\') || raw_text.contains('%'))))
+                    && (raw_text.contains('/')
+                        || raw_text.contains('\\')
+                        || raw_text.contains('%'))))
         {
             tokens.has_path_traversal = true;
-            tokens.active_token_names.push("DIR_TRAVERSAL_DOT_DOT".to_string());
+            tokens
+                .active_token_names
+                .push("DIR_TRAVERSAL_DOT_DOT".to_string());
         }
         // Tomcat-style `..;/` and `..%3B/` path-parameter traversal variants.
-        if normalized.contains("..;/") || normalized.contains("..%3b") || normalized.contains("..%3B") {
+        if normalized.contains("..;/")
+            || normalized.contains("..%3b")
+            || normalized.contains("..%3B")
+        {
             tokens.has_path_traversal = true;
-            tokens.active_token_names.push("DIR_TRAVERSAL_PATH_PARAM".to_string());
+            tokens
+                .active_token_names
+                .push("DIR_TRAVERSAL_PATH_PARAM".to_string());
         }
         // UNC paths (\\host\share) and scheme-relative file targets (//host.tld/path)
         // in file-ish positions. normalize_string() joins the raw payload with
@@ -1971,12 +2229,16 @@ impl AstLexer {
         // match that ends in a common document/media extension is a legitimate
         // file reference (\\server\share\report.xlsx), not a payload drop.
         if normalized.contains("\\\\") || normalized.contains("=//") {
-            let unc_hit = RE_UNC_PATH.get().unwrap().find_iter(&normalized).any(|m| {
-                !RE_UNC_BENIGN_EXT.get().unwrap().is_match(m.as_str())
-            });
+            let unc_hit = RE_UNC_PATH
+                .get()
+                .unwrap()
+                .find_iter(&normalized)
+                .any(|m| !RE_UNC_BENIGN_EXT.get().unwrap().is_match(m.as_str()));
             if unc_hit {
                 tokens.has_path_traversal = true;
-                tokens.active_token_names.push("UNC_PATH_TARGET".to_string());
+                tokens
+                    .active_token_names
+                    .push("UNC_PATH_TARGET".to_string());
             }
         }
         // NTFS alternate data streams: file.txt:streamname
@@ -1991,11 +2253,15 @@ impl AstLexer {
                 || norm_lower.contains("f="))
         {
             tokens.has_path_traversal = true;
-            tokens.active_token_names.push("NTFS_ADS_STREAM".to_string());
+            tokens
+                .active_token_names
+                .push("NTFS_ADS_STREAM".to_string());
         }
         if has_traversal_hint && RE_PATH_DIRECT_SYSTEM.get().unwrap().is_match(&normalized) {
             tokens.has_sensitive_system_path = true;
-            tokens.active_token_names.push("DIRECT_SYSTEM_FILE_TARGET".to_string());
+            tokens
+                .active_token_names
+                .push("DIRECT_SYSTEM_FILE_TARGET".to_string());
         }
 
         // 5. SSRF Tokens. Cloud metadata is always a violation. Loopback/RFC1918
@@ -2014,12 +2280,16 @@ impl AstLexer {
             // skip both SSRF checks
         } else if RE_SSRF_CLOUD.get().unwrap().is_match(&normalized) {
             tokens.has_ssrf_metadata = true;
-            tokens.active_token_names.push("CLOUD_METADATA_ENDPOINT".to_string());
+            tokens
+                .active_token_names
+                .push("CLOUD_METADATA_ENDPOINT".to_string());
         } else if RE_SSRF_PRIVATE.get().unwrap().is_match(&normalized)
             && Self::has_ssrf_param_context(&normalized)
         {
             tokens.has_ssrf_metadata = true;
-            tokens.active_token_names.push("PRIVATE_NETWORK_ENDPOINT".to_string());
+            tokens
+                .active_token_names
+                .push("PRIVATE_NETWORK_ENDPOINT".to_string());
         }
 
         // 6. GraphQL Tokens (raw text / fallback inspection)
@@ -2075,7 +2345,9 @@ impl AstLexer {
             && !norm_lower.contains("admin-ajax.php")
         {
             tokens.has_wordpress_probe = true;
-            tokens.active_token_names.push("WORDPRESS_RECON_PROBE".to_string());
+            tokens
+                .active_token_names
+                .push("WORDPRESS_RECON_PROBE".to_string());
         }
         // xmlrpc.php is only a probe when it carries an actual XML-RPC method
         // call; bare GETs (?rsd discovery) are legitimate.
@@ -2087,15 +2359,21 @@ impl AstLexer {
                 || norm_lower.contains("pingback.ping"))
         {
             tokens.has_wordpress_probe = true;
-            tokens.active_token_names.push("WORDPRESS_RECON_PROBE".to_string());
+            tokens
+                .active_token_names
+                .push("WORDPRESS_RECON_PROBE".to_string());
         }
         if RE_SENSITIVE_EXPOSURE.get().unwrap().is_match(&normalized) {
             tokens.has_sensitive_file_probe = true;
-            tokens.active_token_names.push("SENSITIVE_FILE_EXPOSURE_PROBE".to_string());
+            tokens
+                .active_token_names
+                .push("SENSITIVE_FILE_EXPOSURE_PROBE".to_string());
         }
         if RE_FRAMEWORK_EXPLOIT.get().unwrap().is_match(&normalized) {
             tokens.has_framework_exploit_probe = true;
-            tokens.active_token_names.push("FRAMEWORK_EXPLOIT_PAYLOAD".to_string());
+            tokens
+                .active_token_names
+                .push("FRAMEWORK_EXPLOIT_PAYLOAD".to_string());
         }
 
         // 10. NoSQL Injection Tokens: Mongo-style operator keys in JSON or bracket form.
@@ -2105,7 +2383,9 @@ impl AstLexer {
                 || RE_NOSQL_BRACKET_OP.get().unwrap().is_match(&normalized))
         {
             tokens.has_nosql_operator = true;
-            tokens.active_token_names.push("NOSQL_OPERATOR_INJECTION".to_string());
+            tokens
+                .active_token_names
+                .push("NOSQL_OPERATOR_INJECTION".to_string());
         }
         // MongoDB diagnostic/admin commands (no $ prefix), CouchDB/Elasticsearch
         // data endpoints, and SQL statements inside JSON fields.
@@ -2113,13 +2393,15 @@ impl AstLexer {
             || RE_NOSQL_DB_PATH.get().unwrap().is_match(&normalized)
         {
             tokens.has_nosql_operator = true;
-            tokens.active_token_names.push("NOSQL_ADMIN_COMMAND".to_string());
+            tokens
+                .active_token_names
+                .push("NOSQL_ADMIN_COMMAND".to_string());
         }
-        if normalized.contains('{')
-            && RE_SQL_JSON_FIELD.get().unwrap().is_match(&normalized)
-        {
+        if normalized.contains('{') && RE_SQL_JSON_FIELD.get().unwrap().is_match(&normalized) {
             tokens.has_sqli_subquery = true;
-            tokens.active_token_names.push("SQLI_JSON_FIELD".to_string());
+            tokens
+                .active_token_names
+                .push("SQLI_JSON_FIELD".to_string());
         }
 
         // 11. Server-Side Template Injection Tokens: engine delimiters coupled with sinks.
@@ -2142,14 +2424,16 @@ impl AstLexer {
                 || RE_SSTI_VELOCITY.get().unwrap().is_match(&normalized))
         {
             tokens.has_ssti_expression = true;
-            tokens.active_token_names.push("SSTI_TEMPLATE_EXPRESSION".to_string());
+            tokens
+                .active_token_names
+                .push("SSTI_TEMPLATE_EXPRESSION".to_string());
         }
 
         // 12. HTTP Response Splitting: decoded CRLF introducing a response header.
         // Multipart bodies legitimately carry Content-Type/Content-Disposition
         // after CRLF, so generic header matching excludes those there.
-        let is_multipart = norm_lower.contains("content-disposition")
-            && norm_lower.contains("form-data");
+        let is_multipart =
+            norm_lower.contains("content-disposition") && norm_lower.contains("form-data");
         let mut crlf_hit = (normalized.contains('\r') || normalized.contains('\n'))
             && RE_CRLF_RESPONSE_HDR.get().unwrap().is_match(&normalized);
         if !crlf_hit && normalized.contains("\r\n") {
@@ -2168,10 +2452,13 @@ impl AstLexer {
                 // the CRLF indicates a query/body value, not a YAML/JSON break.
                 let wstart = m.start().saturating_sub(64);
                 let window = &normalized[wstart..m.start()];
-                let param_eq = window.rfind('=').map(|i| {
-                    let tail = &window[i..];
-                    !tail.contains('\n') && !tail.contains('\r') && !tail.contains('{')
-                }).unwrap_or(false);
+                let param_eq = window
+                    .rfind('=')
+                    .map(|i| {
+                        let tail = &window[i..];
+                        !tail.contains('\n') && !tail.contains('\r') && !tail.contains('{')
+                    })
+                    .unwrap_or(false);
                 if !mailish && !param_eq {
                     continue;
                 }
@@ -2212,19 +2499,20 @@ impl AstLexer {
                 break;
             }
         }
-        if !crlf_hit
-            && !is_multipart
-            && (normalized.contains('\r') || normalized.contains('\n'))
-        {
+        if !crlf_hit && !is_multipart && (normalized.contains('\r') || normalized.contains('\n')) {
             // Same MIME part-header exemption as the ANY_HDR loop: a
             // filename="x"\r\nContent-Type: sequence is a serialized body
             // part, not response splitting.
-            crlf_hit = RE_CRLF_CONTENT_HDR.get().unwrap().find_iter(&normalized).any(|m| {
-                normalized[..m.start()]
-                    .rfind("filename=")
-                    .map(|i| m.start() - i >= 200)
-                    .unwrap_or(true)
-            });
+            crlf_hit = RE_CRLF_CONTENT_HDR
+                .get()
+                .unwrap()
+                .find_iter(&normalized)
+                .any(|m| {
+                    normalized[..m.start()]
+                        .rfind("filename=")
+                        .map(|i| m.start() - i >= 200)
+                        .unwrap_or(true)
+                });
         }
         if RE_EMAIL_ENCODED_WORD.get().unwrap().is_match(&normalized) {
             crlf_hit = true;
@@ -2238,7 +2526,9 @@ impl AstLexer {
         }
         if crlf_hit {
             tokens.has_crlf_header_injection = true;
-            tokens.active_token_names.push("CRLF_RESPONSE_HEADER_INJECTION".to_string());
+            tokens
+                .active_token_names
+                .push("CRLF_RESPONSE_HEADER_INJECTION".to_string());
         }
 
         // 13. Malicious Upload: executable filename, or server-side tag in upload context.
@@ -2254,7 +2544,9 @@ impl AstLexer {
                     && RE_UPLOAD_CTX.get().unwrap().is_match(&normalized)))
         {
             tokens.has_malicious_upload = true;
-            tokens.active_token_names.push("MALICIOUS_UPLOAD_PAYLOAD".to_string());
+            tokens
+                .active_token_names
+                .push("MALICIOUS_UPLOAD_PAYLOAD".to_string());
         }
 
         // 14. Expanded SSRF Targets: alternate loopback encodings, rebinding domains,
@@ -2264,13 +2556,17 @@ impl AstLexer {
         if normalized.contains("://") || normalized.contains("jrt:/") {
             if RE_SSRF_ALT_TARGET.get().unwrap().is_match(&normalized) {
                 tokens.has_ssrf_metadata = true;
-                tokens.active_token_names.push("ALTERNATE_NETWORK_TARGET".to_string());
+                tokens
+                    .active_token_names
+                    .push("ALTERNATE_NETWORK_TARGET".to_string());
             }
             if RE_SSRF_INTERNAL_TLD.get().unwrap().is_match(&normalized)
                 && Self::has_internal_host_context(&normalized)
             {
                 tokens.has_ssrf_metadata = true;
-                tokens.active_token_names.push("INTERNAL_TLD_ENDPOINT".to_string());
+                tokens
+                    .active_token_names
+                    .push("INTERNAL_TLD_ENDPOINT".to_string());
             }
             // Cloud/exfil-capable schemes (s3://, gs://, ssh2://, ldap://, ...) behind
             // a URL-shaped parameter.
@@ -2286,7 +2582,9 @@ impl AstLexer {
                     .is_match(&normalized[ws..start])
                 {
                     tokens.has_ssrf_metadata = true;
-                    tokens.active_token_names.push("CLOUD_SCHEME_ENDPOINT".to_string());
+                    tokens
+                        .active_token_names
+                        .push("CLOUD_SCHEME_ENDPOINT".to_string());
                     break;
                 }
             }
@@ -2297,7 +2595,9 @@ impl AstLexer {
             && RE_SHELL_METACHAR_GATE.get().unwrap().is_match(&normalized)
         {
             tokens.has_shell_chain = true;
-            tokens.active_token_names.push("WINDOWS_SYSTEM_BINARY".to_string());
+            tokens
+                .active_token_names
+                .push("WINDOWS_SYSTEM_BINARY".to_string());
             tokens.active_token_names.push("SHELL_METACHAR".to_string());
         }
 
@@ -2324,25 +2624,27 @@ impl AstLexer {
                 || norm_lower.contains("select"))
         {
             tokens.has_sqli_danger_func = true;
-            tokens.active_token_names.push("SQLI_DANGER_FUNCTION".to_string());
+            tokens
+                .active_token_names
+                .push("SQLI_DANGER_FUNCTION".to_string());
         }
 
         // 17. PHP stream wrappers abused for command exec or arbitrary file read.
         // Gate: wrappers are always scheme-prefixed.
-        if normalized.contains("://")
-            && RE_PHP_WRAPPER.get().unwrap().is_match(&normalized)
-        {
+        if normalized.contains("://") && RE_PHP_WRAPPER.get().unwrap().is_match(&normalized) {
             tokens.has_path_traversal = true;
-            tokens.active_token_names.push("PHP_STREAM_WRAPPER".to_string());
+            tokens
+                .active_token_names
+                .push("PHP_STREAM_WRAPPER".to_string());
         }
 
         // 18. Shellshock function export: () { :;}; <command>
         // Gate: the signature requires braces.
-        if normalized.contains('{')
-            && RE_SHELLSHOCK.get().unwrap().is_match(&normalized)
-        {
+        if normalized.contains('{') && RE_SHELLSHOCK.get().unwrap().is_match(&normalized) {
             tokens.has_shell_chain = true;
-            tokens.active_token_names.push("SHELLSHOCK_FUNCTION_EXPORT".to_string());
+            tokens
+                .active_token_names
+                .push("SHELLSHOCK_FUNCTION_EXPORT".to_string());
         }
 
         // 19. Absolute-path binaries and busybox applets behind a metacharacter.
@@ -2352,30 +2654,30 @@ impl AstLexer {
             && RE_SHELL_METACHAR_GATE.get().unwrap().is_match(&normalized)
         {
             tokens.has_shell_chain = true;
-            tokens.active_token_names.push("ABSOLUTE_PATH_BINARY".to_string());
+            tokens
+                .active_token_names
+                .push("ABSOLUTE_PATH_BINARY".to_string());
             tokens.active_token_names.push("SHELL_METACHAR".to_string());
         }
 
         // 20. XXE external / parameter entities reaching SYSTEM or PUBLIC ids,
         // plus external refs that resolve attacker resources without a DOCTYPE
         // (xml-stylesheet href, xml:base, xi:include href).
-        if normalized.contains("<!")
-            && RE_XXE_ENTITY.get().unwrap().is_match(&normalized)
-        {
+        if normalized.contains("<!") && RE_XXE_ENTITY.get().unwrap().is_match(&normalized) {
             tokens.has_xxe_entity = true;
-            tokens.active_token_names.push("XXE_EXTERNAL_ENTITY".to_string());
+            tokens
+                .active_token_names
+                .push("XXE_EXTERNAL_ENTITY".to_string());
         }
-        if normalized.contains('<')
-            && RE_XXE_REF.get().unwrap().is_match(&normalized)
-        {
+        if normalized.contains('<') && RE_XXE_REF.get().unwrap().is_match(&normalized) {
             tokens.has_xxe_entity = true;
-            tokens.active_token_names.push("XXE_EXTERNAL_REFERENCE".to_string());
+            tokens
+                .active_token_names
+                .push("XXE_EXTERNAL_REFERENCE".to_string());
         }
 
         // 21. Quote-free SQLi: subqueries, CASE WHEN and HAVING tautologies.
-        if norm_lower.contains("select")
-            && RE_SQL_SUBQUERY.get().unwrap().is_match(&normalized)
-        {
+        if norm_lower.contains("select") && RE_SQL_SUBQUERY.get().unwrap().is_match(&normalized) {
             tokens.has_sqli_subquery = true;
             tokens.active_token_names.push("SQLI_SUBQUERY".to_string());
         }
@@ -2383,25 +2685,27 @@ impl AstLexer {
             && RE_SQL_CASE_HAVING.get().unwrap().is_match(&normalized)
         {
             tokens.has_sqli_case_having = true;
-            tokens.active_token_names.push("SQLI_CASE_HAVING".to_string());
+            tokens
+                .active_token_names
+                .push("SQLI_CASE_HAVING".to_string());
         }
         // UNION/SELECT with /* */ comments inside the keywords themselves.
-        if normalized.contains("/**/")
-            && RE_UNION_SELECT_OBF.get().unwrap().is_match(&normalized)
-        {
+        if normalized.contains("/**/") && RE_UNION_SELECT_OBF.get().unwrap().is_match(&normalized) {
             tokens.has_union_select = true;
-            tokens.active_token_names.push("UNION_SELECT_OBFUSCATED".to_string());
+            tokens
+                .active_token_names
+                .push("UNION_SELECT_OBFUSCATED".to_string());
         }
 
         // 22. Command binary glued to ${IFS} whitespace substitution.
-        if norm_lower.contains("ifs")
-            && RE_CMD_IFS_BINARY.get().unwrap().is_match(&normalized)
-        {
+        if norm_lower.contains("ifs") && RE_CMD_IFS_BINARY.get().unwrap().is_match(&normalized) {
             tokens.has_cmd_ifs_binary = true;
             tokens.has_shell_chain = true;
             tokens.active_token_names.push("CMD_IFS_BINARY".to_string());
             tokens.active_token_names.push("SHELL_METACHAR".to_string());
-            tokens.active_token_names.push("SYSTEM_BINARY_INVOCATION".to_string());
+            tokens
+                .active_token_names
+                .push("SYSTEM_BINARY_INVOCATION".to_string());
         }
 
         // 23. SSTI arithmetic probes and embedded template tags.
@@ -2417,20 +2721,22 @@ impl AstLexer {
                 || RE_SSTI_EXPR_PARAM.get().unwrap().is_match(&normalized))
         {
             tokens.has_ssti_arith = true;
-            tokens.active_token_names.push("SSTI_ARITHMETIC_PROBE".to_string());
+            tokens
+                .active_token_names
+                .push("SSTI_ARITHMETIC_PROBE".to_string());
         }
-        if normalized.contains("<%")
-            && RE_SSTI_EMBEDDED.get().unwrap().is_match(&normalized)
-        {
+        if normalized.contains("<%") && RE_SSTI_EMBEDDED.get().unwrap().is_match(&normalized) {
             tokens.has_ssti_embedded = true;
-            tokens.active_token_names.push("SSTI_EMBEDDED_TAG".to_string());
+            tokens
+                .active_token_names
+                .push("SSTI_EMBEDDED_TAG".to_string());
         }
         // Smarty single-brace tags: {eval}, {php}, {insert}, {fetch}, {include}
-        if normalized.contains('{')
-            && RE_SSTI_SMARTY.get().unwrap().is_match(&normalized)
-        {
+        if normalized.contains('{') && RE_SSTI_SMARTY.get().unwrap().is_match(&normalized) {
             tokens.has_ssti_expression = true;
-            tokens.active_token_names.push("SSTI_SMARTY_TAG".to_string());
+            tokens
+                .active_token_names
+                .push("SSTI_SMARTY_TAG".to_string());
         }
 
         // 24. SSRF via userinfo trick and scheme-relative URLs.
@@ -2440,7 +2746,9 @@ impl AstLexer {
         {
             tokens.has_ssrf_userinfo = true;
             tokens.has_ssrf_metadata = true;
-            tokens.active_token_names.push("SSRF_USERINFO_TRICK".to_string());
+            tokens
+                .active_token_names
+                .push("SSRF_USERINFO_TRICK".to_string());
         }
         if normalized.contains("//") {
             for m in RE_SSRF_SCHEME_REL.get().unwrap().find_iter(&normalized) {
@@ -2456,7 +2764,9 @@ impl AstLexer {
                 {
                     tokens.has_ssrf_scheme_rel = true;
                     tokens.has_ssrf_metadata = true;
-                    tokens.active_token_names.push("SSRF_SCHEME_RELATIVE".to_string());
+                    tokens
+                        .active_token_names
+                        .push("SSRF_SCHEME_RELATIVE".to_string());
                     break;
                 }
             }
@@ -2491,7 +2801,9 @@ impl AstLexer {
                 || norm_lower.contains("telephonenumber"))
         {
             tokens.has_ldap_injection = true;
-            tokens.active_token_names.push("LDAP_FILTER_INJECTION".to_string());
+            tokens
+                .active_token_names
+                .push("LDAP_FILTER_INJECTION".to_string());
         }
         // Hex-escaped LDAP wildcard: \2a decodes to '*' server-side. Legitimate
         // filters write '*' literally, so the escape itself is the signal.
@@ -2508,7 +2820,9 @@ impl AstLexer {
                 || norm_lower.contains("auth"))
         {
             tokens.has_ldap_injection = true;
-            tokens.active_token_names.push("LDAP_HEX_WILDCARD_ESCAPE".to_string());
+            tokens
+                .active_token_names
+                .push("LDAP_HEX_WILDCARD_ESCAPE".to_string());
         }
 
         // 26. Insecure deserialization object markers (Java/PHP/.NET/Python/Node).
@@ -2527,13 +2841,18 @@ impl AstLexer {
             && RE_DESERIALIZATION.get().unwrap().is_match(&normalized)
         {
             tokens.has_deserialization = true;
-            tokens.active_token_names.push("INSECURE_DESERIALIZATION".to_string());
+            tokens
+                .active_token_names
+                .push("INSECURE_DESERIALIZATION".to_string());
         }
 
         // 27. PHP higher-order callables + variable-function invocation.
         if normalized.contains('(')
             && (RE_PHP_FUNC_CALLBACK.get().unwrap().is_match(&normalized)
-                || RE_PHP_DOLLAR_BRACE_CALL.get().unwrap().is_match(&normalized)
+                || RE_PHP_DOLLAR_BRACE_CALL
+                    .get()
+                    .unwrap()
+                    .is_match(&normalized)
                 || RE_PHP_EVAL_MODIFIER.get().unwrap().is_match(&normalized)
                 || RE_PHP_GADGET_CLASS.get().unwrap().is_match(&normalized)
                 || (normalized.contains("$")
@@ -2541,7 +2860,9 @@ impl AstLexer {
                         || RE_PHP_VAR_CALL.get().unwrap().is_match(&normalized))))
         {
             tokens.has_dynamic_eval = true;
-            tokens.active_token_names.push("PHP_CALLABLE_INJECTION".to_string());
+            tokens
+                .active_token_names
+                .push("PHP_CALLABLE_INJECTION".to_string());
         }
 
         // 28. Windows living-off-the-land binaries (hostile without metachars).
@@ -2554,58 +2875,88 @@ impl AstLexer {
         // Path regex fires on structural probes; function names need a //, ::,
         // or quote context; axes (::) are self-contained. Matches whose // is
         // part of a scheme:// URL are skipped (char before // must not be ':').
-        let xpath_path_hit = RE_XPATH_EXPR.get().unwrap().find_iter(&normalized).any(|m| {
-            let before = m.start().saturating_sub(1);
-            normalized.as_bytes().get(before) != Some(&b':')
-        });
+        let xpath_path_hit = RE_XPATH_EXPR
+            .get()
+            .unwrap()
+            .find_iter(&normalized)
+            .any(|m| {
+                let before = m.start().saturating_sub(1);
+                let prev = normalized.as_bytes().get(before);
+                // Skip scheme:// URLs and ../-style traversal: `//etc/passwd`
+                // inside `....//....//etc/passwd` is a path escape, not XPath.
+                prev != Some(&b':') && prev != Some(&b'.')
+            });
         if xpath_path_hit
             || RE_XPATH_AXIS.get().unwrap().is_match(&normalized)
             || norm_lower.contains("generate-id(")
             || norm_lower.contains("processing-instruction(")
-            || (RE_XPATH_FUNC.get().unwrap().find_iter(&normalized).any(|m| {
-                // Skip JS method calls: el.text(), obj.key(), node.id()
-                m.start() == 0 || normalized.as_bytes()[m.start() - 1] != b'.'
-            }) && (normalized.contains("//")
+            || (RE_XPATH_FUNC
+                .get()
+                .unwrap()
+                .find_iter(&normalized)
+                .any(|m| {
+                    // Skip JS method calls: el.text(), obj.key(), node.id()
+                    m.start() == 0 || normalized.as_bytes()[m.start() - 1] != b'.'
+                })
+                && (normalized.contains("//")
                     || normalized.contains("::")
                     || normalized.contains('\'')
                     || normalized.contains('"')))
         {
             tokens.has_xpath_injection = true;
-            tokens.active_token_names.push("XPATH_INJECTION".to_string());
+            tokens
+                .active_token_names
+                .push("XPATH_INJECTION".to_string());
         }
 
         // 30. v6 transport/content obfuscation layer.
         if normalized.contains('\u{1b}') {
             tokens.has_ansi_escape = true;
-            tokens.active_token_names.push("ANSI_ESCAPE_SEQUENCE".to_string());
+            tokens
+                .active_token_names
+                .push("ANSI_ESCAPE_SEQUENCE".to_string());
         }
         if RE_NESTED_QUANT.get().unwrap().is_match(&normalized) {
             tokens.has_nested_quantifier = true;
-            tokens.active_token_names.push("REDOS_NESTED_QUANTIFIER".to_string());
+            tokens
+                .active_token_names
+                .push("REDOS_NESTED_QUANTIFIER".to_string());
         }
         if RE_SAML_PROTO.get().unwrap().is_match(&normalized) {
             tokens.has_saml_protocol = true;
-            tokens.active_token_names.push("SAML_PROTOCOL_MESSAGE".to_string());
+            tokens
+                .active_token_names
+                .push("SAML_PROTOCOL_MESSAGE".to_string());
         }
         if RE_XSLT.get().unwrap().is_match(&normalized) {
             tokens.has_xslt_stylesheet = true;
-            tokens.active_token_names.push("XSLT_STYLESHEET".to_string());
+            tokens
+                .active_token_names
+                .push("XSLT_STYLESHEET".to_string());
         }
         if RE_XQUERY.get().unwrap().is_match(&normalized) {
             tokens.has_xquery_expr = true;
-            tokens.active_token_names.push("XQUERY_EXPRESSION".to_string());
+            tokens
+                .active_token_names
+                .push("XQUERY_EXPRESSION".to_string());
         }
         if RE_SMTP_CMD.get().unwrap().is_match(&normalized) {
             tokens.has_smtp_command = true;
-            tokens.active_token_names.push("SMTP_COMMAND_INJECTION".to_string());
+            tokens
+                .active_token_names
+                .push("SMTP_COMMAND_INJECTION".to_string());
         }
         if RE_JSONRPC_EXEC.get().unwrap().is_match(&normalized) {
             tokens.has_jsonrpc_exec = true;
-            tokens.active_token_names.push("RPC_METHOD_ABUSE".to_string());
+            tokens
+                .active_token_names
+                .push("RPC_METHOD_ABUSE".to_string());
         }
         if RE_ABS_UPLOAD_PATH.get().unwrap().is_match(&normalized) {
             tokens.has_absolute_upload_path = true;
-            tokens.active_token_names.push("ABSOLUTE_UPLOAD_PATH".to_string());
+            tokens
+                .active_token_names
+                .push("ABSOLUTE_UPLOAD_PATH".to_string());
         }
         // CSV formula: only fires when the text smells like a spreadsheet export
         // context (cell/export/csv/sheet/download), never in arbitrary prose.
@@ -2616,12 +2967,16 @@ impl AstLexer {
             || norm_lower.contains("download");
         if csv_ctx && RE_CSV_FORMULA.get().unwrap().is_match(&normalized) {
             tokens.has_csv_formula = true;
-            tokens.active_token_names.push("CSV_FORMULA_INJECTION".to_string());
+            tokens
+                .active_token_names
+                .push("CSV_FORMULA_INJECTION".to_string());
         }
         // Log forging: newline+timestamp/level/stack frame, or forged ANSI paint.
         if RE_LOG_LINE.get().unwrap().is_match(&normalized) {
             tokens.has_log_forgery = true;
-            tokens.active_token_names.push("LOG_LINE_FORGERY".to_string());
+            tokens
+                .active_token_names
+                .push("LOG_LINE_FORGERY".to_string());
         }
         // Invisible tag characters (U+E0000–E007F) and bidi overrides present
         // in the RAW input — after folding they vanish, so evidence must be
@@ -2636,23 +2991,27 @@ impl AstLexer {
                 | '\u{FEFF}')
         }) {
             tokens.has_hidden_chars = true;
-            tokens.active_token_names.push("INVISIBLE_CHAR_SMEUGLING".to_string());
+            tokens
+                .active_token_names
+                .push("INVISIBLE_CHAR_SMEUGLING".to_string());
         }
         // Mail-header keys smuggled as JSON fields.
         if RE_MAIL_HDR_JSON.get().unwrap().is_match(&normalized) {
             tokens.has_smtp_command = true;
-            tokens.active_token_names.push("MAIL_HEADER_JSON_INJECTION".to_string());
+            tokens
+                .active_token_names
+                .push("MAIL_HEADER_JSON_INJECTION".to_string());
         }
         // Base64-encoded XML carrying SAML markers (SAMLResponse posted raw).
-        if normalized.len() > 200
-            && RE_B64_XML_SAML.get().unwrap().is_match(&normalized)
-        {
+        if normalized.len() > 200 && RE_B64_XML_SAML.get().unwrap().is_match(&normalized) {
             // Cheap pre-filter: the blob must contain SAML-ish base64 fragments
             // or the PD94bWwg ("<?xml ") prolog in any alignment.
             let low = normalized.to_ascii_lowercase();
             if low.contains("pd94bw") || low.contains("c2ftb") || low.contains("u0fud") {
                 tokens.has_saml_protocol = true;
-                tokens.active_token_names.push("SAML_BASE64_ASSERTION".to_string());
+                tokens
+                    .active_token_names
+                    .push("SAML_BASE64_ASSERTION".to_string());
             }
         }
         // Keyword smuggling: a confusable/homoglyph-folded keyword appearing in
@@ -2660,14 +3019,16 @@ impl AstLexer {
         // the keyword sits in a parameter-value position (preceded by '='),
         // so path segments (/wp-admin/) and JSON string values stay benign.
         if is_obfuscated {
-            let kw_hit = RE_KEYWORD_SMUGGLE.get().unwrap().find_iter(&normalized).any(|m| {
-                normalized[..m.start()]
-                    .trim_end()
-                    .ends_with('=')
-            });
+            let kw_hit = RE_KEYWORD_SMUGGLE
+                .get()
+                .unwrap()
+                .find_iter(&normalized)
+                .any(|m| normalized[..m.start()].trim_end().ends_with('='));
             if kw_hit {
                 tokens.has_keyword_smuggling = true;
-                tokens.active_token_names.push("CONFUSABLE_KEYWORD_SMEUGGLE".to_string());
+                tokens
+                    .active_token_names
+                    .push("CONFUSABLE_KEYWORD_SMEUGGLE".to_string());
             }
         }
 
@@ -2677,12 +3038,17 @@ impl AstLexer {
         // constants (INT32_MAX=2147483647, UINT32_MAX=4294967295) — legitimate
         // developer test values — do not count as anomalies. 64-bit maxima
         // still fire: no real field legitimately holds u64::MAX.
-        let num_big_hit = RE_NUM_BIG.get().unwrap().captures(&normalized).map(|c| {
-            c.get(1)
-                .and_then(|m| m.as_str().parse::<u128>().ok())
-                .map(|n| !matches!(n, 2_147_483_647 | 4_294_967_295))
-                .unwrap_or(true)
-        }).unwrap_or(false);
+        let num_big_hit = RE_NUM_BIG
+            .get()
+            .unwrap()
+            .captures(&normalized)
+            .map(|c| {
+                c.get(1)
+                    .and_then(|m| m.as_str().parse::<u128>().ok())
+                    .map(|n| !matches!(n, 2_147_483_647 | 4_294_967_295))
+                    .unwrap_or(true)
+            })
+            .unwrap_or(false);
         if RE_NUMERIC_ANOMALY.get().unwrap().is_match(&normalized)
             && (RE_NUM_NEG.get().unwrap().is_match(&normalized)
                 || num_big_hit
@@ -2690,14 +3056,18 @@ impl AstLexer {
                 || RE_NUM_TINY.get().unwrap().is_match(&normalized))
         {
             tokens.has_numeric_anomaly = true;
-            tokens.active_token_names.push("NUMERIC_FIELD_ANOMALY".to_string());
+            tokens
+                .active_token_names
+                .push("NUMERIC_FIELD_ANOMALY".to_string());
         }
         // Privileged fields: key present AND value looks like privilege grant.
         if RE_PRIVILEGED_KEY.get().unwrap().is_match(&normalized)
             && RE_PRIV_VAL.get().unwrap().is_match(&normalized)
         {
             tokens.has_privileged_field = true;
-            tokens.active_token_names.push("PRIVILEGED_FIELD_ASSIGNMENT".to_string());
+            tokens
+                .active_token_names
+                .push("PRIVILEGED_FIELD_ASSIGNMENT".to_string());
         }
 
         tokens.active_token_names.sort();
@@ -2773,10 +3143,14 @@ impl AstLexer {
         // E. Direct Target & Path Specific Island Checks (ensures exact URI match)
         let path_and_query = format!("{}?{}", req.path, req.query_string);
         if RE_WORDPRESS_PROBE.get().unwrap().is_match(&path_and_query)
-            && !path_and_query.to_ascii_lowercase().contains("admin-ajax.php")
+            && !path_and_query
+                .to_ascii_lowercase()
+                .contains("admin-ajax.php")
         {
             tokens.has_wordpress_probe = true;
-            tokens.active_token_names.push("WORDPRESS_RECON_PROBE".to_string());
+            tokens
+                .active_token_names
+                .push("WORDPRESS_RECON_PROBE".to_string());
         }
         if !tokens.has_wordpress_probe
             && path_and_query.contains("xmlrpc.php")
@@ -2786,28 +3160,44 @@ impl AstLexer {
                 || req.body.contains("pingback.ping"))
         {
             tokens.has_wordpress_probe = true;
-            tokens.active_token_names.push("WORDPRESS_RECON_PROBE".to_string());
+            tokens
+                .active_token_names
+                .push("WORDPRESS_RECON_PROBE".to_string());
         }
-        if RE_SENSITIVE_EXPOSURE.get().unwrap().is_match(&path_and_query) {
+        if RE_SENSITIVE_EXPOSURE
+            .get()
+            .unwrap()
+            .is_match(&path_and_query)
+        {
             tokens.has_sensitive_file_probe = true;
-            tokens.active_token_names.push("SENSITIVE_FILE_EXPOSURE_PROBE".to_string());
+            tokens
+                .active_token_names
+                .push("SENSITIVE_FILE_EXPOSURE_PROBE".to_string());
         }
         // Appliance/CVE admin endpoints (PAN-OS, FortiGate, ASA, Pulse, Citrix,
         // Exchange, Atlassian, Solr, Nacos, XXL-Job, etc.).
         if RE_APPLIANCE_CVE.get().unwrap().is_match(&path_and_query) {
             tokens.has_sensitive_file_probe = true;
-            tokens.active_token_names.push("APPLIANCE_CVE_ENDPOINT_PROBE".to_string());
+            tokens
+                .active_token_names
+                .push("APPLIANCE_CVE_ENDPOINT_PROBE".to_string());
         }
         let re_framework = RE_FRAMEWORK_EXPLOIT.get().unwrap();
-        if re_framework.is_match(&path_and_query) || (!req.body.is_empty() && re_framework.is_match(&req.body)) {
+        if re_framework.is_match(&path_and_query)
+            || (!req.body.is_empty() && re_framework.is_match(&req.body))
+        {
             tokens.has_framework_exploit_probe = true;
-            tokens.active_token_names.push("FRAMEWORK_EXPLOIT_PAYLOAD".to_string());
+            tokens
+                .active_token_names
+                .push("FRAMEWORK_EXPLOIT_PAYLOAD".to_string());
         }
 
         // F. Host / Forwarded header integrity (password-reset & cache poisoning)
         if Self::analyze_host_headers(&req.headers) {
             tokens.has_host_header_anomaly = true;
-            tokens.active_token_names.push("HOST_HEADER_INJECTION".to_string());
+            tokens
+                .active_token_names
+                .push("HOST_HEADER_INJECTION".to_string());
         }
         // Method-override headers smuggle privileged verbs (PUT/DELETE/PATCH)
         // past front-end method restrictions; TRACE/CONNECT enable cross-site
@@ -2816,12 +3206,20 @@ impl AstLexer {
             let kl = k.to_ascii_lowercase();
             if matches!(
                 kl.as_str(),
-                "x-http-method-override" | "x-http-method" | "x-method-override" | "x-original-method"
+                "x-http-method-override"
+                    | "x-http-method"
+                    | "x-method-override"
+                    | "x-original-method"
             ) {
                 let vl = v.trim().to_ascii_uppercase();
-                if matches!(vl.as_str(), "PUT" | "DELETE" | "PATCH" | "TRACE" | "CONNECT" | "DEBUG") {
+                if matches!(
+                    vl.as_str(),
+                    "PUT" | "DELETE" | "PATCH" | "TRACE" | "CONNECT" | "DEBUG"
+                ) {
                     tokens.has_method_override_abuse = true;
-                    tokens.active_token_names.push("METHOD_OVERRIDE_ABUSE".to_string());
+                    tokens
+                        .active_token_names
+                        .push("METHOD_OVERRIDE_ABUSE".to_string());
                     break;
                 }
             }
@@ -2831,7 +3229,9 @@ impl AstLexer {
         if req.path.starts_with("http://") || req.path.starts_with("https://") {
             tokens.has_host_absolute_uri = true;
             tokens.has_host_header_anomaly = true;
-            tokens.active_token_names.push("ABSOLUTE_URI_HOST".to_string());
+            tokens
+                .active_token_names
+                .push("ABSOLUTE_URI_HOST".to_string());
         }
 
         // G. Request smuggling / desync: framing-header contradictions.
@@ -2867,13 +3267,15 @@ impl AstLexer {
                     odd_framing = true;
                 }
             }
-            let cl_dup = cl_values.len() > 1
-                && cl_values.iter().any(|v| v.trim() != cl_values[0].trim());
-            let te_dup = te_values.len() > 1
-                && te_values.iter().any(|v| v.trim() != te_values[0].trim());
+            let cl_dup =
+                cl_values.len() > 1 && cl_values.iter().any(|v| v.trim() != cl_values[0].trim());
+            let te_dup =
+                te_values.len() > 1 && te_values.iter().any(|v| v.trim() != te_values[0].trim());
             if (te_present && !cl_values.is_empty()) || odd_framing || cl_dup || te_dup {
                 tokens.has_smuggling_desync = true;
-                tokens.active_token_names.push("HTTP_DESYNC_FRAMING".to_string());
+                tokens
+                    .active_token_names
+                    .push("HTTP_DESYNC_FRAMING".to_string());
             }
         }
 
@@ -2882,11 +3284,23 @@ impl AstLexer {
             let m = req.method.to_ascii_uppercase();
             if matches!(
                 m.as_str(),
-                "PROPFIND" | "PROPPATCH" | "MKCOL" | "COPY" | "MOVE" | "LOCK" | "UNLOCK"
-                    | "SEARCH" | "REPORT" | "ACL" | "BASELINE-CONTROL" | "LABEL"
+                "PROPFIND"
+                    | "PROPPATCH"
+                    | "MKCOL"
+                    | "COPY"
+                    | "MOVE"
+                    | "LOCK"
+                    | "UNLOCK"
+                    | "SEARCH"
+                    | "REPORT"
+                    | "ACL"
+                    | "BASELINE-CONTROL"
+                    | "LABEL"
             ) {
                 tokens.has_webdav_method = true;
-                tokens.active_token_names.push("WEBDAV_METHOD_ABUSE".to_string());
+                tokens
+                    .active_token_names
+                    .push("WEBDAV_METHOD_ABUSE".to_string());
             }
         }
 
@@ -2898,7 +3312,9 @@ impl AstLexer {
                 && RE_ACCT_PATH.get().unwrap().is_match(&p)
             {
                 tokens.has_cache_deception = true;
-                tokens.active_token_names.push("CACHE_DECEPTION_PATH".to_string());
+                tokens
+                    .active_token_names
+                    .push("CACHE_DECEPTION_PATH".to_string());
             }
         }
 
@@ -2918,7 +3334,9 @@ impl AstLexer {
                         || vl.contains("%2f%2f")
                     {
                         tokens.has_oauth_redirect_abuse = true;
-                        tokens.active_token_names.push("OAUTH_REDIRECT_URI_ABUSE".to_string());
+                        tokens
+                            .active_token_names
+                            .push("OAUTH_REDIRECT_URI_ABUSE".to_string());
                         break;
                     }
                 }
@@ -2927,11 +3345,15 @@ impl AstLexer {
             let ql = req.query_string.to_ascii_lowercase();
             let bl = req.body.to_ascii_lowercase();
             if (ql.contains("grant_type=password") || bl.contains("grant_type=password"))
-                && (ql.contains("scope=admin") || bl.contains("scope=admin")
-                    || ql.contains("scope=*admin") || bl.contains("scope=*admin"))
+                && (ql.contains("scope=admin")
+                    || bl.contains("scope=admin")
+                    || ql.contains("scope=*admin")
+                    || bl.contains("scope=*admin"))
             {
                 tokens.has_oauth_redirect_abuse = true;
-                tokens.active_token_names.push("OAUTH_SCOPE_ESCALATION".to_string());
+                tokens
+                    .active_token_names
+                    .push("OAUTH_SCOPE_ESCALATION".to_string());
             }
         }
 
@@ -2954,7 +3376,9 @@ impl AstLexer {
                 || (cyr.is_match(&pq) && raw_l.contains('.'))
             {
                 tokens.has_punycode_host = true;
-                tokens.active_token_names.push("PUNYCODE_HOMOGRAPH_HOST".to_string());
+                tokens
+                    .active_token_names
+                    .push("PUNYCODE_HOMOGRAPH_HOST".to_string());
             }
         }
 
@@ -2965,7 +3389,9 @@ impl AstLexer {
             let pl = req.path.to_ascii_lowercase();
             if pl.contains("/saml") || pl.contains("/sso/saml") {
                 tokens.has_saml_protocol = true;
-                tokens.active_token_names.push("SAML_ENDPOINT_PROBE".to_string());
+                tokens
+                    .active_token_names
+                    .push("SAML_ENDPOINT_PROBE".to_string());
             }
         }
 
@@ -2987,7 +3413,9 @@ impl AstLexer {
                     || vl.contains("invoke");
                 if suspicious {
                     tokens.has_soap_action_abuse = true;
-                    tokens.active_token_names.push("SOAP_ACTION_ABUSE".to_string());
+                    tokens
+                        .active_token_names
+                        .push("SOAP_ACTION_ABUSE".to_string());
                     break;
                 }
             }
@@ -2996,11 +3424,15 @@ impl AstLexer {
         // N. PUT with server-side script body = WebDAV-style write abuse even
         // though PUT alone is a legitimate REST verb.
         if req.method.eq_ignore_ascii_case("PUT")
-            && (req.body.contains("<?php") || req.body.contains("<?=")
-                || req.body.contains("<jsp:") || req.body.contains("<%"))
+            && (req.body.contains("<?php")
+                || req.body.contains("<?=")
+                || req.body.contains("<jsp:")
+                || req.body.contains("<%"))
         {
             tokens.has_malicious_upload = true;
-            tokens.active_token_names.push("WEBDAV_SCRIPT_WRITE".to_string());
+            tokens
+                .active_token_names
+                .push("WEBDAV_SCRIPT_WRITE".to_string());
         }
 
         // O. Cache poisoning via unkeyed inputs: forwarding headers a shared
@@ -3014,7 +3446,9 @@ impl AstLexer {
                 "x-forwarded-scheme" | "x-forwarded-port" | "x-original-url" | "x-rewrite-url"
             ) {
                 tokens.has_cache_poisoning_signal = true;
-                tokens.active_token_names.push("CACHE_POISONING_UNKEYED_INPUT".to_string());
+                tokens
+                    .active_token_names
+                    .push("CACHE_POISONING_UNKEYED_INPUT".to_string());
                 break;
             }
         }
@@ -3023,7 +3457,9 @@ impl AstLexer {
                 let key = kv.split('=').next().unwrap_or("").trim();
                 if matches!(key, "cb" | "cachebuster" | "cache_bust" | "nocache" | "_") {
                     tokens.has_cache_poisoning_signal = true;
-                    tokens.active_token_names.push("CACHE_POISONING_UNKEYED_INPUT".to_string());
+                    tokens
+                        .active_token_names
+                        .push("CACHE_POISONING_UNKEYED_INPUT".to_string());
                     break;
                 }
             }
@@ -3038,16 +3474,17 @@ impl AstLexer {
             let ql = req.query_string.to_ascii_lowercase();
             let bl = req.body.to_ascii_lowercase();
             let has = |needle: &str| ql.contains(needle) || bl.contains(needle);
-            let authorize_ep = pl.contains("authorize") || pl.contains("/oauth") || pl.contains("/oidc");
+            let authorize_ep =
+                pl.contains("authorize") || pl.contains("/oauth") || pl.contains("/oidc");
             let token_ep = pl.contains("/token") || pl.contains("/oidc/token");
-            let anomaly = (authorize_ep
-                && has("redirect_uri=")
-                && has("response_type=")
-                && !has("state="))
-                || (token_ep && has("grant_type=authorization_code") && has("redirect_uri="));
+            let anomaly =
+                (authorize_ep && has("redirect_uri=") && has("response_type=") && !has("state="))
+                    || (token_ep && has("grant_type=authorization_code") && has("redirect_uri="));
             if anomaly {
                 tokens.has_oauth_oidc_signal = true;
-                tokens.active_token_names.push("OAUTH_FLOW_ANOMALY".to_string());
+                tokens
+                    .active_token_names
+                    .push("OAUTH_FLOW_ANOMALY".to_string());
             }
         }
 
@@ -3065,11 +3502,18 @@ impl AstLexer {
             let preceded = inspectable[..m.start()]
                 .chars()
                 .last()
-                .map(|c| matches!(c, '=' | ':' | '"' | '\'' | '&' | '?' | ';' | '(' | '[' | ','))
+                .map(|c| {
+                    matches!(
+                        c,
+                        '=' | ':' | '"' | '\'' | '&' | '?' | ';' | '(' | '[' | ','
+                    )
+                })
                 .unwrap_or(true);
             if preceded {
                 tokens.has_unicode_normalization_signal = true;
-                tokens.active_token_names.push("MIXED_SCRIPT_EVASION".to_string());
+                tokens
+                    .active_token_names
+                    .push("MIXED_SCRIPT_EVASION".to_string());
                 break;
             }
         }
@@ -3147,23 +3591,44 @@ impl AstLexer {
                 }
                 // S. CMS action params naming vulnerable plugin slugs.
                 if !cms_probe
-                    && matches!(key.as_str(), "action" | "do" | "task" | "operation" | "plugin" | "module")
+                    && matches!(
+                        key.as_str(),
+                        "action" | "do" | "task" | "operation" | "plugin" | "module"
+                    )
                     && RE_CMS_VULN_SLUG.get().unwrap().is_match(&val)
                 {
                     cms_probe = true;
                 }
                 // T. Cross-param numeric anomaly: benefit fields (gamification
                 // currency) vs declared ceilings (max*/limit/cap/...)
-                if let Ok(n) = val.trim_end_matches(|c: char| !c.is_ascii_digit() && c != '.' && c != '-').parse::<f64>() {
-                    if matches!(key.as_str(),
-                        "bonus" | "score" | "points" | "credit" | "tip" | "gift" | "reward"
-                        | "coins" | "winnings" | "payout" | "cashback" | "rebate" | "jackpot"
-                        | "multiplier" | "xp")
-                    {
+                if let Ok(n) = val
+                    .trim_end_matches(|c: char| !c.is_ascii_digit() && c != '.' && c != '-')
+                    .parse::<f64>()
+                {
+                    if matches!(
+                        key.as_str(),
+                        "bonus"
+                            | "score"
+                            | "points"
+                            | "credit"
+                            | "tip"
+                            | "gift"
+                            | "reward"
+                            | "coins"
+                            | "winnings"
+                            | "payout"
+                            | "cashback"
+                            | "rebate"
+                            | "jackpot"
+                            | "multiplier"
+                            | "xp"
+                    ) {
                         benefits.push(n);
                     } else if key.starts_with("max")
-                        || matches!(key.as_str(),
-                            "limit" | "limits" | "cap" | "caps" | "ceiling" | "bound" | "threshold")
+                        || matches!(
+                            key.as_str(),
+                            "limit" | "limits" | "cap" | "caps" | "ceiling" | "bound" | "threshold"
+                        )
                     {
                         ceilings.push(n);
                     }
@@ -3171,26 +3636,35 @@ impl AstLexer {
             }
             if param_abs_path {
                 tokens.has_path_traversal_signal = true;
-                tokens.active_token_names.push("PARAM_ABS_PATH_TRAVERSAL".to_string());
+                tokens
+                    .active_token_names
+                    .push("PARAM_ABS_PATH_TRAVERSAL".to_string());
             }
             if cms_probe {
                 tokens.has_cms_wordpress_probe_signal = true;
-                tokens.active_token_names.push("CMS_PLUGIN_PROBE_ACTION".to_string());
+                tokens
+                    .active_token_names
+                    .push("CMS_PLUGIN_PROBE_ACTION".to_string());
             }
             // benefit >= 100 AND exceeds every ceiling by >50x
-            if benefits.iter().any(|&b| {
-                b >= 100.0 && ceilings.iter().any(|&c| b > c.abs() * 50.0 + f64::EPSILON)
-            }) {
+            if benefits
+                .iter()
+                .any(|&b| b >= 100.0 && ceilings.iter().any(|&c| b > c.abs() * 50.0 + f64::EPSILON))
+            {
                 tokens.has_business_logic_signal = true;
-                tokens.active_token_names.push("CROSS_PARAM_NUMERIC_ANOMALY".to_string());
+                tokens
+                    .active_token_names
+                    .push("CROSS_PARAM_NUMERIC_ANOMALY".to_string());
             }
         }
 
         // U. v7 lex proposals — parameter-level semantic anomalies.
         {
             let norm = tokens.normalized_text.clone();
-            let mut dup_keys: std::collections::HashMap<String, std::collections::BTreeSet<String>> =
-                std::collections::HashMap::new();
+            let mut dup_keys: std::collections::HashMap<
+                String,
+                std::collections::BTreeSet<String>,
+            > = std::collections::HashMap::new();
             let mut bracket_keys: std::collections::HashMap<String, Vec<String>> =
                 std::collections::HashMap::new();
             let mut bracket_keys_all: std::collections::HashMap<String, Vec<String>> =
@@ -3204,33 +3678,120 @@ impl AstLexer {
             let mut classloader = false;
 
             const SENSITIVE_KEYS: &[&str] = &[
-                "username", "user", "password", "passwd", "pass", "pwd", "email",
-                "token", "role", "admin", "account", "login", "auth", "secret",
-                "key", "permission", "permissions", "isadmin", "verified",
-                "credit", "balance", "price", "amount", "qty", "quantity",
-                "bid", "score", "bonus", "discount",
+                "username",
+                "user",
+                "password",
+                "passwd",
+                "pass",
+                "pwd",
+                "email",
+                "token",
+                "role",
+                "admin",
+                "account",
+                "login",
+                "auth",
+                "secret",
+                "key",
+                "permission",
+                "permissions",
+                "isadmin",
+                "verified",
+                "credit",
+                "balance",
+                "price",
+                "amount",
+                "qty",
+                "quantity",
+                "bid",
+                "score",
+                "bonus",
+                "discount",
             ];
             const REDIRECT_KEYS: &[&str] = &[
-                "next", "redirect", "return", "url", "to", "target", "continue",
-                "continue_url", "redir", "go", "link", "out", "u", "return_url",
-                "returnto", "return_to", "dest", "destination", "redirect_url",
-                "redirect_uri", "redirect_to", "forward", "goto",
+                "next",
+                "redirect",
+                "return",
+                "url",
+                "to",
+                "target",
+                "continue",
+                "continue_url",
+                "redir",
+                "go",
+                "link",
+                "out",
+                "u",
+                "return_url",
+                "returnto",
+                "return_to",
+                "dest",
+                "destination",
+                "redirect_url",
+                "redirect_uri",
+                "redirect_to",
+                "forward",
+                "goto",
             ];
             const WEBHOOK_KEYS: &[&str] = &[
-                "callback", "webhook", "webhook_url", "notify_url", "notify",
-                "pingback", "endpoint", "delivery", "callback_url", "target_url",
-                "hook", "feed_url", "notify_uri", "call_back",
+                "callback",
+                "webhook",
+                "webhook_url",
+                "notify_url",
+                "notify",
+                "pingback",
+                "endpoint",
+                "delivery",
+                "callback_url",
+                "target_url",
+                "hook",
+                "feed_url",
+                "notify_uri",
+                "call_back",
             ];
             const JUGGLE_KEYS: &[&str] = &[
-                "password", "passwd", "pass", "pwd", "token", "hash", "secret",
-                "key", "auth", "signature", "nonce", "code", "digest", "apikey",
-                "api_key", "session", "sess", "jwt", "credential", "id", "num",
-                "n", "qty", "count", "level", "pin", "otp", "year", "month",
-                "day", "version", "build",
+                "password",
+                "passwd",
+                "pass",
+                "pwd",
+                "token",
+                "hash",
+                "secret",
+                "key",
+                "auth",
+                "signature",
+                "nonce",
+                "code",
+                "digest",
+                "apikey",
+                "api_key",
+                "session",
+                "sess",
+                "jwt",
+                "credential",
+                "id",
+                "num",
+                "n",
+                "qty",
+                "count",
+                "level",
+                "pin",
+                "otp",
+                "year",
+                "month",
+                "day",
+                "version",
+                "build",
             ];
             const BIG_NUM_KEYS: &[&str] = &[
-                "percent", "ratio", "multiplier", "factor", "count", "num",
-                "number", "percentage",
+                "percent",
+                "ratio",
+                "multiplier",
+                "factor",
+                "count",
+                "num",
+                "number",
+                "percentage",
             ];
 
             for cap in RE_PARAM_PAIR.get().unwrap().captures_iter(&norm) {
@@ -3266,9 +3827,7 @@ impl AstLexer {
                     // protocol-relative //evil, while %3A%2F%2F is just an
                     // https:// URL — the raw variant still holds the literal
                     // escapes, so checking vl alone would FP on encoded URLs.
-                    let dvl = percent_decode_str(&val)
-                        .decode_utf8_lossy()
-                        .to_lowercase();
+                    let dvl = percent_decode_str(&val).decode_utf8_lossy().to_lowercase();
                     if vl.starts_with("//")
                         || dvl.starts_with("//")
                         || dvl.contains("javascript:")
@@ -3320,11 +3879,24 @@ impl AstLexer {
             // narrow pair regex truncates at \s — use the wide variant here.
             if !proto_inject {
                 const ALONE_PROTO: &[&str] = &[
-                    "eval", "config", "flushall", "flushdb", "flush_all",
+                    "eval",
+                    "config",
+                    "flushall",
+                    "flushdb",
+                    "flush_all",
                     "slaveof",
-                    "replicaof", "psync", "replconf", "slowlog", "asking",
-                    "failover", "migrate", "monitor", "subscribe", "psubscribe",
-                    "pubsub", "shutdown",
+                    "replicaof",
+                    "psync",
+                    "replconf",
+                    "slowlog",
+                    "asking",
+                    "failover",
+                    "migrate",
+                    "monitor",
+                    "subscribe",
+                    "psubscribe",
+                    "pubsub",
+                    "shutdown",
                 ];
                 for cap in RE_PARAM_PAIR_WIDE.get().unwrap().captures_iter(&norm) {
                     let vl = cap[2].to_ascii_lowercase();
@@ -3349,9 +3921,13 @@ impl AstLexer {
                         if let Some(m) = RE_INLINE_PROTO.get().unwrap().find(&vl_sp) {
                             let _ = m;
                             let rest = vl_sp[m.end()..].trim_start();
-                            if rest.contains('/') || rest.contains(':') || rest.contains('*')
+                            if rest.contains('/')
+                                || rest.contains(':')
+                                || rest.contains('*')
                                 || rest.contains('$')
-                                || rest.split_whitespace().any(|w| w.len() >= 4 && w.bytes().all(|b| b.is_ascii_digit()))
+                                || rest
+                                    .split_whitespace()
+                                    .any(|w| w.len() >= 4 && w.bytes().all(|b| b.is_ascii_digit()))
                             {
                                 proto_inject = true;
                                 break;
@@ -3366,7 +3942,10 @@ impl AstLexer {
                 let key = cap[1].to_ascii_lowercase();
                 let val = cap[2].to_string();
                 if SENSITIVE_KEYS.contains(&key.as_str()) {
-                    bracket_keys.entry(key.clone()).or_default().push(val.clone());
+                    bracket_keys
+                        .entry(key.clone())
+                        .or_default()
+                        .push(val.clone());
                 }
                 // Pollution view: ANY bracket base key repeating with divergent
                 // values — privilege flavor decides, not key sensitivity.
@@ -3375,39 +3954,58 @@ impl AstLexer {
             // v86 pollution: same scalar key, >=2 distinct values, at least
             // one privilege/conflict-flavored value.
             let pollution = dup_keys.iter().any(|(_, vals)| {
-                vals.len() > 1 && vals.iter().any(|v| RE_PRIV_LIKE_VALUE.get().unwrap().is_match(v))
+                vals.len() > 1
+                    && vals
+                        .iter()
+                        .any(|v| RE_PRIV_LIKE_VALUE.get().unwrap().is_match(v))
             }) || bracket_keys_all.values().any(|vals| {
                 let distinct: std::collections::BTreeSet<&String> = vals.iter().collect();
                 distinct.len() > 1
-                    && vals.iter().any(|v| RE_PRIV_LIKE_VALUE.get().unwrap().is_match(v))
+                    && vals
+                        .iter()
+                        .any(|v| RE_PRIV_LIKE_VALUE.get().unwrap().is_match(v))
             });
             if pollution {
                 tokens.has_parameter_pollution_signal = true;
-                tokens.active_token_names.push("PARAM_VALUE_POLLUTION".to_string());
+                tokens
+                    .active_token_names
+                    .push("PARAM_VALUE_POLLUTION".to_string());
             }
             if magic_hash || hex_juggle || !bracket_keys.is_empty() {
                 tokens.has_type_juggling_signal = true;
-                tokens.active_token_names.push("LOOSE_TYPE_JUGGLING".to_string());
+                tokens
+                    .active_token_names
+                    .push("LOOSE_TYPE_JUGGLING".to_string());
             }
             if proto_inject {
                 tokens.has_protocol_injection_signal = true;
-                tokens.active_token_names.push("REDIS_MEMCACHED_INJECTION".to_string());
+                tokens
+                    .active_token_names
+                    .push("REDIS_MEMCACHED_INJECTION".to_string());
             }
             if webhook_ssrf {
                 tokens.has_webhook_ssrf_signal = true;
-                tokens.active_token_names.push("WEBHOOK_CALLBACK_SSRF".to_string());
+                tokens
+                    .active_token_names
+                    .push("WEBHOOK_CALLBACK_SSRF".to_string());
             }
             if open_redirect {
                 tokens.has_open_redirect_signal = true;
-                tokens.active_token_names.push("OPEN_REDIRECT_PARAM".to_string());
+                tokens
+                    .active_token_names
+                    .push("OPEN_REDIRECT_PARAM".to_string());
             }
             if int_overflow {
                 tokens.has_integer_overflow_signal = true;
-                tokens.active_token_names.push("INTEGER_OVERFLOW_BOUNDARY".to_string());
+                tokens
+                    .active_token_names
+                    .push("INTEGER_OVERFLOW_BOUNDARY".to_string());
             }
             if classloader {
                 tokens.has_spring4shell_signal = true;
-                tokens.active_token_names.push("CLASSLOADER_BINDING_INJECTION".to_string());
+                tokens
+                    .active_token_names
+                    .push("CLASSLOADER_BINDING_INJECTION".to_string());
             }
         }
 
@@ -3415,12 +4013,16 @@ impl AstLexer {
         // management endpoints, Content-Type confusion, WebSocket abuse.
         if req.method.eq_ignore_ascii_case("CONNECT") {
             tokens.has_connect_tunnel_signal = true;
-            tokens.active_token_names.push("CONNECT_TUNNEL_ABUSE".to_string());
+            tokens
+                .active_token_names
+                .push("CONNECT_TUNNEL_ABUSE".to_string());
         }
         for (k, _) in &req.headers {
             if k.starts_with(':') {
                 tokens.has_http2_pseudo_header = true;
-                tokens.active_token_names.push("HTTP2_PSEUDO_HEADER_LEAK".to_string());
+                tokens
+                    .active_token_names
+                    .push("HTTP2_PSEUDO_HEADER_LEAK".to_string());
                 break;
             }
         }
@@ -3428,7 +4030,9 @@ impl AstLexer {
             let pq = format!("{}?{}", req.path, req.query_string).to_ascii_lowercase();
             if RE_MGMT_ENDPOINT.get().unwrap().is_match(&pq) {
                 tokens.has_management_endpoint_signal = true;
-                tokens.active_token_names.push("MANAGEMENT_ENDPOINT_PROBE".to_string());
+                tokens
+                    .active_token_names
+                    .push("MANAGEMENT_ENDPOINT_PROBE".to_string());
             }
             // WebSocket upgrade carrying injection-flavored subprotocols.
             let is_ws = req.headers.iter().any(|(k, v)| {
@@ -3438,19 +4042,28 @@ impl AstLexer {
                 for (k, v) in &req.headers {
                     if k.eq_ignore_ascii_case("sec-websocket-protocol") {
                         let vl = v.to_ascii_lowercase();
-                        if vl.contains("sql") || vl.contains("script") || vl.contains("exec")
-                            || vl.contains("eval") || vl.contains("admin") || vl.contains("..")
-                            || vl.contains('<') || vl.contains("javascript")
+                        if vl.contains("sql")
+                            || vl.contains("script")
+                            || vl.contains("exec")
+                            || vl.contains("eval")
+                            || vl.contains("admin")
+                            || vl.contains("..")
+                            || vl.contains('<')
+                            || vl.contains("javascript")
                         {
                             tokens.has_websocket_abuse_signal = true;
-                            tokens.active_token_names.push("WEBSOCKET_SUBPROTOCOL_ABUSE".to_string());
+                            tokens
+                                .active_token_names
+                                .push("WEBSOCKET_SUBPROTOCOL_ABUSE".to_string());
                             break;
                         }
                     }
                 }
             }
             // Content-Type confusion: declared type contradicts body shape.
-            let ct = req.headers.iter()
+            let ct = req
+                .headers
+                .iter()
                 .find(|(k, _)| k.eq_ignore_ascii_case("content-type"))
                 .map(|(_, v)| v.to_ascii_lowercase());
             if let Some(ct) = ct {
@@ -3467,7 +4080,9 @@ impl AstLexer {
                     || (form_ct && (body_json || body_xml))
                 {
                     tokens.has_content_type_confusion_signal = true;
-                    tokens.active_token_names.push("CONTENT_TYPE_CONFUSION".to_string());
+                    tokens
+                        .active_token_names
+                        .push("CONTENT_TYPE_CONFUSION".to_string());
                 }
             }
         }
@@ -3479,48 +4094,99 @@ impl AstLexer {
             let norm = tokens.normalized_text.to_ascii_lowercase();
             if RE_JAVA_ATTACK.get().unwrap().is_match(&norm) {
                 tokens.has_java_attack_signal = true;
-                tokens.active_token_names.push("JAVA_RUNTIME_ABUSE".to_string());
+                tokens
+                    .active_token_names
+                    .push("JAVA_RUNTIME_ABUSE".to_string());
+            }
+            if RE_JAVA_GADGET.get().unwrap().is_match(&norm) {
+                tokens.has_java_deserialization_signal = true;
+                tokens
+                    .active_token_names
+                    .push("JAVA_DESERIALIZATION_GADGET".to_string());
+            }
+            if RE_JAVA_SINK.get().unwrap().is_match(&norm) {
+                tokens.has_java_runtime_sink = true;
+                tokens
+                    .active_token_names
+                    .push("JAVA_RUNTIME_SINK".to_string());
+            }
+            if RE_DATA_URI_MARKUP.get().unwrap().is_match(&norm) {
+                tokens.has_xss_extended_signal = true;
+                tokens
+                    .active_token_names
+                    .push("DATA_URI_MARKUP".to_string());
             }
             if RE_SQL_EXTENDED.get().unwrap().is_match(&norm)
                 || RE_SQL_TAUTOLOGY.get().unwrap().is_match(&norm)
                 || RE_ORM_LOOKUP.get().unwrap().is_match(&norm)
             {
                 tokens.has_sqli_extended_signal = true;
-                tokens.active_token_names.push("EXTENDED_INJECTION_PRIMITIVE".to_string());
+                tokens
+                    .active_token_names
+                    .push("EXTENDED_INJECTION_PRIMITIVE".to_string());
             }
             if RE_RCE_EXTENDED.get().unwrap().is_match(&norm) {
                 tokens.has_rce_extended_signal = true;
-                tokens.active_token_names.push("WINDOWS_CMD_CONSTRUCT".to_string());
+                tokens
+                    .active_token_names
+                    .push("WINDOWS_CMD_CONSTRUCT".to_string());
             }
             // _method= verb tunneling applies to query string AND body params.
             let pq_body = format!("{} {}", req.query_string, req.body);
-            if RE_METHOD_OVERRIDE_PARAM.get().unwrap().is_match(&pq_body.to_ascii_lowercase()) {
+            if RE_METHOD_OVERRIDE_PARAM
+                .get()
+                .unwrap()
+                .is_match(&pq_body.to_ascii_lowercase())
+            {
                 tokens.has_protocol_enforcement_signal = true;
-                tokens.active_token_names.push("METHOD_OVERRIDE_TUNNEL".to_string());
+                tokens
+                    .active_token_names
+                    .push("METHOD_OVERRIDE_TUNNEL".to_string());
             }
             if RE_PHP_DANGER.get().unwrap().is_match(&norm)
                 || RE_PHP_VAR_SHAPE.get().unwrap().is_match(&norm)
                 || RE_PHP_INI_KEY.get().unwrap().is_match(&norm)
             {
                 tokens.has_php_injection_signal = true;
-                tokens.active_token_names.push("PHP_RUNTIME_SINK".to_string());
+                tokens
+                    .active_token_names
+                    .push("PHP_RUNTIME_SINK".to_string());
             }
             if RE_NODEJS_ABUSE.get().unwrap().is_match(&norm) {
                 tokens.has_nodejs_injection_signal = true;
-                tokens.active_token_names.push("NODEJS_RUNTIME_ABUSE".to_string());
+                tokens
+                    .active_token_names
+                    .push("NODEJS_RUNTIME_ABUSE".to_string());
             }
             if RE_XSS_EXTENDED.get().unwrap().is_match(&norm) {
                 tokens.has_xss_extended_signal = true;
-                tokens.active_token_names.push("JS_RUNTIME_SINK".to_string());
+                tokens
+                    .active_token_names
+                    .push("JS_RUNTIME_SINK".to_string());
             }
             let mut lfi_ext = RE_LFI_EXTENDED.get().unwrap().is_match(&norm);
             // AI-tool / editor dot-directories absent from RE_SENSITIVE_EXPOSURE.
             let low_path = req.path.to_ascii_lowercase();
             if !lfi_ext
-                && ["/.codex", "/.opencode", "/.cursor", "/.claude", "/.aider",
-                    "/.continue", "/.cody", "/.tabnine", "/.codeium", "/.windsurf",
-                    "/.amazonq", "/.kiro", "/.trae", "/.void", "/.config/gh",
-                    "/.config/gcloud", "/.azure", "/.config/hub",
+                && [
+                    "/.codex",
+                    "/.opencode",
+                    "/.cursor",
+                    "/.claude",
+                    "/.aider",
+                    "/.continue",
+                    "/.cody",
+                    "/.tabnine",
+                    "/.codeium",
+                    "/.windsurf",
+                    "/.amazonq",
+                    "/.kiro",
+                    "/.trae",
+                    "/.void",
+                    "/.config/gh",
+                    "/.config/gcloud",
+                    "/.azure",
+                    "/.config/hub",
                 ]
                 .iter()
                 .any(|p| low_path.contains(p))
@@ -3530,17 +4196,27 @@ impl AstLexer {
             }
             if lfi_ext {
                 tokens.has_lfi_extended_signal = true;
-                tokens.active_token_names.push("EXTENDED_PATH_ABUSE".to_string());
+                tokens
+                    .active_token_names
+                    .push("EXTENDED_PATH_ABUSE".to_string());
             }
             if RE_RFI_SCHEME.get().unwrap().is_match(&norm) {
                 tokens.has_rfi_scheme_signal = true;
-                tokens.active_token_names.push("NONHTTP_URL_SCHEME".to_string());
+                tokens
+                    .active_token_names
+                    .push("NONHTTP_URL_SCHEME".to_string());
             }
             // Session identifiers in the URL query only — bodies legitimately
             // carry sessionid on login forms.
-            if RE_SESSION_URL.get().unwrap().is_match(&req.query_string.to_ascii_lowercase()) {
+            if RE_SESSION_URL
+                .get()
+                .unwrap()
+                .is_match(&req.query_string.to_ascii_lowercase())
+            {
                 tokens.has_session_token_url_signal = true;
-                tokens.active_token_names.push("SESSION_ID_IN_URL".to_string());
+                tokens
+                    .active_token_names
+                    .push("SESSION_ID_IN_URL".to_string());
             }
             // Protocol enforcement: exotic charset declarations, request-line
             // smuggling inside params, invalid HTTP method tokens, Range
@@ -3549,27 +4225,89 @@ impl AstLexer {
                 || RE_ABS_URI_METHOD.get().unwrap().is_match(&norm)
             {
                 tokens.has_protocol_enforcement_signal = true;
-                tokens.active_token_names.push("PROTOCOL_DIFFERENTIAL".to_string());
+                tokens
+                    .active_token_names
+                    .push("PROTOCOL_DIFFERENTIAL".to_string());
             }
             {
                 // HTTP method must be a token of reasonable length; pipelines
                 // and unknown verbs beyond that are enforcement failures.
                 let m = req.method.as_bytes();
-                let valid_token = m.iter().all(|b| b.is_ascii_alphanumeric()
-                    || b"!#$%&'*+-.^_`|~".contains(b));
+                let valid_token = m
+                    .iter()
+                    .all(|b| b.is_ascii_alphanumeric() || b"!#$%&'*+-.^_`|~".contains(b));
                 if !valid_token || m.len() > 20 {
                     tokens.has_protocol_enforcement_signal = true;
-                    tokens.active_token_names.push("INVALID_METHOD_TOKEN".to_string());
+                    tokens
+                        .active_token_names
+                        .push("INVALID_METHOD_TOKEN".to_string());
                 }
                 for (k, v) in &req.headers {
                     let kl = k.to_ascii_lowercase();
-                    if (kl == "range" || kl == "request-range")
-                        && v.to_ascii_lowercase().starts_with("bytes=")
-                        && v.matches(',').count() >= 5
+                    let vl_h = v.to_ascii_lowercase();
+                    // request-range is non-standard: ANY bytes= range on it is
+                    // suspicious; Range needs fan-out (>=5 ranges) to count.
+                    if (kl == "request-range" && vl_h.contains("bytes="))
+                        || (kl == "range"
+                            && vl_h.starts_with("bytes=")
+                            && vl_h.matches(',').count() >= 5)
+                        || v.contains(",,,")
                     {
                         tokens.has_protocol_enforcement_signal = true;
-                        tokens.active_token_names.push("RANGE_FANOUT_ABUSE".to_string());
+                        tokens
+                            .active_token_names
+                            .push("RANGE_FANOUT_ABUSE".to_string());
                         break;
+                    }
+                    // A header whose ENTIRE value is a bare shell command
+                    // (user-agent: id / referer: whoami) is a probe, not traffic.
+                    {
+                        let t = v.trim().to_ascii_lowercase();
+                        if matches!(
+                            t.as_str(),
+                            "id" | "whoami"
+                                | "uname"
+                                | "pwd"
+                                | "ls"
+                                | "cat"
+                                | "env"
+                                | "printenv"
+                                | "ifconfig"
+                                | "netstat"
+                                | "ps"
+                                | "w"
+                                | "last"
+                                | "uptime"
+                                | "df"
+                                | "free"
+                                | "hostname"
+                                | "tty"
+                                | "groups"
+                                | "users"
+                                | "set"
+                                | ";set"
+                                | "-c"
+                                | "--help"
+                                | "-v"
+                                | "--version"
+                        ) {
+                            tokens.has_rce_extended_signal = true;
+                            tokens
+                                .active_token_names
+                                .push("BARE_COMMAND_HEADER".to_string());
+                        }
+                    }
+                    // OGNL/template markers or multipart/related smuggled into
+                    // Content-Type.
+                    if kl == "content-type"
+                        && (vl_h.contains("%{")
+                            || vl_h.contains("#{")
+                            || vl_h.contains("multipart/related"))
+                    {
+                        tokens.has_protocol_enforcement_signal = true;
+                        tokens
+                            .active_token_names
+                            .push("CONTENT_TYPE_CONFUSION".to_string());
                     }
                     // Script-extension filenames smuggled in custom upload
                     // headers (X-Filename etc.) — the body filename= rules
@@ -3578,12 +4316,16 @@ impl AstLexer {
                         && RE_SCRIPT_EXT_HDR.get().unwrap().is_match(v)
                     {
                         tokens.has_malicious_upload = true;
-                        tokens.active_token_names.push("SCRIPT_EXT_HEADER".to_string());
+                        tokens
+                            .active_token_names
+                            .push("SCRIPT_EXT_HEADER".to_string());
                     }
                     // Empty mandatory-ish headers are parser-differential bait.
                     if (kl == "user-agent" || kl == "accept") && v.trim().is_empty() {
                         tokens.has_protocol_enforcement_signal = true;
-                        tokens.active_token_names.push("EMPTY_MANDATORY_HEADER".to_string());
+                        tokens
+                            .active_token_names
+                            .push("EMPTY_MANDATORY_HEADER".to_string());
                     }
                     // boundary= is only legal on multipart/* — elsewhere it is
                     // a parser-differential / smuggling probe.
@@ -3592,7 +4334,9 @@ impl AstLexer {
                         && !v.to_ascii_lowercase().contains("multipart")
                     {
                         tokens.has_protocol_enforcement_signal = true;
-                        tokens.active_token_names.push("BOUNDARY_ON_NONMULTIPART".to_string());
+                        tokens
+                            .active_token_names
+                            .push("BOUNDARY_ON_NONMULTIPART".to_string());
                     }
                 }
                 // HTML-entity fragments inside multipart field names
@@ -3602,47 +4346,95 @@ impl AstLexer {
                         && RE_ENTITY_NAME.get().unwrap().is_match(&req.body))
                 {
                     tokens.has_malicious_upload = true;
-                    tokens.active_token_names.push("MULTIPART_NAME_ABUSE".to_string());
+                    tokens
+                        .active_token_names
+                        .push("MULTIPART_NAME_ABUSE".to_string());
                 }
             }
             // JSON keys carrying SQL vocabulary.
             if RE_JSON_KEY_SQL.get().unwrap().is_match(&norm) {
                 tokens.has_sqli_extended_signal = true;
-                tokens.active_token_names.push("JSON_KEY_SQL_INJECTION".to_string());
+                tokens
+                    .active_token_names
+                    .push("JSON_KEY_SQL_INJECTION".to_string());
             }
             // Reflected database error strings inside request bodies.
             if RE_SQL_ERROR_MSG.get().unwrap().is_match(&norm) {
                 tokens.has_sqli_extended_signal = true;
-                tokens.active_token_names.push("SQL_ERROR_REFLECTION".to_string());
+                tokens
+                    .active_token_names
+                    .push("SQL_ERROR_REFLECTION".to_string());
             }
             // Null bytes and adjacent 0xHH hex-pair runs (truncation / encoded
             // traversal shapes like 0x5c0x2e.%00/).
             if norm.contains('\0') || RE_HEX_PAIRS.get().unwrap().is_match(&norm) {
                 tokens.has_lfi_extended_signal = true;
-                tokens.active_token_names.push("NULL_BYTE_OR_HEX_TRAVERSAL".to_string());
+                tokens
+                    .active_token_names
+                    .push("NULL_BYTE_OR_HEX_TRAVERSAL".to_string());
             }
             // Base64-encoded Java gadget vocabulary (CRS 944xxx ships class
             // names base64'd inside params). Decode candidates and substring-
             // match against the gadget lexicon — bounded scan for latency.
             {
                 const GADGETS: &[&str] = &[
-                    "processbuilder", "getruntime", "classloader", "invokertransformer",
-                    "instantiate", "templatesimpl", "jdbcrowset", "xstream", "fastjson",
-                    "snakeyaml", "aspectj", "javassist", "ognl", "spel", "mvel", "groovy",
-                    "rhino", "jython", "beanshell", "opensymphony", "springframework",
-                    "readobject", "serialversionuid", "scriptenginemanager", "urlclassloader",
-                    "forclosure", "instantiate", "annotationinvocationhandler",
+                    "processbuilder",
+                    "getruntime",
+                    "classloader",
+                    "invokertransformer",
+                    "instantiate",
+                    "templatesimpl",
+                    "jdbcrowset",
+                    "xstream",
+                    "fastjson",
+                    "snakeyaml",
+                    "aspectj",
+                    "javassist",
+                    "ognl",
+                    "spel",
+                    "mvel",
+                    "groovy",
+                    "rhino",
+                    "jython",
+                    "beanshell",
+                    "opensymphony",
+                    "springframework",
+                    "readobject",
+                    "serialversionuid",
+                    "scriptenginemanager",
+                    "urlclassloader",
+                    "forclosure",
+                    "instantiate",
+                    "annotationinvocationhandler",
                 ];
                 // Common English/Java words that only count alongside a
                 // dotted class-name shape (com.foo.Transformer), not prose.
                 const WEAK_GADGETS: &[&str] = &[
-                    "transformer", "accessor", "converter", "memberaccess", "chained",
-                    "constant", "closure", "factory", "prototype", "clone", "comparator",
-                    "priorityqueue", "hashmap", "hashtable", "hashset", "treemap",
-                    "linkedhash", "jdk.proxy",
+                    "transformer",
+                    "accessor",
+                    "converter",
+                    "memberaccess",
+                    "chained",
+                    "constant",
+                    "closure",
+                    "factory",
+                    "prototype",
+                    "clone",
+                    "comparator",
+                    "priorityqueue",
+                    "hashmap",
+                    "hashtable",
+                    "hashset",
+                    "treemap",
+                    "linkedhash",
+                    "jdk.proxy",
                 ];
                 let mut scanned = 0usize;
-                for cap in RE_B64_TOKEN.get().unwrap().captures_iter(&tokens.normalized_text) {
+                for cap in RE_B64_TOKEN
+                    .get()
+                    .unwrap()
+                    .captures_iter(&tokens.normalized_text)
+                {
                     scanned += 1;
                     if scanned > 300 {
                         break;
@@ -3664,22 +4456,31 @@ impl AstLexer {
                         cands.push(&tok[..tok.len() - 1]);
                     }
                     for cand in cands {
-                        let Some(bytes) = crate::ast::jwt::JwtTamperingAnalyzer::base64url_decode(cand) else { continue };
-                        let Ok(s) = String::from_utf8(bytes) else { continue };
+                        let Some(bytes) =
+                            crate::ast::jwt::JwtTamperingAnalyzer::base64url_decode(cand)
+                        else {
+                            continue;
+                        };
+                        let Ok(s) = String::from_utf8(bytes) else {
+                            continue;
+                        };
                         let sl = s.to_ascii_lowercase();
                         let tail = sl.get(1..).unwrap_or("");
                         let gadget_hit = |g: &&str| {
                             sl.contains(*g)
-                                || (g.len() > 4
-                                    && !tail.is_empty()
-                                    && tail.contains(&g[1..]))
+                                || (g.len() > 4 && !tail.is_empty() && tail.contains(&g[1..]))
                         };
                         let strong = GADGETS.iter().any(gadget_hit);
-                        let weak = sl.contains('.')
-                            && WEAK_GADGETS.iter().any(gadget_hit);
+                        // Dotted class names need only one weak hit; bare
+                        // class names (prototypeclonefactory) need two —
+                        // single weak words are too common in prose.
+                        let weak_hits = WEAK_GADGETS.iter().filter(|g| gadget_hit(*g)).count();
+                        let weak = (sl.contains('.') && weak_hits >= 1) || weak_hits >= 2;
                         if strong || weak {
                             tokens.has_java_attack_signal = true;
-                            tokens.active_token_names.push("B64_JAVA_GADGET".to_string());
+                            tokens
+                                .active_token_names
+                                .push("B64_JAVA_GADGET".to_string());
                             break;
                         }
                     }
@@ -3692,7 +4493,11 @@ impl AstLexer {
             // checked on parameter VALUES only: bare internal hostnames in
             // Host headers are legitimate for on-prem deployments.
             if !tokens.has_rfi_scheme_signal {
-                for cap in RE_PARAM_PAIR_WIDE.get().unwrap().captures_iter(&tokens.normalized_text) {
+                for cap in RE_PARAM_PAIR_WIDE
+                    .get()
+                    .unwrap()
+                    .captures_iter(&tokens.normalized_text)
+                {
                     let vl = cap[2].to_ascii_lowercase();
                     let mut hit = false;
                     for cap6 in RE_IPV6_LITERAL.get().unwrap().captures_iter(&vl) {
@@ -3712,7 +4517,9 @@ impl AstLexer {
                     }
                     if hit {
                         tokens.has_rfi_scheme_signal = true;
-                        tokens.active_token_names.push("IPV6_OR_LOCALHOST_SSRF".to_string());
+                        tokens
+                            .active_token_names
+                            .push("IPV6_OR_LOCALHOST_SSRF".to_string());
                         break;
                     }
                     // Octal-encoded IPv4 (0251.0376... = 169.254.169.254) and
@@ -3721,9 +4528,22 @@ impl AstLexer {
                         || RE_IPV6_LITERAL.get().unwrap().is_match(&vl)
                     {
                         tokens.has_rfi_scheme_signal = true;
-                        tokens.active_token_names.push("ENCODED_IP_SSRF".to_string());
+                        tokens
+                            .active_token_names
+                            .push("ENCODED_IP_SSRF".to_string());
                         break;
                     }
+                }
+                // Pair-value regexes truncate at ']' — scan the full text for
+                // scheme://[ipv6] literals instead (internal OR public: literal
+                // IPv6 in request params is vanishingly rare in legit traffic).
+                if !tokens.has_rfi_scheme_signal
+                    && RE_IPV6_URL.get().unwrap().is_match(&tokens.normalized_text)
+                {
+                    tokens.has_rfi_scheme_signal = true;
+                    tokens
+                        .active_token_names
+                        .push("IPV6_LITERAL_SSRF".to_string());
                 }
             }
             // Nested assignments inside values (month=( / CType='), parameter
@@ -3734,7 +4554,11 @@ impl AstLexer {
                 // decoded variants of the same request, so positional counting
                 // inflates by the number of decode passes.
                 let mut keys: std::collections::HashSet<&str> = std::collections::HashSet::new();
-                for cap in RE_PARAM_PAIR_WIDE.get().unwrap().captures_iter(&tokens.normalized_text) {
+                for cap in RE_PARAM_PAIR_WIDE
+                    .get()
+                    .unwrap()
+                    .captures_iter(&tokens.normalized_text)
+                {
                     keys.insert(cap.get(1).map(|m| m.as_str()).unwrap_or(""));
                     let vl = &cap[2];
                     // CRLF/LF inside a decoded value is only suspicious when it
@@ -3742,20 +4566,89 @@ impl AstLexer {
                     let crlf_hit = (vl.contains("\r\n") || vl.contains('\n'))
                         && (RE_CRLF_HEADER.get().unwrap().is_match(vl)
                             || RE_CRLF_PARAM.get().unwrap().is_match(vl));
-                    if vl.contains('\u{FFFD}') || RE_NESTED_PARAM.get().unwrap().is_match(vl)
+                    // Lone backslash shorthands (file=\c — value STARTS with
+                    // backslash + a letter so C:\ and JSON \" stay benign)
+                    // and high-value files.
+                    let short_bs = vl.starts_with('\\')
+                        && vl.len() >= 2
+                        && vl.len() <= 5
+                        && vl[1..].chars().all(|c| c.is_ascii_alphabetic());
+                    if vl.contains('\u{FFFD}')
+                        || RE_NESTED_PARAM.get().unwrap().is_match(vl)
                         || crlf_hit
+                        || short_bs
+                        || RE_SENSITIVE_FILE.get().unwrap().is_match(vl)
                     {
                         tokens.has_protocol_enforcement_signal = true;
-                        tokens.active_token_names.push("VALUE_CANONICALIZATION".to_string());
+                        tokens
+                            .active_token_names
+                            .push("VALUE_CANONICALIZATION".to_string());
+                        if RE_SENSITIVE_FILE.get().unwrap().is_match(vl) {
+                            tokens.has_lfi_extended_signal = true;
+                            tokens
+                                .active_token_names
+                                .push("SENSITIVE_FILE_TARGET".to_string());
+                        }
+                    }
+                    // php.ini-style assignments and template-engine directives
+                    // smuggled inside parameter values.
+                    if RE_PHP_INI_ASSIGN.get().unwrap().is_match(vl) {
+                        tokens.has_php_injection_signal = true;
+                        tokens
+                            .active_token_names
+                            .push("PHP_INI_INJECTION".to_string());
+                    }
+                    if RE_TEMPLATE_DIR.get().unwrap().is_match(vl) {
+                        tokens.has_ssti_expression = true;
+                        tokens
+                            .active_token_names
+                            .push("TEMPLATE_DIRECTIVE".to_string());
+                    }
+                }
+                // HPP: the SAME key repeated >=4 times in the RAW query string.
+                // Counted on query_string (not normalized_text) so decode
+                // variants cannot inflate the tally; legit multi-value filters
+                // rarely exceed 3 repetitions of one key.
+                {
+                    let mut raw_counts: std::collections::HashMap<&str, usize> =
+                        std::collections::HashMap::new();
+                    for piece in req.query_string.split(['&', ';']) {
+                        if let Some((k, _)) = piece.split_once('=') {
+                            *raw_counts.entry(k).or_insert(0) += 1;
+                        }
+                    }
+                    if raw_counts.values().any(|c| *c >= 4) {
+                        tokens.has_protocol_enforcement_signal = true;
+                        tokens
+                            .active_token_names
+                            .push("PARAMETER_FANOUT".to_string());
                     }
                 }
                 if keys.len() >= 24 {
                     tokens.has_protocol_enforcement_signal = true;
-                    tokens.active_token_names.push("PARAMETER_FANOUT".to_string());
+                    tokens
+                        .active_token_names
+                        .push("PARAMETER_FANOUT".to_string());
                 }
                 if RE_MULTIPART_BAD_FN.get().unwrap().is_match(&req.body) {
                     tokens.has_malicious_upload = true;
-                    tokens.active_token_names.push("MULTIPART_FILENAME_ABUSE".to_string());
+                    tokens
+                        .active_token_names
+                        .push("MULTIPART_FILENAME_ABUSE".to_string());
+                }
+                // Credentials in the URL query string.
+                if RE_CRED_QUERY.get().unwrap().is_match(&req.query_string) {
+                    tokens.has_session_token_url_signal = true;
+                    tokens
+                        .active_token_names
+                        .push("CREDENTIAL_IN_URL".to_string());
+                }
+                // Reflected runtime/framework error strings in bodies.
+                if RE_ERROR_REFLECT.get().unwrap().is_match(&norm) {
+                    tokens.has_protocol_enforcement_signal = true;
+                    tokens
+                        .active_token_names
+                        .push("ERROR_REFLECTION".to_string());
                 }
             }
         }

@@ -10,11 +10,11 @@
 //!     --corpus benchmarks/real_comparative/corpus/unified_v1.jsonl \
 //!     --out    benchmarks/real_comparative/results/satguardian/verdicts.jsonl
 
-use serde::Deserialize;
-use serde_json::json;
 use satguardian_waf::engine::SatguardianSatEngine;
 use satguardian_waf::types::HttpRequestPayload;
 use satguardian_waf::{AstLexer, FeatureBinarizer};
+use serde::Deserialize;
+use serde_json::json;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::io::{BufRead, BufReader, Write};
 use std::path::{Path, PathBuf};
@@ -67,7 +67,10 @@ fn parse_args() -> Args {
             "--engine-tag" => engine_tag = take("engine-tag"),
             "--limit" => {
                 let v = take("limit");
-                limit = Some(v.parse::<usize>().unwrap_or_else(|_| die("--limit must be a number")));
+                limit = Some(
+                    v.parse::<usize>()
+                        .unwrap_or_else(|_| die("--limit must be a number")),
+                );
             }
             "--dump-features" => dump_features = Some(PathBuf::from(take("dump-features"))),
             other => die(&format!("unknown argument {other}")),
@@ -123,8 +126,13 @@ fn load_cases(path: &Path, limit: Option<usize>) -> Vec<Case> {
         if line.trim().is_empty() {
             continue;
         }
-        let case: Case = serde_json::from_str(&line)
-            .unwrap_or_else(|e| die(&format!("{}:{}: bad record: {e}", path.display(), lineno + 1)));
+        let case: Case = serde_json::from_str(&line).unwrap_or_else(|e| {
+            die(&format!(
+                "{}:{}: bad record: {e}",
+                path.display(),
+                lineno + 1
+            ))
+        });
         cases.push(case);
         if let Some(n) = limit {
             if cases.len() >= n {
@@ -158,7 +166,14 @@ fn to_payload(case: &Case) -> HttpRequestPayload {
 /// One labelled case scored by one engine. Every adapter for an external engine
 /// must emit records with these same keys, otherwise the comparison silently
 /// compares different measurements.
-fn verdict_record(args: &Args, case: &Case, blocked: bool, category: &str, reason: &str, latency_us: f64) -> serde_json::Value {
+fn verdict_record(
+    args: &Args,
+    case: &Case,
+    blocked: bool,
+    category: &str,
+    reason: &str,
+    latency_us: f64,
+) -> serde_json::Value {
     json!({
         "case_id": case.case_id,
         "corpus": case.corpus,
@@ -194,7 +209,10 @@ impl Acc {
             if blocked {
                 self.detected += 1;
             }
-            let e = self.by_category.entry(case.category.clone()).or_insert((0, 0));
+            let e = self
+                .by_category
+                .entry(case.category.clone())
+                .or_insert((0, 0));
             e.1 += 1;
             if blocked {
                 e.0 += 1;
@@ -308,7 +326,14 @@ fn main() {
             all.observe(case, proof.is_violation, proof.execution_time_us);
         }
 
-        let rec = verdict_record(&args, case, proof.is_violation, &category, &reason, proof.execution_time_us);
+        let rec = verdict_record(
+            &args,
+            case,
+            proof.is_violation,
+            &category,
+            &reason,
+            proof.execution_time_us,
+        );
         if let Some(f) = out.as_mut() {
             writeln!(f, "{rec}").expect("writing verdicts");
         }

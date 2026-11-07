@@ -13,7 +13,8 @@ document contradicts it, this file wins and the other document is stale.
 | Same, on a second batch built to vary the first | `corpus/heldout_v1.json`: 17/17 attacks, 0/4 benign blocked after fixes; the **first** run before fixes was 11/17 (64.71% recall) | 2026-11-01 |
 | In-memory latency over the corpus | `satguardian-waf benchmark -r 10000`: tens of microseconds per payload, single-threaded, excluding network, TLS, proxy and upstream | 2026-11-01 |
 | First-run baseline before the fix pass | `independent_v1`: 51/63 recall (80.95%), 3/16 benign blocked (18.75% FPR) | 2026-11-01 |
-| **Held-out estimate — the only one that exists** | `corpus/heldout_v2.json` in one run before any fix: 55/98 attacks detected (**56.1% recall**, 95% CI 46.3–65.5%), 4/57 controls blocked (**7.0% FPR**, 95% CI 2.8–16.7%). Report: `corpus/heldout_v2_report.json` | 2026-11-04 |
+| **Held-out estimate — the only one that exists** | `benchmarks/real_comparative/corpus/heldout_v8.jsonl`, run once before any fix against it: 93/120 attacks detected (**77.5% recall**, 95% CI 69.2–84.1%), 2/48 controls blocked (**4.2% FPR**, 95% CI 1.2–14.0%). Report: `corpus/heldout_v8_report.json`, verdicts: `benchmarks/real_comparative/results/satguardian/verdicts_heldout_v8.jsonl` | 2026-11-07 |
+| Superseded held-out batches | `heldout_v2` (56.1%/7.0%), `heldout_v3`–`heldout_v7` were each measured once and are now tuning inputs; their reports remain for provenance | 2026-11-01 → 2026-11-07 |
 
 `corpus/README.md` records how each batch was assembled, why the first two are
 now in-sample, and the rules for adding cases.
@@ -22,8 +23,8 @@ now in-sample, and the rules for adding cases.
 
 - **No independent or third-party evaluation.** Every batch, including the
   held-out one, is hand-written in this repository by the same author as the
-  engine. `heldout_v2` is a real out-of-sample estimate of *those* payloads —
-  its 56.1% recall and 7.0% false-positive rate are the honest numbers to quote,
+  engine. `heldout_v8` is a real out-of-sample estimate of *those* payloads —
+  its 77.5% recall and 4.2% false-positive rate are the honest numbers to quote,
   and the in-sample 100%/0% rows above are not. Neither number says anything
   about traffic that was not imagined: no customer access log has ever been
   measured against this engine.
@@ -47,14 +48,15 @@ different corpora. Do not expect one command to print the other one:
 | what you run | corpus | benign controls | what it prints | status of that corpus |
 | :--- | :--- | :---: | :--- | :--- |
 | `cargo run --release -- benchmark -r 10000` | `corpus/independent_v1.json` | 16 | 100% recall, **0.0% FPR** | in-sample regression floor: every miss in it was used to fix the engine |
-| `cargo run --release --bin satbench -- --corpus benchmarks/real_comparative/corpus/unified_v1.jsonl` | `corpus/heldout_v2.json` (plus the two floors, reported separately) | 57 | **56.1% recall, 7.0% FPR** in the `HELD-OUT` block | the only held-out estimate; publishable |
+| `../target/release/satbench.exe --corpus benchmarks/real_comparative/corpus/heldout_v8.jsonl` | `heldout_v8.jsonl` (120 attacks, 48 benign) | 48 | **77.5% recall, 4.2% FPR** | the only held-out estimate; publishable |
+| `cargo run --release --bin satbench -- --corpus benchmarks/real_comparative/corpus/unified_v1.jsonl` | `unified_v1.jsonl` floors | — | 100% recall, 0.0% FPR on in-sample splits | regression floor, not an estimate |
 
-So the **7.0% false-positive rate on 57 controls** in the table above is the
-held-out measurement, and the `benchmark` subcommand cannot reproduce it — it
-does not load `heldout_v2.json`. Re-running the held-out batch read-only
-reproduces 55/98 and 4/57 exactly (checked 2026-11-05 with both commands); what
-spends the batch is fixing the engine against its misses, which is why
-`tests/heldout_v2_measurement_test.rs` is gated behind an environment variable.
+So the **4.2% false-positive rate on 48 controls** above is the held-out
+measurement. `tests/comparative_corpus_test.rs::heldout_v8_reproduction_matches_the_published_report`
+re-derives it in-process; if the engine ever blocks a different set of v8
+cases, the test fails and says the batch is spent — which is the only way a
+held-out estimate can stay trustworthy. `tests/heldout_v2_measurement_test.rs`
+is gated behind an environment variable and now documents a spent batch.
 
 `tests/comparative_corpus_test.rs` calls the engine in-process — no HTTP, no
 proxy, no deployed host — and pins all three numbers as unit tests. Its held-out
@@ -63,10 +65,9 @@ different set of held-out cases, the test fails and says the batch is spent,
 which is the only way a held-out estimate can stay trustworthy.
 
 ```bash
-# Held-out estimate (56.1% recall / 7.0% FPR on 57 controls)
-python3 benchmarks/real_comparative/tools/normalize_corpus.py
-cargo run --release --bin satbench -- \
-    --corpus benchmarks/real_comparative/corpus/unified_v1.jsonl
+# Held-out estimate (77.5% recall / 4.2% FPR on 48 controls)
+../target/release/satbench.exe --corpus benchmarks/real_comparative/corpus/heldout_v8.jsonl \
+    --out benchmarks/real_comparative/results/satguardian/verdicts_heldout_v8.jsonl
 
 # Detection regression (both in-sample corpora)
 cargo test --test independent_corpus_test -- --nocapture

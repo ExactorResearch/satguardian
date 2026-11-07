@@ -25,7 +25,9 @@ pub struct SqliteLedger {
 }
 
 impl SqliteLedger {
-    pub async fn init(database_path: &str) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
+    pub async fn init(
+        database_path: &str,
+    ) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
         let opts = SqliteConnectOptions::from_str(&format!("sqlite://{}?mode=rwc", database_path))?
             .journal_mode(sqlx::sqlite::SqliteJournalMode::Wal)
             .synchronous(sqlx::sqlite::SqliteSynchronous::Normal)
@@ -356,7 +358,9 @@ impl SqliteLedger {
     }
 
     /// Proposals waiting for a decision, newest last.
-    pub async fn load_pending_clauses(&self) -> Result<Vec<(DynamicCompiledClause, String)>, sqlx::Error> {
+    pub async fn load_pending_clauses(
+        &self,
+    ) -> Result<Vec<(DynamicCompiledClause, String)>, sqlx::Error> {
         let rows = sqlx::query_as::<_, (String, String, String, String, String, String)>(
             "SELECT clause_id, description, required_mask, expected_bits, category, \
              CAST(created_at AS TEXT) FROM dynamic_clauses WHERE applied = 0 ORDER BY created_at ASC",
@@ -422,10 +426,11 @@ impl SqliteLedger {
     }
 
     pub async fn count_pending_anomalies(&self) -> usize {
-        let count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM novel_anomalies WHERE status = 'PENDING'")
-            .fetch_one(&self.pool)
-            .await
-            .unwrap_or((0,));
+        let count: (i64,) =
+            sqlx::query_as("SELECT COUNT(*) FROM novel_anomalies WHERE status = 'PENDING'")
+                .fetch_one(&self.pool)
+                .await
+                .unwrap_or((0,));
         count.0 as usize
     }
 }

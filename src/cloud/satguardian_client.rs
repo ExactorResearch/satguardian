@@ -51,6 +51,11 @@ pub struct EdgeEntitlementResponse {
     pub explanation: Option<String>,
 }
 
+/// Number of feature variables submitted to cloud synthesis. The PRO plan
+/// ceiling is 64 variables; the edge feature catalogue is wider, so the tail
+/// is truncated server-side and simply never participates in learned clauses.
+pub const CLOUD_SYNC_VARIABLE_COUNT: usize = 64;
+
 /// High-performance HTTP client for the SATGuardian Cloud Optimization Engine.
 #[derive(Clone)]
 pub struct SatguardianCloudClient {
@@ -114,7 +119,8 @@ impl SatguardianCloudClient {
         &self,
         request: &SimplifyRequest,
     ) -> Result<SimplifyResponse, Box<dyn std::error::Error + Send + Sync>> {
-        let url = if self.api_url.ends_with("/api/simplify") || self.api_url.ends_with("/simplify") {
+        let url = if self.api_url.ends_with("/api/simplify") || self.api_url.ends_with("/simplify")
+        {
             self.api_url.clone()
         } else {
             format!("{}/api/simplify", self.api_url.trim_end_matches('/'))
@@ -146,11 +152,18 @@ impl SatguardianCloudClient {
             }
         }
 
+        // The service maps submitted minterm bit `i` onto `variables[n - 1 - i]`
+        // (verified against the live API on 2026-11-07). The edge engine numbers
+        // feature bits so that bit `i` is `variables[i]`, so the variable list
+        // is reversed on the wire to keep name -> bit alignment intact.
+        let mut wire_request = request.clone();
+        wire_request.variables.reverse();
+
         let resp = self
             .client
             .post(&url)
             .headers(headers)
-            .json(request)
+            .json(&wire_request)
             .send()
             .await?;
 
@@ -167,8 +180,12 @@ impl SatguardianCloudClient {
         }
 
         let body_text = resp.text().await?;
-        let parsed: SimplifyResponse = serde_json::from_str(&body_text)
-            .map_err(|e| format!("Failed to parse SimplifyResponse: {}. Raw: {}", e, body_text))?;
+        let parsed: SimplifyResponse = serde_json::from_str(&body_text).map_err(|e| {
+            format!(
+                "Failed to parse SimplifyResponse: {}. Raw: {}",
+                e, body_text
+            )
+        })?;
 
         info!(
             target: "satguardian::cloud",
@@ -185,8 +202,18 @@ impl SatguardianCloudClient {
 
     /// Compiles the returned boolean formula into runtime bitmask invariants.
     ///
-    /// The parser is intentionally strict: every literal must be an exact variable
-    /// name, and unsupported syntax is rejected instead of being silently dropped.
+    /// The service emits a sum-of-products equation whose product terms may
+    /// contain XOR factors, e.g. `v0 !(v1 ^ v2) + (v3 ^ v4) !v5`. XOR factors
+    /// are not cubes, so each term is expanded into the set of cubes it
+    /// covers: a factor over `m` variables contributes `2^(m-1)` partial
+    /// assignments, and the term's cubes are the consistent combinations of
+    /// its factors. Expansion is bounded by [`MAX_TERMS`]; a formula that
+    /// would exceed it is rejected rather than truncated, because a partial
+    /// clause set would silently weaken the invariant.
+    ///
+    /// The parser is intentionally strict: every literal must be an exact
+    /// variable name, and unsupported syntax is rejected instead of being
+    /// silently dropped.
     pub fn compile_equation_to_clauses(
         &self,
         equation: &str,
@@ -194,120 +221,84 @@ impl SatguardianCloudClient {
     ) -> Result<Vec<DynamicCompiledClause>, String> {
         const MAX_TERMS: usize = 4096;
 
-        let mut clauses = Vec::new();
-        let equation = equation.trim();
-        if equation.is_empty()
-            || equation.eq_ignore_ascii_case("FALSE")
-            || equation == "0"
-        {
-            return Ok(clauses);
-        }
-        if equation.eq_ignore_ascii_case("TRUE") || equation == "1" {
-            return Err("equation TRUE would match every request; refusing to compile".to_string());
-        }
+        let name_to_idx: std::collections::HashMap<&str, usize> = variable_names
+            .iter()
+            .enumerate()
+            .map(|(i, n)| (n.as_str(), i))
+            .collect();
+        let lookup = |name: &str| -> Result<usize, String> {
+            name_to_idx
+                .get(name)
+                .copied()
+                .ok_or_else(|| format!("unknown variable '{}'", name))
+        };
 
-        // Each term separated by '+' or '|' represents an OR prime implicant.
-        for raw_term in equation.split(['+', '|', '∨']) {
-            if clauses.len() >= MAX_TERMS {
-                return Err(format!("equation exceeds the {} term limit", MAX_TERMS));
-            }
-
-            let term = raw_term
-                .trim()
-                .trim_matches(|c| c == '(' || c == ')')
-                .trim();
+        let mut cubes: Vec<(u128, u128)> = Vec::new();
+        for raw_term in split_equation_terms(equation) {
+            let term = raw_term.trim();
             if term.is_empty() || term.eq_ignore_ascii_case("FALSE") || term == "0" {
                 continue;
             }
             if term.eq_ignore_ascii_case("TRUE") || term == "1" {
-                return Err(format!(
-                    "term '{}' would match every request; refusing to compile",
-                    term
-                ));
-            }
-            if term.contains('(') || term.contains(')') {
-                return Err(format!(
-                    "nested parentheses are not supported in term '{}'",
-                    term
-                ));
-            }
-            if term.contains('^') {
-                return Err(format!("XOR is not supported in term '{}'", term));
+                return Err(
+                    "equation TRUE would match every request; refusing to compile".to_string(),
+                );
             }
 
-            let normalized = term.replace(['∧', '&', '*', '·'], " ");
-            let mut required_mask: u128 = 0;
-            let mut expected_bits: u128 = 0;
-            let mut seen: Vec<(usize, bool)> = Vec::new();
-            let mut literal_count = 0usize;
-
-            for literal in normalized.split_whitespace() {
-                let literal = literal.trim_matches(|c| c == '(' || c == ')');
-                if literal.is_empty() {
-                    continue;
+            // Each term is a conjunction of literals and XOR groups; expand it
+            // into the cubes it covers.
+            let mut term_cubes: Vec<(u128, u128)> = vec![(0, 0)];
+            for factor in parse_term_factors(term, &lookup)? {
+                let options = factor_options(&factor, MAX_TERMS)?;
+                if options.is_empty() {
+                    term_cubes.clear();
+                    break;
                 }
-
-                let (raw_name, negated) = if let Some(rest) = literal.strip_prefix('!') {
-                    (rest, true)
-                } else if let Some(rest) = literal.strip_prefix('~') {
-                    (rest, true)
-                } else if let Some(rest) = literal.strip_prefix('¬') {
-                    (rest, true)
-                } else if let Some(rest) = literal.strip_suffix('\'') {
-                    (rest, true)
-                } else {
-                    (literal, false)
-                };
-
-                let name = raw_name.trim_matches(|c| c == '(' || c == ')');
-                if name.is_empty() {
-                    return Err(format!("malformed literal '{}' in term '{}'", literal, term));
-                }
-
-                let var_idx = variable_names
-                    .iter()
-                    .position(|candidate| candidate == name)
-                    .ok_or_else(|| {
-                        format!("unknown variable '{}' in term '{}'", name, term)
-                    })?;
-                if var_idx >= 128 {
+                if term_cubes.len().saturating_mul(options.len()) > MAX_TERMS {
                     return Err(format!(
-                        "variable '{}' exceeds the 128-bit feature space",
-                        name
+                        "term expansion exceeds the {} clause limit",
+                        MAX_TERMS
                     ));
                 }
-
-                if let Some((_, previous_negation)) =
-                    seen.iter().find(|(index, _)| *index == var_idx)
-                {
-                    if *previous_negation != negated {
-                        return Err(format!(
-                            "contradictory literal '{}' in term '{}'",
-                            name, term
-                        ));
+                let mut next = Vec::with_capacity(term_cubes.len() * options.len());
+                for &(cm, cb) in &term_cubes {
+                    for &(om, ob) in &options {
+                        // Shared variables must agree on polarity.
+                        if (cb ^ ob) & (cm & om) != 0 {
+                            continue;
+                        }
+                        next.push((cm | om, cb | ob));
                     }
-                } else {
-                    seen.push((var_idx, negated));
                 }
-
-                let bit = 1u128 << var_idx;
-                required_mask |= bit;
-                if !negated {
-                    expected_bits |= bit;
-                }
-                literal_count += 1;
+                term_cubes = next;
             }
 
-            if literal_count == 0 || required_mask == 0 {
-                return Err(format!("term '{}' contains no known literals", term));
+            if term_cubes.is_empty() {
+                // Unsatisfiable term (e.g. `a !a`): contributes nothing.
+                continue;
             }
+            if cubes.len() + term_cubes.len() > MAX_TERMS {
+                return Err(format!("equation exceeds the {} clause limit", MAX_TERMS));
+            }
+            cubes.extend(term_cubes);
+        }
 
+        cubes.sort_unstable();
+        cubes.dedup();
+
+        let mut clauses = Vec::with_capacity(cubes.len());
+        for (required_mask, expected_bits) in cubes {
+            if required_mask == 0 {
+                return Err(
+                    "equation contains a clause with no literals; refusing to compile".to_string(),
+                );
+            }
             clauses.push(DynamicCompiledClause {
-                clause_id: format!(
-                    "SAT-OPT-{:032x}-{:032x}",
+                clause_id: format!("SAT-OPT-{:032x}-{:032x}", required_mask, expected_bits),
+                description: format!(
+                    "Dynamically minimized invariant term: mask {:032x} bits {:032x}",
                     required_mask, expected_bits
                 ),
-                description: format!("Dynamically minimized invariant term: {}", term),
                 required_mask,
                 expected_bits,
                 category: AttackCategory::Unknown,
@@ -315,5 +306,210 @@ impl SatguardianCloudClient {
         }
 
         Ok(clauses)
+    }
+}
+
+/// Maximum variables allowed inside one XOR factor. Each variable doubles the
+/// number of cubes the factor expands to, so wide groups are rejected before
+/// they can exhaust the clause budget.
+const MAX_XOR_VARS: usize = 12;
+
+/// Splits an equation into its top-level OR terms on `+`, `|` or `∨`,
+/// ignoring separators nested inside parentheses.
+fn split_equation_terms(equation: &str) -> Vec<String> {
+    let mut terms = Vec::new();
+    let mut depth = 0i32;
+    let mut current = String::new();
+    for ch in equation.chars() {
+        match ch {
+            '(' => depth += 1,
+            ')' => depth -= 1,
+            '+' | '|' | '∨' if depth == 0 => {
+                terms.push(std::mem::take(&mut current));
+                continue;
+            }
+            _ => {}
+        }
+        current.push(ch);
+    }
+    terms.push(current);
+    terms
+}
+
+/// One conjunct inside a product term: either a literal or a parenthesized
+/// XOR group, each optionally negated.
+enum EquationFactor {
+    Lit {
+        idx: usize,
+        negated: bool,
+    },
+    Xor {
+        vars: Vec<(usize, bool)>,
+        negated: bool,
+    },
+}
+
+type NameLookup<'a> = dyn Fn(&str) -> Result<usize, String> + 'a;
+
+/// Splits a product term into factors on whitespace that is not inside
+/// parentheses, then parses each factor.
+fn parse_term_factors(term: &str, lookup: &NameLookup) -> Result<Vec<EquationFactor>, String> {
+    let mut raw = Vec::new();
+    let mut depth = 0i32;
+    let mut current = String::new();
+    for ch in term.chars() {
+        match ch {
+            '(' => depth += 1,
+            ')' => depth -= 1,
+            c if c.is_whitespace() && depth == 0 => {
+                if !current.trim().is_empty() {
+                    raw.push(std::mem::take(&mut current));
+                }
+                continue;
+            }
+            _ => {}
+        }
+        current.push(ch);
+    }
+    if !current.trim().is_empty() {
+        raw.push(current);
+    }
+    if depth != 0 {
+        return Err(format!("unbalanced parentheses in term '{}'", term));
+    }
+
+    raw.iter().map(|t| parse_factor(t, lookup)).collect()
+}
+
+fn is_negation_char(ch: char) -> bool {
+    matches!(ch, '!' | '~' | '¬')
+}
+
+fn is_factor_break(ch: char) -> bool {
+    ch.is_whitespace()
+        || is_negation_char(ch)
+        || matches!(
+            ch,
+            '(' | ')' | '^' | '+' | '|' | '∨' | '*' | '·' | '&' | '∧'
+        )
+}
+
+fn parse_factor(raw: &str, lookup: &NameLookup) -> Result<EquationFactor, String> {
+    let mut s = raw.trim();
+    let mut negated = false;
+    while let Some(rest) = s.strip_prefix(is_negation_char) {
+        negated = !negated;
+        s = rest;
+    }
+    while let Some(rest) = s.strip_suffix('\'') {
+        negated = !negated;
+        s = rest.trim_end();
+    }
+    s = s.trim();
+    if s.is_empty() {
+        return Err(format!("empty literal in factor '{}'", raw));
+    }
+
+    if let Some(inner) = s.strip_prefix('(') {
+        let inner = inner
+            .strip_suffix(')')
+            .ok_or_else(|| format!("unbalanced parentheses in factor '{}'", raw))?;
+        let mut vars = Vec::new();
+        for part in inner.split('^') {
+            let mut p = part.trim();
+            let mut inner_neg = false;
+            while let Some(rest) = p.strip_prefix(is_negation_char) {
+                inner_neg = !inner_neg;
+                p = rest;
+            }
+            p = p.trim();
+            if p.is_empty() || p.chars().any(is_factor_break) {
+                return Err(format!(
+                    "malformed XOR literal '{}' in factor '{}'",
+                    part.trim(),
+                    raw
+                ));
+            }
+            vars.push((lookup(p)?, inner_neg));
+        }
+        if vars.is_empty() {
+            return Err(format!("empty XOR group in factor '{}'", raw));
+        }
+        if vars.len() > MAX_XOR_VARS {
+            return Err(format!(
+                "XOR group with {} variables exceeds the {} variable limit",
+                vars.len(),
+                MAX_XOR_VARS
+            ));
+        }
+        let mut seen = std::collections::HashSet::new();
+        if vars.iter().any(|(idx, _)| !seen.insert(*idx)) {
+            return Err(format!("duplicate variable inside XOR group '{}'", raw));
+        }
+        return Ok(EquationFactor::Xor { vars, negated });
+    }
+
+    if s.chars().any(is_factor_break) {
+        return Err(format!("malformed literal '{}'", s));
+    }
+    Ok(EquationFactor::Lit {
+        idx: lookup(s)?,
+        negated,
+    })
+}
+
+/// Expands one factor into the partial assignments `(mask, expected_bits)` it
+/// covers. A literal fixes one bit; an XOR group over `m` variables fixes all
+/// `m` bits and contributes `2^(m-1)` options.
+fn factor_options(factor: &EquationFactor, max_terms: usize) -> Result<Vec<(u128, u128)>, String> {
+    match factor {
+        EquationFactor::Lit { idx, negated } => {
+            if *idx >= 128 {
+                return Err(format!(
+                    "variable index {} exceeds the 128-bit feature space",
+                    idx
+                ));
+            }
+            let mask = 1u128 << idx;
+            Ok(vec![(mask, if *negated { 0 } else { mask })])
+        }
+        EquationFactor::Xor { vars, negated } => {
+            if vars.iter().any(|(idx, _)| *idx >= 128) {
+                return Err("variable index exceeds the 128-bit feature space".to_string());
+            }
+            let m = vars.len();
+            let space = 1usize << m;
+            if space / 2 > max_terms {
+                return Err(format!(
+                    "XOR group over {} variables expands to {} clauses, over the {} limit",
+                    m,
+                    space / 2,
+                    max_terms
+                ));
+            }
+            let mut options = Vec::with_capacity(space / 2);
+            for assignment in 0..space {
+                // Literal values: variable bit XOR inner negation.
+                let mut parity = 0u8;
+                for (k, (_, inner_neg)) in vars.iter().enumerate() {
+                    parity ^= (((assignment >> k) & 1) as u8) ^ (*inner_neg as u8);
+                }
+                // XOR of the literals, then the optional outer negation.
+                let value = (parity & 1) ^ (*negated as u8);
+                if value == 0 {
+                    continue;
+                }
+                let mut mask = 0u128;
+                let mut bits = 0u128;
+                for (k, (idx, _)) in vars.iter().enumerate() {
+                    mask |= 1u128 << idx;
+                    if (assignment >> k) & 1 == 1 {
+                        bits |= 1u128 << idx;
+                    }
+                }
+                options.push((mask, bits));
+            }
+            Ok(options)
+        }
     }
 }

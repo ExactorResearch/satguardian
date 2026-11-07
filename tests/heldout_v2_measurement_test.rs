@@ -131,10 +131,15 @@ fn measure(corpus: &Corpus) -> Measurement {
             .collect();
 
         let proof = engine.evaluate_payload(&req);
-        let entry = m.per_category.entry(case.category.clone()).or_insert((0, 0));
+        let entry = m
+            .per_category
+            .entry(case.category.clone())
+            .or_insert((0, 0));
         entry.1 += 1;
 
-        if case.label == "malicious" && AttackCategory::parse(&case.category) == AttackCategory::Unknown {
+        if case.label == "malicious"
+            && AttackCategory::parse(&case.category) == AttackCategory::Unknown
+        {
             m.unknown_categories.push(case.category.clone());
         }
 
@@ -163,13 +168,19 @@ fn measure(corpus: &Corpus) -> Measurement {
 fn batch_is_intact() {
     let corpus = load();
     assert_eq!(corpus.version, "heldout-v2");
-    assert!(corpus.provenance.labeling_protocol.contains("before"), "the labeling protocol note was edited away");
+    assert!(
+        corpus.provenance.labeling_protocol.contains("before"),
+        "the labeling protocol note was edited away"
+    );
     assert!(!corpus.provenance.description.trim().is_empty());
     assert!(
         corpus.provenance.new_categories.contains("nosql_injection"),
         "the batch lost the note about categories the engine cannot name"
     );
-    assert!(corpus.provenance.status.starts_with("HELD OUT"), "this batch was tuned against; cut heldout_v3");
+    assert!(
+        corpus.provenance.status.starts_with("HELD OUT"),
+        "this batch was tuned against; cut heldout_v3"
+    );
     assert!(!corpus.provenance.authorship.trim().is_empty());
     assert!(!corpus.provenance.known_limitations.is_empty());
 
@@ -181,7 +192,11 @@ fn batch_is_intact() {
             "{}: invalid label",
             case.id
         );
-        assert!(!case.note.trim().is_empty(), "{}: no provenance note", case.id);
+        assert!(
+            !case.note.trim().is_empty(),
+            "{}: no provenance note",
+            case.id
+        );
         assert!(
             !case.request.path.is_empty()
                 || !case.request.query.is_empty()
@@ -192,9 +207,16 @@ fn batch_is_intact() {
         );
     }
 
-    let malicious = corpus.cases.iter().filter(|c| c.label == "malicious").count();
+    let malicious = corpus
+        .cases
+        .iter()
+        .filter(|c| c.label == "malicious")
+        .count();
     let benign = corpus.cases.len() - malicious;
-    assert!(malicious >= 90, "held-out batch shrank to {malicious} attacks");
+    assert!(
+        malicious >= 90,
+        "held-out batch shrank to {malicious} attacks"
+    );
     assert!(benign >= 50, "held-out batch shrank to {benign} controls");
 }
 
