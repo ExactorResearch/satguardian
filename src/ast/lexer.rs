@@ -372,6 +372,10 @@ static RE_LDAP_INJ: OnceLock<Regex> = OnceLock::new();
 static RE_SCANNER_UA: OnceLock<Regex> = OnceLock::new();
 static RE_PATH_EXT: OnceLock<Regex> = OnceLock::new();
 static RE_IF_BATCH2: OnceLock<Regex> = OnceLock::new();
+static RE_SQL_KEYWORD_COMMENT: OnceLock<Regex> = OnceLock::new();
+static RE_SQL_NUM_TAUTO: OnceLock<Regex> = OnceLock::new();
+static RE_SQL_PG: OnceLock<Regex> = OnceLock::new();
+static RE_SQL_TYPE_VALUE: OnceLock<Regex> = OnceLock::new();
 static RE_B64_TOKEN: OnceLock<Regex> = OnceLock::new();
 static RE_SCRIPT_EXT_HDR: OnceLock<Regex> = OnceLock::new();
 static RE_HEX_PAIRS: OnceLock<Regex> = OnceLock::new();
@@ -850,7 +854,7 @@ fn init_regexes() {
         // A parameter value that is nothing but a SQL function call opener —
         // `ABS(`, `pay=cast(`, `pay=if\(`, `pay=day.+ (`. Real SQLi probes send
         // exactly this shape; a lone unclosed call is never legitimate input.
-        Regex::new(r#"(?i)(?:^|[?&\s"'(=])(?:abs|cast|char|chr|count|concat|substring|substr|mid|left|right|length|ascii|ord|hex|unhex|conv|elt|field|find_in_set|make_set|export_set|interval|database|schema|version|benchmark|sleep|rand|exp|floor|ceil|ceiling|round|sqrt|pow|power|mod|sign|truncate|locate|instr|insert|replace|reverse|repeat|space|lpad|rpad|trim|ltrim|rtrim|upper|lower|week|year|month|day|hour|minute|second|quarter|from_unixtime|unix_timestamp|to_days|from_days|period_add|period_diff|date_add|date_sub|datediff|timestampadd|timestampdiff|extract|position|overlay|collate|convert|binary|weight_string|format|greatest|least|coalesce|nullif|ifnull|if|date|default|curdate|curtime|current_user|current_date|current_time|sysdate|updatexml|extractvalue|load_file|name_const|json_\w+|gtid_\w+|get_lock|openjson|xp_\w+|sp_\w+)\b[\s&'"\])\].+=\\!]{0,8}\(\s*$"#).unwrap()
+        Regex::new(r#"(?i)(?:^|[?&\s"'(=])(?:abs|cast|char|chr|count|concat|substring|substr|mid|left|right|length|ascii|ord|hex|unhex|conv|elt|field|find_in_set|make_set|export_set|interval|database|schema|version|benchmark|sleep|rand|exp|floor|ceil|ceiling|round|sqrt|pow|power|mod|sign|truncate|locate|instr|insert|replace|reverse|repeat|space|lpad|rpad|trim|ltrim|rtrim|upper|lower|week|year|month|day|hour|minute|second|quarter|from_unixtime|unix_timestamp|to_days|from_days|period_add|period_diff|date_add|date_sub|datediff|timestampadd|timestampdiff|extract|position|overlay|collate|convert|binary|weight_string|format|greatest|least|coalesce|nullif|ifnull|if|date|default|curdate|curtime|current_user|current_date|current_time|sysdate|updatexml|extractvalue|load_file|name_const|json_\w+|gtid_\w+|get_lock|openjson|xp_\w+|sp_\w+|now|localtime|localtimestamp|getdate|sysdatetime|getutcdate|isnull|nvl|rownum|level|connect_by_root|sys_connect_by_path|dbms_\w+|utl_\w+|ctx_\w+|ords_\w+)\b[\s&'"\])\].+=\\!?/]{0,8}\(\s*$"#).unwrap()
     });
     let _ = RE_CMD_FOR.get_or_init(|| {
         // Windows cmd.exe FOR-loop syntax: `for %i in (set) do`, `for /f "tokens=…"`.
@@ -1325,12 +1329,12 @@ fn init_regexes() {
         // Quote/operator SQL fragments (CRS 942370/942490/942520/942180/
         // 942361/942190): punctuation splices that only make sense inside a
         // SQL string context.
-        Regex::new(r#"(?i)'\s*[=?*@+\-]|'\s*#(?:\s|$|[^\w-])|"\d+\*\d+|'\d:\d:\d|'\s*;?\s*(?:select|insert|update|delete|drop|alter|create|exec|declare)\b|'\s*(?:glob|like|rlike|regexp)\b[^)]{0,40}(?:--|#|/\*)|'\s*(?:is\s+not|not\s+(?:like|glob|rlike|regexp|in|between))\b[^)]{0,40}(?:--|#|/\*)|(?:^|[=,"'(&?])['"]\s*(?:alter|create|drop|truncate|rename)\s+[a-z]|\bselect\s*\*/|"!"\s*$"#).unwrap()
+        Regex::new(r#"(?i)'\s*[=?*@+\-]|'\s*[|^&<][\w-]{0,40}(?:--|#|/\*)|'\s*#(?:\s|$|[^\w-])|"\d+\*\d+|'\d:\d:\d|'\s*;?\s*(?:select|insert|update|delete|drop|alter|create|exec|declare|print|echo|eval|system|shell|cmd|whoami|id|uname|pwd|ls|cat|env)\b|'\s*or\s+['"\d]|'{3,}\s*(?:or|and|select|union|insert|update|delete|drop|exec|declare)\b|'\s*(?:glob|like|rlike|regexp)\b[^)]{0,40}(?:--|#|/\*|;|\()\s*$|'\s*(?:is\s+not|not\s+(?:like|glob|rlike|regexp|in|between))\b[^)]{0,40}(?:--|#|/\*)|(?:^|[=,"'(&?])['"]\s*(?:alter|create|drop|truncate|rename)\s+[a-z]|\bselect\s*\*/|"!"\s*$|['"]>\s*%\d|'\s*\\"#).unwrap()
     });
     let _ = RE_SQL_TRAIL_OP.get_or_init(|| {
         // Operator/keyword dangling at end of path+query+body — the classic
         // "close quote then comment" tail (CRS 942210/942120).
-        Regex::new(r#"(?i)\b(?:or|and|xor)\s*$|[\d'")\]]\s*;\s*(?:update|delete|insert|select|drop|alter|create|exec|declare|truncate)\b|\(\s*select\s*$|/\*\s*(?:or|and)\s*$|(?:^|[=,"'(&?])\s*is\s+(?:not\s+)?null\s*$|(?:^|[=,"'(&?])\s*in\s*\([^)]*\)\s*$|<>\s*$"#).unwrap()
+        Regex::new(r#"(?i)\b(?:or|and|xor)\s*$|[\d'")\]=]\s*;\s*(?:update|delete|insert|select|drop|alter|create|exec|declare|truncate|analyze|analyse|reindex|vacuum|cluster|listen|notify|unlisten|load|copy|prepare|execute|deallocate|discard|checkpoint)\b|[;>]\s*set\s+@\w+|\(\s*select\s*$|/\*\s*(?:or|and)\s*$|;\s*--\s*$|":"\d+\s*$|\?\s*\(\s*$|(?:^|[=,"'(&?\s])\s*is\s+(?:not\s+)?null\s*$|(?:^|[=,"'(&?\s])\s*in\s*\(\s*[\d'"][^)]*\)\s*$|<>\s*$"#).unwrap()
     });
     let _ = RE_BRACE_EXPAND.get_or_init(|| {
         // Brace-expansion command splicing (CRS 932281).
@@ -1483,6 +1487,28 @@ fn init_regexes() {
         // IF [%1] EQU [], IF (1) EQU (1), IF NOT DEFINED, IF /I "x" NEQ "y",
         // if/i a==b.
         Regex::new(r#"(?i)\bif\s+(?:%[^%\s]+%|\[[^\]]*\]|\([^)]*\)|"[^"]*"|'[^']*'|\w+)\s+(?:equ|neq|ne|lss|leq|gtr|geq|exist|not\s+exist|not\s+defined|defined|errorlevel)\b|\bif\s+not\s+(?:exist|defined|errorlevel)\b|\bif\s*\/i\s+\S+\s*==\s*\S+|\bif\s+\/i\s+"[^"]*"\s+(?:equ|neq|ne|lss|leq|gtr|geq)\s+"[^"]*""#).unwrap()
+    });
+    let _ = RE_SQL_KEYWORD_COMMENT.get_or_init(|| {
+        // Strong SQL keyword + /* */ comment + word: DROP/*c*/sampletable,
+        // SELECT/*c*/password (CRS 942440). Weak words (and/or/in/is/on)
+        // stay out — comment+word after them is prose-plausible.
+        Regex::new(r#"(?i)\b(?:select|union|insert|update|delete|drop|alter|create|truncate|exec|declare|grant|revoke|from|where|join|group|order|having|limit|offset|values|distinct|case|cast|convert|collate|between|exists|table|database|schema|index|view|procedure|function|trigger|primary|foreign|references|constraint|default|check|unique|commit|rollback|begin|transaction|savepoint|release)\s*/\*[^*]*\*/\s*\w"#).unwrap()
+    });
+    let _ = RE_SQL_NUM_TAUTO.get_or_init(|| {
+        // Numeric tautologies needing a value-ish prefix so prose math
+        // ("1=1 is true") stays benign: a=1=1, a=b,1=1, a=42 like 42,
+        // a=42<=>42 (CRS 942130).
+        Regex::new(r#"(?i)(?:^|[=,"'(&?,])\d+\s*=\s*\d+\b|(?:^|[=,"'(&?,])\d+\s+like\s+\d+|(?:^|[=,"'(&?,])\d+\s*<=>\s*\d+"#).unwrap()
+    });
+    let _ = RE_SQL_PG.get_or_init(|| {
+        // Postgres/SQL:2016 shapes (CRS 942340): except select./values(,
+        // array[ subscripts, ~all(/~any(, ;analyze.
+        Regex::new(r#"(?i)\bexcept\s+select\s*[.(]|\bexcept\s+values\s*\(|\barray\s*\[[^\]]*,|\b~\s*(?:all|any|exists)\s*\("#).unwrap()
+    });
+    let _ = RE_SQL_TYPE_VALUE.get_or_init(|| {
+        // DB type/procedure identifiers as a bare parameter value
+        // (CRS 942470): pay=nvarchar, pay=sp_password, pay=UTL_HTTP.
+        Regex::new(r#"(?i)(?:^|[?&\s"'])[a-z_][\w.-]{0,30}=(?:["']?)(?:nvarchar|varchar|nchar|ntext|sp_password|sp_helpsql|sp_helptext|sp_who|sp_lock|sp_executesql|xp_\w+|dbcc|utl_\w+|ctx_\w+|ords_\w+|apex_\w+|wwv_\w+|htp_\w+|owa_\w+|sysname|hierarchyid|datetimeoffset|smalldatetime|datetime2|uniqueidentifier|rowversion|timestamp|sql_variant)\s*(?:["']?)(?:&|$|\s)"#).unwrap()
     });
     let _ = RE_B64_TOKEN.get_or_init(|| {
         // Standalone base64-ish tokens worth a gadget-substring decode check.
@@ -4136,6 +4162,7 @@ impl AstLexer {
             // trailing fragment is a real value tail, not mid-text.
             if RE_SQL_TRAIL_OP.get().unwrap().is_match(&head_norm)
                 || (!b64_padding_tail && RE_SQL_FRAGMENT.get().unwrap().is_match(&head_norm))
+                || RE_SQL_QUOTE_FRAG.get().unwrap().is_match(&head_norm)
             {
                 tokens.has_sqli_extended_signal = true;
                 tokens
@@ -5389,6 +5416,10 @@ impl AstLexer {
                 || RE_SQL_STRING_PROBE.get().unwrap().is_match(&norm)
                 || RE_SQL_CATALOG.get().unwrap().is_match(&norm)
                 || RE_SQL_QUOTE_FRAG.get().unwrap().is_match(&norm)
+                || RE_SQL_NUM_TAUTO.get().unwrap().is_match(&norm)
+                || RE_SQL_PG.get().unwrap().is_match(&norm)
+                || RE_SQL_TYPE_VALUE.get().unwrap().is_match(&norm)
+                || RE_SQL_KEYWORD_COMMENT.get().unwrap().is_match(&norm)
             {
                 tokens.has_sqli_extended_signal = true;
                 tokens
@@ -5416,10 +5447,18 @@ impl AstLexer {
                     out.push_str(rest);
                     out
                 };
-                if Regex::new(r#"(?i)(?:select|union|insert|update|delete|drop|alter|create|truncate|exec|declare|grant|revoke)"#)
+                // (a) bounded strong keyword survives the strip (SE/**/LECT);
+                // (b) keyword fused to its argument after comments vanish
+                // (DR/**/OP/*x*/sampletable -> dropsampletable): keyword +
+                // >=4 trailing letters, drop needs >=5 so "dropdown" stays
+                // benign.
+                let kw_hit = Regex::new(r#"(?i)(?:^|[\s"'(=,;)])(?:select|union|insert|update|delete|alter|create|truncate|exec|declare|grant|revoke)[a-z]{4,}|(?:^|[\s"'(=,;)])drop[a-z]{5,}"#)
                     .map(|r| r.is_match(&stripped))
                     .unwrap_or(false)
-                {
+                    || Regex::new(r#"(?i)(?:select|union|insert|update|delete|drop|alter|create|truncate|exec|declare|grant|revoke)\b"#)
+                        .map(|r| r.is_match(&stripped))
+                        .unwrap_or(false);
+                if kw_hit {
                     tokens.has_sqli_extended_signal = true;
                     tokens
                         .active_token_names
