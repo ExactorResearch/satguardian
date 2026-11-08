@@ -1,0 +1,81 @@
+{
+ "version": "heldout-v10-post-tuning",
+ "measured_on": "2026-11-08",
+ "engine": "SatguardianSatEngine::new() with default configuration, one request per evaluation",
+ "note": "POST-TUNING DIAGNOSTIC, not an estimate. Batch v10 was spent by the protocol/DSL detector iteration; this file records current engine behaviour so the reproduction test can keep tripping on future unintended changes. The estimate of record remains corpus/heldout_v10_report.json (38.6% recall / 0.0% FPR, one-shot). Per maintainer decision no heldout_v11 will be produced; any further engine change should be evaluated against this diagnostic plus the regression corpora.",
+ "counts": {
+  "attacks": 70,
+  "detected": 70,
+  "missed": 0,
+  "controls": 44,
+  "blocked_controls": 0,
+  "cleared": 44
+ },
+ "recall": {
+  "value": 1.0,
+  "ci95": [
+   0.9479769376169107,
+   1
+  ]
+ },
+ "false_positive_rate": {
+  "value": 0.0,
+  "ci95": [
+   0,
+   0.08029560371778398
+  ]
+ },
+ "per_category": {
+  "container_k8s_api": {
+   "detected": 8,
+   "total": 8
+  },
+  "imap_pop3": {
+   "detected": 6,
+   "total": 6
+  },
+  "jndi_injection": {
+   "detected": 8,
+   "total": 8
+  },
+  "latex_injection": {
+   "detected": 8,
+   "total": 8
+  },
+  "mermaid_injection": {
+   "detected": 6,
+   "total": 6
+  },
+  "odata_injection": {
+   "detected": 8,
+   "total": 8
+  },
+  "prometheus_grafana": {
+   "detected": 6,
+   "total": 6
+  },
+  "redis_proto": {
+   "detected": 6,
+   "total": 6
+  },
+  "solr_lucene": {
+   "detected": 8,
+   "total": 8
+  },
+  "xmlrpc": {
+   "detected": 6,
+   "total": 6
+  }
+ },
+ "missed": [],
+ "false_positives": [],
+ "latency_us": {
+  "p50": 455.3,
+  "p99": 2881.4
+ },
+ "provenance": {
+  "one_shot_report": "corpus/heldout_v10_report.json",
+  "corpus": "benchmarks/real_comparative/corpus/heldout_v10.jsonl",
+  "verdicts": "benchmarks/real_comparative/results/satguardian/verdicts_heldout_v10_post_tuning.jsonl"
+ }
+}
