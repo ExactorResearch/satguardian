@@ -343,6 +343,16 @@ static RE_SESSION_URL: OnceLock<Regex> = OnceLock::new();
 static RE_BAD_CHARSET: OnceLock<Regex> = OnceLock::new();
 static RE_ABS_URI_METHOD: OnceLock<Regex> = OnceLock::new();
 static RE_JSON_KEY_SQL: OnceLock<Regex> = OnceLock::new();
+static RE_SQL_QUOTE_FRAG: OnceLock<Regex> = OnceLock::new();
+static RE_SQL_TRAIL_OP: OnceLock<Regex> = OnceLock::new();
+static RE_BRACE_EXPAND: OnceLock<Regex> = OnceLock::new();
+static RE_TOOL_CMD: OnceLock<Regex> = OnceLock::new();
+static RE_PHP_ASSIGN: OnceLock<Regex> = OnceLock::new();
+static RE_PHP_PAREN_CALL: OnceLock<Regex> = OnceLock::new();
+static RE_RFI_PARAM_URL: OnceLock<Regex> = OnceLock::new();
+static RE_FILENAME_PROBE: OnceLock<Regex> = OnceLock::new();
+static RE_SSRF_CONFUSE: OnceLock<Regex> = OnceLock::new();
+static RE_SQL_COMMENT_SPLIT: OnceLock<Regex> = OnceLock::new();
 static RE_B64_TOKEN: OnceLock<Regex> = OnceLock::new();
 static RE_SCRIPT_EXT_HDR: OnceLock<Regex> = OnceLock::new();
 static RE_HEX_PAIRS: OnceLock<Regex> = OnceLock::new();
@@ -885,14 +895,14 @@ fn init_regexes() {
         // cmd.exe batch IF constructs: IF /I NOT EXIST, IF DEFINED,
         // IF ERRORLEVEL, IF %ERRORLEVEL% NEQ 0, IF 2 GEQ 15 — conditional
         // command execution probes (CRS 932140).
-        Regex::new(r#"(?i)\bif\s+(?:/\w+\s+)?(?:not\s+)?(?:exist|defined|errorlevel)\b[^\n]{0,80}?\b(?:echo|set|call|goto|del|erase|rd|rmdir|md|mkdir|ren|rename|type|copy|xcopy|robocopy|move|dir|start|exit|pause|rem|shift|assoc|ftype|choice|date|time|ver|vol|label|path|prompt|title|color|mode|cls|more|find|findstr|sort|tree|replace|expand|makecab|debug|edlin|print|defrag|chkdsk|chkntfs|convert|format|restore|attrib|cacls|cipher|compact|driverquery|getmac|gpupdate|reg|shutdown|takeown|wevtutil|whoami|bcdedit|bitsadmin|certutil|clip|cmd|comp|cscript|dcdiag|diskpart|dism|dnscmd|doskey|dsadd|dsget|dsmod|dsmove|dsquery|dsrm|edit|endlocal|expand|extract|fc|findstr|finger|fltmc|forfiles|fsutil|ftp|ftype|gpresult|gptgen|gpmgmt|regini|regsvr32|net|net1|netsh|netstat|ipconfig|ping|tracert|nslookup|arp|route|nbtstat|systeminfo|hostname|set|ver|vol|date|time|title|color|mode|prompt|cls|copy|xcopy|robocopy|move|del|erase|rd|rmdir|md|mkdir|ren|rename|type|more|find|findstr|sort|tree|fc|comp|cipher|compact|convert|diskpart|format|label|mountvol|subst|driverquery|gpresult|gpupdate|secedit|auditpol|cacls|icacls|takeown|attrib|assoc|ftype|doskey|clip|choice|pause|shift|start|call|exit|goto|if|for|timeout|waitfor|shutdown|logoff|tsdiscon|rwinsta|query|quser|msg)\b|\bif\s+%errorlevel%\s+(?:eq|ne|lss|leq|gtr|geq)\s+\S|\bif\s+\d+\s+(?:eq|ne|lss|leq|gtr|geq)\s+\d+\s+\w|\bif\s+"[^"]{1,40}"\s+(?:eq|ne|lss|leq|gtr|geq|exist)\b"#).unwrap()
+        Regex::new(r#"(?i)\bif\s+(?:/\w+\s+)?(?:not\s+)?(?:exist|defined|errorlevel)\b[^\n]{0,80}?\b(?:echo|set|call|goto|del|erase|rd|rmdir|md|mkdir|ren|rename|type|copy|xcopy|robocopy|move|dir|start|exit|pause|rem|shift|assoc|ftype|choice|date|time|ver|vol|label|path|prompt|title|color|mode|cls|more|find|findstr|sort|tree|replace|expand|makecab|debug|edlin|print|defrag|chkdsk|chkntfs|convert|format|restore|attrib|cacls|cipher|compact|driverquery|getmac|gpupdate|reg|shutdown|takeown|wevtutil|whoami|bcdedit|bitsadmin|certutil|clip|cmd|comp|cscript|dcdiag|diskpart|dism|dnscmd|doskey|dsadd|dsget|dsmod|dsmove|dsquery|dsrm|edit|endlocal|expand|extract|fc|findstr|finger|fltmc|forfiles|fsutil|ftp|ftype|gpresult|gptgen|gpmgmt|regini|regsvr32|net|net1|netsh|netstat|ipconfig|ping|tracert|nslookup|arp|route|nbtstat|systeminfo|hostname|set|ver|vol|date|time|title|color|mode|prompt|cls|copy|xcopy|robocopy|move|del|erase|rd|rmdir|md|mkdir|ren|rename|type|more|find|findstr|sort|tree|fc|comp|cipher|compact|convert|diskpart|format|label|mountvol|subst|driverquery|gpresult|gpupdate|secedit|auditpol|cacls|icacls|takeown|attrib|assoc|ftype|doskey|clip|choice|pause|shift|start|call|exit|goto|if|for|timeout|waitfor|shutdown|logoff|tsdiscon|rwinsta|query|quser|msg)\b|\bif\s+%[^%\s]+%\s+(?:eq|neq|ne|lss|leq|gtr|geq|exist)\s+\S|\bif\s+\d+\s+(?:eq|ne|lss|leq|gtr|geq)\s+\d+\s+\w|\bif\s+"[^"]{1,40}"\s+(?:eq|ne|lss|leq|gtr|geq|exist)\b"#).unwrap()
     });
     let _ = RE_SQL_FRAGMENT.get_or_init(|| {
         // Value-anchored SQL predicate and truncated-function probes (CRS
         // 942120/942210/942410): IS NULL, IN (...), bare func( at value end.
         // The value-start anchor keeps prose "in (stock)" and API params
         // like ?filter=max(price) out — after '(' only ')'/','/end match.
-        Regex::new(r#"(?i)(?:^|[=,"'(&?])\s*(?:is\s+(?:not\s+)?null|not\s+in\s*(?:/\*[^*]*\*/\s*)?\(|in\s*(?:/\*[^*]*\*/\s*)?\(\s*(?:\d|['"\-]|$|,))|(?:^|[=,"'(&?])\s*(?:length|ln|log|log10|local|locate|max|min|sum|avg|count|abs|ceil|floor|round|truncate|mod|power|rand|pi|sign|sin|cos|tan|asin|acos|atan|atan2|degrees|radians|conv|crc32|md5|sha1|sha2|password|encode|decode|encrypt|decrypt|compress|uncompress|aes_encrypt|aes_decrypt|des_encrypt|des_decrypt|rc4|uuid|uuid_short|is_free_lock|is_used_lock|get_lock|release_lock|found_rows|row_count|last_insert_id|benchmark|sleep|sysdate|curdate|current_date|current_time|current_timestamp|current_user|session_user|system_user|user|database|schema|version|charset|collation|connection_id|thread_id|insert_id|master_pos_wait|name_const|inet_aton|inet_ntoa|inet6_aton|inet6_ntoa|is_ipv4|is_ipv6|to_days|to_seconds|from_days|from_unixtime|unix_timestamp|utc_date|utc_time|utc_timestamp|dayname|dayofweek|dayofmonth|dayofyear|week|weekofyear|month|monthname|quarter|year|hour|minute|second|microsecond|time_to_sec|sec_to_time|timediff|timestampadd|timestampdiff|period_add|period_diff|extract|date_format|date_add|date_sub|last_day|makedate|maketime|str_to_date|adddate|subdate|datediff|timestamp|time_format|time|timediff|timestampdiff|group_concat|grouping|rollup|cube|grouping_sets|ntile|lag|lead|first_value|last_value|nth_value|percent_rank|cume_dist|dense_rank|row_number|rank)\??[?\s)\]]*\(\s*(?:[),]|$)"#).unwrap()
+        Regex::new(r#"(?i)(?:^|[=,"'(&?])\s*(?:is\s+(?:not\s+)?null|not\s+in\s*(?:/\*[^*]*\*/\s*)?\(|in\s*(?:/\*[^*]*\*/\s*)?\(\s*(?:\d|['"\-]|$|,))|(?:^|[=,"'(&?])\s*(?:length|ln|log|log10|local|locate|max|min|sum|avg|count|abs|ceil|floor|round|truncate|mod|power|rand|pi|sign|sin|cos|tan|asin|acos|atan|atan2|degrees|radians|conv|crc32|md5|sha1|sha2|password|encode|decode|encrypt|decrypt|compress|uncompress|aes_encrypt|aes_decrypt|des_encrypt|des_decrypt|rc4|uuid|uuid_short|is_free_lock|is_used_lock|get_lock|release_lock|found_rows|row_count|last_insert_id|benchmark|sleep|sysdate|curdate|current_date|current_time|current_timestamp|current_user|session_user|system_user|user|database|schema|version|charset|collation|connection_id|thread_id|insert_id|master_pos_wait|name_const|inet_aton|inet_ntoa|inet6_aton|inet6_ntoa|is_ipv4|is_ipv6|to_days|to_seconds|from_days|from_unixtime|unix_timestamp|utc_date|utc_time|utc_timestamp|dayname|dayofweek|dayofmonth|dayofyear|week|weekofyear|month|monthname|quarter|year|hour|minute|second|microsecond|time_to_sec|sec_to_time|timediff|timestampadd|timestampdiff|period_add|period_diff|extract|date_format|date_add|date_sub|last_day|makedate|maketime|str_to_date|adddate|subdate|datediff|timestamp|time_format|time|timediff|timestampdiff|group_concat|grouping|rollup|cube|grouping_sets|ntile|lag|lead|first_value|last_value|nth_value|percent_rank|cume_dist|dense_rank|row_number|rank|sqlite_\w+|load_extension)\??[?\s)\]]*\(\s*(?:[),]|$)"#).unwrap()
     });
     let _ = RE_SQL_STRING_PROBE.get_or_init(|| {
         // SQL string/tuple/operator probes (CRS 942120/942210): 'a'='b'
@@ -983,7 +993,7 @@ fn init_regexes() {
         // Java deserialization / JNDI gadget class names and known gadget
         // package prefixes — `runtime.clonetransformer`, commons-collections
         // transformers, SnakeYAML, fastjson, XStream, log4j-core, etc.
-        Regex::new(r#"(?i)\b(?:[a-z0-9_]+\.)+(?:clonetransformer|invokertransformer|instantiate\w*|chainedtransformer|constanttransformer|factorytransformer|lazymap|tiedmap|invocationhandler|annotationinvocationhandler|templatesimpl|jdbcrowset\w*|comparator|priorityqueue|hashmap|hashtable|hashset|treemap|linkedhash\w*|treebag|dualhash|beanmap|abstractinputstream|functor|closure|traxfilter|documentbuilderfactory)\b|\b(?:org\.apache\.commons\.(?:collections|beanutils|io|codec)|com\.sun\.org\.apache\.xalan|javassist|bsh\.interpreter|groovy\.lang|ognl|mvel2?|org\.springframework|aspectjweaver|rome\.fetcher|com\.thoughtworks\.xstream|org\.yaml\.snakeyaml|com\.alibaba\.fastjson|com\.fasterxml\.jackson\.databind|log4j\.core|org\.apache\.logging\.log4j|org\.hibernate|com\.mchange|c3p0|org\.apache\.wicket|vaadin\.|myfaces|restlet|dropwizard|resteasy|org\.apache\.cxf|axis\.|metro\.|saaj|xmlbeans|castor|dom4j|xom\.|stax|woodstox|aalto|json-lib|net\.sf\.json|org\.json\.|gson|protobuf|thrift|avro|parquet|kryo|fst|hessian|burlap)\b"#).unwrap()
+        Regex::new(r#"(?i)\b(?:[a-z0-9_]+\.)+(?:clonetransformer|invokertransformer|instantiate\w*|chainedtransformer|constanttransformer|factorytransformer|lazymap|tiedmap|invocationhandler|annotationinvocationhandler|forclosure|instantiatefactory|instantiate\w*|templatesimpl|jdbcrowset\w*|comparator|priorityqueue|hashmap|hashtable|hashset|treemap|linkedhash\w*|treebag|dualhash|beanmap|abstractinputstream|functor|closure|traxfilter|documentbuilderfactory)\b|\b(?:org\.apache\.commons\.(?:collections|beanutils|io|codec)|com\.sun\.org\.apache\.xalan|javassist|bsh\.interpreter|groovy\.lang|ognl|mvel2?|org\.springframework|aspectjweaver|rome\.fetcher|com\.thoughtworks\.xstream|org\.yaml\.snakeyaml|com\.alibaba\.fastjson|com\.fasterxml\.jackson\.databind|log4j\.core|org\.apache\.logging\.log4j|org\.hibernate|com\.mchange|c3p0|org\.apache\.wicket|vaadin\.|myfaces|restlet|dropwizard|resteasy|org\.apache\.cxf|axis\.|metro\.|saaj|xmlbeans|castor|dom4j|xom\.|stax|woodstox|aalto|json-lib|net\.sf\.json|org\.json\.|gson|protobuf|thrift|avro|parquet|kryo|fst|hessian|burlap)\b"#).unwrap()
     });
     let _ = RE_XXE_REF.get_or_init(|| {
         // External references that resolve attacker-controlled resources without
@@ -1276,7 +1286,7 @@ fn init_regexes() {
         // Session identifiers carried in the URL query — fixation/leakage
         // class. Checked against query_string only, never request bodies.
         // query_string arrives without the leading '?', so anchor on ^ too.
-        Regex::new(r#"(?i)(?:^|[?&;\s"'])(jsessionid|phpsessid|sessid|sessionid|session_id|aspsessionid|asp\.net_sessionid|phpsessionid|cfid|cftoken|connect\.sid|play_session|phpsession|session_token|rack\.session|_rails_session|rails_session|cakephp|jwsession|cfsid|zend_session_id|symfony_session|laravel_session|django_session|wp-settings|wordpress_logged_in|woocommerce_items_in_cart|jservsession|_session_id|sails\.sid|koa[:.]sess|next-auth\.session|__host-)="#).unwrap()
+        Regex::new(r#"(?i)(?:^|[?&;\s"'])(jsessionid|phpsessid|sessid|sessionid|session_id|aspsessionid|asp\.net_sessionid|phpsessionid|cfid|cftoken|connect\.sid|play_session|phpsession|session_token|rack\.session|_rails_session|rails_session|cakephp|jwsession|cfsid|zend_session_id|symfony_session|laravel_session|django_session|wp-settings|wordpress_logged_in|woocommerce_items_in_cart|jservsession|_session_id|sails\.sid|koa[:.]sess|_flask_session|flask_session|meteor_login_token|next-auth\.session-token|next-auth\.session|__host-)="#).unwrap()
     });
     let _ = RE_BAD_CHARSET.get_or_init(|| {
         // Exotic/mutable charsets used for parser-differential evasion.
@@ -1291,9 +1301,77 @@ fn init_regexes() {
         // "where"/"select" are legitimate query-builder keys.
         Regex::new(r#"(?i)["'][^"'\n]{0,50}?(?:union\s+(?:all\s+)?select|select\s+[^"']{1,40}?\s+from|['"]\s*(?:or|and)\s+\w|\bor\s+\d+\s*=\s*\d+|\band\s+\d+\s*=\s*\d+|drop\s+table|insert\s+into|delete\s+from|update\s+\w+\s+set|exec(?:ute)?\s|load_file|into\s+(?:out|dump)file|--|#|/\*|\|\||&&)[^"'\n]{0,50}?["']\s*:"#).unwrap()
     });
+    let _ = RE_SQL_QUOTE_FRAG.get_or_init(|| {
+        // Quote/operator SQL fragments (CRS 942370/942490/942520/942180/
+        // 942361/942190): punctuation splices that only make sense inside a
+        // SQL string context.
+        Regex::new(r#"(?i)'\s*[=?*@+\-]|'\s*#(?:\s|$|[^\w-])|"\d+\*\d+|'\d:\d:\d|'\s*;?\s*(?:select|insert|update|delete|drop|alter|create|exec|declare)\b|'\s*(?:glob|like|rlike|regexp)\b[^)]{0,40}(?:--|#|/\*)|'\s*(?:is\s+not|not\s+(?:like|glob|rlike|regexp|in|between))\b[^)]{0,40}(?:--|#|/\*)|(?:^|[=,"'(&?])['"]\s*(?:alter|create|drop|truncate|rename)\s+[a-z]|\bselect\s*\*/|"!"\s*$"#).unwrap()
+    });
+    let _ = RE_SQL_TRAIL_OP.get_or_init(|| {
+        // Operator/keyword dangling at end of path+query+body — the classic
+        // "close quote then comment" tail (CRS 942210/942120).
+        Regex::new(r#"(?i)\b(?:or|and|xor)\s*$|[\d'")\]]\s*;\s*(?:update|delete|insert|select|drop|alter|create|exec|declare|truncate)\b|\(\s*select\s*$|/\*\s*(?:or|and)\s*$|(?:^|[=,"'(&?])\s*is\s+(?:not\s+)?null\s*$|(?:^|[=,"'(&?])\s*in\s*\([^)]*\)\s*$|<>\s*$"#).unwrap()
+    });
+    let _ = RE_BRACE_EXPAND.get_or_init(|| {
+        // Brace-expansion command splicing (CRS 932281).
+        Regex::new(r#"(?i)\{,\s*[^},\s][^},]*,|\{\$['"][^'"]+['"]\s*,"#).unwrap()
+    });
+    let _ = RE_TOOL_CMD.get_or_init(|| {
+        // Tool name followed by an argument — separator-free command shape
+        // in bodies/headers (CRS 932236). Coined/technical names only.
+        Regex::new(r#"(?i)\b(?:strace|ltrace|gdb|lldb|valgrind|sysdig|htop|lastlog|visudo|cscli|runcon|addgroup|useradd|userdel|usermod|groupadd|groupdel|chpasswd|gunzip|zstdcat|zstd|7z|unrar|cpio|dpkg|flatpak|netcat|socat|ncat)\s+\S|env\s+(?:-{1,2}\w|;)|perf\s+(?:-{1,2}\w|;)|date\s+(?:-f\s|--file[=\s]\S*)|ll\s+/\S|uconv\s+-f|stat\s+(?:-{1,2}\w|/\S)|whoami\s*;|runcon\s+-u"#).unwrap()
+    });
+    let _ = RE_PHP_ASSIGN.get_or_init(|| {
+        // PHP sink assigned like a function name: Shell_exec=(, zlib_decode=(
+        // — the `func=(` shape, never `func = (` in prose (CRS 933150).
+        Regex::new(r#"(?i)\b(?:shell_exec|system|exec|passthru|popen|proc_open|pcntl_exec|dl|create_function|call_user_func|call_user_func_array|forward_static_call|register_shutdown_function|register_tick_function|iterator_apply|array_walk|array_walk_recursive|preg_replace_callback|preg_filter|mb_ereg_replace|spl_autoload_register|spl_autoload_call|set_error_handler|set_exception_handler|include|include_once|require|require_once|base64_decode|gzinflate|gzuncompress|gzcompress|gzdecode|gzencode|gzdeflate|str_rot13|convert_uudecode|convert_uuencode|quoted_printable_decode|quoted_printable_encode|convert_cyr_string|hex2bin|maybe_unserialize|show_source|highlight_file|phpinfo|file_get_contents|file_put_contents|fopen|fwrite|fputs|curl_init|curl_exec|curl_multi_exec|curl_setopt|curl_close|fsockopen|pfsockopen|zlib_decode|zlib_encode|bzdecompress|bzcompress|uncompress|compress|rawurldecode|urldecode|html_entity_decode|htmlentities|htmlspecialchars|htmlspecialchars_decode|addslashes|stripslashes|addcslashes|stripcslashes|quotemeta|nl2br|wordwrap|chunk_split|str_repeat|str_pad|str_shuffle|strrev|strtolower|strtoupper|lcfirst|ucfirst|ucwords|trim|ltrim|rtrim|strpos|stripos|strrpos|strripos|strstr|stristr|strchr|strrchr|substr|substr_count|substr_replace|str_replace|str_ireplace|strtr|str_word_count|str_split|str_getcsv|similar_text|soundex|metaphone|levenshtein|money_format|number_format|vsprintf|sprintf|printf|vprintf|fprintf|sscanf|fscanf|vfprintf|settype|gettype|intval|floatval|doubleval|strval|boolval|chr|ord|dechex|hexdec|bindec|octdec|decbin|decoct|base_convert|pack|unpack|ip2long|long2ip|gethostbyname|gethostbynamel|gethostbyaddr|checkdnsrr|dns_get_record|getmxrr|stream_socket_client|stream_socket_server|stream_socket_accept|stream_context_create|stream_context_set_option|stream_context_get_options|stream_context_set_params|stream_context_get_params|stream_filter_append|stream_filter_prepend|stream_filter_remove|stream_get_wrappers|stream_get_transports|stream_get_contents|stream_copy_to_stream|stream_get_meta_data|stream_get_line|stream_is_local|stream_isatty|stream_notification_callback|stream_register_wrapper|stream_wrapper_register|stream_wrapper_unregister|stream_wrapper_restore|stream_resolve_include_path|stream_select|stream_set_blocking|stream_set_chunk_size|stream_set_read_buffer|stream_set_timeout|stream_set_write_buffer|stream_supports_lock|stream_use_include_path|tempnam|tmpfile|parse_ini_file|parse_ini_string|get_cfg_var|get_current_user|get_defined_constants|get_defined_vars|get_defined_functions|get_extension_funcs|get_html_translation_table|get_include_path|get_included_files|get_loaded_extensions|get_magic_quotes_gpc|get_magic_quotes_runtime|get_required_files|get_resources|getallheaders|headers_list|headers_sent|header|header_remove|setcookie|setrawcookie|http_response_code|fastcgi_finish_request|ignore_user_abort|connection_aborted|connection_status|ob_start|ob_get_clean|ob_get_contents|ob_get_flush|ob_get_length|ob_get_level|ob_get_status|ob_implicit_flush|ob_list_handlers|ob_end_clean|ob_end_flush|flush)\s*=\s*[(\'\"]"#).unwrap()
+    });
+    let _ = RE_PHP_PAREN_CALL.get_or_init(|| {
+        // PHP alternate call syntax: (system)('uname'), (string){[system][0]}('x')
+        Regex::new(r#"(?i)\(\s*(?:system|exec|shell_exec|passthru|popen|proc_open|eval|assert|include|require|call_user_func|create_function|base64_decode|gzinflate|gzuncompress|str_rot13|convert_uudecode|hex2bin|maybe_unserialize|mb_ereg_replace|show_source|highlight_file|phpinfo|file_get_contents|file_put_contents|curl_init|curl_exec|fsockopen|pfsockopen|zlib_decode|zlib_encode|gzdecode|gzencode|gzdeflate|gzinflate|gzuncompress|gzcompress|bzdecompress|bzcompress|uncompress|quoted_printable_decode|convert_uudecode|convert_uuencode|convert_cyr_string|hex2bin|base64_decode)\s*\)\s*\(|\{\s*\[\s*(?:system|exec|shell_exec|passthru|popen|proc_open|eval|assert|include|require|call_user_func|create_function|base64_decode|gzinflate|gzuncompress|str_rot13|convert_uudecode|hex2bin|maybe_unserialize|mb_ereg_replace|show_source|highlight_file|phpinfo|file_get_contents|file_put_contents|curl_init|curl_exec|fsockopen|pfsockopen)\s*\]\s*\[\s*\d+\s*\]\s*\}\s*\("#).unwrap()
+    });
+    let _ = RE_RFI_PARAM_URL.get_or_init(|| {
+        // scheme:// inside a parameter value: non-http(s) schemes anywhere,
+        // http(s) only in URL-ish parameter names (CRS 931130).
+        Regex::new(r#"(?i)[?&\s"'](?:x|file|filename|path|directory|folder|include|inc|require|req|module|mod|plugin|theme|template|tpl|view|page|doc|document)=["']?(?:ftp|ftps|gopher|dict|file|ldap|ldaps|rmi|iiop|corbaname|ins|rsync|tftp|sftp|ssh|telnet|nntp|snmp|sip|sips|xmpp|irc|ircs|news|prospero|z39\.50|cid|mid|vemmi|service|ios|ipn|urn|doi|hdl|tag|ni|go|did|web\+|ipfs|ipns|dat|matrix|gemini|chrome-extension|moz-extension|safari-extension|javascript|vbscript)://|[?&\s"'](?:x|file|filename|path|directory|folder|include|inc|require|req|module|mod|plugin|theme|template|tpl|view|page|doc|document)=["']?https?://"#).unwrap()
+    });
+    let _ = RE_FILENAME_PROBE.get_or_init(|| {
+        // Sensitive/system filenames smuggled through filename headers
+        // (CRS 932180): dotfiles, procfs names, backup configs.
+        Regex::new(r#"(?i)(?:^|[/\\.\s"'])(?:\.boto|\.pgpass|\.netrc|\.ssh|\.aws|\.azure|\.env(?:\.\w+)?|id_rsa|id_dsa|id_ecdsa|id_ed25519|\.htpasswd|\.htaccess|web\.config|global\.asa|crossdomain\.xml|clientaccesspolicy\.xml|wp-config(?:-php)?\.(?:bak|old|save|swp|txt|orig|inc|dist|sample)|mtrr|acpi|shadow|sudoers|fstab|mtab|os-release|lsb-release|hosts\.deny|hosts\.allow)(?:$|[/\\.\s"',;])"#).unwrap()
+    });
+    let _ = RE_SSRF_CONFUSE.get_or_init(|| {
+        // SSRF parser-differential shapes (CRS 934120/934190): space+&/@
+        // userinfo confusion and localhost-family hostnames in URL values.
+        Regex::new(r#"(?i)[a-z0-9.-]+\.[a-z]{2,}:\d+\s+[&@]|localhost[0-9.]|localhost\.localdomain|0x7f\.|2130706433|0177\.0\.0\.1|lvh\.me|vcap\.me|localtest\.me"#).unwrap()
+    });
+    let _ = RE_SQL_COMMENT_SPLIT.get_or_init(|| {
+        // SQL keywords split by /**/ comments: DR/**/OP, SE/**/LECT (CRS
+        // 942440). Each letter may be followed by an optional comment.
+        let kw = |w: &str| -> String {
+            w.chars()
+                .map(|c| format!("{}(?:/\\*[^*]*\\*/\\s*)?", c))
+                .collect()
+        };
+        let words = [
+            "select", "union", "insert", "update", "delete", "drop", "alter",
+            "create", "truncate", "exec", "declare", "from", "where", "and",
+            "or", "xor", "not", "null", "like", "in", "is", "as", "on",
+            "join", "group", "order", "having", "limit", "offset", "values",
+            "set", "into", "with", "distinct", "case", "when", "then",
+            "else", "end", "cast", "convert", "collate", "asc", "desc",
+            "between", "exists", "table", "database", "schema", "index",
+            "view", "procedure", "function", "trigger", "primary", "key",
+            "foreign", "references", "constraint", "default", "check",
+            "unique", "grant", "revoke", "commit", "rollback", "begin",
+            "transaction", "savepoint", "release", "lock", "unlock",
+        ];
+        let body = words.iter().map(|w| kw(w)).collect::<Vec<_>>().join("|");
+        Regex::new(&format!("(?i)\\b(?:{})\\b", body)).unwrap()
+    });
     let _ = RE_B64_TOKEN.get_or_init(|| {
         // Standalone base64-ish tokens worth a gadget-substring decode check.
-        Regex::new(r#"(?i)["']?([A-Za-z0-9+/]{16,}={0,2})["']?"#).unwrap()
+        Regex::new(r#"(?i)["']?([A-Za-z0-9+/]{10,}={0,2})["']?"#).unwrap()
     });
     let _ = RE_SCRIPT_EXT_HDR.get_or_init(|| {
         // Executable/server-side extensions smuggled via filename headers.
@@ -1310,7 +1388,7 @@ fn init_regexes() {
     });
     let _ = RE_OCTAL_IP.get_or_init(|| {
         // Dotted quads with octal-looking parts: 0251.0376.0251.0376.
-        Regex::new(r#"(?i)\b0\d{2,3}(?:\.0?\d{1,3}){3}\b"#).unwrap()
+        Regex::new(r#"(?i)\b0\d{2,}(?:\.\d{1,9}){3}\b"#).unwrap()
     });
     let _ = RE_PHP_INI_KEY.get_or_init(|| {
         // PHP ini-style dotted keys reaching ini_set/config: opcache.jit_*,
@@ -1362,7 +1440,7 @@ fn init_regexes() {
     let _ = RE_ERROR_REFLECT.get_or_init(|| {
         // Framework/runtime exception names and stack frames reflected in
         // request bodies (outbound-error replay / error-oracle probes).
-        Regex::new(r#"(?i)\b(?:Http\w*(?:Exception|Error)|HttpSessionState\w*|HttpParse\w*|HttpCompile\w*|HttpStaticObjects\w*|System\.[\w.]*Exception|\w+Exception\s*:|at\s+[\w.$]+\([\w.$]+:\d+\)|\{\s*"status"\s*:\s*5\d\d\s*\}|\bstatus["']?\s*[:=]\s*5\d\d\b|Internal Server Error|Stack Trace|NullPointerException|ClassCastException|SQLException|PersistenceException|TransactionSystemException)"#).unwrap()
+        Regex::new(r#"(?i)\b(?:Http\w*(?:Exception|Error)|HttpSessionState\w*|HttpParse\w*|HttpCompile\w*|HttpStaticObjects\w*|System\.[\w.]*Exception|\w+Exception\s*:|at\s+[\w.$]+\([\w.$]+:\d+\)|\{\s*"status"\s*:\s*5\d\d\s*\}|\bstatus["']?\s*[:=]\s*5\d\d\b|Internal Server Error|Stack Trace|NullPointerException|ClassCastException|SQLException|PersistenceException|TransactionSystemException|SyntaxError\s*\(|(?:ActiveRecord|ActionView|ActionController|ActionDispatch|AbstractController|ActiveModel|ActiveSupport|ActiveJob|ActionMailer|ActionCable|ActionText|Rack|Sinatra|Grape|Mongo|Redis|PG|Mysql2|SQLite3|Sequelize|TypeORM|Hibernate|Doctrine|Eloquent|Mongoose|Prisma|Knex|Objection|Vapor|Kitura|Perfect|Flask|Django|FastAPI|Starlette|Sanic|Tornado|Bottle|CherryPy|Pyramid|Falcon|Aiohttp|Quart|Hug|Masonite|Laravel|Symfony|CakePHP|CodeIgniter|Yii|Phalcon|Slim|Lumen|Mezzio|Zend|Laminas|FuelPHP|Kohana|Flight|Silex|Nette|Aura|PHPixie|Typo3|Drupal|Joomla|WordPress|MediaWiki|phpBB|MyBB|vBulletin|Discourse|Flarum|Vanilla|NodeBB|Question2Answer|GetSimple|PivotX|Croogo|OctoberCMS|Statamic|CraftCMS|ExpressionEngine|Perch|ModX|ProcessWire|Backdrop|BackdropCMS|Acquia|Platform|Acquia Cloud|Acquia Site|Acquia Site Factory|Acquia Site Studio)\s*::\s*[\w:]+|NameError|NoMethodError|RuntimeError|ArgumentError|TypeError|ReferenceError|RangeError|URIError|EvalError|InternalError|AggregateError|SuppressedError|IllegalArgumentException|IllegalStateException|UnsupportedOperationException|NoSuchMethodException|NoSuchFieldException|InstantiationException|InvocationTargetException|UndeclaredThrowableException|ExceptionInInitializerError|NoClassDefFoundError|OutOfMemoryError|StackOverflowError|RuntimeException|IllegalAccessException|InterruptedException|EOFException|IOException|FileNotFoundException|SocketException|ConnectException|UnknownHostException|ProtocolException|MalformedURLException|URISyntaxException|NumberFormatException|ArithmeticException|ArrayIndexOutOfBoundsException|StringIndexOutOfBoundsException|NegativeArraySizeException|ClassNotFoundException|CloneNotSupportedException|IndexOutOfBoundsException|SecurityException|UnsupportedEncodingException|CharacterCodingException|CharConversionException|ParseException|FormatterClosedException|MissingResourceException|MissingFormatArgumentException|DuplicateFormatFlagsException|IllegalFormatFlagsException|IllegalFormatPrecisionException|IllegalFormatConversionException|UnknownFormatConversionException|UnknownFormatFlagsException|FormatFlagsConversionMismatchException|MongoError|RedisClient)"#).unwrap()
     });
     let _ = RE_CRED_QUERY.get_or_init(|| {
         // Credentials transported in the URL query string — session/credential
@@ -3937,6 +4015,18 @@ impl AstLexer {
                     .active_token_names
                     .push("JS_LOOP_PROBE".to_string());
             }
+            // SQL tail fragments that need end-of-value anchoring: dangling
+            // OR/AND, `;update`, `(select`, `IN (...)`, `IS NULL`, `<>`
+            // (CRS 942210/942120/942410). head_norm = path+query+body, so a
+            // trailing fragment is a real value tail, not mid-text.
+            if RE_SQL_TRAIL_OP.get().unwrap().is_match(&head_norm)
+                || (!b64_padding_tail && RE_SQL_FRAGMENT.get().unwrap().is_match(&head_norm))
+            {
+                tokens.has_sqli_extended_signal = true;
+                tokens
+                    .active_token_names
+                    .push("SQL_TAIL_FRAGMENT".to_string());
+            }
         }
 
         // A. GraphQL AST Grammar Analyzer
@@ -5176,11 +5266,135 @@ impl AstLexer {
             if RE_SQL_FRAGMENT.get().unwrap().is_match(&norm)
                 || RE_SQL_STRING_PROBE.get().unwrap().is_match(&norm)
                 || RE_SQL_CATALOG.get().unwrap().is_match(&norm)
+                || RE_SQL_QUOTE_FRAG.get().unwrap().is_match(&norm)
             {
                 tokens.has_sqli_extended_signal = true;
                 tokens
                     .active_token_names
                     .push("SQL_FRAGMENT_PROBE".to_string());
+            }
+            // Comment-split SQL keywords (CRS 942440): DR/**/OP, SE/**/LECT.
+            // Only counts when an actual /* */ comment sits inside the text
+            // AND stripping comments reveals a strong SQL keyword — plain
+            // "select * from" prose never carries a comment.
+            if norm.contains("/*") {
+                let stripped: String = {
+                    let mut out = String::with_capacity(norm.len());
+                    let mut rest = norm.as_str();
+                    while let Some(i) = rest.find("/*") {
+                        out.push_str(&rest[..i]);
+                        match rest[i..].find("*/") {
+                            Some(j) => rest = &rest[i + j + 2..],
+                            None => {
+                                rest = "";
+                                break;
+                            }
+                        }
+                    }
+                    out.push_str(rest);
+                    out
+                };
+                if Regex::new(r#"(?i)(?:select|union|insert|update|delete|drop|alter|create|truncate|exec|declare|grant|revoke)"#)
+                    .map(|r| r.is_match(&stripped))
+                    .unwrap_or(false)
+                {
+                    tokens.has_sqli_extended_signal = true;
+                    tokens
+                        .active_token_names
+                        .push("SQL_COMMENT_SPLIT".to_string());
+                }
+            }
+            // Quote-splice evasion: 'i'fconfig, wh'oami, ""p""y""t""h""o""n"".
+            // Strip quotes and re-test the command vocabulary — only counts
+            // when quotes actually fragment the text (CRS 932240/932290).
+            if norm.matches(|c| c == '\'' || c == '"').count() >= 2 {
+                let deq: String = norm.chars().filter(|c| *c != '\'' && *c != '"').collect();
+                if deq.len() < 4000
+                    && (RE_SHELL_SEMI_CMD.get().unwrap().is_match(&deq)
+                        || RE_SHELL_SEMI_EXTRA.get().unwrap().is_match(&deq)
+                        || RE_SHELL_TOOL_BARE.get().unwrap().is_match(&deq)
+                        || RE_VERSIONED_INTERP.get().unwrap().is_match(&deq))
+                {
+                    tokens.has_rce_extended_signal = true;
+                    tokens
+                        .active_token_names
+                        .push("QUOTE_SPLICE_EVASION".to_string());
+                }
+            }
+            // Separator-free shell-tool arguments (env --version, strace x,
+            // ll /var/www) and brace-expansion command splicing (CRS 932236/
+            // 932281).
+            if RE_TOOL_CMD.get().unwrap().is_match(&norm)
+                || RE_BRACE_EXPAND.get().unwrap().is_match(&norm)
+            {
+                tokens.has_rce_extended_signal = true;
+                tokens
+                    .active_token_names
+                    .push("EXTENDED_SHELL_TOOL".to_string());
+            }
+            // PHP `func=(` assignments and (func)('arg') alternate call
+            // syntax (CRS 933150/933210/933211).
+            if RE_PHP_ASSIGN.get().unwrap().is_match(&norm)
+                || RE_PHP_PAREN_CALL.get().unwrap().is_match(&norm)
+            {
+                tokens.has_php_injection_signal = true;
+                tokens
+                    .active_token_names
+                    .push("PHP_SINK_ASSIGN".to_string());
+            }
+            // scheme:// inside parameter values — non-http(s) anywhere,
+            // http(s) only under URL-ish parameter names (CRS 931130).
+            if RE_RFI_PARAM_URL.get().unwrap().is_match(&norm) {
+                tokens.has_rfi_scheme_signal = true;
+                tokens
+                    .active_token_names
+                    .push("PARAM_URL_SCHEME".to_string());
+            }
+            // Sensitive/system filenames smuggled through filename-carrying
+            // headers only (CRS 932180) — a bare ".env"/"shadow" inside a JSON
+            // body or config text is not a filename probe.
+            {
+                let hit = req.headers.iter().any(|(k, v)| {
+                    let kl = k.to_ascii_lowercase();
+                    (kl.contains("filename")
+                        || kl.contains("file-name")
+                        || kl.contains("content-disposition")
+                        || kl.contains("x-download")
+                        || kl.contains("x-original")
+                        || kl.contains("x-file"))
+                        && RE_FILENAME_PROBE.get().unwrap().is_match(v)
+                });
+                if hit {
+                    tokens.has_lfi_extended_signal = true;
+                    tokens
+                        .active_token_names
+                        .push("FILENAME_PROBE".to_string());
+                }
+            }
+            // SSRF parser-differential forms: space+&/@ userinfo, localhost
+            // family, ::1, decimal/hex loopback (CRS 934120/934190).
+            if RE_SSRF_CONFUSE.get().unwrap().is_match(&norm) {
+                tokens.has_ssrf_metadata = true;
+                tokens
+                    .active_token_names
+                    .push("SSRF_CONFUSION".to_string());
+            }
+            // mime=text/xml body claiming XML while carrying HTML event
+            // handlers or namespaced/script markup (CRS 941160).
+            if (norm.contains("mime=text/xml") || norm.contains("mime=text/xsl"))
+                && (Regex::new(r#"(?i)\bon(?:error|load|click|focus|blur|mouseover|mouseout|mouseenter|mouseleave|keydown|keyup|keypress|submit|reset|change|input|animationstart|animationend|animationiteration|transitionend|begin|end|repeat|pointerdown|pointerup|touchstart|touchend|drag|drop|scroll|wheel|copy|cut|paste|contextmenu|dblclick|mousedown|mouseup|mousemove|select|toggle|beforeinput|invalid|search|ratechange|volumechange|play|pause|ended|timeupdate|progress|canplay|canplaythrough|durationchange|emptied|loadeddata|loadedmetadata|loadstart|suspend|stalled|waiting|seeking|seeked|playing|formdata|securitypolicyviolation|slotchange|webkitanimationend|webkitanimationiteration|webkitanimationstart|webkittransitionend)\s*="#)
+                    .map(|r| r.is_match(&norm))
+                    .unwrap_or(false)
+                    || norm.contains("<?")
+                    || norm.contains("<!")
+                    || Regex::new(r#"(?i)<[a-z]+:"#)
+                        .map(|r| r.is_match(&norm))
+                        .unwrap_or(false))
+            {
+                tokens.has_xss_extended_signal = true;
+                tokens
+                    .active_token_names
+                    .push("XML_MIME_XSS".to_string());
             }
             // PHP builtin probes missed by RE_PHP_DANGER: junk-prefixed
             // calls, decode/compression helpers, socket API, superglobals.
