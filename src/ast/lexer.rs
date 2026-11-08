@@ -353,6 +353,25 @@ static RE_RFI_PARAM_URL: OnceLock<Regex> = OnceLock::new();
 static RE_FILENAME_PROBE: OnceLock<Regex> = OnceLock::new();
 static RE_SSRF_CONFUSE: OnceLock<Regex> = OnceLock::new();
 static RE_SQL_COMMENT_SPLIT: OnceLock<Regex> = OnceLock::new();
+static RE_ALIAS_CMD: OnceLock<Regex> = OnceLock::new();
+static RE_SHELL_SPECIAL_VAR: OnceLock<Regex> = OnceLock::new();
+static RE_SEMI_DOT_CMD: OnceLock<Regex> = OnceLock::new();
+static RE_PIPE_CMD_PAREN: OnceLock<Regex> = OnceLock::new();
+static RE_QUOTED_CMD_ARG: OnceLock<Regex> = OnceLock::new();
+static RE_SEMI_DANGEROUS: OnceLock<Regex> = OnceLock::new();
+static RE_GLOB_CMD: OnceLock<Regex> = OnceLock::new();
+static RE_UNAME_VAR: OnceLock<Regex> = OnceLock::new();
+static RE_INTERP_EVAL: OnceLock<Regex> = OnceLock::new();
+static RE_CURL_LOCAL: OnceLock<Regex> = OnceLock::new();
+static RE_IP_CMD: OnceLock<Regex> = OnceLock::new();
+static RE_RC_SCRIPT: OnceLock<Regex> = OnceLock::new();
+static RE_PHP_CALL_PAREN: OnceLock<Regex> = OnceLock::new();
+static RE_PHP_FUNC_EMPTY: OnceLock<Regex> = OnceLock::new();
+static RE_REQUIRE_BRACKET: OnceLock<Regex> = OnceLock::new();
+static RE_LDAP_INJ: OnceLock<Regex> = OnceLock::new();
+static RE_SCANNER_UA: OnceLock<Regex> = OnceLock::new();
+static RE_PATH_EXT: OnceLock<Regex> = OnceLock::new();
+static RE_IF_BATCH2: OnceLock<Regex> = OnceLock::new();
 static RE_B64_TOKEN: OnceLock<Regex> = OnceLock::new();
 static RE_SCRIPT_EXT_HDR: OnceLock<Regex> = OnceLock::new();
 static RE_HEX_PAIRS: OnceLock<Regex> = OnceLock::new();
@@ -702,8 +721,9 @@ fn init_regexes() {
         Regex::new(r#"(?i)\b(?:array_map|array_filter|usort|uasort|uksort|array_reduce|call_user_func|call_user_func_array|call_user_method|call_user_method_array|forward_static_call|forward_static_call_array|register_shutdown_function|register_tick_function|set_error_handler|spl_autoload_register|iterator_apply|preg_replace_callback|array_walk|array_walk_recursive|mb_ereg_replace|preg_filter|FFI::cdef|ffi::cdef|ReflectionFunction|ReflectionMethod|Closure::fromCallable)\s*\(\s*['"](?:system|exec|shell_exec|passthru|popen|proc_open|assert|eval|create_function)['"]"#).unwrap()
     });
     let _ = RE_PHP_VAR_CALL.get_or_init(|| {
-        // Variable-function invocation with a string literal: $f('id'), $f(`id`)
-        Regex::new(r#"(?i)\$[a-zA-Z_]\w{0,4}\s*\(\s*['"`][^'"`]{1,60}['"`]\s*\)"#).unwrap()
+        // Variable-function invocation: $f('id'), $f(`id`), $arr[i](),
+        // $obj{prop}() — bracket groups and spliced comments allowed.
+        Regex::new(r#"(?i)\$[a-zA-Z_]\w*(?:(?:\[[^\]\n]{1,30}\]|\{[^}\n]{1,30}\})|(?:/\*[^*]*\*/|//[^\n]*\n|#[^\n]*\n|\s))*\("#).unwrap()
     });
     let _ = RE_PHP_CONCAT_ASSIGN.get_or_init(|| {
         // $f='sys'.'tem' string-concat obfuscation feeding a later $f(...) call.
@@ -895,7 +915,7 @@ fn init_regexes() {
         // cmd.exe batch IF constructs: IF /I NOT EXIST, IF DEFINED,
         // IF ERRORLEVEL, IF %ERRORLEVEL% NEQ 0, IF 2 GEQ 15 — conditional
         // command execution probes (CRS 932140).
-        Regex::new(r#"(?i)\bif\s+(?:/\w+\s+)?(?:not\s+)?(?:exist|defined|errorlevel)\b[^\n]{0,80}?\b(?:echo|set|call|goto|del|erase|rd|rmdir|md|mkdir|ren|rename|type|copy|xcopy|robocopy|move|dir|start|exit|pause|rem|shift|assoc|ftype|choice|date|time|ver|vol|label|path|prompt|title|color|mode|cls|more|find|findstr|sort|tree|replace|expand|makecab|debug|edlin|print|defrag|chkdsk|chkntfs|convert|format|restore|attrib|cacls|cipher|compact|driverquery|getmac|gpupdate|reg|shutdown|takeown|wevtutil|whoami|bcdedit|bitsadmin|certutil|clip|cmd|comp|cscript|dcdiag|diskpart|dism|dnscmd|doskey|dsadd|dsget|dsmod|dsmove|dsquery|dsrm|edit|endlocal|expand|extract|fc|findstr|finger|fltmc|forfiles|fsutil|ftp|ftype|gpresult|gptgen|gpmgmt|regini|regsvr32|net|net1|netsh|netstat|ipconfig|ping|tracert|nslookup|arp|route|nbtstat|systeminfo|hostname|set|ver|vol|date|time|title|color|mode|prompt|cls|copy|xcopy|robocopy|move|del|erase|rd|rmdir|md|mkdir|ren|rename|type|more|find|findstr|sort|tree|fc|comp|cipher|compact|convert|diskpart|format|label|mountvol|subst|driverquery|gpresult|gpupdate|secedit|auditpol|cacls|icacls|takeown|attrib|assoc|ftype|doskey|clip|choice|pause|shift|start|call|exit|goto|if|for|timeout|waitfor|shutdown|logoff|tsdiscon|rwinsta|query|quser|msg)\b|\bif\s+%[^%\s]+%\s+(?:eq|neq|ne|lss|leq|gtr|geq|exist)\s+\S|\bif\s+\d+\s+(?:eq|ne|lss|leq|gtr|geq)\s+\d+\s+\w|\bif\s+"[^"]{1,40}"\s+(?:eq|ne|lss|leq|gtr|geq|exist)\b"#).unwrap()
+        Regex::new(r#"(?i)\bif\s+(?:/\w+\s+)?(?:not\s+)?(?:exist|defined|errorlevel)\b[^\n]{0,80}?\b(?:echo|set|call|goto|del|erase|rd|rmdir|md|mkdir|ren|rename|type|copy|xcopy|robocopy|move|dir|start|exit|pause|rem|shift|assoc|ftype|choice|date|time|ver|vol|label|path|prompt|title|color|mode|cls|more|find|findstr|sort|tree|replace|expand|makecab|debug|edlin|print|defrag|chkdsk|chkntfs|convert|format|restore|attrib|cacls|cipher|compact|driverquery|getmac|gpupdate|reg|shutdown|takeown|wevtutil|whoami|bcdedit|bitsadmin|certutil|clip|cmd|comp|cscript|dcdiag|diskpart|dism|dnscmd|doskey|dsadd|dsget|dsmod|dsmove|dsquery|dsrm|edit|endlocal|expand|extract|fc|findstr|finger|fltmc|forfiles|fsutil|ftp|ftype|gpresult|gptgen|gpmgmt|regini|regsvr32|net|net1|netsh|netstat|ipconfig|ping|tracert|nslookup|arp|route|nbtstat|systeminfo|hostname|set|ver|vol|date|time|title|color|mode|prompt|cls|copy|xcopy|robocopy|move|del|erase|rd|rmdir|md|mkdir|ren|rename|type|more|find|findstr|sort|tree|fc|comp|cipher|compact|convert|diskpart|format|label|mountvol|subst|driverquery|gpresult|gpupdate|secedit|auditpol|cacls|icacls|takeown|attrib|assoc|ftype|doskey|clip|choice|pause|shift|start|call|exit|goto|if|for|timeout|waitfor|shutdown|logoff|tsdiscon|rwinsta|query|quser|msg)\b|\bif\s+%[^%\s]+%\s+(?:equ|eq|neq|ne|lss|leq|gtr|geq|exist)\s+\S|\bif\s+\d+\s+(?:eq|ne|lss|leq|gtr|geq)\s+\d+\s+\w|\bif\s+"[^"]{1,40}"\s+(?:eq|ne|lss|leq|gtr|geq|exist)\b"#).unwrap()
     });
     let _ = RE_SQL_FRAGMENT.get_or_init(|| {
         // Value-anchored SQL predicate and truncated-function probes (CRS
@@ -1368,6 +1388,101 @@ fn init_regexes() {
         ];
         let body = words.iter().map(|w| kw(w)).collect::<Vec<_>>().join("|");
         Regex::new(&format!("(?i)\\b(?:{})\\b", body)).unwrap()
+    });
+    let _ = RE_ALIAS_CMD.get_or_init(|| {
+        // bash alias definitions carrying a command payload (CRS 932175):
+        // alias ls-al='ls -al', alias "quote"=curl, alias +m a=b.
+        Regex::new(r#"(?i)\balias\s+(?:\S*=\s*\S+|\S+\s+\S+=\S+)"#).unwrap()
+    });
+    let _ = RE_SHELL_SPECIAL_VAR.get_or_init(|| {
+        // Special shell parameters ($@ $! $* $? $-) used to split paths and
+        // commands: c$@at+/et$c/pas$swd -> cat /etc/passwd (CRS 932200).
+        // Excludes $_ and $$ (PHP superglobals / variable-variables).
+        Regex::new(r#"(?i)\$[@!*?\-]"#).unwrap()
+    });
+    let _ = RE_SEMI_DOT_CMD.get_or_init(|| {
+        // `;.cmd` / `;."cmd"` / `;\n.cmd` — dot-prefixed command execution
+        // after a separator (CRS 932210).
+        Regex::new(r#"(?i)[;|&]\s*\.\s*\\?["']?\s*\w"#).unwrap()
+    });
+    let _ = RE_PIPE_CMD_PAREN.get_or_init(|| {
+        // Pipe/amp into an editor or pager with a paren arg (CRS 932232):
+        // |vi (x, &w (x.
+        Regex::new(r#"(?i)[|&]\s*(?:vi|vim|nvi|nano|emacs|ex|ed|sed|awk|less|more|man|pico|joe|jed|helix|hx|kakoune|micro|w3m|w)\s*\("#).unwrap()
+    });
+    let _ = RE_QUOTED_CMD_ARG.get_or_init(|| {
+        // Quoted command name followed by another command word — the
+        // 'time' who / "time" who splice shape (CRS 932232).
+        Regex::new(r#"(?i)["'][^"'\n]{1,30}["']\s+(?:who|whoami|id|uname|hostname|pwd|env|date|time|stat|ll|ps|ls|cat|which|type|file|grep|awk|sed|find|xargs|sort|uniq|wc|head|tail|cut|tr|tee|curl|wget|nc|netcat|python|perl|ruby|php|node|bash|sh|zsh|dash|ksh|csh|tcsh|fish|pwsh|powershell|cmd)\b"#).unwrap()
+    });
+    let _ = RE_SEMI_DANGEROUS.get_or_init(|| {
+        // rmt-* commands, trap handlers, account tools after a separator,
+        // and $var cmd chains (CRS 932235/932236).
+        Regex::new(r#"(?i);\s*(?:rmt-(?:tar|dump)|trap|lastlogin|adduser)\b|[|;]\s*\$[a-zA-Z_]\w*\s+\w+"#).unwrap()
+    });
+    let _ = RE_GLOB_CMD.get_or_init(|| {
+        // Shell glob character-class inside a command word: adduse[r] ->
+        // adduser (CRS 932240). Index vars i/j/k/n/x excluded to keep
+        // arr[i]/items[n] JS/JSON safe.
+        Regex::new(r#"(?i)\b[a-z]{5,}\[[a-hlm-wyz]\]"#).unwrap()
+    });
+    let _ = RE_UNAME_VAR.get_or_init(|| {
+        // uname$u -a — variable glued to a system-info command (CRS 932240).
+        Regex::new(r#"(?i)\b(?:uname|id|whoami|hostname|pwd|env|date|which|type)\s*\$\w*\s+-"#).unwrap()
+    });
+    let _ = RE_INTERP_EVAL.get_or_init(|| {
+        // Interpreters invoked with an eval flag AND an argument opener:
+        // python -c ", perl -e ', node -e ` (CRS 932240). Bare `-c` without
+        // an argument is documentation, not execution.
+        Regex::new(r#"(?i)\b(?:python[0-9.]*|perl[0-9.]*|ruby[0-9.]*|php[0-9.]*|node(?:js)?[0-9.]*|lua[0-9.]*|bash|dash|zsh|ksh|csh|tcsh|fish|pwsh|powershell|cmd|wmic)\s+(?:-c|-e|-r|-command|/c)\s*["'($`\[]"#).unwrap()
+    });
+    let _ = RE_CURL_LOCAL.get_or_init(|| {
+        // curl/wget aimed at loopback/link-local/localhost names only —
+        // public domains and paths stay legitimate (CRS 932290).
+        Regex::new(r#"(?i)\b(?:curl|wget)\s+(?:localhost|localhost\.|127\.|0\.0\.0\.0|\[::1\]|::1|169\.254\.|lvh\.me|vcap\.me|localtest\.me)"#).unwrap()
+    });
+    let _ = RE_IP_CMD.get_or_init(|| {
+        // ip(8) subcommands: ip a, ip link, ip route (CRS 932290).
+        Regex::new(r#"(?i)\bip\s+(?:a|addr|address|link|route|neigh|rule|tunnel|tap|tun|xfrm|netns|netnsid|maddress|mroute|mrule|monitor|statistics|stats|-s|-details|-br|-\w)\b"#).unwrap()
+    });
+    let _ = RE_RC_SCRIPT.get_or_init(|| {
+        // rc(1) running a script file: rc script.sh (CRS 932236).
+        Regex::new(r#"(?i)\brc\s+\S+\.(?:sh|bash|zsh|ksh|csh|fish|ps1|bat|cmd)\b"#).unwrap()
+    });
+    let _ = RE_PHP_CALL_PAREN.get_or_init(|| {
+        // PHP extension functions called with comments/newlines spliced
+        // between the name and the paren (CRS 933161): checkdate/**/(),
+        // symlink/**//**/(), serialize#c\n(), crypt(abc).
+        Regex::new(r#"(?i)\b(?:checkdate|symlink|crypt|posix_\w+|curl_\w+|openssl_\w+|ldap_\w+|snmp_\w+|imap_\w+|ftp_\w+|ssh2_\w+|yaml_\w+|memcache\w*|redis\w*|mongo\w*|mysqli?\w*|pg_\w+|sqlite3?\w*|odbc_\w+|zip_\w+|rar_\w*|zlib_\w*|bz\w*|gmp_\w+|bcmath_\w*|calendar_\w+|ctype_\w+|exif_\w+|fileinfo_\w*|filter_\w+|gettext|gnupg|grpc|hash|hash_\w+|http_\w+|iconv|imagick|intl|json_\w+|libxml\w*|mailparse|maxminddb|mb_\w+|mcrypt|memcached|msgpack|mysqli|mysqlnd|oci8|odbc|opcache|openssl|parsekit|pcntl|pcre|pdo|pgsql|phar|posix|protobuf|pspell|rar|readline|redis|reflection|session|shmop|simplexml|snmp|soap|sockets|solr|sphinx|sqlite|ssh2|stats|stomp|suhosin|svn|sybase|sysvmsg|sysvsem|sysvshm|tidy|tokenizer|uploadprogress|uri_template|uuid|v8js|xdiff|xml|xmlrpc|xsl|yaml|yaz|zend_test|zip|zlib)\s*(?:/\*[^*]*\*/\s*|#[^\n]*\n\s*|\s)*\("#).unwrap()
+    });
+    let _ = RE_PHP_FUNC_EMPTY.get_or_init(|| {
+        // Dangerous/rare PHP builtins invoked with an empty call
+        // (CRS 933150): curl_init(), posix_getegid(), print_r( ).
+        // Callback-able names (is_*, file_exists, strrev) stay out.
+        Regex::new(r#"(?i)\b(?:curl_init|curl_exec|curl_multi_exec|curl_setopt|curl_close|posix_\w+|print_r|var_dump|var_export|debug_zval_dump|debug_print_backtrace|debug_backtrace|phpinfo|show_source|highlight_file|shell_exec|exec|system|passthru|popen|proc_open|pcntl_exec|dl|create_function|call_user_func|call_user_func_array|forward_static_call|register_shutdown_function|register_tick_function|iterator_apply|array_walk|array_walk_recursive|preg_replace_callback|preg_filter|mb_ereg_replace|spl_autoload_register|spl_autoload_call|set_error_handler|set_exception_handler|restore_error_handler|restore_exception_handler|trigger_error|user_error|error_log|error_reporting|ini_set|ini_get|ini_alter|ini_restore|ini_get_all|get_cfg_var|getenv|putenv|apache_getenv|apache_setenv|apache_note|getallheaders|apache_request_headers|apache_response_headers|headers_list|headers_sent|header|header_remove|http_response_code|setcookie|setrawcookie|fastcgi_finish_request|ignore_user_abort|connection_aborted|connection_status)\s*\(\s*\)"#).unwrap()
+    });
+    let _ = RE_REQUIRE_BRACKET.get_or_init(|| {
+        // Node require[] property injection (CRS 934100).
+        Regex::new(r#"(?i)\brequire\s*\["#).unwrap()
+    });
+    let _ = RE_LDAP_INJ.get_or_init(|| {
+        // LDAP filter escapes: )(cn>=x), )(&(cn=, ) ( |, )(& (CRS 921200).
+        Regex::new(r#"(?i)\)\s*[&|]\s*\(|\)\s*\(\s*[a-zA-Z][\w.:-]*\s*(?:=|~=|>=|<=|>|<|\*)|\)\s*\(\s*[&|]"#).unwrap()
+    });
+    let _ = RE_SCANNER_UA.get_or_init(|| {
+        // Security-scanner / attack-tool User-Agent tokens (CRS 913100).
+        Regex::new(r#"(?i)(?:arachni|nuclei|nessus|zgrab|acunetix|wpscan|nikto|sqlmap|openvas|qualys|tenable|rapid7|insightvm|nexpose|metasploit|havij|pangolin|netsparker|probely|detectify|skipfish|w3af|vega|grabber|webshag|jbrofuzz|commix|xsstrike|dalfox|tplmap|ssrfmap|h2csmuggler|crlfuzz|lfuzz|zaproxy|owasp\.zap|burpsuite|msfconsole|msfvenom|masscan|zmap|rustscan|unicornscan|angry.?ip|appscan|nmap/|dirbuster|gobuster|wfuzz|ffuf)"#).unwrap()
+    });
+    let _ = RE_PATH_EXT.get_or_init(|| {
+        // Sensitive/backup file extensions in the URL path (CRS 920440):
+        // .bak .old .db .rdb .pem .key .p12 .jks .kdbx .sqlite dumps.
+        Regex::new(r#"(?i)\.(?:bak|old|db|rdb|pem|key|p12|pfx|jks|keystore|kdbx|sqlite3?|dbf|mdb|accdb|frm|myd|myi|ibd|ibdata|aria|s3db|db3)\b"#).unwrap()
+    });
+    let _ = RE_IF_BATCH2.get_or_init(|| {
+        // Batch IF forms the first regex missed (CRS 932140): IF %VAR% EQU,
+        // IF [%1] EQU [], IF (1) EQU (1), IF NOT DEFINED, IF /I "x" NEQ "y",
+        // if/i a==b.
+        Regex::new(r#"(?i)\bif\s+(?:%[^%\s]+%|\[[^\]]*\]|\([^)]*\)|"[^"]*"|'[^']*'|\w+)\s+(?:equ|neq|ne|lss|leq|gtr|geq|exist|not\s+exist|not\s+defined|defined|errorlevel)\b|\bif\s+not\s+(?:exist|defined|errorlevel)\b|\bif\s*\/i\s+\S+\s*==\s*\S+|\bif\s+\/i\s+"[^"]*"\s+(?:equ|neq|ne|lss|leq|gtr|geq)\s+"[^"]*""#).unwrap()
     });
     let _ = RE_B64_TOKEN.get_or_init(|| {
         // Standalone base64-ish tokens worth a gadget-substring decode check.
@@ -5220,6 +5335,13 @@ impl AstLexer {
                     "/.kiro",
                     "/.trae",
                     "/.void",
+                    "/.roo",
+                    "/.zed",
+                    "/.cline",
+                    "/.rovodev",
+                    "/.plandex",
+                    "/.n8n",
+                    "/.junie",
                     "/.config/gh",
                     "/.config/gcloud",
                     "/.azure",
@@ -5313,7 +5435,12 @@ impl AstLexer {
                     && (RE_SHELL_SEMI_CMD.get().unwrap().is_match(&deq)
                         || RE_SHELL_SEMI_EXTRA.get().unwrap().is_match(&deq)
                         || RE_SHELL_TOOL_BARE.get().unwrap().is_match(&deq)
-                        || RE_VERSIONED_INTERP.get().unwrap().is_match(&deq))
+                        || RE_VERSIONED_INTERP.get().unwrap().is_match(&deq)
+                        || RE_INTERP_EVAL.get().unwrap().is_match(&deq)
+                        || RE_CURL_LOCAL.get().unwrap().is_match(&deq)
+                        || RE_IP_CMD.get().unwrap().is_match(&deq)
+                        || RE_QUOTED_CMD_ARG.get().unwrap().is_match(&deq)
+                        || RE_ALIAS_CMD.get().unwrap().is_match(&deq))
                 {
                     tokens.has_rce_extended_signal = true;
                     tokens
@@ -5395,6 +5522,77 @@ impl AstLexer {
                 tokens
                     .active_token_names
                     .push("XML_MIME_XSS".to_string());
+            }
+            // CRS batch 2 — shell/RCE vocabulary: alias defs, special shell
+            // vars ($@ $! $* $? $-), ;.cmd, |vi (, 'time' who, rmt-*/trap/
+            // adduser, $var cmd, glob-in-command, uname$u, rc script.sh,
+            // interpreter eval flags, curl/wget to loopback, ip(8).
+            if RE_ALIAS_CMD.get().unwrap().is_match(&norm)
+                || RE_SHELL_SPECIAL_VAR.get().unwrap().is_match(&norm)
+                || RE_SEMI_DOT_CMD.get().unwrap().is_match(&norm)
+                || RE_PIPE_CMD_PAREN.get().unwrap().is_match(&norm)
+                || RE_QUOTED_CMD_ARG.get().unwrap().is_match(&norm)
+                || RE_SEMI_DANGEROUS.get().unwrap().is_match(&norm)
+                || RE_GLOB_CMD.get().unwrap().is_match(&norm)
+                || RE_UNAME_VAR.get().unwrap().is_match(&norm)
+                || RE_RC_SCRIPT.get().unwrap().is_match(&norm)
+                || RE_INTERP_EVAL.get().unwrap().is_match(&norm)
+                || RE_CURL_LOCAL.get().unwrap().is_match(&norm)
+                || RE_IP_CMD.get().unwrap().is_match(&norm)
+                || RE_IF_BATCH2.get().unwrap().is_match(&norm)
+            {
+                tokens.has_rce_extended_signal = true;
+                tokens
+                    .active_token_names
+                    .push("EXTENDED_SHELL_TOOL".to_string());
+            }
+            // PHP: comment-spliced extension calls, $var()/bracket calls,
+            // dangerous builtins with empty parens, require[ injection.
+            if RE_PHP_CALL_PAREN.get().unwrap().is_match(&norm)
+                || RE_PHP_VAR_CALL.get().unwrap().is_match(&norm)
+                || RE_PHP_FUNC_EMPTY.get().unwrap().is_match(&norm)
+                || RE_REQUIRE_BRACKET.get().unwrap().is_match(&norm)
+            {
+                tokens.has_php_injection_signal = true;
+                tokens
+                    .active_token_names
+                    .push("PHP_PROBE_EXTRA".to_string());
+            }
+            // LDAP filter escapes )(cn>=, )(&(, ) ( | (CRS 921200).
+            if RE_LDAP_INJ.get().unwrap().is_match(&norm) {
+                tokens.has_sqli_extended_signal = true;
+                tokens
+                    .active_token_names
+                    .push("LDAP_FILTER_INJECTION".to_string());
+            }
+            // Security-scanner User-Agent tokens — header-gated so prose
+            // mentioning "nmap" in a body stays benign (CRS 913100).
+            {
+                let ua_hit = req.headers.iter().any(|(k, v)| {
+                    k.eq_ignore_ascii_case("user-agent")
+                        && RE_SCANNER_UA.get().unwrap().is_match(v)
+                });
+                if ua_hit {
+                    tokens.has_protocol_enforcement_signal = true;
+                    tokens
+                        .active_token_names
+                        .push("SCANNER_USER_AGENT".to_string());
+                }
+            }
+            // Sensitive/backup file extensions in the URL path only —
+            // "download report.bak" in a body is not a path probe (CRS
+            // 920440).
+            {
+                let path_dec = percent_decode_str(&req.path)
+                    .decode_utf8_lossy()
+                    .to_lowercase();
+                if RE_PATH_EXT.get().unwrap().is_match(&path_dec) {
+                    tokens.has_sensitive_file_probe = true;
+                    tokens.has_lfi_extended_signal = true;
+                    tokens
+                        .active_token_names
+                        .push("SENSITIVE_PATH_EXT".to_string());
+                }
             }
             // PHP builtin probes missed by RE_PHP_DANGER: junk-prefixed
             // calls, decode/compression helpers, socket API, superglobals.
@@ -5731,6 +5929,19 @@ impl AstLexer {
                             tokens
                                 .active_token_names
                                 .push("B64_JAVA_GADGET".to_string());
+                            break;
+                        }
+                        // PHP variable-function obfuscation surviving base64:
+                        // $$NEDFUNC$$, $$xFUNCy$$ (CRS 934100).
+                        if sl.contains("$$")
+                            && Regex::new(r#"\$\$[A-Za-z_]{0,20}FUNC"#)
+                                .map(|r| r.is_match(&sl))
+                                .unwrap_or(false)
+                        {
+                            tokens.has_php_injection_signal = true;
+                            tokens
+                                .active_token_names
+                                .push("B64_PHP_VARFUNC".to_string());
                             break;
                         }
                     }
