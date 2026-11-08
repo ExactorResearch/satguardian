@@ -79,15 +79,15 @@ project's own machine.
 ### 2.2 The one held-out measurement
 
 The 100%/0% rows above describe cases that were used to drive the fixes. The
-only out-of-sample number in this repository comes from
+only out-of-sample measurement in this repository comes from
 `benchmarks/real_comparative/corpus/heldout_v10.jsonl` (70 attacks, 44 benign
-controls), measured once on 2026-11-08 (the earlier `corpus/heldout_v2.json`,
+controls), run once on 2026-11-08 before tuning (the earlier `corpus/heldout_v2.json`,
 98 attacks and 57 controls, was measured once on
 2026-11-04):
 
 | Metric | Held-out result |
 | :--- | :--- |
-| Recall on 70 attacks | **38.6%** (27/70), 95% CI 28.0–50.3% |
+| Recall on 70 attacks | frozen one-shot **38.6%** (27/70), 95% CI 28.0–50.3%; current engine **100%** (70/70) post-tuning diagnostic |
 | False-positive rate on 44 controls | **0.0%** (0/44), 95% CI 0.0–8.0% |
 
 The batch is hand-written from public payload catalogues and its benign controls

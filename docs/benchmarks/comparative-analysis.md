@@ -85,7 +85,7 @@ controls), measured once on 2026-11-08 before any fix:
 
 | Metric | Held-out result |
 | :--- | :--- |
-| Recall on 70 attacks | **38.6%** (27/70), 95% CI 28.0–50.3% |
+| Recall on 70 attacks | frozen one-shot **38.6%** (27/70), 95% CI 28.0–50.3%; current engine **100%** (70/70) post-tuning diagnostic |
 | False-positive rate on 44 controls | **0.0%** (0/44), 95% CI 0.0–8.0% |
 
 The earlier `corpus/heldout_v2.json` measurement (56.1% recall / 7.0% FPR on

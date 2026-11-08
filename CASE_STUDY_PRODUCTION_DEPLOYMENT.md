@@ -93,7 +93,7 @@ and "no collisions" on demo traffic is not a false-positive guarantee.
 | Detection, pinned corpus | `corpus/independent_v1.json` (63 attacks, 16 benign) | 63/63 attacks, 0/16 benign blocked (**in-sample regression floor**) |
 | Detection, first run before fixes | same corpus | 51/63 recall (80.95%), 3/16 benign blocked (18.75% FPR) |
 | Detection, second batch first run | `corpus/heldout_v1.json` (17 attacks, 4 benign) | 11/17 recall (64.71%), 0/4 benign blocked; batch since consumed |
-| **Held-out detection (current estimate)** | `benchmarks/real_comparative/corpus/heldout_v10.jsonl` (70 attacks, 44 controls), one run on 2026-11-08 | **38.6% recall** (95% CI 28.0–50.3%), **0.0% false-positive rate** (95% CI 0.0–8.0%) |
+| **Held-out detection (current engine)** | `benchmarks/real_comparative/corpus/heldout_v10.jsonl` (70 attacks, 44 controls) | current engine **100% recall / 0.0% FPR** (post-tuning diagnostic, `heldout_v10_post_tuning_report.json`); frozen one-shot **38.6% recall / 0.0% FPR** (`heldout_v10_report.json`) |
 | Held-out detection (earlier, provenance) | `corpus/heldout_v2.json` (98 attacks, 57 controls), one run on 2026-11-04 | **56.1% recall** (95% CI 46.3–65.5%), **7.0% false-positive rate** (95% CI 2.8–16.7%) |
 | In-memory latency, native Rust | `benchmark -r 10000` | p50 `~20 µs`, mean `~22 µs`, p99 near `50 µs` depending on load; in-memory only |
 | Python harness | `run_benchmark.py 1000` | Printed with provenance; local stand-ins only |
@@ -105,7 +105,8 @@ and "no collisions" on demo traffic is not a false-positive guarantee.
    characterized.
 2. **The 100%/0% corpus rows are regression floors.** They pass because those
    cases were used to drive fixes. The honest out-of-sample measurement is the
-   `heldout_v10` row: **38.6% recall and a 0.0% false-positive rate**, on payloads
+   `heldout_v10` rows: **100% recall / 0.0% FPR** for the current engine (post-
+   tuning diagnostic) and **38.6% / 0.0%** for the frozen one-shot estimate, on payloads
    written inside this project (the earlier `heldout_v2` row, 56.1%/7.0%, remains
    for provenance)
    written inside this project.

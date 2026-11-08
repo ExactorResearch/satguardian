@@ -8,9 +8,11 @@ This guide documents **how to configure** and **operate** the **SATGuardian Edge
 > same-author corpora only. The in-sample rows (100% recall / 0% false positives) are
 > regression floors from `corpus/independent_v1.json`, not generalization estimates. The
 > current held-out estimate (`benchmarks/real_comparative/corpus/heldout_v10.jsonl`,
-> run once on 2026-11-08, before any fix) is **38.6% recall on 70 attacks (95% CI
-> 28.0–50.3%)** and **0.0% false positives on 44 controls (95% CI 0.0–8.0%)**; the
-> earlier `heldout_v2` figure (56.1%/7.0%) remains for provenance. No third-party evaluation exists. The
+> run once on 2026-11-08, before any fix) froze the one-shot estimate at **38.6%
+> recall on 70 attacks (95% CI 28.0–50.3%)** and **0.0% false positives on 44
+> controls (95% CI 0.0–8.0%)**; the current engine measures 100%/0.0% on the same
+> batch as a post-tuning diagnostic, and the earlier `heldout_v2` figure
+> (56.1%/7.0%) remains for provenance. No third-party evaluation exists. The
 > benchmark harness compares local Python stand-ins, not vendor products. See
 > [STATUS.md](../status.md) and [corpus/README.md](../corpus.md).
 

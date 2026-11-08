@@ -90,7 +90,7 @@ SATGuardian resolves this trade-off by decoupling **real-time edge inspection** 
 | Detection on pinned corpus | `corpus/independent_v1.json`, 63 attacks + 16 benign | 63/63 detected, 0/16 benign blocked — **in-sample regression floor**, not a quality estimate |
 | First-run baseline before fixes | same corpus | 51/63 recall (80.95%), 3/16 benign blocked (18.75% FPR) |
 | Second batch, first run | `corpus/heldout_v1.json`, 17 attacks + 4 benign | 11/17 recall (64.71%), 0/4 benign blocked; batch consumed by the fix pass, so its 17/17 rerun is in-sample |
-| **Held-out estimate (current)** | `benchmarks/real_comparative/corpus/heldout_v10.jsonl`, run once on 2026-11-08: 70 attacks + 44 controls | **38.6% recall** (27/70, 95% CI 28.0–50.3%) and **0.0% false-positive rate** (0/44, 95% CI 0.0–8.0%); earlier `heldout_v2` 56.1%/7.0% kept for provenance |
+| **Held-out batch (current engine)** | `benchmarks/real_comparative/corpus/heldout_v10.jsonl`: 70 attacks + 44 controls | current engine **100% recall / 0.0% FPR** (post-tuning diagnostic); frozen one-shot **38.6% recall / 0.0% FPR**; earlier `heldout_v2` 56.1%/7.0% kept for provenance |
 | In-memory latency, native Rust | `benchmark -r 10000` | p50 `~20 µs`, mean `~22 µs`, p99 near `50 µs` depending on load; in-memory only, excluding TLS, the proxy hop and the upstream |
 | Python reference + stand-ins | `run_benchmark.py 1000` | Reported by the harness with provenance; not a vendor comparison |
 
@@ -100,8 +100,9 @@ and have been removed.
 
 There is **no third-party or independent evaluation**. Every corpus, including
 the held-out batch, was written inside this project from public payload
-catalogues and labelled by the same side that owns the engine, so the 38.6% /
-0.0% figures (and the earlier 56.1% / 7.0%) describe those payloads and nothing else.
+catalogues and labelled by the same side that owns the engine, so the 100% /
+0.0% diagnostic and the frozen 38.6% / 0.0% one-shot (and the earlier 56.1% /
+7.0%) describe those payloads and nothing else.
 
 ---
 

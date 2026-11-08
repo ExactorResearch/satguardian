@@ -241,7 +241,7 @@ in-sample:
 **Update (2026-11-08):** later batches v3–v10 were each measured once and spent
 as tuning inputs. The current publishable one-shot estimate is
 `benchmarks/real_comparative/corpus/heldout_v10.jsonl`, run once before any fix
-against it: **38.6% recall / 0.0% FPR** (`corpus/heldout_v10_report.json`,
+against it once: **38.6% recall / 0.0% FPR** frozen one-shot estimate (`corpus/heldout_v10_report.json`,
 frozen). The v2 figure above remains for provenance; the CRS v4.30 suite is
 measured in-sample at 82.0% and is not an independent evaluation. Details in
 [status](status.md).

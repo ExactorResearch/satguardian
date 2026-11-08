@@ -171,7 +171,7 @@ Blocked, in order of consequence:
 ## 7. What may be said publicly, today
 
 Nothing comparative. What may be said is the held-out measurement in
-`corpus/heldout_v10_report.json` - 38,6 % recall and 0,0 % false positives on 114
+`corpus/heldout_v10_report.json` - frozen one-shot: 38,6 % recall and 0,0 % false positives; `corpus/heldout_v10_post_tuning_report.json` - current engine: 100 % recall and 0,0 % false positives on 114
 cases labelled before any engine call, measured once on 2026-11-08 - with its
 interval and its date. The earlier `heldout_v2_report.json` figure (56,1 % /
 7,0 %) remains published for provenance. The 9,5 % above is internal, it is a

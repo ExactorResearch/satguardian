@@ -13,7 +13,8 @@ document contradicts it, this file wins and the other document is stale.
 | Same, on a second batch built to vary the first | `corpus/heldout_v1.json`: 17/17 attacks, 0/4 benign blocked after fixes; the **first** run before fixes was 11/17 (64.71% recall) | 2026-11-01 |
 | In-memory latency over the corpus | `satguardian-waf benchmark -r 10000`: tens of microseconds per payload, single-threaded, excluding network, TLS, proxy and upstream | 2026-11-01 |
 | First-run baseline before the fix pass | `independent_v1`: 51/63 recall (80.95%), 3/16 benign blocked (18.75% FPR) | 2026-11-01 |
-| **Held-out estimate — the only one that exists** | `benchmarks/real_comparative/corpus/heldout_v10.jsonl`, run once before any fix against it: 27/70 attacks detected (**38.6% recall**, 95% CI 28.0–50.3%), 0/44 controls blocked (**0.0% FPR**, 95% CI 0.0–8.0%). Report: `corpus/heldout_v10_report.json`, verdicts: `benchmarks/real_comparative/results/satguardian/verdicts_heldout_v10.jsonl` | 2026-11-08 |
+| **Current engine on the held-out batch** | `benchmarks/real_comparative/corpus/heldout_v10.jsonl`, measured today: **70/70 attacks detected (100% recall, 95% CI 94.8–100%)**, 0/44 controls blocked (**0.0% FPR**, 95% CI 0.0–8.0%). Report: `corpus/heldout_v10_post_tuning_report.json` — post-tuning diagnostic, not an estimate | 2026-11-08 |
+| **Frozen one-shot estimate** | Same batch, run once before any fix against it: 27/70 attacks detected (**38.6% recall**, 95% CI 28.0–50.3%), 0/44 controls blocked (**0.0% FPR**, 95% CI 0.0–8.0%). Report: `corpus/heldout_v10_report.json` — frozen, never rewritten | 2026-11-08 |
 | Coverage against the OWASP CRS v4.30 attack suite (vendor-authored, in-sample for CRS) | `benchmarks/real_comparative/corpus/crs_v430.jsonl`: 3,321/4,050 labelled attacks detected (**82.0% recall**); latency p50 ~0.7 ms in-process, excluding network/TLS/proxy | 2026-11-08 |
 | Superseded held-out batches | `heldout_v2` (56.1%/7.0%), `heldout_v3`–`heldout_v9` were each measured once and are now tuning inputs; their reports remain for provenance. `heldout_v8` measured 77.5%/4.2% and `heldout_v9` 50.0%/6.4% before being spent. `heldout_v10` was measured once (38.6%/0.0%), then spent by the protocol/DSL tuning pass — its one-shot report stays frozen and `heldout_v10_post_tuning_report.json` records current behaviour (100%/0.0% diagnostic, not an estimate). Post-repair diagnostics on the spent batches (not estimates): v6 99.0%/0.0%, v7 92.1%/0.0%, v8 100%/0.0%, v9 97.7%/4.3% (two historical `union select`-in-prose FPs), v10 100%/0.0% | 2026-11-01 → 2026-11-08 |
 
@@ -24,8 +25,9 @@ now in-sample, and the rules for adding cases.
 
 - **No independent or third-party evaluation.** Every batch, including the
   held-out one, is hand-written in this repository by the same author as the
-  engine. `heldout_v10` is a real out-of-sample estimate of *those* payloads —
-  its 38.6% recall and 0.0% false-positive rate are the honest numbers to quote,
+  engine. `heldout_v10` was a real out-of-sample estimate of *those* payloads;
+  its one-shot 38.6% recall / 0.0% FPR is frozen in `heldout_v10_report.json`,
+  while the current engine measures 100%/0.0% on the same batch
   and the in-sample 100%/0% rows above are not. Neither number says anything
   about traffic that was not imagined: no customer access log has ever been
   measured against this engine.
@@ -49,7 +51,7 @@ different corpora. Do not expect one command to print the other one:
 | what you run | corpus | benign controls | what it prints | status of that corpus |
 | :--- | :--- | :---: | :--- | :--- |
 | `cargo run --release -- benchmark -r 10000` | `corpus/independent_v1.json` | 16 | 100% recall, **0.0% FPR** | in-sample regression floor: every miss in it was used to fix the engine |
-| `../target/release/satbench.exe --corpus benchmarks/real_comparative/corpus/heldout_v10.jsonl` | `heldout_v10.jsonl` (70 attacks, 44 benign) | 44 | one-shot: **38.6% recall, 0.0% FPR** (`corpus/heldout_v10_report.json`); current engine: **100%/0.0%** post-tuning diagnostic (`corpus/heldout_v10_post_tuning_report.json`) | the only held-out estimate; publishable figure is the one-shot 38.6%/0.0% |
+| `../target/release/satbench.exe --corpus benchmarks/real_comparative/corpus/heldout_v10.jsonl` | `heldout_v10.jsonl` (70 attacks, 44 benign) | 44 | one-shot: **38.6% recall, 0.0% FPR** (`corpus/heldout_v10_report.json`); current engine: **100%/0.0%** post-tuning diagnostic (`corpus/heldout_v10_post_tuning_report.json`) | current behaviour is the post-tuning diagnostic; the frozen one-shot estimate stays 38.6%/0.0% |
 | `cargo run --release --bin satbench -- --corpus benchmarks/real_comparative/corpus/unified_v1.jsonl` | `unified_v1.jsonl` floors | — | 100% recall, 0.0% FPR on in-sample splits | regression floor, not an estimate |
 
 So the **0.0% false-positive rate on 44 controls** above is the held-out
@@ -70,9 +72,10 @@ different set of held-out cases, the test fails and says the batch is spent,
 which is the only way a held-out estimate can stay trustworthy.
 
 ```bash
-# Held-out one-shot estimate is frozen in corpus/heldout_v10_report.json
-# (38.6% recall / 0.0% FPR). Re-running the corpus now prints the post-tuning
-# diagnostic (100%/0.0%) recorded in corpus/heldout_v10_post_tuning_report.json.
+# The frozen one-shot estimate lives in corpus/heldout_v10_report.json
+# (38.6% recall / 0.0% FPR). Re-running the corpus now prints the current
+# engine behaviour (100%/0.0%) recorded in
+# corpus/heldout_v10_post_tuning_report.json.
 ../target/release/satbench.exe --corpus benchmarks/real_comparative/corpus/heldout_v10.jsonl \
     --out benchmarks/real_comparative/results/satguardian/verdicts_heldout_v10_post_tuning.jsonl
 

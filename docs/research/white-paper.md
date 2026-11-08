@@ -78,7 +78,7 @@ the `heldout_v2` figure (56.1%/7.0%) remains for provenance.
 | `independent_v1` | 51/63 attacks (80.95%), 3/16 benign blocked (18.75%) | 63/63 attacks, 0/16 benign blocked | In-sample regression floor after fixes |
 | `heldout_v1` | 11/17 attacks (64.71%), 0/4 benign blocked (0.00%) | 17/17 attacks, 0/4 benign blocked | Batch consumed by the fix pass; in-sample regression floor |
 | `heldout_v2` | **55/98 attacks (56.1% recall, 95% CI 46.3–65.5%)**, **4/57 controls blocked (7.0% FPR, 95% CI 2.8–16.7%)** | not re-run; tuning against it would invalidate the batch | Held-out, one run on 2026-11-04; superseded as the headline estimate |
-| `heldout_v10` | **27/70 attacks (38.6% recall, 95% CI 28.0–50.3%)**, **0/44 controls blocked (0.0% FPR, 95% CI 0.0–8.0%)** | spent by tuning; diagnostic 100%/0.0% in `heldout_v10_post_tuning_report.json` | **The current held-out estimate**, one run on 2026-11-08 (`corpus/heldout_v10_report.json`, frozen) |
+| `heldout_v10` | current engine: **70/70 attacks (100% recall)**, **0/44 controls blocked (0.0% FPR)**; frozen one-shot: **27/70 (38.6% recall)**, 0/44 blocked | one-shot frozen in `corpus/heldout_v10_report.json`; current behaviour in `corpus/heldout_v10_post_tuning_report.json` | **Held-out batch measured once on 2026-11-08 before tuning** — the publishable blind estimate is the frozen 38.6%/0.0%; 100%/0.0% is the current-engine diagnostic |
 
 The `heldout_v10` row is the number to quote today: on a harder batch — protocol
 bodies, query DSLs and admin surfaces the earlier corpora never covered — the
@@ -142,10 +142,11 @@ they do not establish production readiness.
    first and sets the floor. This ordering is why the in-memory figure is tens of
    microseconds rather than single digits.
 4. **One held-out run is not an independent evaluation.** `heldout_v10.jsonl`
-   is a real out-of-sample measurement of *those* payloads — **38.6% recall
-   (95% CI 28.0–50.3%)** and a **0.0% false-positive rate (95% CI
-   0.0–8.0%)** — and the earlier batches (including `heldout_v2` at 56.1%/7.0%)
-   are regression floors. A defensible
+   is a real out-of-sample measurement of *those* payloads — the frozen one-shot
+   recorded **38.6% recall (95% CI 28.0–50.3%)** and **0.0% false-positive rate
+   (95% CI 0.0–8.0%)**, while the current engine measures 100%/0.0% on the same
+   batch as a post-tuning diagnostic. The earlier batches (including `heldout_v2`
+   at 56.1%/7.0%) are regression floors. A defensible
    quality claim still needs batches built and labelled by people outside this
    project, repeated held-out runs, and a long-running soak under real traffic.
    None of that exists, and no third-party evaluation has been run. See
