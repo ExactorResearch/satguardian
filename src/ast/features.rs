@@ -120,6 +120,7 @@ pub const FEATURE_NAMES: &[&str] = &[
     // Java attack split (v108-v109)
     "v108_java_deserialization_gadget",
     "v109_java_runtime_sink",
+    "v110_client_ip_spoof",
 ];
 
 /// Binarized request state representing a point on the Boolean Hypercube $\{0, 1\}^N$.
@@ -515,6 +516,9 @@ impl FeatureBinarizer {
         }
         if tokens.has_java_runtime_sink {
             fv.set(109);
+        }
+        if tokens.has_client_ip_spoof {
+            fv.set(110);
         }
 
         fv

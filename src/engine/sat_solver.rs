@@ -1702,6 +1702,7 @@ impl SatguardianSatEngine {
             || tokens.has_management_endpoint_signal
             || tokens.has_protocol_enforcement_signal
             || tokens.has_session_token_url_signal
+            || tokens.has_client_ip_spoof
         {
             if let Some(r) = self.rules.get("SAT-SEM-01") {
                 matched_rules.push(r.clone());

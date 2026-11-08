@@ -165,7 +165,25 @@ impl JwtTamperingAnalyzer {
                     // Remote JWK URL probe / SSRF. Cleartext http and internal
                     // targets are always hostile; arbitrary https domains are
                     // allowed pending an operator-managed key-server allowlist.
+                    // RFC 2606 reserved-TLD hosts (.example/.test/.invalid)
+                    // can never be a legitimate key server.
                     let jl = jku.to_ascii_lowercase();
+                    let jku_host = jl
+                        .split("://")
+                        .nth(1)
+                        .unwrap_or("")
+                        .split(['/', '?', '#'])
+                        .next()
+                        .unwrap_or("")
+                        .split(':')
+                        .next()
+                        .unwrap_or("");
+                    let jku_reserved_tld = jku_host == "example"
+                        || jku_host == "test"
+                        || jku_host == "invalid"
+                        || jku_host.ends_with(".example")
+                        || jku_host.ends_with(".test")
+                        || jku_host.ends_with(".invalid");
                     if jl.contains("169.254")
                         || jl.contains("localhost")
                         || jl.contains("127.")
@@ -180,6 +198,7 @@ impl JwtTamperingAnalyzer {
                         || jl.starts_with("expect:")
                         || jl.starts_with("glob:")
                         || jl.starts_with("phar:")
+                        || jku_reserved_tld
                     {
                         tokens.has_header_injection = true;
                         tokens
@@ -189,6 +208,22 @@ impl JwtTamperingAnalyzer {
                 }
                 if let Some(x5u) = header_json.get("x5u").and_then(|j| j.as_str()) {
                     let xl = x5u.to_ascii_lowercase();
+                    let x5u_host = xl
+                        .split("://")
+                        .nth(1)
+                        .unwrap_or("")
+                        .split(['/', '?', '#'])
+                        .next()
+                        .unwrap_or("")
+                        .split(':')
+                        .next()
+                        .unwrap_or("");
+                    let x5u_reserved_tld = x5u_host == "example"
+                        || x5u_host == "test"
+                        || x5u_host == "invalid"
+                        || x5u_host.ends_with(".example")
+                        || x5u_host.ends_with(".test")
+                        || x5u_host.ends_with(".invalid");
                     if xl.contains("169.254")
                         || xl.contains("localhost")
                         || xl.contains("127.")
@@ -196,6 +231,7 @@ impl JwtTamperingAnalyzer {
                         || xl.starts_with("file:")
                         || xl.starts_with("data:")
                         || xl.starts_with("php:")
+                        || x5u_reserved_tld
                     {
                         tokens.has_header_injection = true;
                         tokens
@@ -205,7 +241,7 @@ impl JwtTamperingAnalyzer {
                 }
                 if let Some(kid) = header_json.get("kid").and_then(|k| k.as_str()) {
                     // Check for Directory Traversal or SQLi in kid (normalized)
-                    let (kid_norm, _) = AstLexer::normalize_string(kid);
+                    let (kid_norm, ..) = AstLexer::normalize_string(kid);
                     let kid_lower = kid_norm.to_ascii_lowercase();
                     if kid_lower.contains("../")
                         || kid_lower.contains("..\\")

@@ -333,18 +333,18 @@ fn tuning_sets_are_a_regression_floor_not_an_accuracy_claim() {
 }
 
 /// The held-out estimate of record is the newest frozen batch. heldout_v2's report stays in
-/// `corpus/` as provenance for the 56.1%/7.0% figure it produced, but its cases are now tuning
-/// inputs, so this test reproduces v8 — the batch that was labelled before the engine ever saw it.
+/// `corpus/` as provenance for the 56.1%/7.0% figure it produced, and v3–v9 are now tuning
+/// inputs, so this test reproduces v10 — the batch that was labelled before the engine ever saw it.
 #[test]
-fn heldout_v8_reproduction_matches_the_published_report() {
+fn heldout_v10_reproduction_matches_the_published_report() {
     let published: serde_json::Value = serde_json::from_str(
-        &std::fs::read_to_string(repo_root().join("corpus/heldout_v8_report.json"))
-            .expect("corpus/heldout_v8_report.json is the committed one-shot measurement"),
+        &std::fs::read_to_string(repo_root().join("corpus/heldout_v10_report.json"))
+            .expect("corpus/heldout_v10_report.json is the committed one-shot measurement"),
     )
-    .expect("heldout_v8_report.json is not valid JSON");
+    .expect("heldout_v10_report.json is not valid JSON");
 
     let records =
-        load_jsonl(&repo_root().join("benchmarks/real_comparative/corpus/heldout_v8.jsonl"));
+        load_jsonl(&repo_root().join("benchmarks/real_comparative/corpus/heldout_v10.jsonl"));
     assert_eq!(
         records.len(),
         published["counts"]["attacks"].as_u64().unwrap() as usize
@@ -356,16 +356,16 @@ fn heldout_v8_reproduction_matches_the_published_report() {
     let t = tally(&held_out);
     assert_eq!(t.detected.len(), published["counts"]["detected"].as_u64().unwrap() as usize, concat!(
         "The engine's behaviour on held-out cases changed.\n",
-        "That is allowed, but it spends this batch: the numbers in corpus/heldout_v8_report.json are no\n",
-        "longer an estimate of anything. Produce heldout_v9, run it once, and update the report and every\n",
-        "document that quotes the v8 figures before changing src/engine again."
+        "That is allowed, but it spends this batch: the numbers in corpus/heldout_v10_report.json are no\n",
+        "longer an estimate of anything. Produce heldout_v11, run it once, and update the report and every\n",
+        "document that quotes the v10 figures before changing src/engine again."
     ));
     assert_eq!(
         t.blocked.len(),
         published["counts"]["blocked_controls"].as_u64().unwrap() as usize,
         concat!(
         "The false-positive behaviour on held-out controls changed.\n",
-        "Same consequence: the batch is spent. Build heldout_v9 before quoting the v8 FPR anywhere."
+        "Same consequence: the batch is spent. Build heldout_v11 before quoting the v10 FPR anywhere."
     )
     );
     assert_eq!(
