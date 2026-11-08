@@ -119,6 +119,25 @@ This batch is now spent. Any engine change made to close a miss listed in
 and the next honest estimate has to come from a new `heldout_v3` labelled
 before it is run.
 
+### Later held-out batches (`benchmarks/real_comparative/corpus/*.jsonl`)
+
+Batches v3–v10 moved to JSONL corpora under
+`benchmarks/real_comparative/corpus/` and were each measured once, then spent
+as tuning inputs. Their one-shot figures remain in `STATUS.md` and the
+generated reports for provenance:
+
+| Batch | One-shot result | Status |
+|-------|-----------------|--------|
+| `heldout_v3`–`heldout_v7` | measured once each (see `STATUS.md`) | spent; regression floors |
+| `heldout_v8` | 77.5% recall / 4.2% FPR | spent |
+| `heldout_v9` | 50.0% recall / 6.4% FPR (`heldout_v9_report.json`) | spent; post-repair diagnostic 97.7%/4.3% |
+| `heldout_v10` | **38.6% recall / 0.0% FPR** (`heldout_v10_report.json`) | **the current publishable one-shot estimate**; spent by protocol/DSL tuning — `heldout_v10_post_tuning_report.json` records the diagnostic 100%/0.0%, which is not an estimate |
+
+`crs_v430.jsonl` is the vendor-authored OWASP CRS v4.30 suite. Coverage against
+it is an **in-sample** measurement (the engine was tuned on its misses),
+currently 3,321/4,050 labelled attacks (82.0% recall). It is not an independent
+or third-party evaluation.
+
 ## Rules for changing the corpus
 
 1. Label a case before running it against the engine. Do not add a case and

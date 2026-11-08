@@ -80,13 +80,15 @@ project's own machine.
 
 The 100%/0% rows above describe cases that were used to drive the fixes. The
 only out-of-sample number in this repository comes from
-`corpus/heldout_v2.json` (98 attacks, 57 benign controls), measured once on
-2026-11-04 before any fix:
+`benchmarks/real_comparative/corpus/heldout_v10.jsonl` (70 attacks, 44 benign
+controls), measured once on 2026-11-08 (the earlier `corpus/heldout_v2.json`,
+98 attacks and 57 controls, was measured once on
+2026-11-04):
 
 | Metric | Held-out result |
 | :--- | :--- |
-| Recall on 98 attacks | **56.1%** (55/98), 95% CI 46.3–65.5% |
-| False-positive rate on 57 controls | **7.0%** (4/57), 95% CI 2.8–16.7% |
+| Recall on 70 attacks | **38.6%** (27/70), 95% CI 28.0–50.3% |
+| False-positive rate on 44 controls | **0.0%** (0/44), 95% CI 0.0–8.0% |
 
 The batch is hand-written from public payload catalogues and its benign controls
 are imagined traffic, not a customer access log, so this measures those payloads
@@ -116,7 +118,7 @@ Fixed token weights misfire on benign technical prose. The local heuristic block
 `24.6%` of the benign controls in the in-repo stream. SATGuardian requires
 structural conjunctions, and produced no false positives on the 16 benign corpus
 controls — an in-sample regression floor on sixteen cases. The single held-out
-batch is the relevant comparison: it measured a **7.0% false-positive rate on 57
+batch is the relevant comparison: it measured a **0.0% false-positive rate on 44
 controls** (95% CI 2.8–16.7%), which is what the design actually costs on
 payloads that were not used for tuning.
 

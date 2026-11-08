@@ -41,13 +41,17 @@ corpus, and prints its scope on every run.
 | :--- | :---: | :---: | :--- |
 | `corpus/independent_v1.json` (63 attacks, 16 benign) | 51/63 recall (80.95%), 3/16 benign blocked (18.75% FPR) | 63/63, 0/16 blocked | In-sample regression floor |
 | `corpus/heldout_v1.json` (17 attacks, 4 benign) | 11/17 recall (64.71%), 0/4 benign blocked | 17/17, 0/4 blocked | Consumed batch; in-sample regression floor |
-| `corpus/heldout_v2.json` (98 attacks, 57 controls) | **55/98 recall (56.1%, 95% CI 46.3–65.5%)**, **4/57 controls blocked (7.0% FPR, 95% CI 2.8–16.7%)** | deliberately not re-run | **Held-out**, one run on 2026-11-04 (`corpus/heldout_v2_report.json`) |
+| `corpus/heldout_v2.json` (98 attacks, 57 controls) | **55/98 recall (56.1%, 95% CI 46.3–65.5%)**, **4/57 controls blocked (7.0% FPR, 95% CI 2.8–16.7%)** | deliberately not re-run | Held-out, one run on 2026-11-04 (`corpus/heldout_v2_report.json`); superseded as the headline estimate |
+| `benchmarks/real_comparative/corpus/heldout_v10.jsonl` (70 attacks, 44 controls) | **27/70 recall (38.6%, 95% CI 28.0–50.3%)**, **0/44 controls blocked (0.0% FPR, 95% CI 0.0–8.0%)** | spent by tuning; diagnostic 100%/0.0% in `heldout_v10_post_tuning_report.json` | **Held-out, one run on 2026-11-08 — the current publishable estimate** (`corpus/heldout_v10_report.json`, frozen) |
+| `benchmarks/real_comparative/corpus/crs_v430.jsonl` (4,050 labelled attacks) | — | 3,321/4,050 detected (**82.0% recall**) | **Vendor in-sample** (CRS rule set's own tests; engine tuned on its misses — not independent) |
 
 The first two corpora were used to drive fixes after their first run. Their
 current 100%/0% therefore means "the pinned cases still pass", not "the engine
-catches X% of real attacks". The `heldout_v2` row is the only out-of-sample
+catches X% of real attacks". The `heldout_v10` row is the only out-of-sample
 estimate available, it is a single run, and there is **no third-party or
-independent evaluation** behind it. Protocol:
+independent evaluation** behind it. The earlier `heldout_v2` figure (56.1%/7.0%)
+remains published for provenance; later batches v3–v9 were each measured once
+and spent as tuning inputs. Protocol:
 [corpus/README.md](../corpus.md).
 
 ### 2.2 In-memory latency

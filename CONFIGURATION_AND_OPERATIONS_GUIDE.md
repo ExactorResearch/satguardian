@@ -7,9 +7,10 @@ This guide documents **how to configure** and **operate** the **SATGuardian Edge
 > **Status: research prototype.** Detection has been measured on small, hand-written,
 > same-author corpora only. The in-sample rows (100% recall / 0% false positives) are
 > regression floors from `corpus/independent_v1.json`, not generalization estimates. The
-> one held-out measurement that exists (`corpus/heldout_v2.json`, run once on 2026-11-04,
-> before any fix) is **56.1% recall on 98 attacks (95% CI 46.3–65.5%)** and **7.0% false
-> positives on 57 controls (95% CI 2.8–16.7%)**. No third-party evaluation exists. The
+> current held-out estimate (`benchmarks/real_comparative/corpus/heldout_v10.jsonl`,
+> run once on 2026-11-08, before any fix) is **38.6% recall on 70 attacks (95% CI
+> 28.0–50.3%)** and **0.0% false positives on 44 controls (95% CI 0.0–8.0%)**; the
+> earlier `heldout_v2` figure (56.1%/7.0%) remains for provenance. No third-party evaluation exists. The
 > benchmark harness compares local Python stand-ins, not vendor products. See
 > [STATUS.md](STATUS.md) and [corpus/README.md](corpus/README.md).
 

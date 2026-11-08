@@ -68,28 +68,32 @@ When previously unobserved minterms $\mathcal{M} = \{m_1, m_2, \dots, m_k\} \sub
 `corpus/heldout_v1.json` holds 17 attack variants and 4 benign controls. Both
 were used to drive fixes after their first run, so their current scores are
 regression floors. `corpus/heldout_v2.json` (98 attacks, 57 controls) was
-labelled first and run **once**, before any fix; it is the only out-of-sample
-measurement in this repository.
+labelled first and run **once**, before any fix. The current out-of-sample
+measurement is `benchmarks/real_comparative/corpus/heldout_v10.jsonl`
+(70 attacks, 44 controls), also run **once** before any fix on 2026-11-08;
+the `heldout_v2` figure (56.1%/7.0%) remains for provenance.
 
 | Corpus | First run (before fixes) | Current regression run | Interpretation |
 | :--- | :---: | :---: | :--- |
 | `independent_v1` | 51/63 attacks (80.95%), 3/16 benign blocked (18.75%) | 63/63 attacks, 0/16 benign blocked | In-sample regression floor after fixes |
 | `heldout_v1` | 11/17 attacks (64.71%), 0/4 benign blocked (0.00%) | 17/17 attacks, 0/4 benign blocked | Batch consumed by the fix pass; in-sample regression floor |
-| `heldout_v2` | **55/98 attacks (56.1% recall, 95% CI 46.3–65.5%)**, **4/57 controls blocked (7.0% FPR, 95% CI 2.8–16.7%)** | not re-run; tuning against it would invalidate the batch | **The only held-out estimate**, one run on 2026-11-04 |
+| `heldout_v2` | **55/98 attacks (56.1% recall, 95% CI 46.3–65.5%)**, **4/57 controls blocked (7.0% FPR, 95% CI 2.8–16.7%)** | not re-run; tuning against it would invalidate the batch | Held-out, one run on 2026-11-04; superseded as the headline estimate |
+| `heldout_v10` | **27/70 attacks (38.6% recall, 95% CI 28.0–50.3%)**, **0/44 controls blocked (0.0% FPR, 95% CI 0.0–8.0%)** | spent by tuning; diagnostic 100%/0.0% in `heldout_v10_post_tuning_report.json` | **The current held-out estimate**, one run on 2026-11-08 (`corpus/heldout_v10_report.json`, frozen) |
 
-The held-out row is the number to quote: the engine caught a little over half of
-a 98-case batch written from public payload catalogues, and blocked 4 of 57
-plausible benign requests. `corpus/heldout_v2_report.json` carries the
-per-category breakdown and names the categories the engine has no name for
-(`host_header_injection`, `http_response_splitting`, `malicious_upload`,
-`nosql_injection`, `ssti`, `xxe`), plus every individual miss. The current
-100%/0% rows mean only that the pinned cases still pass; they are not held-out
-estimates and they are not evidence of accuracy on real traffic. There is
-**no third-party or independent evaluation**: every batch, including
-`heldout_v2`, was written inside this project from public payload catalogues and
-labelled by the same side that owns the engine, and its benign controls are
-imagined traffic, not a sample from a real access log. Rules for adding cases
-and the full miss list live in [corpus/README.md](corpus/README.md).
+The `heldout_v10` row is the number to quote today: on a harder batch — protocol
+bodies, query DSLs and admin surfaces the earlier corpora never covered — the
+engine caught 27 of 70 attacks with zero false positives. The earlier v2 figure
+(56.1%/7.0%) stays published for provenance; batches v3–v9 were each measured
+once and spent as tuning inputs, and `heldout_v2_report.json` /
+`heldout_v10_report.json` carry the per-category breakdowns and every
+individual miss. The current 100%/0% regression rows mean only that the pinned
+cases still pass; they are not held-out estimates and they are not evidence of
+accuracy on real traffic. There is **no third-party or independent
+evaluation**: every batch, including `heldout_v10`, was written inside this
+project from public payload catalogues and labelled by the same side that owns
+the engine, and its benign controls are imagined traffic, not a sample from a
+real access log. Rules for adding cases and the full miss list live in
+[corpus/README.md](corpus/README.md).
 
 ### 2.2 In-Memory Latency (Native Rust)
 

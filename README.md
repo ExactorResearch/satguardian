@@ -238,6 +238,14 @@ in-sample:
   miss listed in the report turns it into a third regression suite, and the next
   honest estimate has to come from `heldout_v3`.
 
+**Update (2026-11-08):** later batches v3–v10 were each measured once and spent
+as tuning inputs. The current publishable one-shot estimate is
+`benchmarks/real_comparative/corpus/heldout_v10.jsonl`, run once before any fix
+against it: **38.6% recall / 0.0% FPR** (`corpus/heldout_v10_report.json`,
+frozen). The v2 figure above remains for provenance; the CRS v4.30 suite is
+measured in-sample at 82.0% and is not an independent evaluation. Details in
+[STATUS.md](STATUS.md).
+
 ### 3.4 100% On-Premise Traffic Sovereignty
 
 SATGuardian runs **entirely inside your infrastructure**. We **never** host customer

@@ -97,9 +97,11 @@ stand-ins, not the named products.
   used to drive the fixes; those rows are in-sample regression floors.
   First-run baselines were 80.95% recall / 18.75% FPR (`independent_v1`) and
   64.71% recall / 0% FPR (`heldout_v1`). The only out-of-sample run is
-  `corpus/heldout_v2.json`, executed once on 2026-11-04: **56.1% recall** on 98
-  attacks (95% CI 46.3–65.5%) and a **7.0% false-positive rate** on 57 controls
-  (95% CI 2.8–16.7%). See [corpus/README.md](corpus/README.md).
+  `benchmarks/real_comparative/corpus/heldout_v10.jsonl`, executed once on
+  2026-11-08: **38.6% recall** on 70 attacks (95% CI 28.0–50.3%) and a **0.0%
+  false-positive rate** on 44 controls (95% CI 0.0–8.0%). The earlier
+  `corpus/heldout_v2.json` figure (56.1%/7.0%) remains for provenance. See
+  [corpus/README.md](corpus/README.md).
 - The harness does not show that SATGuardian is faster or more accurate than a
   real vendor WAF. That comparison has not been run, and no part of this PoC has
   been evaluated by a third party.

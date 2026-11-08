@@ -79,19 +79,24 @@ project's own machine.
 ### 2.2 The one held-out measurement
 
 The 100%/0% rows above describe cases that were used to drive the fixes. The
-only out-of-sample number in this repository comes from
-`corpus/heldout_v2.json` (98 attacks, 57 benign controls), measured once on
-2026-11-04 before any fix:
+current out-of-sample number in this repository comes from
+`benchmarks/real_comparative/corpus/heldout_v10.jsonl` (70 attacks, 44 benign
+controls), measured once on 2026-11-08 before any fix:
 
 | Metric | Held-out result |
 | :--- | :--- |
-| Recall on 98 attacks | **56.1%** (55/98), 95% CI 46.3–65.5% |
-| False-positive rate on 57 controls | **7.0%** (4/57), 95% CI 2.8–16.7% |
+| Recall on 70 attacks | **38.6%** (27/70), 95% CI 28.0–50.3% |
+| False-positive rate on 44 controls | **0.0%** (0/44), 95% CI 0.0–8.0% |
 
-The batch is hand-written from public payload catalogues and its benign controls
-are imagined traffic, not a customer access log, so this measures those payloads
-and nothing wider. No third-party evaluation exists, and `corpus/README.md`
-records that tuning against this batch would invalidate it.
+The earlier `corpus/heldout_v2.json` measurement (56.1% recall / 7.0% FPR on
+98 attacks and 57 controls, one run on 2026-11-04) remains published for
+provenance; batches v3–v9 were each measured once and spent as tuning inputs.
+The batches are hand-written from public payload catalogues and their benign
+controls are imagined traffic, not a customer access log, so this measures
+those payloads and nothing wider. No third-party evaluation exists, and
+`corpus/README.md` records that tuning against a batch would invalidate it. The
+OWASP CRS v4.30 suite is measured in-sample at 82.0% recall — a coverage check
+against the rule set's own tests, not an independent benchmark.
 
 ---
 

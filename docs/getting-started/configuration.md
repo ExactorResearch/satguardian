@@ -1,9 +1,11 @@
 # ⚙️ SATGuardian Edge WAF — Configuration Reference
 
 > **Status: research prototype, not a production-ready WAF.** Detection has one held-out
-> measurement (**56.1% recall on 98 attacks**, 95% CI 46.3–65.5%, and **7.0% false
-> positives on 57 controls**, 95% CI 2.8–16.7%, `corpus/heldout_v2.json`, run once
-> 2026-11-04, same-author payloads, no third-party evaluation). The in-sample 100% / 0%
+> estimate (`benchmarks/real_comparative/corpus/heldout_v10.jsonl`,
+> **38.6% recall on 70 attacks**, 95% CI 28.0–50.3%, and **0.0% false positives on 44
+> controls**, 95% CI 0.0–8.0%, run once 2026-11-08, same-author payloads, no
+> third-party evaluation); the earlier `heldout_v2` figure (56.1%/7.0%) remains for
+> provenance. The in-sample 100% / 0%
 > rows in `corpus/independent_v1.json` are regression floors, not generalization estimates.
 > See [Project Status](../status.md) and the [Detection Corpus](../corpus.md).
 
