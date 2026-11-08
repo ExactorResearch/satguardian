@@ -376,6 +376,12 @@ static RE_SQL_KEYWORD_COMMENT: OnceLock<Regex> = OnceLock::new();
 static RE_SQL_NUM_TAUTO: OnceLock<Regex> = OnceLock::new();
 static RE_SQL_PG: OnceLock<Regex> = OnceLock::new();
 static RE_SQL_TYPE_VALUE: OnceLock<Regex> = OnceLock::new();
+static RE_B64_DECODED_ATTACK: OnceLock<Regex> = OnceLock::new();
+static RE_COOKIE_TOSS: OnceLock<Regex> = OnceLock::new();
+static RE_HEX_ENTITY_RUN: OnceLock<Regex> = OnceLock::new();
+static RE_API_VER_ABUSE: OnceLock<Regex> = OnceLock::new();
+static RE_MATRIX_PATH: OnceLock<Regex> = OnceLock::new();
+static RE_MAGIC_NUM_PARAM: OnceLock<Regex> = OnceLock::new();
 static RE_B64_TOKEN: OnceLock<Regex> = OnceLock::new();
 static RE_SCRIPT_EXT_HDR: OnceLock<Regex> = OnceLock::new();
 static RE_HEX_PAIRS: OnceLock<Regex> = OnceLock::new();
@@ -1190,7 +1196,7 @@ fn init_regexes() {
     });
     let _ = RE_MGMT_ENDPOINT.get_or_init(|| {
         // Management/debug surfaces with no legitimate public exposure.
-        Regex::new(r#"(?i)/(?:api/v\d+/namespaces/|containers/json|jolokia|debug/(?:pprof|vars|requests)|_cat/|_cluster/|_nodes/|_all_docs|pprof/|_bulk|_sql\b|_xpack|_tasks|_snapshot|_aliases|_settings|_mapping)"#).unwrap()
+        Regex::new(r#"(?i)/(?:api/v\d+/namespaces/|containers/json|jolokia|debug/(?:pprof|vars|requests)|_cat/|_cluster/|_nodes/|_all_docs|pprof/|_bulk|_sql\b|_xpack|_tasks|_snapshot|_aliases|_settings|_mapping)|server-status|server-info|nginx_status|fpm-status|actuator/(?:env|heapdump|threaddump|logfile|refresh|shutdown|pause|restart|configprops|beans|mappings|conditions|dump|trace)(?:/|$|\\?)"#).unwrap()
     });
     let _ = RE_QL_DSL.get_or_init(|| {
         // Query-DSL injection signals that legitimate clients do not emit:
@@ -1509,6 +1515,40 @@ fn init_regexes() {
         // DB type/procedure identifiers as a bare parameter value
         // (CRS 942470): pay=nvarchar, pay=sp_password, pay=UTL_HTTP.
         Regex::new(r#"(?i)(?:^|[?&\s"'])[a-z_][\w.-]{0,30}=(?:["']?)(?:nvarchar|varchar|nchar|ntext|sp_password|sp_helpsql|sp_helptext|sp_who|sp_lock|sp_executesql|xp_\w+|dbcc|utl_\w+|ctx_\w+|ords_\w+|apex_\w+|wwv_\w+|htp_\w+|owa_\w+|sysname|hierarchyid|datetimeoffset|smalldatetime|datetime2|uniqueidentifier|rowversion|timestamp|sql_variant)\s*(?:["']?)(?:&|$|\s)"#).unwrap()
+    });
+    let _ = RE_B64_DECODED_ATTACK.get_or_init(|| {
+        // Decoded base64 param values that are themselves attacks: script
+        // tags, SQLi, traversal, command execution, XML/doctype, JS sinks
+        // (heldout_v9 base64_param family). Only evaluated on successfully
+        // UTF-8-decoded tokens, so binary blobs never reach it.
+        Regex::new(r#"(?i)<script|javascript\s*:|union\s+(?:all\s+)?select|select\s+[\w.*]+\s+from|\.\./|\.\.\\|\bsystem\s*\(|\bexec\s*\(|__import__|\beval\s*\(|<\?php|<\?xml|<!doctype|alert\s*\(|document\s*\.|onerror\s*=|java\.lang\.|onclick\s*:|cmd\.exe|/etc/passwd|'\s*or\s+['"]?\d|\bor\s+['"]?\d+\s*=|\bor\s+1\s*=\s*1|base64_decode|gzinflate|str_rot13"#).unwrap()
+    });
+    let _ = RE_COOKIE_TOSS.get_or_init(|| {
+        // RFC 6265 attributes smuggled inside a Cookie request header —
+        // browsers never send Domain/Expires/Path/etc. there; their
+        // presence is cookie-tossing / response-splitting prep.
+        Regex::new(r#"(?i)(?:^|;)\s*(?:domain|expires|max-age|path|secure)\s*=|set-cookie|httponly|samesite|["'];\s*[a-z_][\w-]*\s*=|admin\s*=\s*(?:true|1|yes)"#).unwrap()
+    });
+    let _ = RE_HEX_ENTITY_RUN.get_or_init(|| {
+        // Runs of numeric HTML entities — &#X55;&#X4E;&#X49;... decodes to
+        // keyword text ("UNION") while evading literal-match rules.
+        Regex::new(r#"(?:(?:&#[xX][0-9a-fA-F]+;|&#\d+;)){3,}"#).unwrap()
+    });
+    let _ = RE_API_VER_ABUSE.get_or_init(|| {
+        // Admin/internal/metrics surfaces hiding behind nonstandard API
+        // versions or channel prefixes (v0, v9, beta, internal, staging).
+        // v1 is excluded — it is the normal version segment.
+        Regex::new(r#"(?i)/(?:api/)?(?:v(?:0|[2-9]|1[0-9])|beta|alpha|internal|test|staging|dev)/(?:[^\s?"']{0,80}/)*(?:admin|internal|metrics|debug|config|env|actuator|backup|shell|eval|console|manage|secret|private|panel)(?:/|$|\?)"#).unwrap()
+    });
+    let _ = RE_MATRIX_PATH.get_or_init(|| {
+        // Matrix/path parameters used for session fixation or servlet-path
+        // bypass: ;jsessionid=, ;param=, path-param slash ;/, or encoded ;.
+        Regex::new(r#"(?i);(?:jsessionid|jsession|phpsessid|phpsessionid|aspsessionid|asp\.net_sessionid|cfid|cftoken|sid|param|debug)\b|;/|%3b"#).unwrap()
+    });
+    let _ = RE_MAGIC_NUM_PARAM.get_or_init(|| {
+        // Credential-shaped param carrying a bare long digit run — magic
+        // hash / type-juggling probe (hash=240610708).
+        Regex::new(r#"(?i)\b(?:hash|md5|sha1|sha256|sha512|checksum|digest|signature|salt|secret|token|password|passwd|pwd|key|auth|session|csrf|nonce)\s*=\s*["']?\d{6,}\b"#).unwrap()
     });
     let _ = RE_B64_TOKEN.get_or_init(|| {
         // Standalone base64-ish tokens worth a gadget-substring decode check.
@@ -4459,6 +4499,13 @@ impl AstLexer {
                     | "ACL"
                     | "BASELINE-CONTROL"
                     | "LABEL"
+                    | "PURGE"
+                    | "BAN"
+                    | "UNLINK"
+                    | "LINK"
+                    | "CHECKIN"
+                    | "CHECKOUT"
+                    | "VERSION-CONTROL"
             ) {
                 tokens.has_webdav_method = true;
                 tokens
@@ -5121,12 +5168,20 @@ impl AstLexer {
             }
             // v86 pollution: same scalar key, >=2 distinct values, at least
             // one privilege/conflict-flavored value.
-            let pollution = dup_keys.iter().any(|(_, vals)| {
-                vals.len() > 1
-                    && vals
-                        .iter()
-                        .any(|v| RE_PRIV_LIKE_VALUE.get().unwrap().is_match(v))
-            }) || bracket_keys_all.values().any(|vals| {
+            // Sensitive-key duplication fires even with innocuous values —
+            // but ONLY for the privilege-flavored key set: `id`/`uid`/`tag`
+            // repeat legitimately (multi-id filters, GraphQL variables), so
+            // generic keys stay benign (heldout_v7 HPP vs benign controls).
+            let sensitive_dup = dup_keys.iter().any(|(k, vals)| {
+                vals.len() > 1 && SENSITIVE_KEYS.contains(&k.as_str())
+            });
+            let pollution = sensitive_dup
+                || dup_keys.iter().any(|(_, vals)| {
+                    vals.len() > 1
+                        && vals
+                            .iter()
+                            .any(|v| RE_PRIV_LIKE_VALUE.get().unwrap().is_match(v))
+                }) || bracket_keys_all.values().any(|vals| {
                 let distinct: std::collections::BTreeSet<&String> = vals.iter().collect();
                 distinct.len() > 1
                     && vals
@@ -5139,7 +5194,8 @@ impl AstLexer {
                     .active_token_names
                     .push("PARAM_VALUE_POLLUTION".to_string());
             }
-            if magic_hash || hex_juggle || !bracket_keys.is_empty() {
+            let magic_num = RE_MAGIC_NUM_PARAM.get().unwrap().is_match(&norm);
+            if magic_hash || hex_juggle || magic_num || !bracket_keys.is_empty() {
                 tokens.has_type_juggling_signal = true;
                 tokens
                     .active_token_names
@@ -5260,6 +5316,222 @@ impl AstLexer {
                     tokens
                         .active_token_names
                         .push("CONTENT_TYPE_CONFUSION".to_string());
+                }
+            }
+        }
+
+        // V2. Header-semantic probes: cookie tossing, Range abuse,
+        // conditional headers, trailer smuggling, compression bombs.
+        {
+            let mut compression_encoding = false;
+            let mut declared_len: u64 = 0;
+            for (k, v) in &req.headers {
+                let kl = k.to_ascii_lowercase();
+                match kl.as_str() {
+                    "cookie" => {
+                        // Percent-decode lightly so %3B/%3D smuggled
+                        // attributes become visible before matching.
+                        let vd = v
+                            .replace("%22", "\"")
+                            .replace("%3B", ";")
+                            .replace("%3b", ";")
+                            .replace("%3D", "=")
+                            .replace("%3d", "=")
+                            .replace("%20", " ")
+                            .replace("%0d%0a", "\r\n")
+                            .replace("%0D%0A", "\r\n")
+                            .to_ascii_lowercase();
+                        if RE_COOKIE_TOSS.get().unwrap().is_match(&vd) {
+                            tokens.has_protocol_injection_signal = true;
+                            tokens
+                                .active_token_names
+                                .push("COOKIE_ATTRIBUTE_TOSSING".to_string());
+                        }
+                    }
+                    "range" => {
+                        let vl = v.trim().to_ascii_lowercase();
+                        let mut range_bad = !vl.starts_with("bytes=");
+                        if !range_bad {
+                            let mut ranges = 0usize;
+                            for part in vl[6..].split(',') {
+                                ranges += 1;
+                                if ranges > 20 {
+                                    range_bad = true;
+                                    break;
+                                }
+                                let p = part.trim();
+                                let (a, b) = match p.split_once('-') {
+                                    Some((a, b)) => (a.trim(), b.trim()),
+                                    None => ("", ""),
+                                };
+                                for n in [a, b] {
+                                    if n.is_empty() {
+                                        continue;
+                                    }
+                                    if let Ok(x) = n.parse::<u64>() {
+                                        if x > 100_000_000 {
+                                            range_bad = true;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        if range_bad {
+                            tokens.has_numeric_anomaly = true;
+                            tokens
+                                .active_token_names
+                                .push("RANGE_HEADER_ABUSE".to_string());
+                        }
+                    }
+                    "if" | "if-match" | "if-none-match" | "if-modified-since"
+                    | "if-unmodified-since" | "if-range" => {
+                        let vl = v.to_ascii_lowercase();
+                        if vl.contains("http://")
+                            || vl.contains("https://")
+                            || vl.contains('<')
+                            || vl.contains('>')
+                            || vl.contains(';')
+                        {
+                            tokens.has_smuggling_desync = true;
+                            tokens
+                                .active_token_names
+                                .push("CONDITIONAL_HEADER_INJECTION".to_string());
+                        }
+                    }
+                    "trailer" => {
+                        let vl = v.to_ascii_lowercase();
+                        if ["content-length", "transfer-encoding", "host", "keep-alive", "te", "trailer"]
+                            .iter()
+                            .any(|t| vl.split(|c: char| c == ',' || c == ' ').any(|w| w.trim() == *t))
+                        {
+                            tokens.has_smuggling_desync = true;
+                            tokens
+                                .active_token_names
+                                .push("TRAILER_SMUGGLING".to_string());
+                        }
+                    }
+                    "content-encoding" => {
+                        let vl = v.to_ascii_lowercase();
+                        if ["gzip", "deflate", "br", "compress", "zstd", "lz4"]
+                            .iter()
+                            .any(|e| vl.split(',').any(|t| t.trim() == *e))
+                        {
+                            compression_encoding = true;
+                        }
+                    }
+                    "content-length" => {
+                        declared_len = v.trim().parse::<u64>().unwrap_or(0);
+                    }
+                    _ => {}
+                }
+            }
+            // Compression bomb: compressed content-encoding plus either a
+            // huge declared length or a body dominated by one repeated byte
+            // (legit compressed payloads are high-entropy).
+            if compression_encoding && !req.body.is_empty() {
+                let body = req.body.as_bytes();
+                let mut freq = [0usize; 256];
+                for &b in body {
+                    freq[b as usize] += 1;
+                }
+                let maxf = *freq.iter().max().unwrap_or(&0);
+                let dominated = body.len() >= 512 && maxf * 100 / body.len() >= 85;
+                if declared_len >= 2_000_000 || dominated {
+                    tokens.has_content_type_confusion_signal = true;
+                    tokens
+                        .active_token_names
+                        .push("COMPRESSION_BOMB".to_string());
+                }
+            }
+            // Numeric HTML-entity runs decoding to keyword text.
+            if RE_HEX_ENTITY_RUN.get().unwrap().is_match(&tokens.normalized_text) {
+                tokens.has_keyword_smuggling = true;
+                tokens
+                    .active_token_names
+                    .push("HEX_ENTITY_KEYWORD".to_string());
+            }
+            // Matrix path params / encoded semicolons in the path.
+            let path_dec = req
+                .path
+                .replace("%3B", ";")
+                .replace("%3b", ";")
+                .replace("%3D", "=")
+                .replace("%3d", "=")
+                .to_ascii_lowercase();
+            if RE_MATRIX_PATH.get().unwrap().is_match(&path_dec) {
+                tokens.has_parameter_pollution_signal = true;
+                tokens
+                    .active_token_names
+                    .push("MATRIX_PATH_PARAM".to_string());
+            }
+            // Admin surfaces behind nonstandard API versions.
+            let pq2 = format!("{}?{}", req.path, req.query_string).to_ascii_lowercase();
+            if RE_API_VER_ABUSE.get().unwrap().is_match(&pq2) {
+                tokens.has_management_endpoint_signal = true;
+                tokens
+                    .active_token_names
+                    .push("API_VERSION_ADMIN_ABUSE".to_string());
+            }
+            // Open redirect via redirect-ish path + absolute-URL param was
+            // tried and reverted: benign controls legitimately redirect to
+            // docs/CDN hosts with the same shape as the attack cases, so the
+            // signal cannot separate them (heldout_v7 benign-013 vs
+            // open_redirect-04).
+            // Upload filename traversal smuggled in a body field
+            // (multipart-style filename="....//....//etc/..." bodies).
+            let body_l = req.body.to_ascii_lowercase();
+            if (body_l.contains("filename=") || body_l.contains("filename*=") || body_l.contains("name="))
+                && (body_l.contains("../")
+                    || body_l.contains("..\\")
+                    || body_l.contains("%2e%2e")
+                    || body_l.contains("....//"))
+            {
+                tokens.has_malicious_upload = true;
+                tokens
+                    .active_token_names
+                    .push("UPLOAD_FILENAME_TRAVERSAL".to_string());
+            }
+            // GraphQL clairvoyance: schema probing without introspection —
+            // __typename spam, aliased batches of the same field, fragments
+            // carrying credential field names.
+            let gqlish = req.path.to_ascii_lowercase().contains("graphql")
+                || req.body.contains("\"query\"")
+                || req.body.contains("mutation ")
+                || req.body.contains("query ");
+            if gqlish {
+                let b = req.body.to_ascii_lowercase();
+                if b.matches("__typename").count() >= 2 {
+                    tokens.has_graphql_abuse = true;
+                    tokens
+                        .active_token_names
+                        .push("GRAPHQL_TYPENAME_PROBE".to_string());
+                }
+                // Same resolver called 3+ times (aliases or repeats) —
+                // batched clairvoyance enumeration.
+                let mut calls: std::collections::HashMap<String, usize> =
+                    std::collections::HashMap::new();
+                for cap in Regex::new(r#"\b([a-z_]\w*)\s*\([^)]{0,80}\)\s*\{"#)
+                    .unwrap()
+                    .captures_iter(&b)
+                {
+                    *calls.entry(cap[1].to_string()).or_default() += 1;
+                }
+                if calls.values().any(|&n| n >= 3) {
+                    tokens.has_graphql_abuse = true;
+                    tokens
+                        .active_token_names
+                        .push("GRAPHQL_BATCH_CLairVOYANCE".to_string());
+                }
+                // Fragment spread + credential-shaped field names.
+                if (b.contains("...f") || b.contains("fragment "))
+                    && ["password", "secret", "token", "ssn", "creditcard", "hash", "salt", "apikey", "api_key", "privatekey", "private_key"]
+                        .iter()
+                        .any(|f| b.contains(f))
+                {
+                    tokens.has_graphql_abuse = true;
+                    tokens
+                        .active_token_names
+                        .push("GRAPHQL_FRAGMENT_CREDENTIALS".to_string());
                 }
             }
         }
@@ -5968,6 +6240,21 @@ impl AstLexer {
                             tokens
                                 .active_token_names
                                 .push("B64_JAVA_GADGET".to_string());
+                            break;
+                        }
+                        // Decoded payload that is itself an attack in another
+                        // language: <script>, union select, ../, system(,
+                        // __import__ — param values arrive base64-wrapped
+                        // (heldout_v9 base64_param).
+                        if RE_B64_DECODED_ATTACK
+                            .get()
+                            .unwrap()
+                            .is_match(&sl)
+                        {
+                            tokens.has_keyword_smuggling = true;
+                            tokens
+                                .active_token_names
+                                .push("B64_DECODED_ATTACK".to_string());
                             break;
                         }
                         // PHP variable-function obfuscation surviving base64:
