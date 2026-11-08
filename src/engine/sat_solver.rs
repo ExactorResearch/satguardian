@@ -1028,6 +1028,18 @@ impl SatguardianSatEngine {
                 confidence: 0.9,
             },
         );
+        rules.insert(
+            "SAT-XSS-04".to_string(),
+            DeductionRule {
+                rule_id: "SAT-XSS-04".to_string(),
+                island_id: "ISLAND-XSS".to_string(),
+                category: AttackCategory::Xss,
+                name: "Diagram DSL Injection Invariant".to_string(),
+                description: "Mermaid %%{init:...}%% directives or diagram click/href javascript: bindings smuggling script execution or markup through the renderer.".to_string(),
+                invariant_formula: r"Token(\text{MERMAID\_INIT} \lor \text{DIAGRAM\_SCRIPT\_BIND})".to_string(),
+                confidence: 0.9,
+            },
+        );
 
         // Pre-warm AST regex singletons so first evaluation is instant
         let _ = AstLexer::tokenize("");
@@ -1219,6 +1231,16 @@ impl SatguardianSatEngine {
                 active_islands.push("ISLAND-XSS".to_string());
                 deduction_steps.push(
                     "[ISLAND-XSS] Detected executable JavaScript pseudo-protocol URI scheme."
+                        .to_string(),
+                );
+            }
+        }
+        if tokens.has_mermaid_injection {
+            if let Some(r) = self.rules.get("SAT-XSS-04") {
+                matched_rules.push(r.clone());
+                active_islands.push("ISLAND-XSS".to_string());
+                deduction_steps.push(
+                    "[ISLAND-XSS] Mermaid init directive or diagram script binding reaches the renderer."
                         .to_string(),
                 );
             }
@@ -1703,6 +1725,8 @@ impl SatguardianSatEngine {
             || tokens.has_protocol_enforcement_signal
             || tokens.has_session_token_url_signal
             || tokens.has_client_ip_spoof
+            || tokens.has_query_dsl_injection
+            || tokens.has_admin_orchestrator_path
         {
             if let Some(r) = self.rules.get("SAT-SEM-01") {
                 matched_rules.push(r.clone());
@@ -1748,7 +1772,11 @@ impl SatguardianSatEngine {
                 deduction_steps.push("[ISLAND-CONTENT-OBFUSCATION] ANSI escape sequence, forged log line, or nested-quantifier ReDoS shape detected.".to_string());
             }
         }
-        if tokens.has_smtp_command || tokens.has_jsonrpc_exec || tokens.has_absolute_upload_path {
+        if tokens.has_smtp_command
+            || tokens.has_jsonrpc_exec
+            || tokens.has_absolute_upload_path
+            || tokens.has_protocol_body_injection
+        {
             if let Some(r) = self.rules.get("SAT-SEM-05") {
                 matched_rules.push(r.clone());
                 active_islands.push("ISLAND-CONTENT-OBFUSCATION".to_string());

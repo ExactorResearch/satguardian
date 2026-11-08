@@ -121,6 +121,11 @@ pub const FEATURE_NAMES: &[&str] = &[
     "v108_java_deserialization_gadget",
     "v109_java_runtime_sink",
     "v110_client_ip_spoof",
+    // v10 protocol/DSL coverage
+    "v111_query_dsl_injection",
+    "v112_admin_orchestrator_path",
+    "v113_protocol_body_injection",
+    "v114_mermaid_injection",
 ];
 
 /// Binarized request state representing a point on the Boolean Hypercube $\{0, 1\}^N$.
@@ -519,6 +524,18 @@ impl FeatureBinarizer {
         }
         if tokens.has_client_ip_spoof {
             fv.set(110);
+        }
+        if tokens.has_query_dsl_injection {
+            fv.set(111);
+        }
+        if tokens.has_admin_orchestrator_path {
+            fv.set(112);
+        }
+        if tokens.has_protocol_body_injection {
+            fv.set(113);
+        }
+        if tokens.has_mermaid_injection {
+            fv.set(114);
         }
 
         fv

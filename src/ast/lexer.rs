@@ -133,6 +133,14 @@ pub struct LexicalTokens {
     // Client-IP spoofing: forwarding headers asserting loopback/link-local
     // source addresses (auth-bypass / SSRF-rebinding shape).
     pub has_client_ip_spoof: bool,
+    // v10 protocol/DSL coverage: backend query languages (OData, Solr/Lucene,
+    // PromQL), orchestrator/admin endpoints (kubelet, container sockets,
+    // Prometheus/Grafana APIs), foreign wire-protocol bodies (RESP, IMAP,
+    // POP3, XML-RPC) and diagram-DSL injection (Mermaid).
+    pub has_query_dsl_injection: bool,
+    pub has_admin_orchestrator_path: bool,
+    pub has_protocol_body_injection: bool,
+    pub has_mermaid_injection: bool,
     pub active_token_names: Vec<String>,
 }
 
@@ -226,6 +234,7 @@ static RE_CRLF_CONTENT_HDR: OnceLock<Regex> = OnceLock::new();
 static RE_EMAIL_ENCODED_WORD: OnceLock<Regex> = OnceLock::new();
 static RE_SSTI_SMARTY: OnceLock<Regex> = OnceLock::new();
 static RE_SSRF_CLOUD_SCHEME: OnceLock<Regex> = OnceLock::new();
+static RE_SSRF_HOSTILE_SCHEME: OnceLock<Regex> = OnceLock::new();
 static RE_NONHTTP_USERINFO: OnceLock<Regex> = OnceLock::new();
 static RE_OOB_DOMAIN: OnceLock<Regex> = OnceLock::new();
 static RE_SQL_BOOL_CMP: OnceLock<Regex> = OnceLock::new();
@@ -285,6 +294,11 @@ static RE_INTERNAL_HOST: OnceLock<Regex> = OnceLock::new();
 static RE_SCI_NUM: OnceLock<Regex> = OnceLock::new();
 static RE_FORM_BODY: OnceLock<Regex> = OnceLock::new();
 static RE_MGMT_ENDPOINT: OnceLock<Regex> = OnceLock::new();
+static RE_QL_DSL: OnceLock<Regex> = OnceLock::new();
+static RE_ODATA_PARAM: OnceLock<Regex> = OnceLock::new();
+static RE_ODATA_SUSPICIOUS: OnceLock<Regex> = OnceLock::new();
+static RE_ADMIN_ORCH_PATH: OnceLock<Regex> = OnceLock::new();
+static RE_MERMAID_INIT: OnceLock<Regex> = OnceLock::new();
 static RE_PARAM_PAIR_WIDE: OnceLock<Regex> = OnceLock::new();
 static RE_NUM_TINY: OnceLock<Regex> = OnceLock::new();
 static RE_APPLIANCE_CVE: OnceLock<Regex> = OnceLock::new();
@@ -745,7 +759,12 @@ fn init_regexes() {
     });
     let _ = RE_SSRF_CLOUD_SCHEME.get_or_init(|| {
         // Cloud/exfil-capable URL schemes behind a URL-ish parameter.
-        Regex::new(r#"(?i)(?:s3|gs|az|oss|ssh2|nfs|sftp|smb|netdoc|jar|iiop|corba|tftp|ldap|ldaps|gopher|dict|php|expect|zip|phar|glob|rar|ogg|ssh|snews|nntp|news|mid|cid|magnet|bitcoin|chrome|view-source|feed|z39\.50|prospero|wais|imap|pop3|smtp|snmp|rtsp|rtmp|mms)://|jrt:/"#).unwrap()
+        Regex::new(r#"(?i)(?:s3|gs|az|oss|ssh2|nfs|sftp|smb|netdoc|jar|iiop|corba|tftp|ldap|ldaps|gopher|dict|php|expect|zip|phar|glob|rar|ogg|ssh|snews|nntp|news|mid|cid|magnet|bitcoin|chrome|view-source|feed|z39\.50|prospero|wais|imap|pop3|smtp|snmp|rtsp|rtmp|mms|rmi|corbaname|ins|iiopname)://|jrt:/"#).unwrap()
+    });
+    let _ = RE_SSRF_HOSTILE_SCHEME.get_or_init(|| {
+        // RMI/Corba naming schemes have no legitimate use inside HTTP
+        // parameters — flag on the scheme alone, no URL-param context needed.
+        Regex::new(r#"(?i)\b(?:rmi|iiop|corbaname|ins|iiopname)://"#).unwrap()
     });
     let _ = RE_NONHTTP_USERINFO.get_or_init(|| {
         // Credentials embedded in a non-HTTP(S) URL: ftp://user:pass@host,
@@ -1009,6 +1028,40 @@ fn init_regexes() {
     let _ = RE_MGMT_ENDPOINT.get_or_init(|| {
         // Management/debug surfaces with no legitimate public exposure.
         Regex::new(r#"(?i)/(?:api/v\d+/namespaces/|containers/json|jolokia|debug/(?:pprof|vars|requests)|_cat/|_cluster/|_nodes/|_all_docs|pprof/|_bulk|_sql\b|_xpack|_tasks|_snapshot|_aliases|_settings|_mapping)"#).unwrap()
+    });
+    let _ = RE_QL_DSL.get_or_init(|| {
+        // Query-DSL injection signals that legitimate clients do not emit:
+        // Solr/Lucene local-params {!type ...} and _query_, match-all q=*:*,
+        // shard fan-out to host:port lists, wildcard probes on credential
+        // fields (password:*), Solr debug modes, and PromQL/LogQL label
+        // matchers {label="value"}.
+        Regex::new(r#"(?i)(?:\{![a-z]{2,20}\b|[?&]_query_=|(?:^|[?&\s])q=\*:\*|[?&]shards=[^&\s]*:\d|\b(?:password|passwd|secret|token|api_?key|ssn|credit_?card|private_?key|session_?id|auth_?token|access_?key|secret_?key|master_?key|shadow|credential|salt|hash)\w*\s*:\s*\*|[?&]debugquery=true|\{[^{}]{0,160}?[a-zA-Z_]\w*\s*=\s*"[^"]{0,160}"[^{}]{0,160}?\})"#).unwrap()
+    });
+    let _ = RE_ODATA_SUSPICIOUS.get_or_init(|| {
+        // OData expression evidence inside $-prefixed query options: boolean
+        // tautologies, null comparisons, DSL functions, aggregation clauses
+        // and nested $options — legitimate $filter values are plain
+        // `Field eq 'value'` comparisons.
+        Regex::new(r#"(?i)(?:\b(?:or|and|xor)\s+\d+\s+eq\s+\d+|\beq\s+null\b|\bne\s+null\b|\b(?:substringof|startswith|endswith|contains|tolower|toupper|trim|length|indexof|concat|replace|split|substring|cast|day|hour|minute|month|now|year|date|time|round|ceiling|floor|any|all)\s*\(|\bgroupby\b|\baggregate\b|\bwith\s+\w+\s+(?:sum|min|max|average|count)\s+as\b|\([^)]*\$\w+\s*=)"#).unwrap()
+    });
+    let _ = RE_ODATA_PARAM.get_or_init(|| {
+        // OData query options start with `$`: $filter, $expand, $apply...
+        Regex::new(r#"(?i)\$[a-zA-Z]{2,20}\s*="#).unwrap()
+    });
+    let _ = RE_ADMIN_ORCH_PATH.get_or_init(|| {
+        // Orchestrator / control-plane endpoints with no legitimate public
+        // exposure: container sockets, kubelet, Prometheus remote-write and
+        // alert endpoints, Alertmanager writes, Grafana datasource proxies,
+        // Consul, Vault, Nomad. Read-only query endpoints (/api/v1/query,
+        // /api/search, Solr handlers) are deliberately excluded — legitimate
+        // clients use them.
+        Regex::new(r#"(?i)/(?:var/run|run)/(?:docker|containerd|crio|podman|kubelet)[^?\s]*\.sock|/kubelet/(?:pods|log|exec|run|portforward|stats|metrics|configz|healthz|checkpoint|logs)|/api/v1/(?:write|alerts|alertmanagers|admin/[^?\s]*)|/api/alertmanager/api/v\d+/(?:alerts|silences|status|config)|/api/datasources(?:/proxy|/\d+(?:/proxy|/health|/query)?|/id/\d+)?(?:/|$|\?)|/api/ds/query|/api/plugins/grafana-[a-z-]+|/api/snapshot|/api/live/ws|/api/admin/settings|/consul/v1/(?:agent|catalog|health|kv|session|status|coordinate|connect|acl|intention)(?:/|$|\?)|/v1/(?:sys|secret|auth|identity|audit)(?:/|$|\?)|/nomad/v1/(?:agent|allocations|deployment|evaluations|job|namespace|node|operator|periodic|quota|regions|scaling|service|system|ui|vars)(?:/|$|\?)"#).unwrap()
+    });
+    let _ = RE_MERMAID_INIT.get_or_init(|| {
+        // Mermaid %%{init:...}%% directive followed by a diagram-type keyword
+        // somewhere in the same payload — init config can flip htmlLabels /
+        // securityLevel and inject markup into the renderer.
+        Regex::new(r#"(?is)%%\{\s*init.{0,800}?\}%%.{0,3000}?(?:graph|flowchart|sequenceDiagram|classDiagram|stateDiagram(?:-v2)?|erDiagram|journey|gantt|pie|mindmap|timeline|quadrantChart|requirementDiagram|gitGraph|C4Context|C4Container|C4Component|C4Dynamic|C4Deployment|sankey|xychart|block|packet|kanban|architecture|radar|treemap)\b"#).unwrap()
     });
     let _ = RE_JAVA_ATTACK.get_or_init(|| {
         // Java runtime namespaces and deserialization/gadget vocabulary that
@@ -2197,6 +2250,218 @@ impl AstLexer {
             || lower.starts_with("ff")
     }
 
+    /// Mail-protocol verb vocabulary (IMAP + POP3, upper-case form).
+    fn is_mail_verb(w: &str) -> bool {
+        matches!(
+            w,
+            "USER"|"PASS"|"STAT"|"LIST"|"UIDL"|"RETR"|"DELE"|"NOOP"|"RSET"|"QUIT"
+                |"TOP"|"APOP"|"AUTH"|"CAPA"|"STLS"|"LOGIN"|"LOGOUT"|"SELECT"|"EXAMINE"
+                |"STATUS"|"LSUB"|"FETCH"|"STORE"|"SEARCH"|"UID"|"APPEND"|"COPY"|"MOVE"
+                |"EXPUNGE"|"CREATE"|"DELETE"|"RENAME"|"SUBSCRIBE"|"UNSUBSCRIBE"|"CHECK"
+                |"CLOSE"|"CAPABILITY"|"STARTTLS"|"AUTHENTICATE"|"ID"|"ENABLE"|"QUOTA"
+                |"GETQUOTA"|"MYRIGHTS"|"ACL"|"METADATA"|"NAMESPACE"|"GETMETADATA"
+                |"SETMETADATA"|"LISTMETADATA"|"GETANNOTATION"|"SETANNOTATION"
+                |"LISTANNOTATION"|"GETQUOTAROOT"|"SETQUOTAROOT"|"DELETEACL"|"MODIFYACL"
+                |"REPLACE"|"COMPRESS"|"DECOMPRESS"|"IDLE"|"DONE"
+        )
+    }
+
+    /// State-changing or exfiltration mail verbs — the ones that make a
+    /// protocol body dangerous rather than merely unusual.
+    fn is_dangerous_mail_verb(w: &str) -> bool {
+        matches!(
+            w,
+            "STORE"|"EXPUNGE"|"APPEND"|"COPY"|"MOVE"|"CREATE"|"DELETE"|"RENAME"|"REPLACE"
+                |"RETR"|"DELE"|"TOP"|"UIDL"|"RSET"|"SETQUOTA"|"GETQUOTA"|"SETQUOTAROOT"
+                |"GETQUOTAROOT"|"SETMETADATA"|"SETANNOTATION"|"DELETEACL"|"MODIFYACL"
+                |"ACL"|"NAMESPACE"|"ENABLE"
+        )
+    }
+
+    /// Privileged account names that turn a LOGIN/USER attempt into an
+    /// auth-bypass probe.
+    fn is_privileged_mail_user(arg: &str) -> bool {
+        const PRIV: &[&str] = &[
+            "admin", "root", "administrator", "postmaster", "webmaster", "hostmaster",
+            "sysadmin", "operator", "manager", "service", "backup", "oracle", "postgres",
+            "mysql", "superuser", "toor", "rescue", "adm",
+        ];
+        arg.split(|c: char| !c.is_ascii_alphanumeric())
+            .any(|tok| PRIV.contains(&tok.to_ascii_lowercase().as_str()))
+    }
+
+    /// XML-RPC method names that are execution, write or enumeration sinks.
+    /// Read-only blog APIs (`wp.getPosts`, `blogger.getUsersBlogs`) stay benign.
+    fn xmlrpc_method_is_dangerous(lower_body: &str) -> bool {
+        let Some(start) = lower_body.find("<methodname") else {
+            return false;
+        };
+        let rest = &lower_body[start + "<methodname".len()..];
+        let Some(gt) = rest.find('>') else {
+            return false;
+        };
+        let name = rest[gt + 1..].split('<').next().unwrap_or("").trim();
+        if name.is_empty() {
+            return false;
+        }
+        const DANGER_SEG: &[&str] = &[
+            "exec", "eval", "shell", "cmd", "pingback", "demo", "sayhello",
+            "listmethods", "multicall", "publish", "delete", "remove", "edit", "upload",
+            "import", "new", "set", "send", "mail", "login", "auth", "password", "config",
+            "option", "install", "upgrade", "backup", "restore", "admin", "run", "call",
+        ];
+        const DANGER_PREFIX: &[&str] = &[
+            "exec", "eval", "shell", "system", "publish", "delete", "remove", "edit",
+            "upload", "import", "send", "mail", "login", "auth", "install", "upgrade",
+            "backup", "restore", "admin", "run", "call", "set", "new",
+        ];
+        for seg in name.split('.') {
+            if DANGER_SEG.contains(&seg)
+                || DANGER_PREFIX.iter().any(|p| seg.starts_with(p))
+            {
+                return true;
+            }
+        }
+        // Namespace-scoped account enumeration (WordPress-style APIs).
+        if let Some((ns, meth)) = name.split_once('.') {
+            if matches!(ns, "wp" | "mt" | "metaweblog" | "movabletype")
+                && ["users", "authors", "profile", "options", "commentstatus", "pageoptions"]
+                    .iter()
+                    .any(|k| meth.contains(k))
+            {
+                return true;
+            }
+        }
+        false
+    }
+
+    /// True when the request body is itself a foreign wire protocol carrying
+    /// dangerous operations: RESP (Redis) command streams, IMAP/POP3 mail
+    /// commands with state-changing or exfiltration verbs, or an XML-RPC
+    /// `<methodCall>` to an execution/write/enumeration method. Plain reads
+    /// (SELECT INBOX, FETCH PEEK, LIST, benign blog-API reads) stay benign.
+    fn body_is_foreign_protocol(body: &str) -> bool {
+        let lower = body.to_ascii_lowercase();
+        if lower.contains("<methodcall")
+            && lower.contains("<methodname")
+            && Self::xmlrpc_method_is_dangerous(&lower)
+        {
+            return true;
+        }
+        // RESP array framing: `*3\r\n$3\r\nSET\r\n...`
+        if body.starts_with('*') && body.contains("\r\n$") {
+            return true;
+        }
+        // SQL-ish bodies belong to the SQLi detectors, not protocol smuggling.
+        let sqlish = [
+            " from ", " where ", " values(", " union ", " join ", " having ", " limit ",
+            " group by ", " order by ",
+        ]
+        .iter()
+        .any(|k| lower.contains(k));
+        if sqlish {
+            return false;
+        }
+        let mut redis = 0usize;
+        let mut mail_lines = 0usize;
+        let mut mail_dangerous = false;
+        for line in body.lines() {
+            let t = line.trim();
+            if t.is_empty() {
+                continue;
+            }
+            let mut it = t.split_whitespace();
+            let w1 = it.next().unwrap_or("");
+            let w1u = w1.to_ascii_uppercase();
+            let w2u = it.next().unwrap_or("").to_ascii_uppercase();
+            // Untagged verbs must be upper-case tokens — mixed/lowercase
+            // words are prose, not protocol commands.
+            let upper_token = w1.chars().any(|c| c.is_ascii_uppercase())
+                && w1.chars().all(|c| !c.is_ascii_lowercase());
+            // IMAP tag prefix: `A001 LOGIN ...`, `a1 SELECT ...`
+            let tagged = w1.len() >= 2
+                && w1.len() <= 12
+                && w1.chars().next().unwrap().is_ascii_alphabetic()
+                && w1[1..].chars().all(|c| c.is_ascii_digit());
+            let mail_cmd = if tagged && Self::is_mail_verb(&w2u) {
+                Some(w2u.as_str())
+            } else if !tagged && upper_token && Self::is_mail_verb(&w1u) {
+                Some(w1u.as_str())
+            } else {
+                None
+            };
+            if let Some(cmd) = mail_cmd {
+                mail_lines += 1;
+                if Self::is_dangerous_mail_verb(cmd) {
+                    mail_dangerous = true;
+                }
+                // Strong single-line protocol syntax.
+                let ul = t.to_ascii_uppercase();
+                // BODY[section] fetch without PEEK mutates \Seen state.
+                let body_section = ul.contains("BODY[")
+                    && !ul.contains("PEEK")
+                    && ["HEADER", "TEXT", "FIELDS", "MIME", "RFC822", "STRUCTURE"]
+                        .iter()
+                        .any(|k| ul.contains(k));
+                let flag_op = ul.contains(" +FLAGS")
+                    || ul.contains(" -FLAGS")
+                    || ul.starts_with("+FLAGS")
+                    || ul.starts_with("-FLAGS");
+                let imap_flag = ["(\\SEEN", "(\\DELETED", "(\\FLAGGED", "(\\ANSWERED", "(\\DRAFT", "(\\RECENT"]
+                    .iter()
+                    .any(|f| ul.contains(f));
+                // IMAP literal syntax `{n}` at end of a command line.
+                let literal = {
+                    let trimmed = t.trim_end();
+                    trimmed.ends_with('}')
+                        && trimmed
+                            .rfind('{')
+                            .map(|i| {
+                                trimmed[i + 1..trimmed.len() - 1]
+                                    .chars()
+                                    .all(|c| c.is_ascii_digit())
+                                    && !trimmed[i + 1..trimmed.len() - 1].is_empty()
+                            })
+                            .unwrap_or(false)
+                };
+                // Privileged account on an auth command line.
+                let priv_user = matches!(cmd, "LOGIN" | "AUTHENTICATE" | "USER" | "PASS" | "APOP")
+                    && Self::is_privileged_mail_user(t);
+                let pop3_resp = ul.starts_with("+OK") || ul.starts_with("-ERR");
+                if body_section || flag_op || imap_flag || literal || priv_user || pop3_resp {
+                    return true;
+                }
+                continue;
+            }
+            if !upper_token {
+                continue;
+            }
+            match w1 {
+                // Dangerous Redis commands fire on a single line.
+                "CONFIG"|"EVAL"|"EVALSHA"|"MODULE"|"SLAVEOF"|"REPLICAOF"|"MONITOR"
+                |"SUBSCRIBE"|"PSUBSCRIBE"|"SSUBSCRIBE"|"SPUBLISH"|"FLUSHALL"|"FLUSHDB"
+                |"DEBUG"|"SHUTDOWN"|"SAVE"|"BGSAVE"|"BGREWRITEAOF"|"LASTSAVE"|"ROLE"
+                |"CLIENT"|"CLUSTER"|"SLOWLOG"|"MEMORY"|"OBJECT"|"SCRIPT"|"FAILOVER"
+                |"MIGRATE"|"SWAPDB"|"WAIT"|"LOLWUT"|"RESET" => return true,
+                // Common verbs need corroboration (>=3 lines, no `=` args so
+                // `SET @x=1` style assignments do not count).
+                "AUTH"|"SELECT"|"SET"|"GET"|"DEL"|"EXISTS"|"INCR"|"DECR"|"APPEND"
+                |"LPUSH"|"RPUSH"|"LREM"|"SADD"|"SREM"|"ZADD"|"ZREM"|"HSET"|"HDEL"
+                |"EXPIRE"|"PEXPIRE"|"TTL"|"PTTL"|"PERSIST"|"RENAME"|"RENAMENX"|"MOVE"
+                |"PING"|"ECHO"|"TYPE"|"KEYS"|"SCAN"|"RANDOMKEY"|"DBSIZE"|"TIME"
+                |"STRLEN"|"GETRANGE"|"SETRANGE"|"MGET"|"MSET"|"INCRBY"|"DECRBY"
+                |"HGET"|"HGETALL"|"HLEN"|"LRANGE"|"LINDEX"|"LLEN"|"SCARD"|"SMEMBERS"
+                |"ZRANGE"|"ZCARD"|"ZCOUNT"|"GEOADD"|"XADD"|"XREAD"
+                    if !t.contains('=') =>
+                {
+                    redis += 1
+                }
+                _ => {}
+            }
+        }
+        (mail_lines >= 2 && mail_dangerous) || redis >= 3
+    }
+
     /// IPv4 private/loopback/link-local/reserved check for mapped forms.
     fn is_internal_ipv4_str(ip: &str) -> bool {
         let it = ip.split('.');
@@ -2888,6 +3153,15 @@ impl AstLexer {
                         .push("CLOUD_SCHEME_ENDPOINT".to_string());
                     break;
                 }
+            }
+            // RMI/Corba schemes are hostile on sight: no legitimate web
+            // parameter carries them, so no param-name context is required.
+            if RE_SSRF_HOSTILE_SCHEME.get().unwrap().is_match(&normalized) {
+                tokens.has_ssrf_metadata = true;
+                tokens.has_ssrf_scheme_rel = true;
+                tokens
+                    .active_token_names
+                    .push("HOSTILE_RMI_SCHEME".to_string());
             }
         }
 
@@ -4566,6 +4840,15 @@ impl AstLexer {
                     .active_token_names
                     .push("MANAGEMENT_ENDPOINT_PROBE".to_string());
             }
+            // Orchestrator / observability-backend endpoints: container
+            // sockets, kubelet, Prometheus/Grafana/Alertmanager APIs, Consul,
+            // Vault, Nomad, Solr handlers — none belong on a public edge.
+            if RE_ADMIN_ORCH_PATH.get().unwrap().is_match(&pq) {
+                tokens.has_admin_orchestrator_path = true;
+                tokens
+                    .active_token_names
+                    .push("ADMIN_ORCHESTRATOR_ENDPOINT".to_string());
+            }
             // WebSocket upgrade carrying injection-flavored subprotocols.
             let is_ws = req.headers.iter().any(|(k, v)| {
                 k.eq_ignore_ascii_case("upgrade") && v.eq_ignore_ascii_case("websocket")
@@ -5192,6 +5475,55 @@ impl AstLexer {
                         .active_token_names
                         .push("ERROR_REFLECTION".to_string());
                 }
+            }
+        }
+
+        // X. v10 protocol/DSL coverage: backend query languages, foreign
+        // wire-protocol bodies and diagram-DSL injection.
+        {
+            // Query DSLs live in the URL (path + query), never in bodies:
+            // stored configs legitimately embed PromQL (Grafana dashboards)
+            // and JSON/XML bodies carry `key="value"` shapes that mimic
+            // label matchers. Decode percent-encoding so %7B!join still
+            // reaches the patterns.
+            let pq_dec = percent_decode_str(&format!("{}?{}", req.path, req.query_string))
+                .decode_utf8_lossy()
+                .into_owned();
+            if RE_QL_DSL.get().unwrap().is_match(&pq_dec) {
+                tokens.has_query_dsl_injection = true;
+                tokens
+                    .active_token_names
+                    .push("QUERY_DSL_INJECTION".to_string());
+            }
+            // OData: $-prefixed query options are normal on OData services;
+            // only flag when the option value carries injection evidence
+            // (tautologies, functions, nested options, aggregation).
+            if RE_ODATA_PARAM.get().unwrap().is_match(&pq_dec)
+                && RE_ODATA_SUSPICIOUS.get().unwrap().is_match(&pq_dec)
+            {
+                tokens.has_query_dsl_injection = true;
+                tokens
+                    .active_token_names
+                    .push("ODATA_EXPRESSION_INJECTION".to_string());
+            }
+            // Mermaid %%{init:...}%% directives reaching a diagram renderer.
+            if RE_MERMAID_INIT
+                .get()
+                .unwrap()
+                .is_match(&tokens.normalized_text)
+            {
+                tokens.has_mermaid_injection = true;
+                tokens
+                    .active_token_names
+                    .push("MERMAID_INIT_DIRECTIVE".to_string());
+            }
+            // Foreign wire-protocol bodies: RESP (Redis), IMAP, POP3 and
+            // XML-RPC <methodCall> payloads smuggled inside HTTP requests.
+            if !req.body.is_empty() && Self::body_is_foreign_protocol(&req.body) {
+                tokens.has_protocol_body_injection = true;
+                tokens
+                    .active_token_names
+                    .push("FOREIGN_PROTOCOL_BODY".to_string());
             }
         }
 
