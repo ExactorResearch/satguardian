@@ -3,7 +3,6 @@ use crate::engine::DynamicCompiledClause;
 use crate::types::{AttackCategory, ProofChain};
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use sqlx::{Pool, Sqlite};
-use std::str::FromStr;
 use std::sync::Arc;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
 use tracing::info;
@@ -28,7 +27,16 @@ impl SqliteLedger {
     pub async fn init(
         database_path: &str,
     ) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
-        let opts = SqliteConnectOptions::from_str(&format!("sqlite://{}?mode=rwc", database_path))?
+        let db_path = std::path::Path::new(database_path);
+        if let Some(parent) = db_path.parent() {
+            if !parent.as_os_str().is_empty() {
+                std::fs::create_dir_all(parent)?;
+            }
+        }
+
+        let opts = SqliteConnectOptions::new()
+            .filename(db_path)
+            .create_if_missing(true)
             .journal_mode(sqlx::sqlite::SqliteJournalMode::Wal)
             .synchronous(sqlx::sqlite::SqliteSynchronous::Normal)
             .busy_timeout(std::time::Duration::from_millis(5000));
@@ -36,7 +44,13 @@ impl SqliteLedger {
         let pool = SqlitePoolOptions::new()
             .max_connections(5)
             .connect_with(opts)
-            .await?;
+            .await
+            .map_err(|e| {
+                format!(
+                    "cannot open SQLite ledger at '{}': {} (check that the directory exists and is writable)",
+                    database_path, e
+                )
+            })?;
 
         // Create Tables
         sqlx::query(
