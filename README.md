@@ -13,7 +13,7 @@
 [![Synthesis](https://img.shields.io/badge/Rule_Synthesis-Opt--in_Cloud%2C_Approved_locally-orange.svg)](#22-opt-in-cloud-synthesis-srccloudsatguardianclientrs)
 [![License](https://img.shields.io/badge/Edge_WAF-100%25_Free_&_Unlimited_Traffic-success.svg)](#35-pricing--licensing-zero-traffic-tax)
 
-**SATGuardian Edge WAF** is an experimental, self-hosted Web Application Firewall
+**SATGuardian Edge WAF** is a self-hosted Web Application Firewall
 written in Rust. It evaluates security logic with **128-bit integer bitmasks
 (`u128`)** in microseconds on the edge, and can — only if you turn it on — send
 recorded anomalies to **SATGuardian cloud synthesis** for review. Detection quality

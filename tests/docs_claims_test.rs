@@ -190,6 +190,29 @@ fn status_file_states_the_version_and_keeps_the_evidence_caveats() {
 }
 
 #[test]
+fn docs_mirrors_track_their_root_sources() {
+    let root = repo_root();
+    for (a, b) in [
+        ("README.md", "docs/index.md"),
+        ("satguardian_white_paper.md", "docs/research/white-paper.md"),
+        ("COMPARATIVE_ANALYSIS_PRE_VS_SATGUARDIAN.md", "docs/benchmarks/comparative-analysis.md"),
+    ] {
+        let headings = |p: &Path| -> Vec<String> {
+            read(p)
+                .lines()
+                .filter(|l| l.starts_with('#'))
+                .map(|l| l.trim().to_string())
+                .collect()
+        };
+        assert_eq!(
+            headings(&root.join(a)),
+            headings(&root.join(b)),
+            "{b} headings drifted from {a}; re-sync the mirror"
+        );
+    }
+}
+
+#[test]
 fn corpus_files_are_versioned_and_labelled() {
     for (name, min_cases) in [
         ("corpus/independent_v1.json", 79usize),
