@@ -510,6 +510,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#why-install-satguardian" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🎯 Why install SATGuardian
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#quick-start-build-and-test-drive" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1554,6 +1565,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#why-install-satguardian" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🎯 Why install SATGuardian
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#quick-start-build-and-test-drive" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1859,6 +1881,15 @@ recorded anomalies to <strong>SATGuardian cloud synthesis</strong> for review. D
 is <strong>measured, not assumed</strong>: the numbers below come from a versioned corpus and a
 reproducible benchmark, one held-out batch of them included.</p>
 <p>The product promise: <strong>free, you get local protection; paying, you get ongoing review, update proposals and explanations — without ever giving up control of your WAF.</strong> The local client and <code>satguardian-health</code> stay free, read-only and offline. Cloud review is opt-in (<code>auto_sync_enabled</code> defaults to <code>false</code>) and what it returns is stored as a <strong>proposal</strong>: nothing enters the running rule set until you approve it with <code>satguardian-waf clauses apply &lt;id&gt;</code> or <code>POST /api/waf/clauses/{id}/apply</code>. The messaging bot (Telegram/WhatsApp) is announced on the site, not available yet.</p>
+<h3 id="why-install-satguardian">🎯 Why install SATGuardian</h3>
+<p>SATGuardian is not positioned as "another WAF". It is a <strong>deterministic decision layer</strong> that does what signature- and scoring-based firewalls structurally cannot:</p>
+<ol>
+<li><strong>Every decision is auditable, bit by bit.</strong> A block is a Boolean cube <code>(feature_vector &amp; mask) == expected</code> over a 128-bit feature vector — reproducible, explainable and reviewable by an auditor without trusting a vendor's scoring internals. CRS-style engines answer "blocked, anomaly score 27"; SATGuardian answers <em>which structural tokens, in which combination, triggered which rule</em>.</li>
+<li><strong>It complements your existing WAF instead of replacing it.</strong> Measured head-to-head against Aegis Community v1.1.0 (Coraza + OWASP CRS 4.25.1) on 2026-11-09: on the CRS v4.30 attack suite the two engines detect <strong>82.0% vs 80.7%</strong>, but their coverage is strongly complementary — the union reaches <strong>92.9% recall</strong> while the intersection is only <strong>69.8%</strong>. Deployed as a cascade in front of a CRS-based WAF, SATGuardian adds detection the signatures miss; deployed alone, it adds explainability they cannot offer. Details: see §3.4 below.</li>
+<li><strong>Your traffic never leaves your infrastructure.</strong> No DNS redirection, no hosted gateway, no per-request fee. Inspection runs in your process; the only optional cloud contact is the review of recorded feature vectors — off by default, and its output arrives as proposals you approve, never as silent rule changes.</li>
+<li><strong>Free edge, paid governance.</strong> Edge inspection is 100% free and unlimited. The paid layer is <em>review</em>: ongoing analysis of new patterns, update proposals and explanations — metered in Security Units, with quota exhaustion pausing cloud review while local rules keep enforcing.</li>
+</ol>
+<p><strong>Who this is for:</strong> teams that need to <em>prove</em> why a request was blocked — regulated workloads, audit-driven security programs, and operators who want a fast deterministic first stage in front of a heavier WAF. <strong>Who it is not for (yet):</strong> teams that need a managed console, TLS termination, geo-blocking or rate limiting in the same box — those live in the proxy/TLS layer in front of SATGuardian.</p>
 <hr />
 <h2 id="quick-start-build-and-test-drive">⚡ Quick Start: Build and Test Drive</h2>
 <p>Evaluate SATGuardian Edge WAF in <strong>Standalone Mode</strong> with no database, broker or sidecar — the only

@@ -22,6 +22,17 @@ reproducible benchmark, one held-out batch of them included.
 
 The product promise: **free, you get local protection; paying, you get ongoing review, update proposals and explanations — without ever giving up control of your WAF.** The local client and `satguardian-health` stay free, read-only and offline. Cloud review is opt-in (`auto_sync_enabled` defaults to `false`) and what it returns is stored as a **proposal**: nothing enters the running rule set until you approve it with `satguardian-waf clauses apply <id>` or `POST /api/waf/clauses/{id}/apply`. The messaging bot (Telegram/WhatsApp) is announced on the site, not available yet.
 
+### 🎯 Why install SATGuardian
+
+SATGuardian is not positioned as "another WAF". It is a **deterministic decision layer** that does what signature- and scoring-based firewalls structurally cannot:
+
+1. **Every decision is auditable, bit by bit.** A block is a Boolean cube `(feature_vector & mask) == expected` over a 128-bit feature vector — reproducible, explainable and reviewable by an auditor without trusting a vendor's scoring internals. CRS-style engines answer "blocked, anomaly score 27"; SATGuardian answers *which structural tokens, in which combination, triggered which rule*.
+2. **It complements your existing WAF instead of replacing it.** Measured head-to-head against Aegis Community v1.1.0 (Coraza + OWASP CRS 4.25.1) on 2026-11-09: on the CRS v4.30 attack suite the two engines detect **82.0% vs 80.7%**, but their coverage is strongly complementary — the union reaches **92.9% recall** while the intersection is only **69.8%**. Deployed as a cascade in front of a CRS-based WAF, SATGuardian adds detection the signatures miss; deployed alone, it adds explainability they cannot offer. Details: [§3.4](#34-first-head-to-head-vs-a-real-waf-product-aegis-community-v110).
+3. **Your traffic never leaves your infrastructure.** No DNS redirection, no hosted gateway, no per-request fee. Inspection runs in your process; the only optional cloud contact is the review of recorded feature vectors — off by default, and its output arrives as proposals you approve, never as silent rule changes.
+4. **Free edge, paid governance.** Edge inspection is 100% free and unlimited. The paid layer is *review*: ongoing analysis of new patterns, update proposals and explanations — metered in Security Units, with quota exhaustion pausing cloud review while local rules keep enforcing.
+
+**Who this is for:** teams that need to *prove* why a request was blocked — regulated workloads, audit-driven security programs, and operators who want a fast deterministic first stage in front of a heavier WAF. **Who it is not for (yet):** teams that need a managed console, TLS termination, geo-blocking or rate limiting in the same box — those live in the proxy/TLS layer in front of SATGuardian.
+
 ---
 
 ## ⚡ Quick Start: Build and Test Drive

@@ -1394,6 +1394,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#4-positioning-why-deploy-satguardian" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Positioning: Why Deploy SATGuardian
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1574,6 +1585,17 @@
     <span class="md-ellipsis">
       
         3. Self-Hosted Deployment &amp; the Security Units (SU) Review Model
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-positioning-why-deploy-satguardian" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Positioning: Why Deploy SATGuardian
       
     </span>
   </a>
@@ -1864,6 +1886,37 @@ explanations — without ever giving up control of your WAF.</strong></p>
 <li><strong>What a paid plan buys is review, not control of your WAF:</strong> the SATGuardian cloud synthesis service analyses the patterns your node recorded and returns update proposals with their equation, reduction and replay evidence. That service is metered in <strong>Security Units (SU)</strong> against the variables and minterms it compresses; when a plan's monthly SU quota is exhausted it returns <code>HTTP 402 SU_QUOTA_EXHAUSTED</code>, cloud review pauses, and the node keeps enforcing the clauses you already approved. The current plan table lives in the project README and on the product site; this paper does not restate prices, and no plan comes with an SLA or a coverage guarantee.</li>
 <li><strong>Control is the product feature:</strong> cloud results land in your ledger as proposals (<code>dynamic_clauses.applied = 0</code>), never in the engine. Only <code>satguardian-waf clauses apply &lt;id&gt;</code> or an admin-token <code>POST /api/waf/clauses/{id}/apply</code> makes one enforce; <code>reject</code> discards a proposal and cannot remove a rule already in force; and <code>auto_sync_enabled</code> stays <code>false</code> until you turn it on.</li>
 </ul>
+<hr />
+<h2 id="4-positioning-why-deploy-satguardian">4. Positioning: Why Deploy SATGuardian</h2>
+<p>SATGuardian is not "another WAF". It is a <strong>deterministic decision layer</strong> that
+does what signature- and scoring-based firewalls structurally cannot:</p>
+<ol>
+<li><strong>Every decision is auditable, bit by bit.</strong> A block is a Boolean cube
+   <code>(feature_vector &amp; mask) == expected</code> over a 128-bit feature vector —
+   reproducible and reviewable by an auditor without trusting a vendor's
+   scoring internals. CRS-style engines report an anomaly score; SATGuardian
+   reports <em>which structural tokens, in which combination, triggered which
+   rule</em>.</li>
+<li><strong>It complements existing WAFs instead of replacing them.</strong> In the
+   2026-11-09 head-to-head against Aegis Community v1.1.0 (§2.5), the two
+   engines reached parity on the CRS v4.30 suite (82.0% vs 80.7% recall) with
+   strongly complementary coverage: union <strong>92.9%</strong>, intersection <strong>69.8%</strong>.
+   As a cascade stage it adds detections signatures miss; alone, it adds
+   explainability they cannot offer.</li>
+<li><strong>Traffic sovereignty is architectural, not contractual.</strong> No DNS
+   redirection, no hosted gateway, no per-request fee; the only optional cloud
+   contact is opt-in review of recorded feature vectors, returned as proposals
+   an operator approves.</li>
+<li><strong>Free edge, paid governance.</strong> Edge inspection is free and unlimited;
+   the paid layer is review — pattern analysis, update proposals and
+   explanations metered in Security Units.</li>
+</ol>
+<p><strong>Who this is for:</strong> teams that must <em>prove</em> why a request was blocked —
+regulated workloads, audit-driven security programs, and operators who want a
+fast deterministic first stage in front of a heavier WAF. <strong>Who it is not for
+(yet):</strong> teams needing a managed console, TLS termination, geo-blocking or
+rate limiting in the same box — those belong in the proxy/TLS layer in front
+of SATGuardian.</p>
 
 
 

@@ -198,3 +198,37 @@ explanations — without ever giving up control of your WAF.**
 - **Edge inspection carries no per-request fee:** the in-path plane is free and unlimited, needs no network access to enforce, and keeps working if the cloud is unreachable or the plan lapses.
 - **What a paid plan buys is review, not control of your WAF:** the SATGuardian cloud synthesis service analyses the patterns your node recorded and returns update proposals with their equation, reduction and replay evidence. That service is metered in **Security Units (SU)** against the variables and minterms it compresses; when a plan's monthly SU quota is exhausted it returns `HTTP 402 SU_QUOTA_EXHAUSTED`, cloud review pauses, and the node keeps enforcing the clauses you already approved. The current plan table lives in the project README and on the product site; this paper does not restate prices, and no plan comes with an SLA or a coverage guarantee.
 - **Control is the product feature:** cloud results land in your ledger as proposals (`dynamic_clauses.applied = 0`), never in the engine. Only `satguardian-waf clauses apply <id>` or an admin-token `POST /api/waf/clauses/{id}/apply` makes one enforce; `reject` discards a proposal and cannot remove a rule already in force; and `auto_sync_enabled` stays `false` until you turn it on.
+
+---
+
+## 4. Positioning: Why Deploy SATGuardian
+
+SATGuardian is not "another WAF". It is a **deterministic decision layer** that
+does what signature- and scoring-based firewalls structurally cannot:
+
+1. **Every decision is auditable, bit by bit.** A block is a Boolean cube
+   `(feature_vector & mask) == expected` over a 128-bit feature vector —
+   reproducible and reviewable by an auditor without trusting a vendor's
+   scoring internals. CRS-style engines report an anomaly score; SATGuardian
+   reports *which structural tokens, in which combination, triggered which
+   rule*.
+2. **It complements existing WAFs instead of replacing them.** In the
+   2026-11-09 head-to-head against Aegis Community v1.1.0 (§2.5), the two
+   engines reached parity on the CRS v4.30 suite (82.0% vs 80.7% recall) with
+   strongly complementary coverage: union **92.9%**, intersection **69.8%**.
+   As a cascade stage it adds detections signatures miss; alone, it adds
+   explainability they cannot offer.
+3. **Traffic sovereignty is architectural, not contractual.** No DNS
+   redirection, no hosted gateway, no per-request fee; the only optional cloud
+   contact is opt-in review of recorded feature vectors, returned as proposals
+   an operator approves.
+4. **Free edge, paid governance.** Edge inspection is free and unlimited;
+   the paid layer is review — pattern analysis, update proposals and
+   explanations metered in Security Units.
+
+**Who this is for:** teams that must *prove* why a request was blocked —
+regulated workloads, audit-driven security programs, and operators who want a
+fast deterministic first stage in front of a heavier WAF. **Who it is not for
+(yet):** teams needing a managed console, TLS termination, geo-blocking or
+rate limiting in the same box — those belong in the proxy/TLS layer in front
+of SATGuardian.
