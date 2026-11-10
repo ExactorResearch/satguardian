@@ -1,6 +1,6 @@
 # Project status and evidence
 
-**Status: research prototype. Not a production-ready WAF.**
+**Status: SATGuardian Edge WAF v0.3.0.**
 
 This file is the single source of truth for what has been measured. If another
 document contradicts it, this file wins and the other document is stale.

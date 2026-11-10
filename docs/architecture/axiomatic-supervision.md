@@ -3,7 +3,7 @@
 **Architectural Overview: In-Path Bitmask Evaluation plus Opt-In Cloud Rule Review**  
 **Codebase Reference:** `src/engine/sat_solver.rs`, `src/cloud/satguardian_client.rs`, `src/ledger/sqlite_ledger.rs`, `src/api/server.rs`, `satguardian-advisor.py`
 
-> **Status: research prototype.** Detection numbers in this document are
+> **Status: SATGuardian Edge WAF v0.3.0.** Detection numbers in this document are
 > in-sample results on a hand-written corpus plus one held-out run of the same
 > author's payloads, and comparisons against local Python stand-ins. They are
 > not vendor benchmarks and do not establish production readiness. There is no

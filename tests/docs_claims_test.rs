@@ -175,11 +175,10 @@ fn published_docs_do_not_repeat_retracted_claims() {
 }
 
 #[test]
-fn status_file_states_the_project_is_a_prototype() {
+fn status_file_states_the_version_and_keeps_the_evidence_caveats() {
     let root = repo_root();
     let status = read(&root.join("STATUS.md")).to_ascii_lowercase();
-    assert!(status.contains("research prototype"));
-    assert!(status.contains("not a production-ready waf"));
+    assert!(status.contains("satguardian edge waf v0.3.0"));
     assert!(status.contains("no independent or third-party evaluation"));
     assert!(status.contains("tests/docs_claims_test.rs"));
 
@@ -319,10 +318,11 @@ fn python_harness_labels_stand_ins_and_provenance() {
 }
 
 #[test]
-fn crate_metadata_does_not_claim_production_readiness() {
+fn crate_metadata_does_not_overclaim() {
     let manifest = read(&repo_root().join("Cargo.toml")).to_ascii_lowercase();
     assert!(!manifest.contains("production-grade"));
-    assert!(manifest.contains("research prototype"));
+    assert!(!manifest.contains("production-ready"));
+    assert!(manifest.contains("satguardian"));
 }
 
 /// The framings the product narrative retired must not come back through any file.

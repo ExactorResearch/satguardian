@@ -4,7 +4,7 @@ This guide documents **how to configure** and **operate** the **SATGuardian Edge
 
 **What the tiers mean:** free, you get local protection on your own node. Paying, you get continuous review of new patterns, update proposals and explanations — without ever giving up control of your WAF. Inspection and enforcement always run locally; the cloud is only consulted when you opt in, and what it returns is a proposal you approve or discard.
 
-> **Status: research prototype.** Detection has been measured on small, hand-written,
+> **Status: SATGuardian Edge WAF v0.3.0.** Detection has been measured on small, hand-written,
 > same-author corpora only. The in-sample rows (100% recall / 0% false positives) are
 > regression floors from `corpus/independent_v1.json`, not generalization estimates. The
 > current held-out estimate (`benchmarks/real_comparative/corpus/heldout_v10.jsonl`,

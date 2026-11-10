@@ -4,7 +4,7 @@ This guide provides step-by-step instructions to run and test the **SATGuardian
 Edge WAF** (`satguardian`) locally using the Rust binary and the Python benchmark
 and advisor suite.
 
-> **Status: research prototype.** The PoC measures in-memory rule evaluation on a
+> **Status: SATGuardian Edge WAF v0.3.0.** The PoC measures in-memory rule evaluation on a
 > small in-sample corpus plus one held-out run of hand-written payloads. It is
 > not a production validation and there is no third-party evaluation. See
 > [STATUS.md](STATUS.md).

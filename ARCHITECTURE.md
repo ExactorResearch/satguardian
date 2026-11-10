@@ -4,7 +4,7 @@
 **Version:** `v0.3.0`  
 **Scope:** Implementation architecture (Rust hot path & Python control plane)
 
-> **Status: research prototype, not a production-ready WAF.** Metrics in this
+> **Status: SATGuardian Edge WAF v0.3.0.** Metrics in this
 > document are in-sample measurements on a hand-written corpus, plus one
 > held-out run on the same author's payloads. The Python comparison harness runs
 > local stand-ins, not real vendor products, and no third-party evaluation

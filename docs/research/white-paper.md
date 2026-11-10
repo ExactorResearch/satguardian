@@ -1,9 +1,9 @@
 # SATGuardian Edge WAF: Tens-of-Microseconds Lexical Normalization, 128-Bit Boolean Mask Evaluation, and Opt-In Out-of-Band Cloud Rule Review
 
-**Technical White Paper — Version 3.0 (Research Prototype Edition)**  
+**Technical White Paper — Version 3.0**  
 **Implementation Reference:** `satguardian` (`src/` in Rust, `satguardian_waf/` in Python). The Boolean minimizer is a service at `satguardian.tech`; only its client lives in this repository.
 
-> **Status: research prototype, not a production-ready WAF.** Evaluation is
+> **Status: SATGuardian Edge WAF v0.3.0.** Evaluation is
 > in-sample on a small hand-written corpus plus one held-out run of hand-written
 > payloads; competitor rows are local Python stand-ins; no third-party
 > evaluation exists. See [STATUS.md](../status.md).

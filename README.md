@@ -1,6 +1,6 @@
 # 🛡️ SATGuardian Edge WAF (`satguardian`)
 
-> **Status: research prototype, not a production-ready WAF.**
+> **Status: SATGuardian Edge WAF v0.3.0.**
 > Detection has only been measured on a small, hand-written, in-sample corpus.
 > The Python comparison harness runs local stand-ins, not real Coraza, SafeLine
 > or ModSecurity. See [STATUS.md](STATUS.md) and [corpus/README.md](corpus/README.md)

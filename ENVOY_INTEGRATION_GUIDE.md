@@ -3,7 +3,7 @@
 **Deployment Architecture:** self-hosted edge inspection (lab configuration)  
 **Codebase Reference:** `src/envoy/ext_authz.rs`, `envoy/envoy-uds.yaml`, `envoy/kubernetes-sidecar.yaml`
 
-> **Status: research prototype.** This integration has been exercised in a lab on
+> **Status: SATGuardian Edge WAF v0.3.0.** This integration has been exercised in a lab on
 > our own machine. It has not been run under real traffic, and nothing here is
 > production evidence. See [STATUS.md](STATUS.md).
 

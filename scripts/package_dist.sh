@@ -91,7 +91,7 @@ done
 cat << EOF > "${STAGING_DIR}/README_INSTALL.txt"
 ================================================================================
   SATGUARDIAN EDGE WAF - SELF-CONTAINED CLIENT INSTALLATION PACKAGE
-  Deterministic u128 bitmask evaluation - research prototype, not production-ready
+  Deterministic u128 bitmask evaluation
   Free edge traffic | opt-in cloud review at https://satguardian.tech
 ================================================================================
 

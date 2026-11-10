@@ -1,5 +1,5 @@
 [Unit]
-Description=SATGuardian Edge WAF - Deterministic u128 Bitmask WAF Proxy (research prototype)
+Description=SATGuardian Edge WAF - Deterministic u128 Bitmask WAF Proxy
 Documentation=https://satguardian.tech
 After=network.target network-online.target
 Wants=network-online.target

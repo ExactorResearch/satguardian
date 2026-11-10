@@ -3,7 +3,7 @@
 **Technical Architecture Specification**  
 **Codebase Reference:** `src/ast/lexer.rs`, `src/ast/features.rs`, `src/engine/sat_solver.rs`, `src/cloud/satguardian_client.rs`, `src/ledger/sqlite_ledger.rs`, `src/api/server.rs`
 
-> **Status: research prototype.** Detection evidence is limited to a small
+> **Status: SATGuardian Edge WAF v0.3.0.** Detection evidence is limited to a small
 > in-sample corpus plus one held-out run of hand-written payloads, and there is
 > no third-party evaluation; see [STATUS.md](STATUS.md).
 

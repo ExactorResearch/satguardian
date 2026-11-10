@@ -1,7 +1,7 @@
 # Lab Walkthrough & Forensic Ledger Notes (Not a Customer Deployment)
 
 > **Read this before quoting anything below.** This document is a walkthrough of
-> a research prototype run on our own machine, against the SQLite ledger that is
+> a lab build run on our own machine, against the SQLite ledger that is
 > committed to the repository as demo data. It is **not** a customer deployment,
 > not a production environment, and not production evidence of any kind. No
 > third-party traffic, no third-party evaluation and no long-running soak is
@@ -12,7 +12,7 @@
 **Data sources:** bundled demonstration SQLite ledger (`waf_ledger.db`), the native
 Rust benchmark, and the Python stand-in harness
 
-> **Status: research prototype.** This is not a customer production deployment
+> **Status: SATGuardian Edge WAF v0.3.0.** This is not a customer production deployment
 > and does not demonstrate production readiness. Every number below comes from
 > the bundled demo ledger or the in-repo corpus, on one machine.
 
@@ -114,7 +114,7 @@ and "no collisions" on demo traffic is not a false-positive guarantee.
    test, no customer access log, and the only real-product measurement is the
    2026-11-09 Aegis head-to-head (§3.4 of the README) — one run, one
    configuration. Treat this
-   document as a lab walkthrough of a research prototype.
+   document as a lab walkthrough of the engine.
 4. **What the lab run does show** is the operating model: the node protects
    itself locally and offline by default, review of new patterns is opt-in, and
    every change to the enforcing rule set is an explicit operator approval.

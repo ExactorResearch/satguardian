@@ -4,7 +4,7 @@
 **Target Version:** `v0.3.0`  
 **Audit Objective:** Check implementation claims against source, and report only measurements that can be reproduced from the repository.
 
-> **Status: research prototype, not a production-ready WAF.** Earlier revisions of
+> **Status: SATGuardian Edge WAF v0.3.0.** Earlier revisions of
 > this report capped accuracy at `99.9%`, floored error rates at `< 0.1%`, and
 > labelled Python stand-ins as vendor products. Those claims were fabricated or
 > misleading and have been removed. See [STATUS.md](STATUS.md).

@@ -1,6 +1,6 @@
 # ⚙️ SATGuardian Edge WAF — Configuration Reference
 
-> **Status: research prototype, not a production-ready WAF.** Detection has one held-out
+> **Status: SATGuardian Edge WAF v0.3.0.** Detection has one held-out
 > estimate (`benchmarks/real_comparative/corpus/heldout_v10.jsonl`,
 > **38.6% recall on 70 attacks**, 95% CI 28.0–50.3%, and **0.0% false positives on 44
 > controls**, 95% CI 0.0–8.0%, run once 2026-11-08, same-author payloads, no

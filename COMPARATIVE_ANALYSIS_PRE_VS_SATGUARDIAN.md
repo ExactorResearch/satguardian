@@ -4,7 +4,7 @@
 probabilistic WAF designs, and what the repository actually measures  
 **Target system:** `satguardian` v0.3.0
 
-> **Status: research prototype.** The Python
+> **Status: SATGuardian Edge WAF v0.3.0.** The Python
 > harness runs local reimplementations of each technique, not Coraza, SafeLine,
 > ModSecurity or a trained NLP model. Detection numbers below are in-sample
 > regression floors on a hand-written corpus, except the single held-out run
