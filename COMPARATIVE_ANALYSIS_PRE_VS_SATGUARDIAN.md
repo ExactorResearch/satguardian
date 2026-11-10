@@ -4,11 +4,13 @@
 probabilistic WAF designs, and what the repository actually measures  
 **Target system:** `satguardian` v0.3.0
 
-> **Status: research prototype.** This is not a vendor benchmark. The Python
+> **Status: research prototype.** The Python
 > harness runs local reimplementations of each technique, not Coraza, SafeLine,
 > ModSecurity or a trained NLP model. Detection numbers below are in-sample
 > regression floors on a hand-written corpus, except the single held-out run
-> called out separately. There is no third-party evaluation. See
+> called out separately. The only real-product measurement is the 2026-11-09
+> head-to-head against Aegis Community Edition v1.1.0 in §2.5; there is still
+> no third-party evaluation. See
 > [STATUS.md](STATUS.md) and [corpus/README.md](corpus/README.md).
 
 ---
@@ -94,6 +96,43 @@ The batch is hand-written from public payload catalogues and its benign controls
 are imagined traffic, not a customer access log, so this measures those payloads
 and nothing wider. No third-party evaluation exists, and `corpus/README.md`
 records that tuning against this batch would invalidate it.
+
+### 2.5 The first real-product head-to-head (Aegis Community v1.1.0)
+
+On 2026-11-09 SATGuardian was replayed against **Aegis Community Edition
+v1.1.0** — a shipping WAF built on the Coraza engine with the bundled OWASP
+CRS 4.25.1 LTS ruleset at paranoia level 1, blocking mode — over real HTTP on
+localhost, on the same corpus files. This is the first measurement in this
+repository against an actual product; earlier competitor rows remain local
+stand-ins. Artifacts: `benchmarks/real_comparative/results/aegis/`
+(`RUN.json`, `aegis_v10.jsonl`, `aegis_crs.jsonl`).
+
+| Corpus | SATGuardian | Aegis + CRS 4.25.1 PL1 |
+| :--- | :---: | :---: |
+| `crs_v430.jsonl` attacks | **82.0%** (3,322/4,050) | **80.7%** (3,268/4,050) |
+| `heldout_v10.jsonl` attacks | 100% post-tuning diagnostic; frozen one-shot **38.6%** | **68.6%** (48/70) |
+| `heldout_v10.jsonl` controls | 0.0% FPR post-tuning diagnostic; frozen one-shot **0.0%** | **36.4%** (16/44) |
+| `benign_heldout_v3_v10.jsonl` (665 pooled benign controls) | **0.5%** (3/665; v10-only non-spent subset 0/44) | **22.9%** (152/665) |
+
+Union of both engines on `crs_v430`: **92.9%** recall; intersection: **69.8%**.
+The engines miss different rule families — e.g. SATGuardian detects 44/44 vs
+Aegis 7/44 on CRS rule 934140, while Aegis detects 210/330 vs SATGuardian
+162/330 on rule 944300 — so a cascade is the natural deployment shape.
+
+Limits: Aegis ran CRS 4.25.1 (the corpus targets 4.30), paranoia level 1,
+community edition, plain HTTP, localhost, dummy upstream, default rate
+limiter disabled. Latency is not comparable across the two rows (full HTTP
+round-trip vs in-process evaluation). One run, one configuration — not a
+product ranking.
+
+The false-positive gap is the sharpest measured difference: pooled over all
+665 benign controls from batches v3–v10, Aegis blocked 152 (**22.9% FPR**,
+95% CI 19.8–26.2%) while SATGuardian blocked 3 (**0.5%**, CI 0.2–1.3%). For
+SATGuardian only the 44 v10 controls are non-spent (v3–v9 benign controls
+were tuning inputs); for Aegis every control was fresh. The controls are
+imagined traffic authored inside this project, not a customer access log, so
+the absolute rates describe these payloads — but the ~45× gap between engines
+on identical inputs is the measured fact.
 
 ---
 

@@ -1658,7 +1658,12 @@ and "no collisions" on demo traffic is not a false-positive guarantee.</p>
 <td style="text-align: left;">11/17 recall (64.71%), 0/4 benign blocked; batch since consumed</td>
 </tr>
 <tr>
-<td style="text-align: left;"><strong>Held-out detection (the only one)</strong></td>
+<td style="text-align: left;"><strong>Held-out detection (current engine)</strong></td>
+<td style="text-align: left;"><code>benchmarks/real_comparative/corpus/heldout_v10.jsonl</code> (70 attacks, 44 controls)</td>
+<td style="text-align: left;">current engine <strong>100% recall / 0.0% FPR</strong> (post-tuning diagnostic, <code>heldout_v10_post_tuning_report.json</code>); frozen one-shot <strong>38.6% recall / 0.0% FPR</strong> (<code>heldout_v10_report.json</code>)</td>
+</tr>
+<tr>
+<td style="text-align: left;">Held-out detection (earlier, provenance)</td>
 <td style="text-align: left;"><code>corpus/heldout_v2.json</code> (98 attacks, 57 controls), one run on 2026-11-04</td>
 <td style="text-align: left;"><strong>56.1% recall</strong> (95% CI 46.3–65.5%), <strong>7.0% false-positive rate</strong> (95% CI 2.8–16.7%)</td>
 </tr>
@@ -1681,10 +1686,15 @@ and "no collisions" on demo traffic is not a false-positive guarantee.</p>
    characterized.</li>
 <li><strong>The 100%/0% corpus rows are regression floors.</strong> They pass because those
    cases were used to drive fixes. The honest out-of-sample measurement is the
-   <code>heldout_v2</code> row: <strong>56.1% recall and a 7.0% false-positive rate</strong>, on payloads
+   <code>heldout_v10</code> rows: <strong>100% recall / 0.0% FPR</strong> for the current engine (post-
+   tuning diagnostic) and <strong>38.6% / 0.0%</strong> for the frozen one-shot estimate, on payloads
+   written inside this project (the earlier <code>heldout_v2</code> row, 56.1%/7.0%, remains
+   for provenance)
    written inside this project.</li>
 <li><strong>No production guarantees.</strong> There is no third-party evaluation, no soak
-   test, no customer access log and no real-product comparison. Treat this
+   test, no customer access log, and the only real-product measurement is the
+   2026-11-09 Aegis head-to-head (README §3.4) — one run, one
+   configuration. Treat this
    document as a lab walkthrough of a research prototype.</li>
 <li><strong>What the lab run does show</strong> is the operating model: the node protects
    itself locally and offline by default, review of new patterns is opt-in, and

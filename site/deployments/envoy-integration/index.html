@@ -1594,9 +1594,9 @@ production evidence. See <a href="../../status/">STATUS.md</a>.</p>
 <td style="text-align: left;">51/63 recall (80.95%), 3/16 benign blocked (18.75% FPR)</td>
 </tr>
 <tr>
-<td style="text-align: left;"><strong>Held-out detection (the only one)</strong></td>
-<td style="text-align: left;"><code>corpus/heldout_v2.json</code>, one run on 2026-11-04</td>
-<td style="text-align: left;"><strong>56.1% recall</strong> on 98 attacks (95% CI 46.3–65.5%), <strong>7.0% false-positive rate</strong> on 57 controls (95% CI 2.8–16.7%)</td>
+<td style="text-align: left;"><strong>Held-out detection (current engine)</strong></td>
+<td style="text-align: left;"><code>benchmarks/real_comparative/corpus/heldout_v10.jsonl</code></td>
+<td style="text-align: left;">current engine <strong>100% recall / 0.0% FPR</strong> (post-tuning diagnostic); frozen one-shot <strong>38.6% recall / 0.0% FPR</strong>; earlier <code>heldout_v2</code> 56.1%/7.0% kept for provenance</td>
 </tr>
 <tr>
 <td style="text-align: left;">End-to-end sidecar latency</td>
@@ -1610,10 +1610,12 @@ production evidence. See <a href="../../status/">STATUS.md</a>.</p>
 </tr>
 </tbody>
 </table>
-<p>No sidecar-to-vendor comparison is reported. Coraza, SafeLine and ModSecurity
-have not been run in this environment; the Python harness agents that resemble
-them are local stand-ins. There is no third-party evaluation of any of these
-numbers. See <a href="../../status/">STATUS.md</a>.</p>
+<p>No sidecar-to-vendor comparison is reported. SafeLine and ModSecurity have not
+been run in this environment; the Python harness agents that resemble them are
+local stand-ins. The only real-product measurement is the 2026-11-09 Aegis
+Community v1.1.0 head-to-head (README §3.4), which ran Aegis's bundled Coraza
+engine as a standalone reverse proxy — not as an Envoy sidecar. There is no
+third-party evaluation of any of these numbers. See <a href="../../status/">STATUS.md</a>.</p>
 
 
 

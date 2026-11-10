@@ -111,7 +111,9 @@ and "no collisions" on demo traffic is not a false-positive guarantee.
    for provenance)
    written inside this project.
 3. **No production guarantees.** There is no third-party evaluation, no soak
-   test, no customer access log and no real-product comparison. Treat this
+   test, no customer access log, and the only real-product measurement is the
+   2026-11-09 Aegis head-to-head (§3.4 of the README) — one run, one
+   configuration. Treat this
    document as a lab walkthrough of a research prototype.
 4. **What the lab run does show** is the operating model: the node protects
    itself locally and offline by default, review of new patterns is opt-in, and

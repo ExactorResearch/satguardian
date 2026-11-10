@@ -1454,9 +1454,29 @@ document contradicts it, this file wins and the other document is stale.</p>
 <td>2026-11-01</td>
 </tr>
 <tr>
-<td><strong>Held-out estimate — the only one that exists</strong></td>
-<td><code>corpus/heldout_v2.json</code> in one run before any fix: 55/98 attacks detected (<strong>56.1% recall</strong>, 95% CI 46.3–65.5%), 4/57 controls blocked (<strong>7.0% FPR</strong>, 95% CI 2.8–16.7%). Report: <code>corpus/heldout_v2_report.json</code></td>
-<td>2026-11-04</td>
+<td><strong>Current engine on the held-out batch</strong></td>
+<td><code>benchmarks/real_comparative/corpus/heldout_v10.jsonl</code>, measured today: <strong>70/70 attacks detected (100% recall, 95% CI 94.8–100%)</strong>, 0/44 controls blocked (<strong>0.0% FPR</strong>, 95% CI 0.0–8.0%). Report: <code>corpus/heldout_v10_post_tuning_report.json</code> — post-tuning diagnostic, not an estimate</td>
+<td>2026-11-08</td>
+</tr>
+<tr>
+<td><strong>Frozen one-shot estimate</strong></td>
+<td>Same batch, run once before any fix against it: 27/70 attacks detected (<strong>38.6% recall</strong>, 95% CI 28.0–50.3%), 0/44 controls blocked (<strong>0.0% FPR</strong>, 95% CI 0.0–8.0%). Report: <code>corpus/heldout_v10_report.json</code> — frozen, never rewritten</td>
+<td>2026-11-08</td>
+</tr>
+<tr>
+<td>Coverage against the OWASP CRS v4.30 attack suite (vendor-authored, in-sample for CRS)</td>
+<td><code>benchmarks/real_comparative/corpus/crs_v430.jsonl</code>: 3,322/4,050 labelled attacks detected (<strong>82.0% recall</strong>); <code>satbench</code> in-process, p50 ~5.0 ms on 2026-11-09 hardware (payload-size dependent; an earlier note recorded ~0.7 ms), excluding network/TLS/proxy</td>
+<td>2026-11-08 → 2026-11-09</td>
+</tr>
+<tr>
+<td><strong>First head-to-head vs a real WAF product</strong></td>
+<td>Aegis Community Edition v1.1.0 (Coraza engine + bundled OWASP CRS 4.25.1 LTS, paranoia level 1, blocking mode) replayed over real HTTP on localhost, 2026-11-09. On <code>crs_v430.jsonl</code>: <strong>Aegis 3,268/4,050 (80.7% recall) vs SATGuardian 3,322/4,050 (82.0%)</strong>; union of both engines 3,764/4,050 (<strong>92.9%</strong>), intersection 2,826 (<strong>69.8%</strong>) — coverage is strongly complementary. On <code>heldout_v10.jsonl</code>: Aegis 48/70 recall (<strong>68.6%</strong>) and 16/44 benign blocked (<strong>36.4% FPR</strong>); SATGuardian current engine 70/70 and 0/44 (post-tuning diagnostic — the frozen one-shot estimate stays 38.6%/0.0%). Verdicts and run manifest: <code>benchmarks/real_comparative/results/aegis/</code> (<code>RUN.json</code>, <code>aegis_v10.jsonl</code>, <code>aegis_crs.jsonl</code>); replay adapter <code>tmp/aegis_replay.py</code> pending promotion to <code>adapters/</code>. Caveats: Aegis ran CRS 4.25.1 not 4.30, paranoia level 1 only, community edition, plain HTTP, traffic-control rate limit disabled for isolation, dummy upstream; latency columns are not comparable (Aegis = full HTTP round-trip, SATGuardian = in-process)</td>
+<td>2026-11-09</td>
+</tr>
+<tr>
+<td>Superseded held-out batches</td>
+<td><code>heldout_v2</code> (56.1%/7.0%), <code>heldout_v3</code>–<code>heldout_v9</code> were each measured once and are now tuning inputs; their reports remain for provenance. <code>heldout_v8</code> measured 77.5%/4.2% and <code>heldout_v9</code> 50.0%/6.4% before being spent. <code>heldout_v10</code> was measured once (38.6%/0.0%), then spent by the protocol/DSL tuning pass — its one-shot report stays frozen and <code>heldout_v10_post_tuning_report.json</code> records current behaviour (100%/0.0% diagnostic, not an estimate). Post-repair diagnostics on the spent batches (not estimates): v6 99.0%/0.0%, v7 92.1%/0.0%, v8 100%/0.0%, v9 97.7%/4.3% (two historical <code>union select</code>-in-prose FPs), v10 100%/0.0%</td>
+<td>2026-11-01 → 2026-11-08</td>
 </tr>
 </tbody>
 </table>
@@ -1466,8 +1486,9 @@ now in-sample, and the rules for adding cases.</p>
 <ul>
 <li><strong>No independent or third-party evaluation.</strong> Every batch, including the
   held-out one, is hand-written in this repository by the same author as the
-  engine. <code>heldout_v2</code> is a real out-of-sample estimate of <em>those</em> payloads —
-  its 56.1% recall and 7.0% false-positive rate are the honest numbers to quote,
+  engine. <code>heldout_v10</code> was a real out-of-sample estimate of <em>those</em> payloads;
+  its one-shot 38.6% recall / 0.0% FPR is frozen in <code>heldout_v10_report.json</code>,
+  while the current engine measures 100%/0.0% on the same batch
   and the in-sample 100%/0% rows above are not. Neither number says anything
   about traffic that was not imagined: no customer access log has ever been
   measured against this engine.</li>
@@ -1505,44 +1526,57 @@ different corpora. Do not expect one command to print the other one:</p>
 <td style="text-align: left;">in-sample regression floor: every miss in it was used to fix the engine</td>
 </tr>
 <tr>
+<td style="text-align: left;"><code>../target/release/satbench.exe --corpus benchmarks/real_comparative/corpus/heldout_v10.jsonl</code></td>
+<td style="text-align: left;"><code>heldout_v10.jsonl</code> (70 attacks, 44 benign)</td>
+<td style="text-align: center;">44</td>
+<td style="text-align: left;">one-shot: <strong>38.6% recall, 0.0% FPR</strong> (<code>corpus/heldout_v10_report.json</code>); current engine: <strong>100%/0.0%</strong> post-tuning diagnostic (<code>corpus/heldout_v10_post_tuning_report.json</code>)</td>
+<td style="text-align: left;">current behaviour is the post-tuning diagnostic; the frozen one-shot estimate stays 38.6%/0.0%</td>
+</tr>
+<tr>
 <td style="text-align: left;"><code>cargo run --release --bin satbench -- --corpus benchmarks/real_comparative/corpus/unified_v1.jsonl</code></td>
-<td style="text-align: left;"><code>corpus/heldout_v2.json</code> (plus the two floors, reported separately)</td>
-<td style="text-align: center;">57</td>
-<td style="text-align: left;"><strong>56.1% recall, 7.0% FPR</strong> in the <code>HELD-OUT</code> block</td>
-<td style="text-align: left;">the only held-out estimate; publishable</td>
+<td style="text-align: left;"><code>unified_v1.jsonl</code> floors</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: left;">100% recall, 0.0% FPR on in-sample splits</td>
+<td style="text-align: left;">regression floor, not an estimate</td>
 </tr>
 </tbody>
 </table>
-<p>So the <strong>7.0% false-positive rate on 57 controls</strong> in the table above is the
-held-out measurement, and the <code>benchmark</code> subcommand cannot reproduce it — it
-does not load <code>heldout_v2.json</code>. Re-running the held-out batch read-only
-reproduces 55/98 and 4/57 exactly (checked 2026-11-05 with both commands); what
-spends the batch is fixing the engine against its misses, which is why
-<code>tests/heldout_v2_measurement_test.rs</code> is gated behind an environment variable.</p>
+<p>So the <strong>0.0% false-positive rate on 44 controls</strong> above is the held-out
+measurement. <code>tests/comparative_corpus_test.rs::heldout_v10_reproduction_matches_the_published_report</code>
+re-derives it in-process. Batch v10 has since been spent by the protocol/DSL
+detector iteration: the engine now clears all 70 attacks, so the test asserts
+the one-shot figures remain intact as provenance <em>and</em> that live behaviour
+still matches <code>corpus/heldout_v10_post_tuning_report.json</code> — if the engine
+ever blocks a different set of v10 cases, the test fails. Per maintainer
+decision no <code>heldout_v11</code> will be produced; the 38.6%/0.0% one-shot remains
+the only publishable held-out estimate. <code>tests/heldout_v2_measurement_test.rs</code>
+is gated behind an environment variable and now documents a spent batch.</p>
 <p><code>tests/comparative_corpus_test.rs</code> calls the engine in-process — no HTTP, no
 proxy, no deployed host — and pins all three numbers as unit tests. Its held-out
 test asserts the <em>reproduction</em>, not the quality: if the engine ever blocks a
 different set of held-out cases, the test fails and says the batch is spent,
 which is the only way a held-out estimate can stay trustworthy.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Held-out estimate (56.1% recall / 7.0% FPR on 57 controls)</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>python3<span class="w"> </span>benchmarks/real_comparative/tools/normalize_corpus.py
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>cargo<span class="w"> </span>run<span class="w"> </span>--release<span class="w"> </span>--bin<span class="w"> </span>satbench<span class="w"> </span>--<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">    </span>--corpus<span class="w"> </span>benchmarks/real_comparative/corpus/unified_v1.jsonl
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="c1"># Detection regression (both in-sample corpora)</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>cargo<span class="w"> </span><span class="nb">test</span><span class="w"> </span>--test<span class="w"> </span>independent_corpus_test<span class="w"> </span>--<span class="w"> </span>--nocapture
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="c1"># The same measurements as in-process unit tests: no HTTP, no proxy, no deployed host</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>cargo<span class="w"> </span><span class="nb">test</span><span class="w"> </span>--test<span class="w"> </span>comparative_corpus_test<span class="w"> </span>--<span class="w"> </span>--nocapture
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="c1"># Full Rust suite</span>
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>cargo<span class="w"> </span><span class="nb">test</span>
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>
-<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="c1"># In-memory benchmark over the in-sample corpus</span>
-<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>cargo<span class="w"> </span>run<span class="w"> </span>--release<span class="w"> </span>--<span class="w"> </span>benchmark<span class="w"> </span>-r<span class="w"> </span><span class="m">10000</span>
-<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>
-<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="c1"># Python reference harness (local stand-ins, in-sample)</span>
-<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>python<span class="w"> </span>run_benchmark.py<span class="w"> </span><span class="m">1000</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># The frozen one-shot estimate lives in corpus/heldout_v10_report.json</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="c1"># (38.6% recall / 0.0% FPR). Re-running the corpus now prints the current</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="c1"># engine behaviour (100%/0.0%) recorded in</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># corpus/heldout_v10_post_tuning_report.json.</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>../target/release/satbench.exe<span class="w"> </span>--corpus<span class="w"> </span>benchmarks/real_comparative/corpus/heldout_v10.jsonl<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">    </span>--out<span class="w"> </span>benchmarks/real_comparative/results/satguardian/verdicts_heldout_v10_post_tuning.jsonl
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="c1"># Detection regression (both in-sample corpora)</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>cargo<span class="w"> </span><span class="nb">test</span><span class="w"> </span>--test<span class="w"> </span>independent_corpus_test<span class="w"> </span>--<span class="w"> </span>--nocapture
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="c1"># The same measurements as in-process unit tests: no HTTP, no proxy, no deployed host</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>cargo<span class="w"> </span><span class="nb">test</span><span class="w"> </span>--test<span class="w"> </span>comparative_corpus_test<span class="w"> </span>--<span class="w"> </span>--nocapture
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="c1"># Full Rust suite</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>cargo<span class="w"> </span><span class="nb">test</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="c1"># In-memory benchmark over the in-sample corpus</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>cargo<span class="w"> </span>run<span class="w"> </span>--release<span class="w"> </span>--<span class="w"> </span>benchmark<span class="w"> </span>-r<span class="w"> </span><span class="m">10000</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="c1"># Python reference harness (local stand-ins, in-sample)</span>
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>python<span class="w"> </span>run_benchmark.py<span class="w"> </span><span class="m">1000</span>
 </code></pre></div>
 <h2 id="control-boundary-what-the-paid-tier-actually-does">Control boundary (what the paid tier actually does)</h2>
 <p>The product promise is: free, local protection; paid, ongoing review, update

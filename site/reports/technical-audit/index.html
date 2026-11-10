@@ -1585,15 +1585,29 @@ corpus, and prints its scope on every run.</p>
 <td style="text-align: left;"><code>corpus/heldout_v2.json</code> (98 attacks, 57 controls)</td>
 <td style="text-align: center;"><strong>55/98 recall (56.1%, 95% CI 46.3–65.5%)</strong>, <strong>4/57 controls blocked (7.0% FPR, 95% CI 2.8–16.7%)</strong></td>
 <td style="text-align: center;">deliberately not re-run</td>
-<td style="text-align: left;"><strong>Held-out</strong>, one run on 2026-11-04 (<code>corpus/heldout_v2_report.json</code>)</td>
+<td style="text-align: left;">Held-out, one run on 2026-11-04 (<code>corpus/heldout_v2_report.json</code>); superseded as the headline estimate</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>benchmarks/real_comparative/corpus/heldout_v10.jsonl</code> (70 attacks, 44 controls)</td>
+<td style="text-align: center;">current engine: <strong>70/70 recall (100%, 95% CI 94.8–100%)</strong>, <strong>0/44 controls blocked (0.0% FPR, 95% CI 0.0–8.0%)</strong>; frozen one-shot: <strong>27/70 recall (38.6%)</strong>, 0/44 blocked</td>
+<td style="text-align: center;">one-shot frozen in <code>corpus/heldout_v10_report.json</code>; current behaviour in <code>corpus/heldout_v10_post_tuning_report.json</code></td>
+<td style="text-align: left;"><strong>Held-out batch, run once on 2026-11-08 before tuning — the publishable blind estimate is the frozen 38.6%/0.0%; the 100%/0.0% is the current-engine diagnostic on the same batch</strong></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>benchmarks/real_comparative/corpus/crs_v430.jsonl</code> (4,050 labelled attacks)</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">3,321/4,050 detected (<strong>82.0% recall</strong>)</td>
+<td style="text-align: left;"><strong>Vendor in-sample</strong> (CRS rule set's own tests; engine tuned on its misses — not independent)</td>
 </tr>
 </tbody>
 </table>
 <p>The first two corpora were used to drive fixes after their first run. Their
 current 100%/0% therefore means "the pinned cases still pass", not "the engine
-catches X% of real attacks". The <code>heldout_v2</code> row is the only out-of-sample
+catches X% of real attacks". The <code>heldout_v10</code> row is the only out-of-sample
 estimate available, it is a single run, and there is <strong>no third-party or
-independent evaluation</strong> behind it. Protocol:
+independent evaluation</strong> behind it. The earlier <code>heldout_v2</code> figure (56.1%/7.0%)
+remains published for provenance; later batches v3–v9 were each measured once
+and spent as tuning inputs. Protocol:
 <a href="../../corpus/">corpus/README.md</a>.</p>
 <h3 id="22-in-memory-latency">2.2 In-memory latency</h3>
 <p><code>satguardian-waf benchmark -r 10000</code> on the same corpus, one representative run:</p>

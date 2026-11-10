@@ -157,7 +157,9 @@ Two operational notes, both read straight off `src/main.rs`:
 | End-to-end sidecar latency | not measured in this repository | — |
 | Memory footprint | not measured in this repository | — |
 
-No sidecar-to-vendor comparison is reported. Coraza, SafeLine and ModSecurity
-have not been run in this environment; the Python harness agents that resemble
-them are local stand-ins. There is no third-party evaluation of any of these
-numbers. See [STATUS.md](../status.md).
+No sidecar-to-vendor comparison is reported. SafeLine and ModSecurity have not
+been run in this environment; the Python harness agents that resemble them are
+local stand-ins. The only real-product measurement is the 2026-11-09 Aegis
+Community v1.1.0 head-to-head (README §3.4), which ran Aegis's bundled Coraza
+engine as a standalone reverse proxy — not as an Envoy sidecar. There is no
+third-party evaluation of any of these numbers. See [STATUS.md](../status.md).

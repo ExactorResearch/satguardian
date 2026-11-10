@@ -56,11 +56,12 @@ When previously unobserved minterms $\mathcal{M} = \{m_1, m_2, \dots, m_k\} \sub
 
 ## 2. Evaluation: What Was Measured, and What Was Not
 
-> **No vendor comparison has been run.** The Python harness in this repository
-> contains local stand-ins for a CRS-style anomaly scorer, a semantic ruleset and
-> a token-weight classifier. They are Python reimplementations written here, not
-> Coraza, SafeLine, ModSecurity or any commercial product. Their numbers describe
-> this repository's stand-ins only.
+> **One real-product comparison exists.** Section 2.5 reports a 2026-11-09
+> head-to-head against Aegis Community Edition v1.1.0 (Coraza engine, bundled
+> OWASP CRS 4.25.1, paranoia level 1) over real HTTP. All other competitor
+> rows in this repository are local Python stand-ins — not Coraza, SafeLine,
+> ModSecurity or any commercial product — and their numbers describe this
+> repository's stand-ins only.
 
 ### 2.1 Detection: In-Sample Floors and the One Held-Out Measurement
 
@@ -149,6 +150,36 @@ they do not establish production readiness.
    project, repeated held-out runs, and a long-running soak under real traffic.
    None of that exists, and no third-party evaluation has been run. See
    [STATUS.md](STATUS.md).
+
+### 2.5 First Head-to-Head Against a Real WAF Product (Aegis Community v1.1.0)
+
+On 2026-11-09 the engine was replayed against **Aegis Community Edition
+v1.1.0**, a shipping WAF built on the Coraza engine with the bundled OWASP
+CRS 4.25.1 LTS ruleset at paranoia level 1 in blocking mode, over real HTTP
+on localhost using the same corpus files. This is the first measurement in
+this repository against an actual product rather than a local stand-in.
+Run manifest and per-case verdicts:
+`benchmarks/real_comparative/results/aegis/` (`RUN.json`, `aegis_v10.jsonl`,
+`aegis_crs.jsonl`).
+
+| Corpus | SATGuardian | Aegis + CRS 4.25.1 PL1 |
+| :--- | :---: | :---: |
+| `crs_v430.jsonl` (4,050 vendor-authored attacks) | **82.0% recall** (3,322) | **80.7% recall** (3,268) |
+| `heldout_v10.jsonl` (70 attacks) | 100% post-tuning diagnostic; frozen one-shot **38.6%** | **68.6% recall** (48/70) |
+| `heldout_v10.jsonl` (44 controls) | 0.0% FPR post-tuning diagnostic; frozen one-shot **0.0%** | **36.4% FPR** (16/44) |
+| `benign_heldout_v3_v10.jsonl` (665 pooled benign controls) | **0.5% FPR** (3/665; v10-only non-spent subset 0/44) | **22.9% FPR** (152/665) |
+
+Union of both engines on `crs_v430` reaches **92.9% recall**; their
+intersection is only **69.8%**. The engines miss different rule families
+(e.g. SATGuardian 44/44 vs Aegis 7/44 on CRS rule 934140; Aegis 210/330 vs
+SATGuardian 162/330 on rule 944300), so a cascade or ensemble is the natural
+deployment shape — a product story a CRS-only vendor cannot copy.
+
+Limits of the run: Aegis executed CRS 4.25.1 (the corpus targets 4.30),
+paranoia level 1 only, community edition, plain HTTP, localhost, dummy
+upstream, and its default rate limiter was disabled for isolation.
+`latency_us` is not comparable across engines (full HTTP round-trip vs
+in-process evaluation). One run, one configuration — not a product ranking.
 
 ---
 

@@ -655,10 +655,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#34-100-on-premise-traffic-sovereignty" class="md-nav__link">
+  <a href="#34-first-head-to-head-vs-a-real-waf-product-aegis-community-v110" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3.4 100% On-Premise Traffic Sovereignty
+        3.4 First head-to-head vs a real WAF product (Aegis Community v1.1.0)
       
     </span>
   </a>
@@ -666,10 +666,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#35-pricing-licensing-zero-traffic-tax" class="md-nav__link">
+  <a href="#35-100-on-premise-traffic-sovereignty" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3.5 Pricing &amp; Licensing: Zero Traffic Tax
+        3.5 100% On-Premise Traffic Sovereignty
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#36-pricing-licensing-zero-traffic-tax" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.6 Pricing &amp; Licensing: Zero Traffic Tax
       
     </span>
   </a>
@@ -1688,10 +1699,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#34-100-on-premise-traffic-sovereignty" class="md-nav__link">
+  <a href="#34-first-head-to-head-vs-a-real-waf-product-aegis-community-v110" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3.4 100% On-Premise Traffic Sovereignty
+        3.4 First head-to-head vs a real WAF product (Aegis Community v1.1.0)
       
     </span>
   </a>
@@ -1699,10 +1710,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#35-pricing-licensing-zero-traffic-tax" class="md-nav__link">
+  <a href="#35-100-on-premise-traffic-sovereignty" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3.5 Pricing &amp; Licensing: Zero Traffic Tax
+        3.5 100% On-Premise Traffic Sovereignty
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#36-pricing-licensing-zero-traffic-tax" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.6 Pricing &amp; Licensing: Zero Traffic Tax
       
     </span>
   </a>
@@ -2056,8 +2078,10 @@ named product.</p>
   (18.75% FPR). A second batch scored 11/17 (64.71%) on its first run. After the
   fixes both report 100%/0%, but every case was used to drive those fixes, so
   the result is in-sample. Details: <a href="corpus/">corpus/README.md</a>.</li>
-<li><strong>No production evidence exists.</strong> There is no third-party evaluation, no soak
-  test, and no real-product comparison. See <a href="status/">STATUS.md</a>.</li>
+<li><strong>No production evidence exists.</strong> There is no third-party evaluation and no
+  soak test. The only real-product measurement is the 2026-11-09 Aegis
+  head-to-head in §3.4 — one run, one configuration, not a product ranking.
+  See <a href="status/">STATUS.md</a>.</li>
 </ul>
 <h3 id="33-the-held-out-measurement-corpusheldout_v2json">3.3 The held-out measurement (<code>corpus/heldout_v2.json</code>)</h3>
 <p>On 2026-11-04 a third batch — 98 attacks and 57 benign controls — was labelled in the
@@ -2102,7 +2126,70 @@ in-sample:</p>
   miss listed in the report turns it into a third regression suite, and the next
   honest estimate has to come from <code>heldout_v3</code>.</li>
 </ul>
-<h3 id="34-100-on-premise-traffic-sovereignty">3.4 100% On-Premise Traffic Sovereignty</h3>
+<p><strong>Update (2026-11-08):</strong> later batches v3–v10 were each measured once and spent
+as tuning inputs. The current publishable one-shot estimate is
+<code>benchmarks/real_comparative/corpus/heldout_v10.jsonl</code>, run once before any fix
+against it once: <strong>38.6% recall / 0.0% FPR</strong> frozen one-shot estimate (<code>corpus/heldout_v10_report.json</code>,
+frozen). The v2 figure above remains for provenance; the CRS v4.30 suite is
+measured in-sample at 82.0% and is not an independent evaluation. Details in
+<a href="status/">status</a>.</p>
+<h3 id="34-first-head-to-head-vs-a-real-waf-product-aegis-community-v110">3.4 First head-to-head vs a real WAF product (Aegis Community v1.1.0)</h3>
+<p>On 2026-11-09 the engine was run against <strong>Aegis Community Edition v1.1.0</strong> —
+a real, shipping WAF (Coraza engine + bundled OWASP CRS 4.25.1 LTS, paranoia
+level 1, blocking mode) — over real HTTP on localhost, using the same corpus
+files <code>satbench</code> consumes. This is the first comparison in this repository
+against an actual product rather than a local stand-in; the run manifest and
+per-case verdicts live in <code>benchmarks/real_comparative/results/aegis/</code>.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Corpus</th>
+<th style="text-align: center;">SATGuardian</th>
+<th style="text-align: center;">Aegis + CRS 4.25.1 PL1</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>crs_v430.jsonl</code> (4,050 vendor-authored attacks)</td>
+<td style="text-align: center;"><strong>82.0% recall</strong> (3,322)</td>
+<td style="text-align: center;"><strong>80.7% recall</strong> (3,268)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>heldout_v10.jsonl</code> (70 attacks)</td>
+<td style="text-align: center;">100% — post-tuning diagnostic; frozen one-shot <strong>38.6%</strong></td>
+<td style="text-align: center;"><strong>68.6% recall</strong> (48/70)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>heldout_v10.jsonl</code> (44 benign controls)</td>
+<td style="text-align: center;">0.0% FPR — post-tuning diagnostic; frozen one-shot <strong>0.0%</strong></td>
+<td style="text-align: center;"><strong>36.4% FPR</strong> (16/44 blocked)</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Parity on the vendor suite.</strong> On the OWASP CRS v4.30 attack suite — the
+  rule set's own tests — SATGuardian detects slightly more than the real CRS
+  engine does (82.0% vs 80.7%). The difference is within noise; what matters
+  is that a ~20-rule bitmask engine is in the same band as hundreds of CRS
+  signatures.</li>
+<li><strong>Coverage is complementary, not competitive.</strong> Per-case verdicts show the
+  union of both engines reaches <strong>92.9% recall</strong> on <code>crs_v430</code> while their
+  intersection is only <strong>69.8%</strong>. Each engine catches whole rule families the
+  other misses (e.g. SATGuardian 44/44 vs Aegis 7/44 on CRS rule 934140;
+  Aegis 210/330 vs SATGuardian 162/330 on rule 944300). A cascade or ensemble
+  is the natural architecture, and it is a product story CRS-only vendors
+  cannot copy.</li>
+<li><strong>Aegis's false positives are real.</strong> 16 of 44 benign controls were blocked,
+  including ordinary OData <code>$filter</code> queries, JSON POST bodies and IMAP-like
+  protocol text — classic CRS PL1 behaviour on non-HTML APIs.</li>
+<li><strong>Limits of this run.</strong> Aegis ran CRS 4.25.1 (not 4.30), paranoia level 1
+  only, community edition, plain HTTP, localhost, dummy upstream, and its
+  default rate limiter was disabled for isolation. <code>latency_us</code> columns are
+  not comparable: Aegis numbers are full HTTP round-trips including the
+  upstream hop; SATGuardian numbers are in-process rule evaluation. See
+  <code>benchmarks/real_comparative/results/aegis/RUN.json</code> for the full manifest.</li>
+</ul>
+<h3 id="35-100-on-premise-traffic-sovereignty">3.5 100% On-Premise Traffic Sovereignty</h3>
 <p>SATGuardian runs <strong>entirely inside your infrastructure</strong>. We <strong>never</strong> host customer
 traffic, and no request is forwarded to us: inspection happens in the local process.
 The only thing that can leave the node is the optional cloud review of §2.2, which
@@ -2113,7 +2200,7 @@ rule set by itself. No DNS or CNAME redirection is required:</p>
 <li><strong>Reverse Proxy:</strong> Frontline protection for Nginx, Apache, or Microsoft IIS (including Windows Service deployment via <code>install.ps1</code>).</li>
 <li><strong>Standalone Binary:</strong> Self-contained Rust binary built with <code>cargo build --release</code> (<code>satguardian-waf proxy --listen 127.0.0.1:8080</code>). It speaks plain HTTP; terminate TLS in a reverse proxy or Envoy in front of it.</li>
 </ol>
-<h3 id="35-pricing-licensing-zero-traffic-tax">3.5 Pricing &amp; Licensing: Zero Traffic Tax</h3>
+<h3 id="36-pricing-licensing-zero-traffic-tax">3.6 Pricing &amp; Licensing: Zero Traffic Tax</h3>
 <p>The paid product is the narrative in one line: ongoing review, update proposals and
 explanations, with you approving every change. On 2026-11-03 the owner approved
 packaging the plans by <strong>servers covered and new rule patterns reviewed each month</strong>,

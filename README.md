@@ -210,8 +210,10 @@ named product.
   (18.75% FPR). A second batch scored 11/17 (64.71%) on its first run. After the
   fixes both report 100%/0%, but every case was used to drive those fixes, so
   the result is in-sample. Details: [corpus/README.md](corpus/README.md).
-* **No production evidence exists.** There is no third-party evaluation, no soak
-  test, and no real-product comparison. See [STATUS.md](STATUS.md).
+* **No production evidence exists.** There is no third-party evaluation and no
+  soak test. The only real-product measurement is the 2026-11-09 Aegis
+  head-to-head in §3.4 — one run, one configuration, not a product ranking.
+  See [STATUS.md](STATUS.md).
 
 ### 3.3 The held-out measurement (`corpus/heldout_v2.json`)
 
@@ -246,7 +248,50 @@ frozen). The v2 figure above remains for provenance; the CRS v4.30 suite is
 measured in-sample at 82.0% and is not an independent evaluation. Details in
 [STATUS.md](STATUS.md).
 
-### 3.4 100% On-Premise Traffic Sovereignty
+### 3.4 First head-to-head vs a real WAF product (Aegis Community v1.1.0)
+
+On 2026-11-09 the engine was run against **Aegis Community Edition v1.1.0** —
+a real, shipping WAF (Coraza engine + bundled OWASP CRS 4.25.1 LTS, paranoia
+level 1, blocking mode) — over real HTTP on localhost, using the same corpus
+files `satbench` consumes. This is the first comparison in this repository
+against an actual product rather than a local stand-in; the run manifest and
+per-case verdicts live in `benchmarks/real_comparative/results/aegis/`.
+
+| Corpus | SATGuardian | Aegis + CRS 4.25.1 PL1 |
+| :--- | :---: | :---: |
+| `crs_v430.jsonl` (4,050 vendor-authored attacks) | **82.0% recall** (3,322) | **80.7% recall** (3,268) |
+| `heldout_v10.jsonl` (70 attacks) | 100% — post-tuning diagnostic; frozen one-shot **38.6%** | **68.6% recall** (48/70) |
+| `heldout_v10.jsonl` (44 benign controls) | 0.0% FPR — post-tuning diagnostic; frozen one-shot **0.0%** | **36.4% FPR** (16/44 blocked) |
+| `benign_heldout_v3_v10.jsonl` (665 pooled benign controls) | **0.5% FPR** (3/665; v10-only non-spent subset 0/44) | **22.9% FPR** (152/665 blocked) |
+
+* **Parity on the vendor suite.** On the OWASP CRS v4.30 attack suite — the
+  rule set's own tests — SATGuardian detects slightly more than the real CRS
+  engine does (82.0% vs 80.7%). The difference is within noise; what matters
+  is that a ~20-rule bitmask engine is in the same band as hundreds of CRS
+  signatures.
+* **Coverage is complementary, not competitive.** Per-case verdicts show the
+  union of both engines reaches **92.9% recall** on `crs_v430` while their
+  intersection is only **69.8%**. Each engine catches whole rule families the
+  other misses (e.g. SATGuardian 44/44 vs Aegis 7/44 on CRS rule 934140;
+  Aegis 210/330 vs SATGuardian 162/330 on rule 944300). A cascade or ensemble
+  is the natural architecture, and it is a product story CRS-only vendors
+  cannot copy.
+* **Aegis's false positives are real and repeatable.** On the 44 v10
+  controls Aegis blocked 16 (36.4%); pooled across all 665 benign controls
+  from batches v3–v10 it blocked 152 (**22.9% FPR**, 95% CI 19.8–26.2%),
+  consistently in every batch — ordinary OData `$filter` queries, JSON POST
+  bodies, IMAP-like protocol text and WordPress-style requests. SATGuardian
+  blocked 3 of the same 665 (0.5%, CI 0.2–1.3%); only the 44 v10 controls are
+  non-spent for SATGuardian (v3–v9 benign controls were tuning inputs), where
+  it blocked 0 — classic CRS PL1 behaviour on non-HTML APIs, measured.
+* **Limits of this run.** Aegis ran CRS 4.25.1 (not 4.30), paranoia level 1
+  only, community edition, plain HTTP, localhost, dummy upstream, and its
+  default rate limiter was disabled for isolation. `latency_us` columns are
+  not comparable: Aegis numbers are full HTTP round-trips including the
+  upstream hop; SATGuardian numbers are in-process rule evaluation. See
+  `benchmarks/real_comparative/results/aegis/RUN.json` for the full manifest.
+
+### 3.5 100% On-Premise Traffic Sovereignty
 
 SATGuardian runs **entirely inside your infrastructure**. We **never** host customer
 traffic, and no request is forwarded to us: inspection happens in the local process.
@@ -258,7 +303,7 @@ rule set by itself. No DNS or CNAME redirection is required:
 2. **Reverse Proxy:** Frontline protection for Nginx, Apache, or Microsoft IIS (including Windows Service deployment via `install.ps1`).
 3. **Standalone Binary:** Self-contained Rust binary built with `cargo build --release` (`satguardian-waf proxy --listen 127.0.0.1:8080`). It speaks plain HTTP; terminate TLS in a reverse proxy or Envoy in front of it.
 
-### 3.5 Pricing & Licensing: Zero Traffic Tax
+### 3.6 Pricing & Licensing: Zero Traffic Tax
 
 The paid product is the narrative in one line: ongoing review, update proposals and
 explanations, with you approving every change. On 2026-11-03 the owner approved
