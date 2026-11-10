@@ -1833,13 +1833,21 @@ Run manifest and per-case verdicts:
 <td style="text-align: center;">0.0% FPR post-tuning diagnostic; frozen one-shot <strong>0.0%</strong></td>
 <td style="text-align: center;"><strong>36.4% FPR</strong> (16/44)</td>
 </tr>
+<tr>
+<td style="text-align: left;"><code>benign_heldout_v3_v10.jsonl</code> (665 pooled benign controls)</td>
+<td style="text-align: center;"><strong>0.5% FPR</strong> (3/665; v10-only non-spent subset 0/44)</td>
+<td style="text-align: center;"><strong>22.9% FPR</strong> (152/665)</td>
+</tr>
 </tbody>
 </table>
 <p>Union of both engines on <code>crs_v430</code> reaches <strong>92.9% recall</strong>; their
 intersection is only <strong>69.8%</strong>. The engines miss different rule families
 (e.g. SATGuardian 44/44 vs Aegis 7/44 on CRS rule 934140; Aegis 210/330 vs
 SATGuardian 162/330 on rule 944300), so a cascade or ensemble is the natural
-deployment shape — a product story a CRS-only vendor cannot copy.</p>
+deployment shape — a product story a CRS-only vendor cannot copy. On benign
+traffic the gap is sharper still: pooled over 665 benign controls, Aegis
+blocked 152 (22.9% FPR) versus SATGuardian's 3 (0.5%; only the 44 v10 controls
+are non-spent for SATGuardian).</p>
 <p>Limits of the run: Aegis executed CRS 4.25.1 (the corpus targets 4.30),
 paranoia level 1 only, community edition, plain HTTP, localhost, dummy
 upstream, and its default rate limiter was disabled for isolation.

@@ -2164,6 +2164,11 @@ per-case verdicts live in <code>benchmarks/real_comparative/results/aegis/</code
 <td style="text-align: center;">0.0% FPR — post-tuning diagnostic; frozen one-shot <strong>0.0%</strong></td>
 <td style="text-align: center;"><strong>36.4% FPR</strong> (16/44 blocked)</td>
 </tr>
+<tr>
+<td style="text-align: left;"><code>benign_heldout_v3_v10.jsonl</code> (665 pooled benign controls)</td>
+<td style="text-align: center;"><strong>0.5% FPR</strong> (3/665; v10-only non-spent subset 0/44)</td>
+<td style="text-align: center;"><strong>22.9% FPR</strong> (152/665 blocked)</td>
+</tr>
 </tbody>
 </table>
 <ul>
@@ -2179,9 +2184,14 @@ per-case verdicts live in <code>benchmarks/real_comparative/results/aegis/</code
   Aegis 210/330 vs SATGuardian 162/330 on rule 944300). A cascade or ensemble
   is the natural architecture, and it is a product story CRS-only vendors
   cannot copy.</li>
-<li><strong>Aegis's false positives are real.</strong> 16 of 44 benign controls were blocked,
-  including ordinary OData <code>$filter</code> queries, JSON POST bodies and IMAP-like
-  protocol text — classic CRS PL1 behaviour on non-HTML APIs.</li>
+<li><strong>Aegis's false positives are real and repeatable.</strong> On the 44 v10
+  controls Aegis blocked 16 (36.4%); pooled across all 665 benign controls
+  from batches v3–v10 it blocked 152 (<strong>22.9% FPR</strong>, 95% CI 19.8–26.2%),
+  consistently in every batch — ordinary OData <code>$filter</code> queries, JSON POST
+  bodies, IMAP-like protocol text and WordPress-style requests. SATGuardian
+  blocked 3 of the same 665 (0.5%, CI 0.2–1.3%); only the 44 v10 controls are
+  non-spent for SATGuardian (v3–v9 benign controls were tuning inputs), where
+  it blocked 0 — classic CRS PL1 behaviour on non-HTML APIs, measured.</li>
 <li><strong>Limits of this run.</strong> Aegis ran CRS 4.25.1 (not 4.30), paranoia level 1
   only, community edition, plain HTTP, localhost, dummy upstream, and its
   default rate limiter was disabled for isolation. <code>latency_us</code> columns are

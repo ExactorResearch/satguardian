@@ -175,7 +175,10 @@ Union of both engines on `crs_v430` reaches **92.9% recall**; their
 intersection is only **69.8%**. The engines miss different rule families
 (e.g. SATGuardian 44/44 vs Aegis 7/44 on CRS rule 934140; Aegis 210/330 vs
 SATGuardian 162/330 on rule 944300), so a cascade or ensemble is the natural
-deployment shape — a product story a CRS-only vendor cannot copy.
+deployment shape — a product story a CRS-only vendor cannot copy. On benign
+traffic the gap is sharper still: pooled over 665 benign controls, Aegis
+blocked 152 (22.9% FPR) versus SATGuardian's 3 (0.5%; only the 44 v10 controls
+are non-spent for SATGuardian).
 
 Limits of the run: Aegis executed CRS 4.25.1 (the corpus targets 4.30),
 paranoia level 1 only, community edition, plain HTTP, localhost, dummy

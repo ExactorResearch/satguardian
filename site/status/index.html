@@ -1469,6 +1469,11 @@ document contradicts it, this file wins and the other document is stale.</p>
 <td>2026-11-08 → 2026-11-09</td>
 </tr>
 <tr>
+<td><strong>Benign-traffic false-positive measurement (665 pooled controls)</strong></td>
+<td><code>benchmarks/real_comparative/corpus/benign_heldout_v3_v10.jsonl</code> — all <code>label: benign</code> cases from held-out batches v3–v10, run 2026-11-09 through both engines. <strong>SATGuardian: 3/665 blocked = 0.5% FPR</strong> (95% CI 0.2–1.3%; v10-only non-spent subset 0/44 — v3–v9 benign controls were tuning inputs, so the pooled figure is partly in-sample). <strong>Aegis + CRS 4.25.1 PL1: 152/665 blocked = 22.9% FPR</strong> (95% CI 19.8–26.2%, consistent across every batch: 8–32 blocks per ~50–164 controls). Verdicts: <code>results/aegis/aegis_benign.jsonl</code>, <code>results/satguardian/sat_benign.jsonl</code></td>
+<td>2026-11-09</td>
+</tr>
+<tr>
 <td><strong>First head-to-head vs a real WAF product</strong></td>
 <td>Aegis Community Edition v1.1.0 (Coraza engine + bundled OWASP CRS 4.25.1 LTS, paranoia level 1, blocking mode) replayed over real HTTP on localhost, 2026-11-09. On <code>crs_v430.jsonl</code>: <strong>Aegis 3,268/4,050 (80.7% recall) vs SATGuardian 3,322/4,050 (82.0%)</strong>; union of both engines 3,764/4,050 (<strong>92.9%</strong>), intersection 2,826 (<strong>69.8%</strong>) — coverage is strongly complementary. On <code>heldout_v10.jsonl</code>: Aegis 48/70 recall (<strong>68.6%</strong>) and 16/44 benign blocked (<strong>36.4% FPR</strong>); SATGuardian current engine 70/70 and 0/44 (post-tuning diagnostic — the frozen one-shot estimate stays 38.6%/0.0%). Verdicts and run manifest: <code>benchmarks/real_comparative/results/aegis/</code> (<code>RUN.json</code>, <code>aegis_v10.jsonl</code>, <code>aegis_crs.jsonl</code>); replay adapter <code>tmp/aegis_replay.py</code> pending promotion to <code>adapters/</code>. Caveats: Aegis ran CRS 4.25.1 not 4.30, paranoia level 1 only, community edition, plain HTTP, traffic-control rate limit disabled for isolation, dummy upstream; latency columns are not comparable (Aegis = full HTTP round-trip, SATGuardian = in-process)</td>
 <td>2026-11-09</td>

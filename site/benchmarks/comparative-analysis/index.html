@@ -1797,6 +1797,11 @@ stand-ins. Artifacts: <code>benchmarks/real_comparative/results/aegis/</code>
 <td style="text-align: center;">0.0% FPR post-tuning diagnostic; frozen one-shot <strong>0.0%</strong></td>
 <td style="text-align: center;"><strong>36.4%</strong> (16/44)</td>
 </tr>
+<tr>
+<td style="text-align: left;"><code>benign_heldout_v3_v10.jsonl</code> (665 pooled benign controls)</td>
+<td style="text-align: center;"><strong>0.5%</strong> (3/665; v10-only non-spent subset 0/44)</td>
+<td style="text-align: center;"><strong>22.9%</strong> (152/665)</td>
+</tr>
 </tbody>
 </table>
 <p>Union of both engines on <code>crs_v430</code>: <strong>92.9%</strong> recall; intersection: <strong>69.8%</strong>.
@@ -1808,6 +1813,14 @@ community edition, plain HTTP, localhost, dummy upstream, default rate
 limiter disabled. Latency is not comparable across the two rows (full HTTP
 round-trip vs in-process evaluation). One run, one configuration — not a
 product ranking.</p>
+<p>The false-positive gap is the sharpest measured difference: pooled over all
+665 benign controls from batches v3–v10, Aegis blocked 152 (<strong>22.9% FPR</strong>,
+95% CI 19.8–26.2%) while SATGuardian blocked 3 (<strong>0.5%</strong>, CI 0.2–1.3%). For
+SATGuardian only the 44 v10 controls are non-spent (v3–v9 benign controls
+were tuning inputs); for Aegis every control was fresh. The controls are
+imagined traffic authored inside this project, not a customer access log, so
+the absolute rates describe these payloads — but the ~45× gap between engines
+on identical inputs is the measured fact.</p>
 <hr />
 <h2 id="3-engineering-observations">3. Engineering observations</h2>
 <h3 id="31-anomaly-scoring">3.1 Anomaly scoring</h3>
