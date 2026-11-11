@@ -41,6 +41,20 @@ SATGuardian is not positioned as "another WAF". It is a **deterministic decision
 
 ---
 
+## 🔌 Integrations: plugs into what you already run
+
+SATGuardian is not another WAF competing with your stack — it is the decision layer that plugs into what you already run:
+
+- **Envoy · Istio · service mesh** — native `ext_authz` sidecar; every proxy in the mesh asks it before letting traffic through. ([Envoy integration guide](deployments/envoy-integration.md))
+- **nginx · HAProxy · Traefik · Caddy** — `auth_request` / `forward_auth` patterns mount it as an authorization service in front of your existing proxy, in minutes, without touching routing or TLS.
+- **Kong · APISIX · Tyk** — gateway plugin / `ext-auth` integration for the layer API gateways cannot explain: *which exact token combination* made a payload malicious.
+- **Kubernetes Gateway API · OPA** — SATGuardian produces the decision, OPA/Gatekeeper produces the policy: "what was permitted" + "what was blocked and why".
+- **Splunk · Sentinel · OpenTelemetry** — every block can reach your SIEM or tracing pipeline with its Boolean proof attached.
+
+See the full [Integration Ecosystem](integrations/index.md) for why each pairing matters.
+
+---
+
 ## ⚡ Quick Start: Build and Test Drive
 
 Evaluate SATGuardian Edge WAF in **Standalone Mode** with no database, broker or sidecar — the only

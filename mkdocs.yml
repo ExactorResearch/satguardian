@@ -75,6 +75,7 @@ nav:
       - Axiomatic Supervision & Synthesis: architecture/axiomatic-supervision.md
       - SAT Guardian Methodology: architecture/satguardian-methodology.md
   - Deployments & Integration:
+      - Integration Ecosystem: integrations/index.md
       - Envoy Proxy Integration: deployments/envoy-integration.md
       - Deployment Notes (Lab): deployments/case-study.md
   - Benchmarks & Analysis:

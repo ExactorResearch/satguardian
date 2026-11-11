@@ -326,7 +326,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="deployments/envoy-integration/" class="md-tabs__link">
+        <a href="integrations/" class="md-tabs__link">
           
   
   
@@ -514,6 +514,17 @@
     <span class="md-ellipsis">
       
         🎯 Why install SATGuardian
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#integrations-plugs-into-what-you-already-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔌 Integrations: plugs into what you already run
       
     </span>
   </a>
@@ -1193,6 +1204,34 @@
   
   
     <li class="md-nav__item">
+      <a href="integrations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integration Ecosystem
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="deployments/envoy-integration/" class="md-nav__link">
         
   
@@ -1576,6 +1615,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#integrations-plugs-into-what-you-already-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔌 Integrations: plugs into what you already run
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#quick-start-build-and-test-drive" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1895,6 +1945,17 @@ first head-to-head against a real WAF product (Aegis Community v1.1.0).</p>
 <li><strong>Free edge, paid governance.</strong> Edge inspection is 100% free and unlimited. The paid layer is <em>review</em>: ongoing analysis of new patterns, update proposals and explanations — metered in Security Units, with quota exhaustion pausing cloud review while local rules keep enforcing.</li>
 </ol>
 <p><strong>Who this is for:</strong> teams that need to <em>prove</em> why a request was blocked — regulated workloads, audit-driven security programs, and operators who want a fast deterministic first stage in front of a heavier WAF. <strong>Who it is not for (yet):</strong> teams that need a managed console, TLS termination, geo-blocking or rate limiting in the same box — those live in the proxy/TLS layer in front of SATGuardian.</p>
+<hr />
+<h2 id="integrations-plugs-into-what-you-already-run">🔌 Integrations: plugs into what you already run</h2>
+<p>SATGuardian is not another WAF competing with your stack — it is the decision layer that plugs into what you already run:</p>
+<ul>
+<li><strong>Envoy · Istio · service mesh</strong> — native <code>ext_authz</code> sidecar; every proxy in the mesh asks it before letting traffic through. (<a href="deployments/envoy-integration/">Envoy integration guide</a>)</li>
+<li><strong>nginx · HAProxy · Traefik · Caddy</strong> — <code>auth_request</code> / <code>forward_auth</code> patterns mount it as an authorization service in front of your existing proxy, in minutes, without touching routing or TLS.</li>
+<li><strong>Kong · APISIX · Tyk</strong> — gateway plugin / <code>ext-auth</code> integration for the layer API gateways cannot explain: <em>which exact token combination</em> made a payload malicious.</li>
+<li><strong>Kubernetes Gateway API · OPA</strong> — SATGuardian produces the decision, OPA/Gatekeeper produces the policy: "what was permitted" + "what was blocked and why".</li>
+<li><strong>Splunk · Sentinel · OpenTelemetry</strong> — every block can reach your SIEM or tracing pipeline with its Boolean proof attached.</li>
+</ul>
+<p>See the full <a href="integrations/">Integration Ecosystem</a> for why each pairing matters.</p>
 <hr />
 <h2 id="quick-start-build-and-test-drive">⚡ Quick Start: Build and Test Drive</h2>
 <p>Evaluate SATGuardian Edge WAF in <strong>Standalone Mode</strong> with no database, broker or sidecar — the only
