@@ -57,7 +57,9 @@ terminate TLS and does not support WebSocket; put nginx, Envoy or your existing 
 balancer in front for TLS termination and keep the WAF on a private hop. `upstream_url`
 may be `http://` or `https://` (the scheme is validated at startup) and calls to the
 SATGuardian cloud endpoint go out over HTTPS — but nothing in this build serves HTTPS to
-clients.
+clients. Upstream responses are streamed rather than buffered, so SSE feeds and large
+downloads pass through without being held in memory; WebSocket upgrades are not
+supported yet.
 
 ### 1.2 Anti-Reconnaissance Protection (Stealth Mode)
 

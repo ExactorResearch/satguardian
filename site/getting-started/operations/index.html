@@ -2305,7 +2305,9 @@ terminate TLS and does not support WebSocket; put nginx, Envoy or your existing 
 balancer in front for TLS termination and keep the WAF on a private hop. <code>upstream_url</code>
 may be <code>http://</code> or <code>https://</code> (the scheme is validated at startup) and calls to the
 SATGuardian cloud endpoint go out over HTTPS — but nothing in this build serves HTTPS to
-clients.</p>
+clients. Upstream responses are streamed rather than buffered, so SSE feeds and large
+downloads pass through without being held in memory; WebSocket upgrades are not
+supported yet.</p>
 <h3 id="12-anti-reconnaissance-protection-stealth-mode">1.2 Anti-Reconnaissance Protection (Stealth Mode)</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># true  -&gt; Emits a clean web-standard 403 Forbidden without leaking rules, proof, or technology stacks.</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="c1"># false -&gt; Emits verbose diagnostic JSON containing the causal trace (debug mode).</span>
