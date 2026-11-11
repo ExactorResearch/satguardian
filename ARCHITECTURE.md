@@ -124,11 +124,11 @@ including failures.
 | `corpus/independent_v1.json` (63 attacks, 16 benign) | 51/63 recall (80.95%), 3/16 benign blocked (18.75% FPR) | 63/63, 0/16 blocked | In-sample regression floor |
 | `corpus/heldout_v1.json` (17 attacks, 4 benign) | 11/17 recall (64.71%), 0/4 benign blocked | 17/17, 0/4 blocked | Batch consumed by the fix pass; in-sample regression floor |
 | `corpus/heldout_v2.json` (98 attacks, 57 controls) | 55/98 detected (**56.1% recall**, 95% CI 46.3–65.5%), 4/57 controls blocked (**7.0% FPR**, 95% CI 2.8–16.7%) | — | Held-out, one run on 2026-11-04; superseded |
-| `benchmarks/real_comparative/corpus/heldout_v10.jsonl` (70 attacks, 44 controls) | current engine: **70/70 detected (100% recall)**, 0/44 controls blocked (**0.0% FPR**); frozen one-shot: **27/70 (38.6% recall)**, 0/44 blocked | one-shot frozen in `corpus/heldout_v10_report.json`; current in `corpus/heldout_v10_post_tuning_report.json` | **Held-out batch, measured once on 2026-11-08 before tuning** — publishable blind estimate is the frozen 38.6%/0.0% |
+| `benchmarks/real_comparative/corpus/heldout_v10.jsonl` (70 attacks, 44 controls) | current engine: **70/70 detected (100% recall)**, 0/44 controls blocked (**0.0% FPR**); frozen one-shot: **27/70 detected**, 0/44 blocked | one-shot frozen in `corpus/heldout_v10_report.json`; current in `corpus/heldout_v10_post_tuning_report.json` | **Held-out batch, measured once on 2026-11-08 before tuning** — publishable blind estimate is the frozen one-shot result |
 
 Every case in the first two corpora was used to drive the fixes, so their
 100%/0% rows are regression floors, not quality estimates. The held-out row is
-a superseded honest number; the current held-out row above freezes its one-shot estimate at 38.6%/0.0% while the current engine measures 100%/0.0%, and both remain single runs over payloads written
+a superseded honest number; the current held-out row above freezes its one-shot estimate in `heldout_v10_report.json` while the current engine measures 100%/0.0%, and both remain single runs over payloads written
 inside this project from public catalogues, with imagined benign controls:
 **there is no third-party or independent evaluation.** The protocol and rules
 for adding cases are in [corpus/README.md](corpus/README.md);

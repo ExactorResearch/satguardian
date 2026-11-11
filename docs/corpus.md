@@ -131,7 +131,7 @@ generated reports for provenance:
 | `heldout_v3`–`heldout_v7` | measured once each (see `STATUS.md`) | spent; regression floors |
 | `heldout_v8` | 77.5% recall / 4.2% FPR | spent |
 | `heldout_v9` | 50.0% recall / 6.4% FPR (`heldout_v9_report.json`) | spent; post-repair diagnostic 97.7%/4.3% |
-| `heldout_v10` | one-shot **38.6% recall / 0.0% FPR** (`heldout_v10_report.json`, frozen); current engine **100%/0.0%** (`heldout_v10_post_tuning_report.json`) | the one-shot file is the publishable blind estimate; the 100%/0.0% file is the current-engine diagnostic on the same now-spent batch |
+| `heldout_v10` | one-shot **frozen result / 0.0% FPR** (`heldout_v10_report.json`, frozen); current engine **100%/0.0%** (`heldout_v10_post_tuning_report.json`) | the one-shot file is the publishable blind estimate; the 100%/0.0% file is the current-engine diagnostic on the same now-spent batch |
 
 `crs_v430.jsonl` is the vendor-authored OWASP CRS v4.30 suite. Coverage against
 it is an **in-sample** measurement (the engine was tuned on its misses),

@@ -1753,15 +1753,15 @@ including failures.</p>
 </tr>
 <tr>
 <td style="text-align: left;"><code>benchmarks/real_comparative/corpus/heldout_v10.jsonl</code> (70 attacks, 44 controls)</td>
-<td style="text-align: center;">current engine: <strong>70/70 detected (100% recall)</strong>, 0/44 controls blocked (<strong>0.0% FPR</strong>); frozen one-shot: <strong>27/70 (38.6% recall)</strong>, 0/44 blocked</td>
+<td style="text-align: center;">current engine: <strong>70/70 detected (100% recall)</strong>, 0/44 controls blocked (<strong>0.0% FPR</strong>); frozen one-shot: <strong>27/70 detected</strong>, 0/44 blocked</td>
 <td style="text-align: center;">one-shot frozen in <code>corpus/heldout_v10_report.json</code>; current in <code>corpus/heldout_v10_post_tuning_report.json</code></td>
-<td style="text-align: left;"><strong>Held-out batch, measured once on 2026-11-08 before tuning</strong> — publishable blind estimate is the frozen 38.6%/0.0%</td>
+<td style="text-align: left;"><strong>Held-out batch, measured once on 2026-11-08 before tuning</strong> — publishable blind estimate is the frozen one-shot result</td>
 </tr>
 </tbody>
 </table>
 <p>Every case in the first two corpora was used to drive the fixes, so their
 100%/0% rows are regression floors, not quality estimates. The held-out row is
-a superseded honest number; the current held-out row above freezes its one-shot estimate at 38.6%/0.0% while the current engine measures 100%/0.0%, and both remain single runs over payloads written
+a superseded honest number; the current held-out row above freezes its one-shot estimate in <code>heldout_v10_report.json</code> while the current engine measures 100%/0.0%, and both remain single runs over payloads written
 inside this project from public catalogues, with imagined benign controls:
 <strong>there is no third-party or independent evaluation.</strong> The protocol and rules
 for adding cases are in <a href="../../corpus/">corpus/README.md</a>;

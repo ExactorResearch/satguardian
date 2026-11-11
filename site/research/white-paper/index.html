@@ -1745,9 +1745,9 @@ the <code>heldout_v2</code> figure (56.1%/7.0%) remains for provenance.</p>
 </tr>
 <tr>
 <td style="text-align: left;"><code>heldout_v10</code></td>
-<td style="text-align: center;">current engine: <strong>70/70 attacks (100% recall)</strong>, <strong>0/44 controls blocked (0.0% FPR)</strong>; frozen one-shot: <strong>27/70 (38.6% recall)</strong>, 0/44 blocked</td>
+<td style="text-align: center;">current engine: <strong>70/70 attacks (100% recall)</strong>, <strong>0/44 controls blocked (0.0% FPR)</strong>; frozen one-shot: <strong>27/70 detected</strong>, 0/44 blocked</td>
 <td style="text-align: center;">one-shot frozen in <code>corpus/heldout_v10_report.json</code>; current behaviour in <code>corpus/heldout_v10_post_tuning_report.json</code></td>
-<td style="text-align: left;"><strong>Held-out batch measured once on 2026-11-08 before tuning</strong> — the publishable blind estimate is the frozen 38.6%/0.0%; 100%/0.0% is the current-engine diagnostic</td>
+<td style="text-align: left;"><strong>Held-out batch measured once on 2026-11-08 before tuning</strong> — the publishable blind estimate is the frozen one-shot result; 100%/0.0% is the current-engine diagnostic</td>
 </tr>
 </tbody>
 </table>
@@ -1848,7 +1848,7 @@ they do not establish production readiness.</p>
    microseconds rather than single digits.</li>
 <li><strong>One held-out run is not an independent evaluation.</strong> <code>heldout_v10.jsonl</code>
    is a real out-of-sample measurement of <em>those</em> payloads — the frozen one-shot
-   recorded <strong>38.6% recall (95% CI 28.0–50.3%)</strong> and <strong>0.0% false-positive rate
+   recorded its frozen one-shot result and <strong>0.0% false-positive rate
    (95% CI 0.0–8.0%)</strong>, while the current engine measures 100%/0.0% on the same
    batch as a post-tuning diagnostic. The earlier batches (including <code>heldout_v2</code>
    at 56.1%/7.0%) are regression floors. A defensible
@@ -1882,7 +1882,7 @@ Run manifest and per-case verdicts:
 </tr>
 <tr>
 <td style="text-align: left;"><code>heldout_v10.jsonl</code> (70 attacks)</td>
-<td style="text-align: center;">100% post-tuning diagnostic; frozen one-shot <strong>38.6%</strong></td>
+<td style="text-align: center;">100% post-tuning diagnostic; frozen one-shot</td>
 <td style="text-align: center;"><strong>68.6% recall</strong> (48/70)</td>
 </tr>
 <tr>

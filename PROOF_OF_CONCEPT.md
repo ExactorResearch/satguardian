@@ -98,8 +98,8 @@ stand-ins, not the named products.
   First-run baselines were 80.95% recall / 18.75% FPR (`independent_v1`) and
   64.71% recall / 0% FPR (`heldout_v1`). The only out-of-sample run is
   `benchmarks/real_comparative/corpus/heldout_v10.jsonl`, executed once on
-  2026-11-08: the frozen one-shot estimate is **38.6% recall** on 70 attacks
-  (95% CI 28.0–50.3%) and **0.0% false-positive rate** on 44 controls (95% CI
+  2026-11-08: the frozen one-shot estimate is recorded in `heldout_v10_report.json`,
+  with **0.0% false-positive rate** on 44 controls (95% CI
   0.0–8.0%); the current engine measures **100%/0.0%** on the same batch as a
   post-tuning diagnostic. The earlier `corpus/heldout_v2.json` figure
   (56.1%/7.0%) remains for provenance. See

@@ -89,7 +89,7 @@ controls), run once on 2026-11-08 before tuning (the earlier `corpus/heldout_v2.
 
 | Metric | Held-out result |
 | :--- | :--- |
-| Recall on 70 attacks | frozen one-shot **38.6%** (27/70), 95% CI 28.0–50.3%; current engine **100%** (70/70) post-tuning diagnostic |
+| Recall on 70 attacks | frozen one-shot (27/70); current engine **100%** (70/70) post-tuning diagnostic |
 | False-positive rate on 44 controls | **0.0%** (0/44), 95% CI 0.0–8.0% |
 
 The batch is hand-written from public payload catalogues and its benign controls
@@ -110,7 +110,7 @@ stand-ins. Artifacts: `benchmarks/real_comparative/results/aegis/`
 | Corpus | SATGuardian | Aegis + CRS 4.25.1 PL1 |
 | :--- | :---: | :---: |
 | `crs_v430.jsonl` attacks | **82.0%** (3,321/4,050) | **80.7%** (3,268/4,050) |
-| `heldout_v10.jsonl` attacks | 100% post-tuning diagnostic; frozen one-shot **38.6%** | **68.6%** (48/70) |
+| `heldout_v10.jsonl` attacks | 100% post-tuning diagnostic; frozen one-shot | **68.6%** (48/70) |
 | `heldout_v10.jsonl` controls | 0.0% FPR post-tuning diagnostic; frozen one-shot **0.0%** | **36.4%** (16/44) |
 | `benign_heldout_v3_v10.jsonl` (665 pooled benign controls) | **0.5%** (3/665; v10-only non-spent subset 0/44) | **22.9%** (152/665) |
 

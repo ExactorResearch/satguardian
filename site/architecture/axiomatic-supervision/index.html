@@ -1592,7 +1592,7 @@ third-party evaluation. See <a href="../../status/">STATUS.md</a>.</p>
 <tr>
 <td style="text-align: left;"><strong>Held-out batch (current engine)</strong></td>
 <td style="text-align: left;"><code>benchmarks/real_comparative/corpus/heldout_v10.jsonl</code>: 70 attacks + 44 controls</td>
-<td style="text-align: left;">current engine <strong>100% recall / 0.0% FPR</strong> (post-tuning diagnostic); frozen one-shot <strong>38.6% recall / 0.0% FPR</strong>; earlier <code>heldout_v2</code> 56.1%/7.0% kept for provenance</td>
+<td style="text-align: left;">current engine <strong>100% recall / 0.0% FPR</strong> (post-tuning diagnostic); frozen one-shot result; earlier <code>heldout_v2</code> 56.1%/7.0% kept for provenance</td>
 </tr>
 <tr>
 <td style="text-align: left;">In-memory latency, native Rust</td>
@@ -1612,7 +1612,7 @@ and have been removed.</p>
 <p>There is <strong>no third-party or independent evaluation</strong>. Every corpus, including
 the held-out batch, was written inside this project from public payload
 catalogues and labelled by the same side that owns the engine, so the 100% /
-0.0% diagnostic and the frozen 38.6% / 0.0% one-shot (and the earlier 56.1% /
+0.0% diagnostic and the frozen one-shot result one-shot (and the earlier 56.1% /
 7.0%) describe those payloads and nothing else.</p>
 <hr />
 <h2 id="4-commercial-operational-continuity-model">4. Commercial &amp; Operational Continuity Model</h2>

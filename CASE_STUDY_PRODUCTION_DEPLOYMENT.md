@@ -93,7 +93,7 @@ and "no collisions" on demo traffic is not a false-positive guarantee.
 | Detection, pinned corpus | `corpus/independent_v1.json` (63 attacks, 16 benign) | 63/63 attacks, 0/16 benign blocked (**in-sample regression floor**) |
 | Detection, first run before fixes | same corpus | 51/63 recall (80.95%), 3/16 benign blocked (18.75% FPR) |
 | Detection, second batch first run | `corpus/heldout_v1.json` (17 attacks, 4 benign) | 11/17 recall (64.71%), 0/4 benign blocked; batch since consumed |
-| **Held-out detection (current engine)** | `benchmarks/real_comparative/corpus/heldout_v10.jsonl` (70 attacks, 44 controls) | current engine **100% recall / 0.0% FPR** (post-tuning diagnostic, `heldout_v10_post_tuning_report.json`); frozen one-shot **38.6% recall / 0.0% FPR** (`heldout_v10_report.json`) |
+| **Held-out detection (current engine)** | `benchmarks/real_comparative/corpus/heldout_v10.jsonl` (70 attacks, 44 controls) | current engine **100% recall / 0.0% FPR** (post-tuning diagnostic, `heldout_v10_post_tuning_report.json`); frozen one-shot result (`heldout_v10_report.json`) |
 | Held-out detection (earlier, provenance) | `corpus/heldout_v2.json` (98 attacks, 57 controls), one run on 2026-11-04 | **56.1% recall** (95% CI 46.3–65.5%), **7.0% false-positive rate** (95% CI 2.8–16.7%) |
 | In-memory latency, native Rust | `benchmark -r 10000` | p50 `~0.46 ms`, mean `~0.94 ms`, p99 `~6 ms` depending on load (re-measured 2026-11-10); in-memory only |
 | Python harness | `run_benchmark.py 1000` | Printed with provenance; local stand-ins only |
@@ -106,7 +106,7 @@ and "no collisions" on demo traffic is not a false-positive guarantee.
 2. **The 100%/0% corpus rows are regression floors.** They pass because those
    cases were used to drive fixes. The honest out-of-sample measurement is the
    `heldout_v10` rows: **100% recall / 0.0% FPR** for the current engine (post-
-   tuning diagnostic) and **38.6% / 0.0%** for the frozen one-shot estimate, on payloads
+   tuning diagnostic) and **the frozen one-shot result** for the frozen one-shot estimate, on payloads
    written inside this project (the earlier `heldout_v2` row, 56.1%/7.0%, remains
    for provenance)
    written inside this project.

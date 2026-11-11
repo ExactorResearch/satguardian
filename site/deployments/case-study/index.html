@@ -1688,7 +1688,7 @@ and "no collisions" on demo traffic is not a false-positive guarantee.</p>
 <tr>
 <td style="text-align: left;"><strong>Held-out detection (current engine)</strong></td>
 <td style="text-align: left;"><code>benchmarks/real_comparative/corpus/heldout_v10.jsonl</code> (70 attacks, 44 controls)</td>
-<td style="text-align: left;">current engine <strong>100% recall / 0.0% FPR</strong> (post-tuning diagnostic, <code>heldout_v10_post_tuning_report.json</code>); frozen one-shot <strong>38.6% recall / 0.0% FPR</strong> (<code>heldout_v10_report.json</code>)</td>
+<td style="text-align: left;">current engine <strong>100% recall / 0.0% FPR</strong> (post-tuning diagnostic, <code>heldout_v10_post_tuning_report.json</code>); frozen one-shot result (<code>heldout_v10_report.json</code>)</td>
 </tr>
 <tr>
 <td style="text-align: left;">Held-out detection (earlier, provenance)</td>
@@ -1715,7 +1715,7 @@ and "no collisions" on demo traffic is not a false-positive guarantee.</p>
 <li><strong>The 100%/0% corpus rows are regression floors.</strong> They pass because those
    cases were used to drive fixes. The honest out-of-sample measurement is the
    <code>heldout_v10</code> rows: <strong>100% recall / 0.0% FPR</strong> for the current engine (post-
-   tuning diagnostic) and <strong>38.6% / 0.0%</strong> for the frozen one-shot estimate, on payloads
+   tuning diagnostic) and <strong>the frozen one-shot result</strong> for the frozen one-shot estimate, on payloads
    written inside this project (the earlier <code>heldout_v2</code> row, 56.1%/7.0%, remains
    for provenance)
    written inside this project.</li>

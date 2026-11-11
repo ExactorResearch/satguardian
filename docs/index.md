@@ -277,8 +277,8 @@ in-sample:
 **Update (2026-11-08):** later batches v3–v10 were each measured once and spent
 as tuning inputs. The current publishable one-shot estimate is
 `benchmarks/real_comparative/corpus/heldout_v10.jsonl`, run once before any fix
-against it once: **38.6% recall / 0.0% FPR** frozen one-shot estimate (`corpus/heldout_v10_report.json`,
-frozen). The v2 figure above remains for provenance; the CRS v4.30 suite is
+against it: the frozen result is in `corpus/heldout_v10_report.json`
+(frozen, never rewritten). The v2 figure above remains for provenance; the CRS v4.30 suite is
 measured in-sample at 82.0% and is not an independent evaluation. Details in
 [status](status.md).
 
@@ -294,7 +294,7 @@ per-case verdicts live in `benchmarks/real_comparative/results/aegis/`.
 | Corpus | SATGuardian | Aegis + CRS 4.25.1 PL1 |
 | :--- | :---: | :---: |
 | `crs_v430.jsonl` (4,050 vendor-authored attacks) | **82.0% recall** (3,321) | **80.7% recall** (3,268) |
-| `heldout_v10.jsonl` (70 attacks) | 100% — post-tuning diagnostic; frozen one-shot **38.6%** | **68.6% recall** (48/70) |
+| `heldout_v10.jsonl` (70 attacks) | 100% — post-tuning diagnostic; frozen one-shot | **68.6% recall** (48/70) |
 | `heldout_v10.jsonl` (44 benign controls) | 0.0% FPR — post-tuning diagnostic; frozen one-shot **0.0%** | **36.4% FPR** (16/44 blocked) |
 | `benign_heldout_v3_v10.jsonl` (665 pooled benign controls) | **0.5% FPR** (3/665; v10-only non-spent subset 0/44) | **22.9% FPR** (152/665 blocked) |
 

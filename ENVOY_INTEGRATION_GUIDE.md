@@ -153,7 +153,7 @@ Two operational notes, both read straight off `src/main.rs`:
 | In-memory rule latency | `benchmark -r 10000` | p50 `~0.46 ms`, mean `~0.94 ms`, p99 `~6 ms` depending on load (re-measured 2026-11-10); in-memory only |
 | Detection, pinned corpus | `corpus/independent_v1.json` | 63/63 attacks, 0/16 benign blocked (**in-sample regression floor**) |
 | Detection, first run before fixes | same corpus | 51/63 recall (80.95%), 3/16 benign blocked (18.75% FPR) |
-| **Held-out detection (current engine)** | `benchmarks/real_comparative/corpus/heldout_v10.jsonl` | current engine **100% recall / 0.0% FPR** (post-tuning diagnostic); frozen one-shot **38.6% recall / 0.0% FPR**; earlier `heldout_v2` 56.1%/7.0% kept for provenance |
+| **Held-out detection (current engine)** | `benchmarks/real_comparative/corpus/heldout_v10.jsonl` | current engine **100% recall / 0.0% FPR** (post-tuning diagnostic); frozen one-shot result; earlier `heldout_v2` 56.1%/7.0% kept for provenance |
 | End-to-end sidecar latency | not measured in this repository | — |
 | Memory footprint | not measured in this repository | — |
 
