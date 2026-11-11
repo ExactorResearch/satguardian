@@ -27,7 +27,7 @@ use tracing_subscriber::EnvFilter;
     name = "satguardian-waf",
     author = "Satguardian Research",
     version = env!("CARGO_PKG_VERSION"),
-    about = "SATGuardian Edge WAF: research prototype for lexical normalization and u128 bitmask rule evaluation (free edge traffic), with optional Boolean optimization via satguardian.tech"
+    about = "SATGuardian Edge WAF: lexical normalization and u128 bitmask rule evaluation (free edge traffic), with optional Boolean optimization via satguardian.tech"
 )]
 struct Cli {
     #[command(subcommand)]
@@ -229,7 +229,7 @@ async fn run_server(config: WafConfig) -> Result<(), Box<dyn std::error::Error +
    ╚════██║██╔══██║   ██║   ██║   ██║██║   ██║██╔══██║██╔══██╗██║  ██║██║██╔══██║██║╚██╗██║
    ███████║██║  ██║   ██║   ╚██████╔╝╚██████╔╝██║  ██║██║  ██║██████╔╝██║██║  ██║██║ ╚████║
    ╚══════╝╚═╝  ╚═╝   ╚═╝    ╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝
-             SATGUARDIAN EDGE WAF - FREE LOCAL DEFENSE (RESEARCH PROTOTYPE)
+             SATGUARDIAN EDGE WAF - FREE LOCAL DEFENSE
         Cloud Boolean Optimization Powered by Security Units (SU)
                          https://satguardian.tech
     "#

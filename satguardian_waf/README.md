@@ -1,8 +1,8 @@
 # SATGuardian Edge WAF: Python Proof of Concept (PoC)
 
 This directory contains the Python reference implementation and interactive demonstration
-suite of the **SATGuardian Edge WAF**. It is a research prototype used to explore the
-model; the enforcement path that ships is the Rust engine in `src/`.
+suite of the **SATGuardian Edge WAF**. It is the Python reference implementation
+used to explore the model; the enforcement path that ships is the Rust engine in `src/`.
 
 ## Quick Start
 
@@ -30,4 +30,4 @@ Benchmarks the same local stand-ins against the small in-repo payload list. It i
 comparison against Coraza, SafeLine or ModSecurity.
 
 For complete documentation, architecture, and empirical findings, see the root [PROOF_OF_CONCEPT.md](../PROOF_OF_CONCEPT.md).
-For the Rust reverse proxy server (also a research prototype), refer to the root [README.md](../README.md).
+For the Rust reverse proxy server, refer to the root [README.md](../README.md).

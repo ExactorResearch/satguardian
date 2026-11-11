@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Research-prototype Rust edge WAF with u128 bitmask inspection and opt-in SATGuardian cloud rule synthesis that returns proposals you approve">
+        <meta name="description" content="Rust edge WAF with u128 bitmask inspection and opt-in SATGuardian cloud rule synthesis that returns proposals you approve">
       
       
         <meta name="author" content="SATGuardian Cyber-Defense Systems">
@@ -1440,7 +1440,7 @@
 <p><strong>Technical Architecture Specification</strong><br />
 <strong>Codebase Reference:</strong> <code>src/ast/lexer.rs</code>, <code>src/ast/features.rs</code>, <code>src/engine/sat_solver.rs</code>, <code>src/cloud/satguardian_client.rs</code>, <code>src/ledger/sqlite_ledger.rs</code>, <code>src/api/server.rs</code></p>
 <blockquote>
-<p><strong>Status: research prototype.</strong> Detection evidence is limited to a small
+<p><strong>Status: SATGuardian Edge WAF v0.3.0.</strong> Detection evidence is limited to a small
 in-sample corpus plus one held-out run of hand-written payloads, and there is
 no third-party evaluation; see <a href="../../status/">STATUS.md</a>.</p>
 </blockquote>
@@ -1477,7 +1477,7 @@ no third-party evaluation; see <a href="../../status/">STATUS.md</a>.</p>
 <td style="text-align: left;"><strong>In-Path (Edge WAF)</strong></td>
 <td style="text-align: left;"><strong>Combined Lexer + Bitmask Evaluator</strong></td>
 <td style="text-align: left;"><strong>Linear in payload size, constant per rule</strong></td>
-<td style="text-align: left;"><strong><code>~20 µs</code> p50 / <code>~22 µs</code> avg (in-memory)</strong></td>
+<td style="text-align: left;"><strong><code>~0.46 ms</code> p50 / <code>~0.94 ms</code> avg (in-memory, re-measured 2026-11-10)</strong></td>
 </tr>
 <tr>
 <td style="text-align: left;"><strong>SATGuardian cloud synthesis</strong></td>
@@ -1531,7 +1531,7 @@ no third-party evaluation; see <a href="../../status/">STATUS.md</a>.</p>
 </code></pre></div>
 <h3 id="why-satguardian-uses-bitmask-conjunctions">Why SATGuardian Uses Bitmask Conjunctions</h3>
 <ol>
-<li><strong>Structural Context vs. Substring Matching:</strong> A benign user comment containing the words <code>"script"</code> and <code>"character"</code> activates isolated keyword flags, which causes the local token-weight stand-in to produce false positives (<code>24.6%</code> on the in-repo stream). In SATGuardian, rule <code>SAT-XSS-01</code> requires the simultaneous presence of <code>TAG_OPEN</code> <span class="arithmatex">\(\land\)</span> <code>SCRIPT_ELEMENT</code> <span class="arithmatex">\(\land\)</span> <code>DOM_EXEC</code>; the pinned corpus records no benign collision for it, which is an in-sample regression observation. The one held-out batch (<code>corpus/heldout_v2.json</code>, run once on 2026-11-04) still measured <strong>56.1% recall on 98 attacks</strong> (95% CI 46.3–65.5%) and a <strong>7.0% false-positive rate on 57 controls</strong> (95% CI 2.8–16.7%), and no third-party evaluation exists.</li>
+<li><strong>Structural Context vs. Substring Matching:</strong> A benign user comment containing the words <code>"script"</code> and <code>"character"</code> activates isolated keyword flags, which causes the local token-weight stand-in to produce false positives (<code>24.6%</code> on the in-repo stream). In SATGuardian, rule <code>SAT-XSS-01</code> requires the simultaneous presence of <code>TAG_OPEN</code> <span class="arithmatex">\(\land\)</span> <code>SCRIPT_ELEMENT</code> <span class="arithmatex">\(\land\)</span> <code>DOM_EXEC</code>; the pinned corpus records no benign collision for it, which is an in-sample regression observation. The current held-out batch (<code>benchmarks/real_comparative/corpus/heldout_v10.jsonl</code>) was run once on 2026-11-08 before any fix: the frozen one-shot estimate is <strong>38.6% recall on 70 attacks</strong> (95% CI 28.0–50.3%) and <strong>0.0% false-positive rate on 44 controls</strong> (95% CI 0.0–8.0%), and the current engine measures <strong>100%/0.0%</strong> on the same batch as a post-tuning diagnostic. The earlier <code>heldout_v2</code> figure (56.1%/7.0%) remains for provenance, and no third-party evaluation exists.</li>
 <li><strong>Predictable CPU Execution:</strong> Bitwise operations on a <code>u128</code> register execute in a few CPU clock cycles without backtracking, which is why the hot path has no ReDoS-style blow-up on the corpus payloads.</li>
 <li><strong>Human-Auditable Causal Traces:</strong> Every blocked request records the exact rule ID, active token set, and boolean clause in <code>waf_ledger.db</code> (e.g., <code>(SELECT_PROJECTION AND UNION_CLAUSE) violates [SAT-SQLI-02] -&gt; ACTION_BLOCK [sql_injection]</code>).</li>
 </ol>

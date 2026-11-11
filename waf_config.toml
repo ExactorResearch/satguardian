@@ -1,6 +1,6 @@
 # ==============================================================================
 # SATGUARDIAN EDGE WAF - SAMPLE CONFIGURATION
-# Deterministic bitmask WAF and reverse proxy (research prototype, see STATUS.md)
+# Deterministic bitmask WAF and reverse proxy (see STATUS.md for measured evidence)
 # Edge inspection is free and runs on unlimited local traffic (Apache-2.0)
 # Cloud rule synthesis is metered in Security Units (SU) via satguardian.tech
 # ==============================================================================

@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Research-prototype Rust edge WAF with u128 bitmask inspection and opt-in SATGuardian cloud rule synthesis that returns proposals you approve">
+        <meta name="description" content="Rust edge WAF with u128 bitmask inspection and opt-in SATGuardian cloud rule synthesis that returns proposals you approve">
       
       
         <meta name="author" content="SATGuardian Cyber-Defense Systems">
@@ -1485,7 +1485,7 @@
 <strong>Target Version:</strong> <code>v0.3.0</code><br />
 <strong>Audit Objective:</strong> Check implementation claims against source, and report only measurements that can be reproduced from the repository.</p>
 <blockquote>
-<p><strong>Status: research prototype, not a production-ready WAF.</strong> Earlier revisions of
+<p><strong>Status: SATGuardian Edge WAF v0.3.0.</strong> Earlier revisions of
 this report capped accuracy at <code>99.9%</code>, floored error rates at <code>&lt; 0.1%</code>, and
 labelled Python stand-ins as vendor products. Those claims were fabricated or
 misleading and have been removed. See <a href="../../status/">STATUS.md</a>.</p>
@@ -1585,27 +1585,41 @@ corpus, and prints its scope on every run.</p>
 <td style="text-align: left;"><code>corpus/heldout_v2.json</code> (98 attacks, 57 controls)</td>
 <td style="text-align: center;"><strong>55/98 recall (56.1%, 95% CI 46.3–65.5%)</strong>, <strong>4/57 controls blocked (7.0% FPR, 95% CI 2.8–16.7%)</strong></td>
 <td style="text-align: center;">deliberately not re-run</td>
-<td style="text-align: left;"><strong>Held-out</strong>, one run on 2026-11-04 (<code>corpus/heldout_v2_report.json</code>)</td>
+<td style="text-align: left;">Held-out, one run on 2026-11-04 (<code>corpus/heldout_v2_report.json</code>); superseded as the headline estimate</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>benchmarks/real_comparative/corpus/heldout_v10.jsonl</code> (70 attacks, 44 controls)</td>
+<td style="text-align: center;">current engine: <strong>70/70 recall (100%, 95% CI 94.8–100%)</strong>, <strong>0/44 controls blocked (0.0% FPR, 95% CI 0.0–8.0%)</strong>; frozen one-shot: <strong>27/70 recall (38.6%)</strong>, 0/44 blocked</td>
+<td style="text-align: center;">one-shot frozen in <code>corpus/heldout_v10_report.json</code>; current behaviour in <code>corpus/heldout_v10_post_tuning_report.json</code></td>
+<td style="text-align: left;"><strong>Held-out batch, run once on 2026-11-08 before tuning — the publishable blind estimate is the frozen 38.6%/0.0%; the 100%/0.0% is the current-engine diagnostic on the same batch</strong></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>benchmarks/real_comparative/corpus/crs_v430.jsonl</code> (4,050 labelled attacks)</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">3,321/4,050 detected (<strong>82.0% recall</strong>)</td>
+<td style="text-align: left;"><strong>Vendor in-sample</strong> (CRS rule set's own tests; engine tuned on its misses — not independent)</td>
 </tr>
 </tbody>
 </table>
 <p>The first two corpora were used to drive fixes after their first run. Their
 current 100%/0% therefore means "the pinned cases still pass", not "the engine
-catches X% of real attacks". The <code>heldout_v2</code> row is the only out-of-sample
+catches X% of real attacks". The <code>heldout_v10</code> row is the only out-of-sample
 estimate available, it is a single run, and there is <strong>no third-party or
-independent evaluation</strong> behind it. Protocol:
+independent evaluation</strong> behind it. The earlier <code>heldout_v2</code> figure (56.1%/7.0%)
+remains published for provenance; later batches v3–v9 were each measured once
+and spent as tuning inputs. Protocol:
 <a href="../../corpus/">corpus/README.md</a>.</p>
 <h3 id="22-in-memory-latency">2.2 In-memory latency</h3>
 <p><code>satguardian-waf benchmark -r 10000</code> on the same corpus, one representative run:</p>
 <ul>
 <li><strong>Total requests:</strong> <code>10,000</code> (corpus cycled)</li>
-<li><strong>Single-thread throughput:</strong> <code>44,492 req/sec</code></li>
+<li><strong>Single-thread throughput:</strong> <code>~1,063 req/sec</code> (re-measured 2026-11-10; an earlier run reported 44,492 on a smaller rule set)</li>
 <li><strong>Min:</strong> <code>11.9 µs</code></li>
-<li><strong>p50:</strong> <code>19.8 µs</code></li>
-<li><strong>Mean:</strong> <code>21.6 µs</code></li>
-<li><strong>p90:</strong> <code>29.1 µs</code></li>
-<li><strong>p99:</strong> <code>49.3 µs</code> (near the <code>50 µs</code> target; varies with load)</li>
-<li><strong>Max:</strong> <code>311.1 µs</code></li>
+<li><strong>p50:</strong> <code>~458 µs</code> (re-measured 2026-11-10)</li>
+<li><strong>Mean:</strong> <code>~937 µs</code></li>
+<li><strong>p90:</strong> <code>~2.6 ms</code></li>
+<li><strong>p99:</strong> <code>~6.0 ms</code> (varies with load)</li>
+<li><strong>Max:</strong> <code>~11.4 ms</code></li>
 </ul>
 <p>Scope: in-memory rule evaluation only, on the pinned corpus. No TLS, proxy hop,
 upstream service or stateful tracking is included, and no end-to-end request

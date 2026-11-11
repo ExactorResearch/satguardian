@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SATGuardian Edge WAF - In-Memory Bitmask Evaluation (Research Prototype)</title>
+  <title>SATGuardian Edge WAF - In-Memory Bitmask Evaluation</title>
   
   <!-- Google Fonts & Icons -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -30,7 +30,7 @@
         <span class="shield-icon">🛡️</span>
         <div class="logo-text">
           <h1>SATGUARDIAN <span class="accent-text">EDGE WAF</span></h1>
-          <span class="badge-subtitle">Deterministic SAT rule engine research prototype (in-sample benchmarks)</span>
+          <span class="badge-subtitle">Deterministic SAT rule engine (in-sample benchmarks)</span>
         </div>
       </div>
     </div>
@@ -403,7 +403,7 @@
             Imagine a check that requires a remote model call for every request: it adds a network round-trip and an inference call to the request path, and it is billed per call. That is a different engineering trade-off from evaluating fixed rules locally.
           </p>
           <p class="hero-intro">
-            <strong>SATGuardian-Edge is a rule-based detector:</strong> it evaluates named invariants over normalized request text and returns a deterministic verdict. On the checked-in corpus it measures roughly <strong>15–40 microseconds per payload in memory</strong> (UDP/TLS/proxy hops excluded). It is a research prototype, not a validated production WAF.
+            <strong>SATGuardian-Edge is a rule-based detector:</strong> it evaluates named invariants over normalized request text and returns a deterministic verdict. On the checked-in corpus it measures roughly <strong>15–40 microseconds per payload in memory</strong> (UDP/TLS/proxy hops excluded). Benchmarks are in-sample on checked-in corpora; see STATUS.md for measured evidence.
           </p>
         </div>
 

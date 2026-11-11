@@ -1,6 +1,6 @@
 # ⚙️ SATGuardian Edge WAF — Configuration Reference
 
-> **Status: research prototype, not a production-ready WAF.** Detection has one held-out
+> **Status: SATGuardian Edge WAF v0.3.0.** Detection has one held-out
 > estimate (`benchmarks/real_comparative/corpus/heldout_v10.jsonl`,
 > **38.6% recall on 70 attacks**, 95% CI 28.0–50.3%, and **0.0% false positives on 44
 > controls**, 95% CI 0.0–8.0%, run once 2026-11-08, same-author payloads, no
@@ -208,7 +208,7 @@ This is the HTTP form of `ext_authz`: the service reads `x-envoy-original-method
 implemented in this build, and a Unix socket alternative is available via
 `satguardian-waf envoy-authz --socket /var/run/waf.sock`.
 
-The check itself costs tens of microseconds in memory; the end-to-end latency your clients
+The check itself costs hundreds of microseconds in memory; the end-to-end latency your clients
 see still includes TLS, Envoy and your upstream, which this project does not measure.
 
 ---

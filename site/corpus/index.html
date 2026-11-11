@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Research-prototype Rust edge WAF with u128 bitmask inspection and opt-in SATGuardian cloud rule synthesis that returns proposals you approve">
+        <meta name="description" content="Rust edge WAF with u128 bitmask inspection and opt-in SATGuardian cloud rule synthesis that returns proposals you approve">
       
       
         <meta name="author" content="SATGuardian Cyber-Defense Systems">
@@ -615,6 +615,17 @@
     <span class="md-ellipsis">
       
         Held-out measurement, heldout_v2.json (2026-11-04)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#later-held-out-batches-benchmarksreal_comparativecorpusjsonl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Later held-out batches (benchmarks/real_comparative/corpus/*.jsonl)
       
     </span>
   </a>
@@ -1428,6 +1439,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#later-held-out-batches-benchmarksreal_comparativecorpusjsonl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Later held-out batches (benchmarks/real_comparative/corpus/*.jsonl)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1682,6 +1704,46 @@ still only in-sample regressions.</p>
 <code>heldout_v2_report.json</code> turns <code>heldout_v2.json</code> into a third regression suite,
 and the next honest estimate has to come from a new <code>heldout_v3</code> labelled
 before it is run.</p>
+<h3 id="later-held-out-batches-benchmarksreal_comparativecorpusjsonl">Later held-out batches (<code>benchmarks/real_comparative/corpus/*.jsonl</code>)</h3>
+<p>Batches v3–v10 moved to JSONL corpora under
+<code>benchmarks/real_comparative/corpus/</code> and were each measured once, then spent
+as tuning inputs. Their one-shot figures remain in <code>STATUS.md</code> and the
+generated reports for provenance:</p>
+<table>
+<thead>
+<tr>
+<th>Batch</th>
+<th>One-shot result</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>heldout_v3</code>–<code>heldout_v7</code></td>
+<td>measured once each (see <code>STATUS.md</code>)</td>
+<td>spent; regression floors</td>
+</tr>
+<tr>
+<td><code>heldout_v8</code></td>
+<td>77.5% recall / 4.2% FPR</td>
+<td>spent</td>
+</tr>
+<tr>
+<td><code>heldout_v9</code></td>
+<td>50.0% recall / 6.4% FPR (<code>heldout_v9_report.json</code>)</td>
+<td>spent; post-repair diagnostic 97.7%/4.3%</td>
+</tr>
+<tr>
+<td><code>heldout_v10</code></td>
+<td>one-shot <strong>38.6% recall / 0.0% FPR</strong> (<code>heldout_v10_report.json</code>, frozen); current engine <strong>100%/0.0%</strong> (<code>heldout_v10_post_tuning_report.json</code>)</td>
+<td>the one-shot file is the publishable blind estimate; the 100%/0.0% file is the current-engine diagnostic on the same now-spent batch</td>
+</tr>
+</tbody>
+</table>
+<p><code>crs_v430.jsonl</code> is the vendor-authored OWASP CRS v4.30 suite. Coverage against
+it is an <strong>in-sample</strong> measurement (the engine was tuned on its misses),
+currently 3,321/4,050 labelled attacks (82.0% recall). It is not an independent
+or third-party evaluation.</p>
 <h2 id="rules-for-changing-the-corpus">Rules for changing the corpus</h2>
 <ol>
 <li>Label a case before running it against the engine. Do not add a case and

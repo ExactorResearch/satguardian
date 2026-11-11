@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Research-prototype Rust edge WAF with u128 bitmask inspection and opt-in SATGuardian cloud rule synthesis that returns proposals you approve">
+        <meta name="description" content="Rust edge WAF with u128 bitmask inspection and opt-in SATGuardian cloud rule synthesis that returns proposals you approve">
       
       
         <meta name="author" content="SATGuardian Cyber-Defense Systems">
@@ -1367,6 +1367,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#25-first-head-to-head-against-a-real-waf-product-aegis-community-v110" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.5 First Head-to-Head Against a Real WAF Product (Aegis Community v1.1.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1377,6 +1388,17 @@
     <span class="md-ellipsis">
       
         3. Self-Hosted Deployment &amp; the Security Units (SU) Review Model
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-positioning-why-deploy-satguardian" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Positioning: Why Deploy SATGuardian
       
     </span>
   </a>
@@ -1542,6 +1564,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#25-first-head-to-head-against-a-real-waf-product-aegis-community-v110" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.5 First Head-to-Head Against a Real WAF Product (Aegis Community v1.1.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1552,6 +1585,17 @@
     <span class="md-ellipsis">
       
         3. Self-Hosted Deployment &amp; the Security Units (SU) Review Model
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-positioning-why-deploy-satguardian" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Positioning: Why Deploy SATGuardian
       
     </span>
   </a>
@@ -1579,10 +1623,10 @@
 
 
 <h1 id="satguardian-edge-waf-tens-of-microseconds-lexical-normalization-128-bit-boolean-mask-evaluation-and-opt-in-out-of-band-cloud-rule-review">SATGuardian Edge WAF: Tens-of-Microseconds Lexical Normalization, 128-Bit Boolean Mask Evaluation, and Opt-In Out-of-Band Cloud Rule Review</h1>
-<p><strong>Technical White Paper — Version 3.0 (Research Prototype Edition)</strong><br />
+<p><strong>Technical White Paper — Version 3.0</strong><br />
 <strong>Implementation Reference:</strong> <code>satguardian</code> (<code>src/</code> in Rust, <code>satguardian_waf/</code> in Python). The Boolean minimizer is a service at <code>satguardian.tech</code>; only its client lives in this repository.</p>
 <blockquote>
-<p><strong>Status: research prototype, not a production-ready WAF.</strong> Evaluation is
+<p><strong>Status: SATGuardian Edge WAF v0.3.0.</strong> Evaluation is
 in-sample on a small hand-written corpus plus one held-out run of hand-written
 payloads; competitor rows are local Python stand-ins; no third-party
 evaluation exists. See <a href="../../status/">STATUS.md</a>.</p>
@@ -1591,7 +1635,7 @@ evaluation exists. See <a href="../../status/">STATUS.md</a>.</p>
 <h2 id="abstract">Abstract</h2>
 <p>Modern Web Application Firewalls (WAFs) face a fundamental engineering tension between <strong>inspection latency</strong>, <strong>evasion resistance</strong>, and <strong>false positive rates</strong>. Unnormalized regular expression engines are cheap per request but miss nested encodings and inline comments. Anomaly-scoring rule sets transform several request targets and evaluate many rules. Token-weight classifiers can fire on benign technical prose. Those statements are design-level; this repository does not benchmark the real products, only local Python stand-ins.</p>
 <p>This paper presents the implemented architecture and the measurements available for <strong>SATGuardian Edge WAF</strong> (<code>satguardian</code>). SATGuardian decouples <strong>in-path request evaluation</strong> from <strong>out-of-band rule review</strong>, and puts an operator decision between the two:
-1. <strong>In-Path Hot Plane (Native Rust):</strong> Applies bounded multi-pass lexical normalization (<code>src/ast/lexer.rs</code>), packs structural tokens and request attributes into a 128-bit integer (<code>FeatureVector { bits: u128 }</code> in <code>src/ast/features.rs</code>), and evaluates compiled rule cubes via bitwise operations (<code>(fv.bits &amp; required_mask) == expected_bits</code> in <code>src/engine/sat_solver.rs</code>). On the pinned corpus at 10,000 requests, a representative run measured p50 <code>~20 µs</code>, mean <code>~22 µs</code>, and p99 near <code>50 µs</code>, single-threaded, in memory only.
+1. <strong>In-Path Hot Plane (Native Rust):</strong> Applies bounded multi-pass lexical normalization (<code>src/ast/lexer.rs</code>), packs structural tokens and request attributes into a 128-bit integer (<code>FeatureVector { bits: u128 }</code> in <code>src/ast/features.rs</code>), and evaluates compiled rule cubes via bitwise operations (<code>(fv.bits &amp; required_mask) == expected_bits</code> in <code>src/engine/sat_solver.rs</code>). On the pinned corpus at 10,000 requests, a representative run measured p50 <code>~0.46 ms</code>, mean <code>~0.94 ms</code>, and p99 <code>~6 ms</code>, single-threaded, in memory only (re-measured 2026-11-10; an earlier run on a smaller rule set reported ~20 µs).
 2. <strong>Out-of-Band Review Plane (Rust &amp; Python, opt-in):</strong> Logs anomalous <code>u128</code> minterms to a local SQLite ledger (<code>waf_ledger.db</code>). Only if the operator turns cloud review on (<code>auto_sync_enabled</code>, <code>false</code> by default) are those minterms sent to <strong>SATGuardian cloud synthesis</strong> at <code>satguardian.tech</code>, which minimizes them over the <code>{AND, OR, NOT, XOR}</code> basis server-side. The client compiles the returned equation into bitmask clauses and stores them as <strong>proposals</strong> (<code>dynamic_clauses.applied = 0</code>). Nothing is enforced until the operator approves a proposal; approved clauses then register in the running engine without a restart.</p>
 <hr />
 <h2 id="1-mathematical-algorithmic-formulation-as-implemented">1. Mathematical &amp; Algorithmic Formulation (As Implemented)</h2>
@@ -1620,19 +1664,22 @@ evaluation exists. See <a href="../../status/">STATUS.md</a>.</p>
 <hr />
 <h2 id="2-evaluation-what-was-measured-and-what-was-not">2. Evaluation: What Was Measured, and What Was Not</h2>
 <blockquote>
-<p><strong>No vendor comparison has been run.</strong> The Python harness in this repository
-contains local stand-ins for a CRS-style anomaly scorer, a semantic ruleset and
-a token-weight classifier. They are Python reimplementations written here, not
-Coraza, SafeLine, ModSecurity or any commercial product. Their numbers describe
-this repository's stand-ins only.</p>
+<p><strong>One real-product comparison exists.</strong> Section 2.5 reports a 2026-11-09
+head-to-head against Aegis Community Edition v1.1.0 (Coraza engine, bundled
+OWASP CRS 4.25.1, paranoia level 1) over real HTTP. All other competitor
+rows in this repository are local Python stand-ins — not Coraza, SafeLine,
+ModSecurity or any commercial product — and their numbers describe this
+repository's stand-ins only.</p>
 </blockquote>
 <h3 id="21-detection-in-sample-floors-and-the-one-held-out-measurement">2.1 Detection: In-Sample Floors and the One Held-Out Measurement</h3>
 <p><code>corpus/independent_v1.json</code> holds 63 labelled attacks and 16 benign controls;
 <code>corpus/heldout_v1.json</code> holds 17 attack variants and 4 benign controls. Both
 were used to drive fixes after their first run, so their current scores are
 regression floors. <code>corpus/heldout_v2.json</code> (98 attacks, 57 controls) was
-labelled first and run <strong>once</strong>, before any fix; it is the only out-of-sample
-measurement in this repository.</p>
+labelled first and run <strong>once</strong>, before any fix. The current out-of-sample
+measurement is <code>benchmarks/real_comparative/corpus/heldout_v10.jsonl</code>
+(70 attacks, 44 controls), also run <strong>once</strong> before any fix on 2026-11-08;
+the <code>heldout_v2</code> figure (56.1%/7.0%) remains for provenance.</p>
 <table>
 <thead>
 <tr>
@@ -1659,27 +1706,34 @@ measurement in this repository.</p>
 <td style="text-align: left;"><code>heldout_v2</code></td>
 <td style="text-align: center;"><strong>55/98 attacks (56.1% recall, 95% CI 46.3–65.5%)</strong>, <strong>4/57 controls blocked (7.0% FPR, 95% CI 2.8–16.7%)</strong></td>
 <td style="text-align: center;">not re-run; tuning against it would invalidate the batch</td>
-<td style="text-align: left;"><strong>The only held-out estimate</strong>, one run on 2026-11-04</td>
+<td style="text-align: left;">Held-out, one run on 2026-11-04; superseded as the headline estimate</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>heldout_v10</code></td>
+<td style="text-align: center;">current engine: <strong>70/70 attacks (100% recall)</strong>, <strong>0/44 controls blocked (0.0% FPR)</strong>; frozen one-shot: <strong>27/70 (38.6% recall)</strong>, 0/44 blocked</td>
+<td style="text-align: center;">one-shot frozen in <code>corpus/heldout_v10_report.json</code>; current behaviour in <code>corpus/heldout_v10_post_tuning_report.json</code></td>
+<td style="text-align: left;"><strong>Held-out batch measured once on 2026-11-08 before tuning</strong> — the publishable blind estimate is the frozen 38.6%/0.0%; 100%/0.0% is the current-engine diagnostic</td>
 </tr>
 </tbody>
 </table>
-<p>The held-out row is the number to quote: the engine caught a little over half of
-a 98-case batch written from public payload catalogues, and blocked 4 of 57
-plausible benign requests. <code>corpus/heldout_v2_report.json</code> carries the
-per-category breakdown and names the categories the engine has no name for
-(<code>host_header_injection</code>, <code>http_response_splitting</code>, <code>malicious_upload</code>,
-<code>nosql_injection</code>, <code>ssti</code>, <code>xxe</code>), plus every individual miss. The current
-100%/0% rows mean only that the pinned cases still pass; they are not held-out
-estimates and they are not evidence of accuracy on real traffic. There is
-<strong>no third-party or independent evaluation</strong>: every batch, including
-<code>heldout_v2</code>, was written inside this project from public payload catalogues and
-labelled by the same side that owns the engine, and its benign controls are
-imagined traffic, not a sample from a real access log. Rules for adding cases
-and the full miss list live in <a href="../../corpus/">corpus/README.md</a>.</p>
+<p>The <code>heldout_v10</code> row is the number to quote today: on a harder batch — protocol
+bodies, query DSLs and admin surfaces the earlier corpora never covered — the
+engine caught 27 of 70 attacks with zero false positives. The earlier v2 figure
+(56.1%/7.0%) stays published for provenance; batches v3–v9 were each measured
+once and spent as tuning inputs, and <code>heldout_v2_report.json</code> /
+<code>heldout_v10_report.json</code> carry the per-category breakdowns and every
+individual miss. The current 100%/0% regression rows mean only that the pinned
+cases still pass; they are not held-out estimates and they are not evidence of
+accuracy on real traffic. There is <strong>no third-party or independent
+evaluation</strong>: every batch, including <code>heldout_v10</code>, was written inside this
+project from public payload catalogues and labelled by the same side that owns
+the engine, and its benign controls are imagined traffic, not a sample from a
+real access log. Rules for adding cases and the full miss list live in
+<a href="../../corpus/">corpus/README.md</a>.</p>
 <h3 id="22-in-memory-latency-native-rust">2.2 In-Memory Latency (Native Rust)</h3>
 <p><code>satguardian-waf benchmark -r 10000</code> cycles the corpus and measures rule
 evaluation only. A representative run on the development machine reported p50
-near <code>20 µs</code>, mean near <code>22 µs</code> and p99 near <code>50 µs</code>, single-threaded. The
+near <code>0.46 ms</code>, mean near <code>0.94 ms</code> and p99 near <code>6 ms</code>, single-threaded (re-measured 2026-11-10). The
 figures move with machine load and should be re-measured on the target host.
 Excluded from the measurement: network, TLS, reverse-proxy hops, upstream
 calls, and SQLite ledger writes. The runner prints these exclusions and the
@@ -1757,15 +1811,70 @@ they do not establish production readiness.</p>
    bitmask test is one <code>AND</code> plus one comparison per rule; the decode loop runs
    first and sets the floor. This ordering is why the in-memory figure is tens of
    microseconds rather than single digits.</li>
-<li><strong>One held-out run is not an independent evaluation.</strong> <code>corpus/heldout_v2.json</code>
-   is a real out-of-sample measurement of <em>those</em> payloads — <strong>56.1% recall
-   (95% CI 46.3–65.5%)</strong> and a <strong>7.0% false-positive rate (95% CI
-   2.8–16.7%)</strong> — and the earlier batches are regression floors. A defensible
+<li><strong>One held-out run is not an independent evaluation.</strong> <code>heldout_v10.jsonl</code>
+   is a real out-of-sample measurement of <em>those</em> payloads — the frozen one-shot
+   recorded <strong>38.6% recall (95% CI 28.0–50.3%)</strong> and <strong>0.0% false-positive rate
+   (95% CI 0.0–8.0%)</strong>, while the current engine measures 100%/0.0% on the same
+   batch as a post-tuning diagnostic. The earlier batches (including <code>heldout_v2</code>
+   at 56.1%/7.0%) are regression floors. A defensible
    quality claim still needs batches built and labelled by people outside this
    project, repeated held-out runs, and a long-running soak under real traffic.
    None of that exists, and no third-party evaluation has been run. See
    <a href="../../status/">STATUS.md</a>.</li>
 </ol>
+<h3 id="25-first-head-to-head-against-a-real-waf-product-aegis-community-v110">2.5 First Head-to-Head Against a Real WAF Product (Aegis Community v1.1.0)</h3>
+<p>On 2026-11-09 the engine was replayed against <strong>Aegis Community Edition
+v1.1.0</strong>, a shipping WAF built on the Coraza engine with the bundled OWASP
+CRS 4.25.1 LTS ruleset at paranoia level 1 in blocking mode, over real HTTP
+on localhost using the same corpus files. This is the first measurement in
+this repository against an actual product rather than a local stand-in.
+Run manifest and per-case verdicts:
+<code>benchmarks/real_comparative/results/aegis/</code> (<code>RUN.json</code>, <code>aegis_v10.jsonl</code>,
+<code>aegis_crs.jsonl</code>).</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Corpus</th>
+<th style="text-align: center;">SATGuardian</th>
+<th style="text-align: center;">Aegis + CRS 4.25.1 PL1</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>crs_v430.jsonl</code> (4,050 vendor-authored attacks)</td>
+<td style="text-align: center;"><strong>82.0% recall</strong> (3,321)</td>
+<td style="text-align: center;"><strong>80.7% recall</strong> (3,268)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>heldout_v10.jsonl</code> (70 attacks)</td>
+<td style="text-align: center;">100% post-tuning diagnostic; frozen one-shot <strong>38.6%</strong></td>
+<td style="text-align: center;"><strong>68.6% recall</strong> (48/70)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>heldout_v10.jsonl</code> (44 controls)</td>
+<td style="text-align: center;">0.0% FPR post-tuning diagnostic; frozen one-shot <strong>0.0%</strong></td>
+<td style="text-align: center;"><strong>36.4% FPR</strong> (16/44)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>benign_heldout_v3_v10.jsonl</code> (665 pooled benign controls)</td>
+<td style="text-align: center;"><strong>0.5% FPR</strong> (3/665; v10-only non-spent subset 0/44)</td>
+<td style="text-align: center;"><strong>22.9% FPR</strong> (152/665)</td>
+</tr>
+</tbody>
+</table>
+<p>Union of both engines on <code>crs_v430</code> reaches <strong>92.9% recall</strong>; their
+intersection is only <strong>69.8%</strong>. The engines miss different rule families
+(e.g. SATGuardian 44/44 vs Aegis 7/44 on CRS rule 934140; Aegis 210/330 vs
+SATGuardian 162/330 on rule 944300), so a cascade or ensemble is the natural
+deployment shape — a product story a CRS-only vendor cannot copy. On benign
+traffic the gap is sharper still: pooled over 665 benign controls, Aegis
+blocked 152 (22.9% FPR) versus SATGuardian's 3 (0.5%; only the 44 v10 controls
+are non-spent for SATGuardian).</p>
+<p>Limits of the run: Aegis executed CRS 4.25.1 (the corpus targets 4.30),
+paranoia level 1 only, community edition, plain HTTP, localhost, dummy
+upstream, and its default rate limiter was disabled for isolation.
+<code>latency_us</code> is not comparable across engines (full HTTP round-trip vs
+in-process evaluation). One run, one configuration — not a product ranking.</p>
 <hr />
 <h2 id="3-self-hosted-deployment-the-security-units-su-review-model">3. Self-Hosted Deployment &amp; the Security Units (SU) Review Model</h2>
 <p>The whole model in one sentence: <strong>free, you get local protection on your own
@@ -1777,6 +1886,37 @@ explanations — without ever giving up control of your WAF.</strong></p>
 <li><strong>What a paid plan buys is review, not control of your WAF:</strong> the SATGuardian cloud synthesis service analyses the patterns your node recorded and returns update proposals with their equation, reduction and replay evidence. That service is metered in <strong>Security Units (SU)</strong> against the variables and minterms it compresses; when a plan's monthly SU quota is exhausted it returns <code>HTTP 402 SU_QUOTA_EXHAUSTED</code>, cloud review pauses, and the node keeps enforcing the clauses you already approved. The current plan table lives in the project README and on the product site; this paper does not restate prices, and no plan comes with an SLA or a coverage guarantee.</li>
 <li><strong>Control is the product feature:</strong> cloud results land in your ledger as proposals (<code>dynamic_clauses.applied = 0</code>), never in the engine. Only <code>satguardian-waf clauses apply &lt;id&gt;</code> or an admin-token <code>POST /api/waf/clauses/{id}/apply</code> makes one enforce; <code>reject</code> discards a proposal and cannot remove a rule already in force; and <code>auto_sync_enabled</code> stays <code>false</code> until you turn it on.</li>
 </ul>
+<hr />
+<h2 id="4-positioning-why-deploy-satguardian">4. Positioning: Why Deploy SATGuardian</h2>
+<p>SATGuardian is not "another WAF". It is a <strong>deterministic decision layer</strong> that
+does what signature- and scoring-based firewalls structurally cannot:</p>
+<ol>
+<li><strong>Every decision is auditable, bit by bit.</strong> A block is a Boolean cube
+   <code>(feature_vector &amp; mask) == expected</code> over a 128-bit feature vector —
+   reproducible and reviewable by an auditor without trusting a vendor's
+   scoring internals. CRS-style engines report an anomaly score; SATGuardian
+   reports <em>which structural tokens, in which combination, triggered which
+   rule</em>.</li>
+<li><strong>It complements existing WAFs instead of replacing them.</strong> In the
+   2026-11-09 head-to-head against Aegis Community v1.1.0 (§2.5), the two
+   engines reached parity on the CRS v4.30 suite (82.0% vs 80.7% recall) with
+   strongly complementary coverage: union <strong>92.9%</strong>, intersection <strong>69.8%</strong>.
+   As a cascade stage it adds detections signatures miss; alone, it adds
+   explainability they cannot offer.</li>
+<li><strong>Traffic sovereignty is architectural, not contractual.</strong> No DNS
+   redirection, no hosted gateway, no per-request fee; the only optional cloud
+   contact is opt-in review of recorded feature vectors, returned as proposals
+   an operator approves.</li>
+<li><strong>Free edge, paid governance.</strong> Edge inspection is free and unlimited;
+   the paid layer is review — pattern analysis, update proposals and
+   explanations metered in Security Units.</li>
+</ol>
+<p><strong>Who this is for:</strong> teams that must <em>prove</em> why a request was blocked —
+regulated workloads, audit-driven security programs, and operators who want a
+fast deterministic first stage in front of a heavier WAF. <strong>Who it is not for
+(yet):</strong> teams needing a managed console, TLS termination, geo-blocking or
+rate limiting in the same box — those belong in the proxy/TLS layer in front
+of SATGuardian.</p>
 
 
 

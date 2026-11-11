@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Research-prototype Rust edge WAF with u128 bitmask inspection and opt-in SATGuardian cloud rule synthesis that returns proposals you approve">
+        <meta name="description" content="Rust edge WAF with u128 bitmask inspection and opt-in SATGuardian cloud rule synthesis that returns proposals you approve">
       
       
         <meta name="author" content="SATGuardian Cyber-Defense Systems">
@@ -1570,10 +1570,13 @@
 
 <h1 id="satguardian-edge-waf-configuration-reference">⚙️ SATGuardian Edge WAF — Configuration Reference</h1>
 <blockquote>
-<p><strong>Status: research prototype, not a production-ready WAF.</strong> Detection has one held-out
-measurement (<strong>56.1% recall on 98 attacks</strong>, 95% CI 46.3–65.5%, and <strong>7.0% false
-positives on 57 controls</strong>, 95% CI 2.8–16.7%, <code>corpus/heldout_v2.json</code>, run once
-2026-11-04, same-author payloads, no third-party evaluation). The in-sample 100% / 0%
+<p><strong>Status: SATGuardian Edge WAF v0.3.0.</strong> Detection has one held-out
+estimate (<code>benchmarks/real_comparative/corpus/heldout_v10.jsonl</code>,
+<strong>38.6% recall on 70 attacks</strong>, 95% CI 28.0–50.3%, and <strong>0.0% false positives on 44
+controls</strong>, 95% CI 0.0–8.0%, run once 2026-11-08, same-author payloads, no
+third-party evaluation) — the current engine measures 100%/0.0% on the same
+batch as a post-tuning diagnostic; the earlier <code>heldout_v2</code> figure (56.1%/7.0%)
+remains for provenance. The in-sample 100% / 0%
 rows in <code>corpus/independent_v1.json</code> are regression floors, not generalization estimates.
 See <a href="../../status/">Project Status</a> and the <a href="../../corpus/">Detection Corpus</a>.</p>
 </blockquote>
@@ -1764,7 +1767,7 @@ filter.</p>
 <code>x-envoy-original-path</code> and answers the check itself. The gRPC <code>ext_authz</code> protocol is not
 implemented in this build, and a Unix socket alternative is available via
 <code>satguardian-waf envoy-authz --socket /var/run/waf.sock</code>.</p>
-<p>The check itself costs tens of microseconds in memory; the end-to-end latency your clients
+<p>The check itself costs hundreds of microseconds in memory; the end-to-end latency your clients
 see still includes TLS, Envoy and your upstream, which this project does not measure.</p>
 <hr />
 <h2 id="7-modular-certainty-islands-islands">🏝️ 7. Modular Certainty Islands (<code>[islands]</code>)</h2>

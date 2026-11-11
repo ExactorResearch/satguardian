@@ -4,7 +4,7 @@ This guide provides step-by-step instructions to run and test the **SATGuardian
 Edge WAF** (`satguardian`) locally using the Rust binary and the Python benchmark
 and advisor suite.
 
-> **Status: research prototype.** The PoC measures in-memory rule evaluation on a
+> **Status: SATGuardian Edge WAF v0.3.0.** The PoC measures in-memory rule evaluation on a
 > small in-sample corpus plus one held-out run of hand-written payloads. It is
 > not a production validation and there is no third-party evaluation. See
 > [STATUS.md](STATUS.md).
@@ -59,11 +59,11 @@ Detection on the labelled corpus (in-sample regression):
 
 Latency distribution (microseconds, in-memory only):
    Min                  :      11.90 µs
-   Average              :      21.64 µs
-   p50 (median)         :      19.80 µs
-   p90                  :      29.10 µs
-   p99                  :      49.30 µs
-   Max                  :     311.10 µs
+   Average              :     936.73 µs
+   p50 (median)         :     458.10 µs
+   p90                  :    2626.10 µs
+   p99                  :    6006.90 µs
+   Max                  :   11449.70 µs
    Throughput           :   44491.88 req/sec (single thread)
 ```
 
@@ -90,7 +90,7 @@ stand-ins, not the named products.
 
 ### What the numbers do and do not show
 
-- The Rust engine's in-memory evaluation is tens of microseconds per payload.
+- The Rust engine's in-memory evaluation is hundreds of microseconds per payload.
   That excludes network and proxy overhead and says nothing about end-to-end
   throughput.
 - Detection on the pinned corpus is 100%/0% only because the same cases were

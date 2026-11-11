@@ -3,7 +3,7 @@
 **Technical Architecture Specification**  
 **Codebase Reference:** `src/ast/lexer.rs`, `src/ast/features.rs`, `src/engine/sat_solver.rs`, `src/cloud/satguardian_client.rs`, `src/ledger/sqlite_ledger.rs`, `src/api/server.rs`
 
-> **Status: research prototype.** Detection evidence is limited to a small
+> **Status: SATGuardian Edge WAF v0.3.0.** Detection evidence is limited to a small
 > in-sample corpus plus one held-out run of hand-written payloads, and there is
 > no third-party evaluation; see [STATUS.md](../status.md).
 
@@ -17,7 +17,7 @@ A core engineering principle of **SATGuardian Edge WAF** is the strict separatio
 | :--- | :--- | :--- | :--- | :--- |
 | **Lexical Decoder & Tokenizer** | In-Path (Edge WAF) | Iterative URL/HTML decoding + comment stripping + token scan (`src/ast/lexer.rs`) | $O(L)$ where $L$ is payload byte length | `~6–10 µs` (Rust, in-memory) |
 | **Bitmask Rule Evaluator** | In-Path (Edge WAF) | 128-bit `FeatureVector` bitwise comparison (`src/engine/sat_solver.rs`) | $O(R)$ bitwise operations ($R \le 64$ rules) | `~4–6 µs` (Rust, in-memory) |
-| **Total Edge Hot Path** | **In-Path (Edge WAF)** | **Combined Lexer + Bitmask Evaluator** | **Linear in payload size, constant per rule** | **`~20 µs` p50 / `~22 µs` avg (in-memory)** |
+| **Total Edge Hot Path** | **In-Path (Edge WAF)** | **Combined Lexer + Bitmask Evaluator** | **Linear in payload size, constant per rule** | **`~0.46 ms` p50 / `~0.94 ms` avg (in-memory, re-measured 2026-11-10)** |
 | **SATGuardian cloud synthesis** | **Outside this repository** (the service at `satguardian.tech`) | Boolean minimization over the `{AND, OR, NOT, XOR}` basis | Not characterized here; the client does not ship or run a minimizer | Not measured in this repository |
 | **Clause compiler (client side)** | Out-of-Band (`src/cloud/satguardian_client.rs`) | `compile_equation_to_clauses()` parses the returned equation into `(required_mask, expected_bits)` pairs | Linear in the number of literals | Not measured in this repository |
 | **Digital Twin Verifier** | Out-of-Band (`satguardian-advisor.py`) | Historical replay over benign SQLite ledger (`waf_ledger.db`) | $O(N_{\text{benign}})$ | `~50 ms` for `1,663` benign logs in the bundled demo ledger |

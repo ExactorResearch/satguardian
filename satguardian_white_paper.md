@@ -1,9 +1,9 @@
 # SATGuardian Edge WAF: Tens-of-Microseconds Lexical Normalization, 128-Bit Boolean Mask Evaluation, and Opt-In Out-of-Band Cloud Rule Review
 
-**Technical White Paper — Version 3.0 (Research Prototype Edition)**  
+**Technical White Paper — Version 3.0**  
 **Implementation Reference:** `satguardian` (`src/` in Rust, `satguardian_waf/` in Python). The Boolean minimizer is a service at `satguardian.tech`; only its client lives in this repository.
 
-> **Status: research prototype, not a production-ready WAF.** Evaluation is
+> **Status: SATGuardian Edge WAF v0.3.0.** Evaluation is
 > in-sample on a small hand-written corpus plus one held-out run of hand-written
 > payloads; competitor rows are local Python stand-ins; no third-party
 > evaluation exists. See [STATUS.md](STATUS.md).
@@ -15,7 +15,7 @@
 Modern Web Application Firewalls (WAFs) face a fundamental engineering tension between **inspection latency**, **evasion resistance**, and **false positive rates**. Unnormalized regular expression engines are cheap per request but miss nested encodings and inline comments. Anomaly-scoring rule sets transform several request targets and evaluate many rules. Token-weight classifiers can fire on benign technical prose. Those statements are design-level; this repository does not benchmark the real products, only local Python stand-ins.
 
 This paper presents the implemented architecture and the measurements available for **SATGuardian Edge WAF** (`satguardian`). SATGuardian decouples **in-path request evaluation** from **out-of-band rule review**, and puts an operator decision between the two:
-1. **In-Path Hot Plane (Native Rust):** Applies bounded multi-pass lexical normalization (`src/ast/lexer.rs`), packs structural tokens and request attributes into a 128-bit integer (`FeatureVector { bits: u128 }` in `src/ast/features.rs`), and evaluates compiled rule cubes via bitwise operations (`(fv.bits & required_mask) == expected_bits` in `src/engine/sat_solver.rs`). On the pinned corpus at 10,000 requests, a representative run measured p50 `~20 µs`, mean `~22 µs`, and p99 near `50 µs`, single-threaded, in memory only.
+1. **In-Path Hot Plane (Native Rust):** Applies bounded multi-pass lexical normalization (`src/ast/lexer.rs`), packs structural tokens and request attributes into a 128-bit integer (`FeatureVector { bits: u128 }` in `src/ast/features.rs`), and evaluates compiled rule cubes via bitwise operations (`(fv.bits & required_mask) == expected_bits` in `src/engine/sat_solver.rs`). On the pinned corpus at 10,000 requests, a representative run measured p50 `~0.46 ms`, mean `~0.94 ms`, and p99 `~6 ms`, single-threaded, in memory only (re-measured 2026-11-10; an earlier run on a smaller rule set reported ~20 µs).
 2. **Out-of-Band Review Plane (Rust & Python, opt-in):** Logs anomalous `u128` minterms to a local SQLite ledger (`waf_ledger.db`). Only if the operator turns cloud review on (`auto_sync_enabled`, `false` by default) are those minterms sent to **SATGuardian cloud synthesis** at `satguardian.tech`, which minimizes them over the `{AND, OR, NOT, XOR}` basis server-side. The client compiles the returned equation into bitmask clauses and stores them as **proposals** (`dynamic_clauses.applied = 0`). Nothing is enforced until the operator approves a proposal; approved clauses then register in the running engine without a restart.
 
 ---
@@ -56,11 +56,12 @@ When previously unobserved minterms $\mathcal{M} = \{m_1, m_2, \dots, m_k\} \sub
 
 ## 2. Evaluation: What Was Measured, and What Was Not
 
-> **No vendor comparison has been run.** The Python harness in this repository
-> contains local stand-ins for a CRS-style anomaly scorer, a semantic ruleset and
-> a token-weight classifier. They are Python reimplementations written here, not
-> Coraza, SafeLine, ModSecurity or any commercial product. Their numbers describe
-> this repository's stand-ins only.
+> **One real-product comparison exists.** Section 2.5 reports a 2026-11-09
+> head-to-head against Aegis Community Edition v1.1.0 (Coraza engine, bundled
+> OWASP CRS 4.25.1, paranoia level 1) over real HTTP. All other competitor
+> rows in this repository are local Python stand-ins — not Coraza, SafeLine,
+> ModSecurity or any commercial product — and their numbers describe this
+> repository's stand-ins only.
 
 ### 2.1 Detection: In-Sample Floors and the One Held-Out Measurement
 
@@ -99,7 +100,7 @@ real access log. Rules for adding cases and the full miss list live in
 
 `satguardian-waf benchmark -r 10000` cycles the corpus and measures rule
 evaluation only. A representative run on the development machine reported p50
-near `20 µs`, mean near `22 µs` and p99 near `50 µs`, single-threaded. The
+near `0.46 ms`, mean near `0.94 ms` and p99 near `6 ms`, single-threaded (re-measured 2026-11-10). The
 figures move with machine load and should be re-measured on the target host.
 Excluded from the measurement: network, TLS, reverse-proxy hops, upstream
 calls, and SQLite ledger writes. The runner prints these exclusions and the
@@ -150,6 +151,39 @@ they do not establish production readiness.
    None of that exists, and no third-party evaluation has been run. See
    [STATUS.md](STATUS.md).
 
+### 2.5 First Head-to-Head Against a Real WAF Product (Aegis Community v1.1.0)
+
+On 2026-11-09 the engine was replayed against **Aegis Community Edition
+v1.1.0**, a shipping WAF built on the Coraza engine with the bundled OWASP
+CRS 4.25.1 LTS ruleset at paranoia level 1 in blocking mode, over real HTTP
+on localhost using the same corpus files. This is the first measurement in
+this repository against an actual product rather than a local stand-in.
+Run manifest and per-case verdicts:
+`benchmarks/real_comparative/results/aegis/` (`RUN.json`, `aegis_v10.jsonl`,
+`aegis_crs.jsonl`).
+
+| Corpus | SATGuardian | Aegis + CRS 4.25.1 PL1 |
+| :--- | :---: | :---: |
+| `crs_v430.jsonl` (4,050 vendor-authored attacks) | **82.0% recall** (3,321) | **80.7% recall** (3,268) |
+| `heldout_v10.jsonl` (70 attacks) | 100% post-tuning diagnostic; frozen one-shot **38.6%** | **68.6% recall** (48/70) |
+| `heldout_v10.jsonl` (44 controls) | 0.0% FPR post-tuning diagnostic; frozen one-shot **0.0%** | **36.4% FPR** (16/44) |
+| `benign_heldout_v3_v10.jsonl` (665 pooled benign controls) | **0.5% FPR** (3/665; v10-only non-spent subset 0/44) | **22.9% FPR** (152/665) |
+
+Union of both engines on `crs_v430` reaches **92.9% recall**; their
+intersection is only **69.8%**. The engines miss different rule families
+(e.g. SATGuardian 44/44 vs Aegis 7/44 on CRS rule 934140; Aegis 210/330 vs
+SATGuardian 162/330 on rule 944300), so a cascade or ensemble is the natural
+deployment shape — a product story a CRS-only vendor cannot copy. On benign
+traffic the gap is sharper still: pooled over 665 benign controls, Aegis
+blocked 152 (22.9% FPR) versus SATGuardian's 3 (0.5%; only the 44 v10 controls
+are non-spent for SATGuardian).
+
+Limits of the run: Aegis executed CRS 4.25.1 (the corpus targets 4.30),
+paranoia level 1 only, community edition, plain HTTP, localhost, dummy
+upstream, and its default rate limiter was disabled for isolation.
+`latency_us` is not comparable across engines (full HTTP round-trip vs
+in-process evaluation). One run, one configuration — not a product ranking.
+
 ---
 
 ## 3. Self-Hosted Deployment & the Security Units (SU) Review Model
@@ -162,3 +196,37 @@ explanations — without ever giving up control of your WAF.**
 - **Edge inspection carries no per-request fee:** the in-path plane is free and unlimited, needs no network access to enforce, and keeps working if the cloud is unreachable or the plan lapses.
 - **What a paid plan buys is review, not control of your WAF:** the SATGuardian cloud synthesis service analyses the patterns your node recorded and returns update proposals with their equation, reduction and replay evidence. That service is metered in **Security Units (SU)** against the variables and minterms it compresses; when a plan's monthly SU quota is exhausted it returns `HTTP 402 SU_QUOTA_EXHAUSTED`, cloud review pauses, and the node keeps enforcing the clauses you already approved. The current plan table lives in the project README and on the product site; this paper does not restate prices, and no plan comes with an SLA or a coverage guarantee.
 - **Control is the product feature:** cloud results land in your ledger as proposals (`dynamic_clauses.applied = 0`), never in the engine. Only `satguardian-waf clauses apply <id>` or an admin-token `POST /api/waf/clauses/{id}/apply` makes one enforce; `reject` discards a proposal and cannot remove a rule already in force; and `auto_sync_enabled` stays `false` until you turn it on.
+
+---
+
+## 4. Positioning: Why Deploy SATGuardian
+
+SATGuardian is not "another WAF". It is a **deterministic decision layer** that
+does what signature- and scoring-based firewalls structurally cannot:
+
+1. **Every decision is auditable, bit by bit.** A block is a Boolean cube
+   `(feature_vector & mask) == expected` over a 128-bit feature vector —
+   reproducible and reviewable by an auditor without trusting a vendor's
+   scoring internals. CRS-style engines report an anomaly score; SATGuardian
+   reports *which structural tokens, in which combination, triggered which
+   rule*.
+2. **It complements existing WAFs instead of replacing them.** In the
+   2026-11-09 head-to-head against Aegis Community v1.1.0 (§2.5), the two
+   engines reached parity on the CRS v4.30 suite (82.0% vs 80.7% recall) with
+   strongly complementary coverage: union **92.9%**, intersection **69.8%**.
+   As a cascade stage it adds detections signatures miss; alone, it adds
+   explainability they cannot offer.
+3. **Traffic sovereignty is architectural, not contractual.** No DNS
+   redirection, no hosted gateway, no per-request fee; the only optional cloud
+   contact is opt-in review of recorded feature vectors, returned as proposals
+   an operator approves.
+4. **Free edge, paid governance.** Edge inspection is free and unlimited;
+   the paid layer is review — pattern analysis, update proposals and
+   explanations metered in Security Units.
+
+**Who this is for:** teams that must *prove* why a request was blocked —
+regulated workloads, audit-driven security programs, and operators who want a
+fast deterministic first stage in front of a heavier WAF. **Who it is not for
+(yet):** teams needing a managed console, TLS termination, geo-blocking or
+rate limiting in the same box — those belong in the proxy/TLS layer in front
+of SATGuardian.

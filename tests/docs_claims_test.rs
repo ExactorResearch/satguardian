@@ -175,11 +175,10 @@ fn published_docs_do_not_repeat_retracted_claims() {
 }
 
 #[test]
-fn status_file_states_the_project_is_a_prototype() {
+fn status_file_states_the_version_and_keeps_the_evidence_caveats() {
     let root = repo_root();
     let status = read(&root.join("STATUS.md")).to_ascii_lowercase();
-    assert!(status.contains("research prototype"));
-    assert!(status.contains("not a production-ready waf"));
+    assert!(status.contains("satguardian edge waf v0.3.0"));
     assert!(status.contains("no independent or third-party evaluation"));
     assert!(status.contains("tests/docs_claims_test.rs"));
 
@@ -188,6 +187,29 @@ fn status_file_states_the_project_is_a_prototype() {
         read(&root.join("docs/status.md")),
         "docs/status.md is stale; copy STATUS.md over it"
     );
+}
+
+#[test]
+fn docs_mirrors_track_their_root_sources() {
+    let root = repo_root();
+    for (a, b) in [
+        ("README.md", "docs/index.md"),
+        ("satguardian_white_paper.md", "docs/research/white-paper.md"),
+        ("COMPARATIVE_ANALYSIS_PRE_VS_SATGUARDIAN.md", "docs/benchmarks/comparative-analysis.md"),
+    ] {
+        let headings = |p: &Path| -> Vec<String> {
+            read(p)
+                .lines()
+                .filter(|l| l.starts_with('#'))
+                .map(|l| l.trim().to_string())
+                .collect()
+        };
+        assert_eq!(
+            headings(&root.join(a)),
+            headings(&root.join(b)),
+            "{b} headings drifted from {a}; re-sync the mirror"
+        );
+    }
 }
 
 #[test]
@@ -319,10 +341,11 @@ fn python_harness_labels_stand_ins_and_provenance() {
 }
 
 #[test]
-fn crate_metadata_does_not_claim_production_readiness() {
+fn crate_metadata_does_not_overclaim() {
     let manifest = read(&repo_root().join("Cargo.toml")).to_ascii_lowercase();
     assert!(!manifest.contains("production-grade"));
-    assert!(manifest.contains("research prototype"));
+    assert!(!manifest.contains("production-ready"));
+    assert!(manifest.contains("satguardian"));
 }
 
 /// The framings the product narrative retired must not come back through any file.
