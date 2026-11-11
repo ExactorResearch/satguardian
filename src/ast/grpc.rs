@@ -35,7 +35,9 @@ impl GrpcProtobufAnalyzer {
             || headers.contains_key("grpc-status-details-bin")
         {
             tokens.has_grpc_status_injection = true;
-            tokens.active_tokens.push("GRPC_CLIENT_TRAILER_INJECTION_SMUGGLING".to_string());
+            tokens
+                .active_tokens
+                .push("GRPC_CLIENT_TRAILER_INJECTION_SMUGGLING".to_string());
         }
 
         // 2. gRPC Protocol Framing Validation
@@ -46,13 +48,17 @@ impl GrpcProtobufAnalyzer {
             // 4 bytes: big-endian length of message
             if body_len < 5 {
                 tokens.has_grpc_smuggling = true;
-                tokens.active_tokens.push("GRPC_MALFORMED_TRUNCATED_FRAME".to_string());
+                tokens
+                    .active_tokens
+                    .push("GRPC_MALFORMED_TRUNCATED_FRAME".to_string());
             } else {
                 let compression_flag = body[0];
                 if compression_flag > 1 {
                     // Invalid compression flag (only 0 or 1 allowed in gRPC RFC)
                     tokens.has_grpc_smuggling = true;
-                    tokens.active_tokens.push("GRPC_INVALID_COMPRESSION_FLAG".to_string());
+                    tokens
+                        .active_tokens
+                        .push("GRPC_INVALID_COMPRESSION_FLAG".to_string());
                 }
 
                 let msg_len = u32::from_be_bytes([body[1], body[2], body[3], body[4]]) as usize;
@@ -62,11 +68,15 @@ impl GrpcProtobufAnalyzer {
                 if msg_len > 16 * 1024 * 1024 {
                     // Extremely large frame length (> 16MB) in inbound stream -> Memory exhaustion attempt
                     tokens.has_grpc_smuggling = true;
-                    tokens.active_tokens.push("GRPC_FRAME_LENGTH_EXHAUSTION".to_string());
+                    tokens
+                        .active_tokens
+                        .push("GRPC_FRAME_LENGTH_EXHAUSTION".to_string());
                 } else if body_len < expected_total_frame {
                     // Truncated body under declared frame size
                     tokens.has_grpc_smuggling = true;
-                    tokens.active_tokens.push("GRPC_FRAME_STREAM_DESYNC_SMUGGLING".to_string());
+                    tokens
+                        .active_tokens
+                        .push("GRPC_FRAME_STREAM_DESYNC_SMUGGLING".to_string());
                 }
             }
         }

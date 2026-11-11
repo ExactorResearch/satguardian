@@ -68,7 +68,7 @@ Copy-Item -Path "$ProjectRoot\uninstall.ps1" -Destination "$StagingDir\uninstall
 $ReadmeLines = @(
     "================================================================================",
     "  SATGUARDIAN EDGE WAF - SELF-CONTAINED CLIENT INSTALLATION PACKAGE",
-    "  Deterministic u128 bitmask evaluation — research prototype, not production-ready",
+    "  Deterministic u128 bitmask evaluation",
     "  Free edge traffic | opt-in cloud review at https://satguardian.tech",
     "================================================================================",
     "",

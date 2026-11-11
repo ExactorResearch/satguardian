@@ -286,6 +286,10 @@ def cmd_harvest(args) -> int:
             continue
         req = case.get("request", {})
         fam = case.get("category") or v.get("true_category") or "unknown"
+        # CRS rule ids are 6-digit (942100 = SQLi group 942); cluster at
+        # the 3-digit rule-group level or propose emits one proposal per rule.
+        if fam.isdigit() and len(fam) >= 6:
+            fam = fam[:3] + "xxx"
         pts = injection_points(req)
         excerpt = payload_excerpt(req)
 
@@ -362,8 +366,21 @@ def cmd_propose(args) -> int:
     db = load_db(Path(args.db))
     candidates = [r for r in db.values()
                   if r["kind"] == "miss_pattern" and r["status"] == "CANDIDATE"]
+
+    # Never re-propose what already shipped: families with an
+    # IMPLEMENTED/PROMOTED proposal, or candidate ids already covered by any
+    # existing proposal, are skipped. Proposals accumulate across runs.
+    out = Path(args.proposals)
+    existing = []
+    if out.exists():
+        existing = [json.loads(l) for l in open(out, encoding="utf-8") if l.strip()]
+    done_families = {p.get("family") for p in existing
+                     if p.get("status") in ("IMPLEMENTED", "PROMOTED")}
+    covered = {cid for p in existing for cid in p.get("candidate_ids", [])}
+    candidates = [r for r in candidates
+                  if r["family"] not in done_families and r["candidate_id"] not in covered]
     if not candidates:
-        print("no CANDIDATE misses to propose")
+        print("no new CANDIDATE misses to propose")
         return 0
 
     # Cluster by family; hits>=2 families get priority.
@@ -408,10 +425,9 @@ def cmd_propose(args) -> int:
         bit += 1
         rule_n += 1
 
-    out = Path(args.proposals)
     out.parent.mkdir(parents=True, exist_ok=True)
     with open(out, "w", encoding="utf-8") as f:
-        for p in proposals:
+        for p in existing + proposals:
             f.write(json.dumps(p, ensure_ascii=False) + "\n")
 
     if args.emit_rust:

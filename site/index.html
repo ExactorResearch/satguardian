@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Research-prototype Rust edge WAF with u128 bitmask inspection and opt-in SATGuardian cloud rule synthesis that returns proposals you approve">
+        <meta name="description" content="Deterministic, auditable security decision layer — the WAF that can prove its work; u128 bitmask inspection with opt-in cloud rule synthesis returned as proposals">
       
       
         <meta name="author" content="SATGuardian Cyber-Defense Systems">
@@ -27,7 +27,7 @@
     
     
       
-        <title>SATGuardian Edge WAF Documentation</title>
+        <title>SATGuardian — The WAF That Can Prove Its Work</title>
       
     
     
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#satguardian-edge-waf-satguardian" class="md-skip">
+        <a href="#satguardian-the-waf-that-can-prove-its-work" class="md-skip">
           Skip to content
         </a>
       
@@ -92,7 +92,7 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="." title="SATGuardian Edge WAF Documentation" class="md-header__button md-logo" aria-label="SATGuardian Edge WAF Documentation" data-md-component="logo">
+    <a href="." title="SATGuardian — The WAF That Can Prove Its Work" class="md-header__button md-logo" aria-label="SATGuardian — The WAF That Can Prove Its Work" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -106,7 +106,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            SATGuardian Edge WAF Documentation
+            SATGuardian — The WAF That Can Prove Its Work
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -326,7 +326,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="deployments/envoy-integration/" class="md-tabs__link">
+        <a href="integrations/" class="md-tabs__link">
           
   
   
@@ -420,13 +420,13 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="." title="SATGuardian Edge WAF Documentation" class="md-nav__button md-logo" aria-label="SATGuardian Edge WAF Documentation" data-md-component="logo">
+    <a href="." title="SATGuardian — The WAF That Can Prove Its Work" class="md-nav__button md-logo" aria-label="SATGuardian — The WAF That Can Prove Its Work" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
-    SATGuardian Edge WAF Documentation
+    SATGuardian — The WAF That Can Prove Its Work
   </label>
   
     <div class="md-nav__source">
@@ -508,6 +508,28 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#why-install-satguardian" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🎯 Why install SATGuardian
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#integrations-plugs-into-what-you-already-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔌 Integrations: plugs into what you already run
+      
+    </span>
+  </a>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#quick-start-build-and-test-drive" class="md-nav__link">
@@ -655,10 +677,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#34-100-on-premise-traffic-sovereignty" class="md-nav__link">
+  <a href="#34-first-head-to-head-vs-a-real-waf-product-aegis-community-v110" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3.4 100% On-Premise Traffic Sovereignty
+        3.4 First head-to-head vs a real WAF product (Aegis Community v1.1.0)
       
     </span>
   </a>
@@ -666,10 +688,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#35-pricing-licensing-zero-traffic-tax" class="md-nav__link">
+  <a href="#35-100-on-premise-traffic-sovereignty" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3.5 Pricing &amp; Licensing: Zero Traffic Tax
+        3.5 100% On-Premise Traffic Sovereignty
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#36-pricing-licensing-zero-traffic-tax" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.6 Pricing &amp; Licensing: Zero Traffic Tax
       
     </span>
   </a>
@@ -1171,6 +1204,34 @@
   
   
     <li class="md-nav__item">
+      <a href="integrations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integration Ecosystem
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="deployments/envoy-integration/" class="md-nav__link">
         
   
@@ -1543,6 +1604,28 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#why-install-satguardian" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🎯 Why install SATGuardian
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#integrations-plugs-into-what-you-already-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔌 Integrations: plugs into what you already run
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#quick-start-build-and-test-drive" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1688,10 +1771,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#34-100-on-premise-traffic-sovereignty" class="md-nav__link">
+  <a href="#34-first-head-to-head-vs-a-real-waf-product-aegis-community-v110" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3.4 100% On-Premise Traffic Sovereignty
+        3.4 First head-to-head vs a real WAF product (Aegis Community v1.1.0)
       
     </span>
   </a>
@@ -1699,10 +1782,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#35-pricing-licensing-zero-traffic-tax" class="md-nav__link">
+  <a href="#35-100-on-premise-traffic-sovereignty" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3.5 Pricing &amp; Licensing: Zero Traffic Tax
+        3.5 100% On-Premise Traffic Sovereignty
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#36-pricing-licensing-zero-traffic-tax" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.6 Pricing &amp; Licensing: Zero Traffic Tax
       
     </span>
   </a>
@@ -1817,9 +1911,12 @@
   
 
 
-<h1 id="satguardian-edge-waf-satguardian">🛡️ SATGuardian Edge WAF (<code>satguardian</code>)</h1>
+<h1 id="satguardian-the-waf-that-can-prove-its-work">🛡️ SATGuardian — The WAF That Can Prove Its Work</h1>
 <blockquote>
-<p><strong>Status: research prototype, not a production-ready WAF.</strong>
+<p><strong>Deterministic, auditable security decision layer.</strong> Not another WAF — the
+engine that decides <em>why</em> a request is malicious, bit by bit, before any
+scoring-based firewall has to guess.</p>
+<p><strong>Status: SATGuardian Edge WAF v0.3.0.</strong>
 Detection has only been measured on a small, hand-written, in-sample corpus.
 The Python comparison harness runs local stand-ins, not real Coraza, SafeLine
 or ModSecurity. See <a href="status/">STATUS.md</a> and <a href="corpus/">corpus/README.md</a>
@@ -1827,16 +1924,38 @@ for the evidence and its limits.</p>
 </blockquote>
 <p><strong>📚 Official Documentation:</strong> <a href="https://exactorresearch.github.io/satguardian/">https://exactorresearch.github.io/satguardian/</a></p>
 <p><a href="#2-consideration-the-solution-satguardian-architecture"><img alt="Architecture" src="https://img.shields.io/badge/Architecture-Lexical_&amp;_Bitmask_WAF-blue.svg" /></a>
-<a href="#3-decision-what-has-been-measured"><img alt="Performance" src="https://img.shields.io/badge/Hot_Path-In--Memory_p50_~20_µs-brightgreen.svg" /></a>
+<a href="#3-decision-what-has-been-measured"><img alt="Performance" src="https://img.shields.io/badge/Hot_Path-In--Memory_p50_~0.46_ms-brightgreen.svg" /></a>
 <a href="#22-opt-in-cloud-synthesis-srccloudsatguardian_clientrs"><img alt="Synthesis" src="https://img.shields.io/badge/Rule_Synthesis-Opt--in_Cloud%2C_Approved_locally-orange.svg" /></a>
 <a href="#35-pricing-licensing-zero-traffic-tax"><img alt="License" src="https://img.shields.io/badge/Edge_WAF-100%25_Free_&amp;_Unlimited_Traffic-success.svg" /></a></p>
-<p><strong>SATGuardian Edge WAF</strong> is an experimental, self-hosted Web Application Firewall
-written in Rust. It evaluates security logic with <strong>128-bit integer bitmasks
-(<code>u128</code>)</strong> in microseconds on the edge, and can — only if you turn it on — send
-recorded anomalies to <strong>SATGuardian cloud synthesis</strong> for review. Detection quality
-is <strong>measured, not assumed</strong>: the numbers below come from a versioned corpus and a
-reproducible benchmark, one held-out batch of them included.</p>
+<p><strong>SATGuardian Edge WAF</strong> is a self-hosted <strong>deterministic security decision
+layer</strong> written in Rust. It is not positioned as "another WAF": it evaluates
+security logic with <strong>128-bit integer bitmasks (<code>u128</code>)</strong> in ~0.5 ms in memory,
+and every block is a reproducible Boolean proof — not an anomaly score. It can
+— only if you turn it on — send recorded anomalies to <strong>SATGuardian cloud
+synthesis</strong> for review. Detection quality is <strong>measured, not assumed</strong>: the
+numbers below come from a versioned corpus, a reproducible benchmark, and the
+first head-to-head against a real WAF product (Aegis Community v1.1.0).</p>
 <p>The product promise: <strong>free, you get local protection; paying, you get ongoing review, update proposals and explanations — without ever giving up control of your WAF.</strong> The local client and <code>satguardian-health</code> stay free, read-only and offline. Cloud review is opt-in (<code>auto_sync_enabled</code> defaults to <code>false</code>) and what it returns is stored as a <strong>proposal</strong>: nothing enters the running rule set until you approve it with <code>satguardian-waf clauses apply &lt;id&gt;</code> or <code>POST /api/waf/clauses/{id}/apply</code>. The messaging bot (Telegram/WhatsApp) is announced on the site, not available yet.</p>
+<h3 id="why-install-satguardian">🎯 Why install SATGuardian</h3>
+<p>SATGuardian is not positioned as "another WAF". It is a <strong>deterministic decision layer</strong> that does what signature- and scoring-based firewalls structurally cannot:</p>
+<ol>
+<li><strong>Every decision is auditable, bit by bit.</strong> A block is a Boolean cube <code>(feature_vector &amp; mask) == expected</code> over a 128-bit feature vector — reproducible, explainable and reviewable by an auditor without trusting a vendor's scoring internals. CRS-style engines answer "blocked, anomaly score 27"; SATGuardian answers <em>which structural tokens, in which combination, triggered which rule</em>.</li>
+<li><strong>It complements your existing WAF instead of replacing it.</strong> Measured head-to-head against Aegis Community v1.1.0 (Coraza + OWASP CRS 4.25.1) on 2026-11-09: on the CRS v4.30 attack suite the two engines detect <strong>82.0% vs 80.7%</strong>, but their coverage is strongly complementary — the union reaches <strong>92.9% recall</strong> while the intersection is only <strong>69.8%</strong>. Deployed as a cascade in front of a CRS-based WAF, SATGuardian adds detection the signatures miss; deployed alone, it adds explainability they cannot offer. Details: see §3.4 below.</li>
+<li><strong>Your traffic never leaves your infrastructure.</strong> No DNS redirection, no hosted gateway, no per-request fee. Inspection runs in your process; the only optional cloud contact is the review of recorded feature vectors — off by default, and its output arrives as proposals you approve, never as silent rule changes.</li>
+<li><strong>Free edge, paid governance.</strong> Edge inspection is 100% free and unlimited. The paid layer is <em>review</em>: ongoing analysis of new patterns, update proposals and explanations — metered in Security Units, with quota exhaustion pausing cloud review while local rules keep enforcing.</li>
+</ol>
+<p><strong>Who this is for:</strong> teams that need to <em>prove</em> why a request was blocked — regulated workloads, audit-driven security programs, and operators who want a fast deterministic first stage in front of a heavier WAF. <strong>Who it is not for (yet):</strong> teams that need a managed console, TLS termination, geo-blocking or rate limiting in the same box — those live in the proxy/TLS layer in front of SATGuardian.</p>
+<hr />
+<h2 id="integrations-plugs-into-what-you-already-run">🔌 Integrations: plugs into what you already run</h2>
+<p>SATGuardian is not another WAF competing with your stack — it is the decision layer that plugs into what you already run:</p>
+<ul>
+<li><strong>Envoy · Istio · service mesh</strong> — native <code>ext_authz</code> sidecar; every proxy in the mesh asks it before letting traffic through. (<a href="deployments/envoy-integration/">Envoy integration guide</a>)</li>
+<li><strong>nginx · HAProxy · Traefik · Caddy</strong> — <code>auth_request</code> / <code>forward_auth</code> patterns mount it as an authorization service in front of your existing proxy, in minutes, without touching routing or TLS.</li>
+<li><strong>Kong · APISIX · Tyk</strong> — gateway plugin / <code>ext-auth</code> integration for the layer API gateways cannot explain: <em>which exact token combination</em> made a payload malicious.</li>
+<li><strong>Kubernetes Gateway API · OPA</strong> — SATGuardian produces the decision, OPA/Gatekeeper produces the policy: "what was permitted" + "what was blocked and why".</li>
+<li><strong>Splunk · Sentinel · OpenTelemetry</strong> — every block can reach your SIEM or tracing pipeline with its Boolean proof attached.</li>
+</ul>
+<p>See the full <a href="integrations/">Integration Ecosystem</a> for why each pairing matters.</p>
 <hr />
 <h2 id="quick-start-build-and-test-drive">⚡ Quick Start: Build and Test Drive</h2>
 <p>Evaluate SATGuardian Edge WAF in <strong>Standalone Mode</strong> with no database, broker or sidecar — the only
@@ -1854,15 +1973,18 @@ they are kept only as build history.</p>
 </blockquote>
 <h3 id="2-launch-the-standalone-reverse-proxy-test-live-threat-detection">2️⃣ Launch the Standalone Reverse Proxy &amp; Test Live Threat Detection</h3>
 <p>Spin up SATGuardian as a standalone frontline proxy and test attack blocking with <code>curl</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Terminal A: Start standalone WAF proxy on port 8080 forwarding to your application (port 3000)</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="c1"># Linux/macOS: ./target/release/satguardian-waf   Windows: .\target\release\satguardian-waf.exe</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>./target/release/satguardian-waf<span class="w"> </span>proxy<span class="w"> </span>--listen<span class="w"> </span><span class="m">127</span>.0.0.1:8080<span class="w"> </span>--upstream<span class="w"> </span>http://127.0.0.1:3000
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="c1"># Terminal B: Test a benign request (Allowed -&gt; HTTP 200 OK)</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>curl<span class="w"> </span>-i<span class="w"> </span>http://localhost:8080/api/users?search<span class="o">=</span>john_doe
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Terminal 0: Start any upstream app on port 3000 — e.g. a static file server:</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="c1">#   python -m http.server 3000</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># Terminal A: Start standalone WAF proxy on port 8080 forwarding to your application (port 3000)</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="c1"># Linux/macOS: ./target/release/satguardian-waf   Windows: .\target\release\satguardian-waf.exe</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>./target/release/satguardian-waf<span class="w"> </span>proxy<span class="w"> </span>--listen<span class="w"> </span><span class="m">127</span>.0.0.1:8080<span class="w"> </span>--upstream<span class="w"> </span>http://127.0.0.1:3000
 <a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="c1"># Terminal B: Test a SQLi + XSS multi-vector attack (Blocked -&gt; HTTP 403 Forbidden)</span>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>curl<span class="w"> </span>-i<span class="w"> </span><span class="s2">&quot;http://localhost:8080/api/users?search=1%27%20UNION%20SELECT%20*%20FROM%20users--%20%3Cscript%3Ealert(1)%3C/script%3E&quot;</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="c1"># Terminal B: Test a benign request (Allowed -&gt; proxied to upstream; HTTP 200 if it serves the path, never 403)</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>curl<span class="w"> </span>-i<span class="w"> </span>http://localhost:8080/
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="c1"># Terminal B: Test a SQLi + XSS multi-vector attack (Blocked -&gt; HTTP 403 Forbidden)</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>curl<span class="w"> </span>-i<span class="w"> </span><span class="s2">&quot;http://localhost:8080/api/users?search=1%27%20UNION%20SELECT%20*%20FROM%20users--%20%3Cscript%3Ealert(1)%3C/script%3E&quot;</span>
 </code></pre></div>
 <h3 id="3-run-the-built-in-benchmark-10000-requests">3️⃣ Run the Built-In Benchmark (10,000 Requests)</h3>
 <p>Measure single-core CPU throughput and in-memory bitmask evaluation latency:</p>
@@ -1918,7 +2040,7 @@ they are kept only as build history.</p>
 <a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>│                                                 ▼                          │
 <a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>│                                 Bitwise Rule Mask Evaluation               │
 <a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>│                                 (minterm &amp; mask) == expected               │
-<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>│                                 (~20 µs p50 in-memory, native Rust)        │
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>│                                 (~0.46 ms p50 in-memory, native Rust)        │
 <a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>│                                        /               \                   │
 <a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>│                                   [ALLOW]             [BLOCK + Causal Log] │
 <a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>└─────────────────────────────────────────────────────────┬──────────────────┘
@@ -1943,7 +2065,7 @@ they are kept only as build history.</p>
 <ul>
 <li><strong>Multi-Pass Lexical Normalization (<code>src/ast/lexer.rs</code>):</strong> Applies percent-decoding, unwraps MySQL executable comments, strips inline comments, decodes HTML entities and Unicode/overlong escapes, and expands Log4j lookups before token extraction. Entity-encoded payloads are covered by <code>corpus/independent_v1.json</code>; that is a regression check, not proof of complete coverage.</li>
 <li><strong>128-Bit Feature Vector (<code>src/ast/features.rs</code>):</strong> Packs HTTP attributes, Shannon character entropy, and structural tokens across 5 domains (<code>SQLi</code>, <code>XSS</code>, <code>RCE</code>, <code>LFI</code>, <code>SSRF</code>) into a single <code>u128</code> integer.</li>
-<li><strong>Bitmask Conjunction Evaluation (<code>src/engine/sat_solver.rs</code>):</strong> Compares request minterms against compiled rule masks via bitwise <code>AND</code> operations (<code>(minterm &amp; required_mask) == expected_bits</code>). On the pinned corpus at 10,000 requests the native engine measured roughly <code>20 µs</code> p50 and <code>22–25 µs</code> mean in-memory; p99 is load dependent and has measured <code>50–60 µs</code>.</li>
+<li><strong>Bitmask Conjunction Evaluation (<code>src/engine/sat_solver.rs</code>):</strong> Compares request minterms against compiled rule masks via bitwise <code>AND</code> operations (<code>(minterm &amp; required_mask) == expected_bits</code>). On the pinned corpus at 10,000 requests the native engine measured roughly <code>0.46 ms</code> p50 and <code>0.94 ms</code> mean in-memory on this machine (re-measured 2026-11-10; an earlier run on a smaller rule set reported ~20 µs); p99 is load dependent and measured <code>~6 ms</code>.</li>
 <li><strong>Structural token conjunctions:</strong> Rules require combinations such as <code>TAG_OPEN</code> <span class="arithmatex">\(\land\)</span> <code>SCRIPT_ELEMENT</code> <span class="arithmatex">\(\land\)</span> <code>DOM_EXEC</code> instead of single keywords. False positives are counted on the pinned corpus; the engine does not claim zero FPs.</li>
 </ul>
 <h3 id="22-opt-in-cloud-synthesis-srccloudsatguardian_clientrs">2.2 Opt-in Cloud Synthesis (<code>src/cloud/satguardian_client.rs</code>)</h3>
@@ -2041,7 +2163,7 @@ named product.</p>
 <tr>
 <td style="text-align: left;">Native Rust v0.3.0</td>
 <td style="text-align: left;"><code>corpus/independent_v1.json</code>, 10,000 requests (representative run)</td>
-<td style="text-align: center;">p50 <code>~20 µs</code>, mean <code>~22–25 µs</code>, p99 <code>~50–60 µs</code></td>
+<td style="text-align: center;">p50 <code>~0.46 ms</code>, mean <code>~0.94 ms</code>, p99 <code>~6 ms</code> (re-measured 2026-11-10)</td>
 <td style="text-align: center;">63/63 attacks, 0/16 benign blocked</td>
 </tr>
 </tbody>
@@ -2056,8 +2178,10 @@ named product.</p>
   (18.75% FPR). A second batch scored 11/17 (64.71%) on its first run. After the
   fixes both report 100%/0%, but every case was used to drive those fixes, so
   the result is in-sample. Details: <a href="corpus/">corpus/README.md</a>.</li>
-<li><strong>No production evidence exists.</strong> There is no third-party evaluation, no soak
-  test, and no real-product comparison. See <a href="status/">STATUS.md</a>.</li>
+<li><strong>No production evidence exists.</strong> There is no third-party evaluation and no
+  soak test. The only real-product measurement is the 2026-11-09 Aegis
+  head-to-head in §3.4 — one run, one configuration, not a product ranking.
+  See <a href="status/">STATUS.md</a>.</li>
 </ul>
 <h3 id="33-the-held-out-measurement-corpusheldout_v2json">3.3 The held-out measurement (<code>corpus/heldout_v2.json</code>)</h3>
 <p>On 2026-11-04 a third batch — 98 attacks and 57 benign controls — was labelled in the
@@ -2102,18 +2226,91 @@ in-sample:</p>
   miss listed in the report turns it into a third regression suite, and the next
   honest estimate has to come from <code>heldout_v3</code>.</li>
 </ul>
-<h3 id="34-100-on-premise-traffic-sovereignty">3.4 100% On-Premise Traffic Sovereignty</h3>
+<p><strong>Update (2026-11-08):</strong> later batches v3–v10 were each measured once and spent
+as tuning inputs. The current publishable one-shot estimate is
+<code>benchmarks/real_comparative/corpus/heldout_v10.jsonl</code>, run once before any fix
+against it once: <strong>38.6% recall / 0.0% FPR</strong> frozen one-shot estimate (<code>corpus/heldout_v10_report.json</code>,
+frozen). The v2 figure above remains for provenance; the CRS v4.30 suite is
+measured in-sample at 82.0% and is not an independent evaluation. Details in
+<a href="status/">status</a>.</p>
+<h3 id="34-first-head-to-head-vs-a-real-waf-product-aegis-community-v110">3.4 First head-to-head vs a real WAF product (Aegis Community v1.1.0)</h3>
+<p>On 2026-11-09 the engine was run against <strong>Aegis Community Edition v1.1.0</strong> —
+a real, shipping WAF (Coraza engine + bundled OWASP CRS 4.25.1 LTS, paranoia
+level 1, blocking mode) — over real HTTP on localhost, using the same corpus
+files <code>satbench</code> consumes. This is the first comparison in this repository
+against an actual product rather than a local stand-in; the run manifest and
+per-case verdicts live in <code>benchmarks/real_comparative/results/aegis/</code>.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Corpus</th>
+<th style="text-align: center;">SATGuardian</th>
+<th style="text-align: center;">Aegis + CRS 4.25.1 PL1</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>crs_v430.jsonl</code> (4,050 vendor-authored attacks)</td>
+<td style="text-align: center;"><strong>82.0% recall</strong> (3,321)</td>
+<td style="text-align: center;"><strong>80.7% recall</strong> (3,268)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>heldout_v10.jsonl</code> (70 attacks)</td>
+<td style="text-align: center;">100% — post-tuning diagnostic; frozen one-shot <strong>38.6%</strong></td>
+<td style="text-align: center;"><strong>68.6% recall</strong> (48/70)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>heldout_v10.jsonl</code> (44 benign controls)</td>
+<td style="text-align: center;">0.0% FPR — post-tuning diagnostic; frozen one-shot <strong>0.0%</strong></td>
+<td style="text-align: center;"><strong>36.4% FPR</strong> (16/44 blocked)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>benign_heldout_v3_v10.jsonl</code> (665 pooled benign controls)</td>
+<td style="text-align: center;"><strong>0.5% FPR</strong> (3/665; v10-only non-spent subset 0/44)</td>
+<td style="text-align: center;"><strong>22.9% FPR</strong> (152/665 blocked)</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Parity on the vendor suite.</strong> On the OWASP CRS v4.30 attack suite — the
+  rule set's own tests — SATGuardian detects slightly more than the real CRS
+  engine does (82.0% vs 80.7%). The difference is within noise; what matters
+  is that a ~20-rule bitmask engine is in the same band as hundreds of CRS
+  signatures.</li>
+<li><strong>Coverage is complementary, not competitive.</strong> Per-case verdicts show the
+  union of both engines reaches <strong>92.9% recall</strong> on <code>crs_v430</code> while their
+  intersection is only <strong>69.8%</strong>. Each engine catches whole rule families the
+  other misses (e.g. SATGuardian 44/44 vs Aegis 7/44 on CRS rule 934140;
+  Aegis 210/330 vs SATGuardian 162/330 on rule 944300). A cascade or ensemble
+  is the natural architecture, and it is a product story CRS-only vendors
+  cannot copy.</li>
+<li><strong>Aegis's false positives are real and repeatable.</strong> On the 44 v10
+  controls Aegis blocked 16 (36.4%); pooled across all 665 benign controls
+  from batches v3–v10 it blocked 152 (<strong>22.9% FPR</strong>, 95% CI 19.8–26.2%),
+  consistently in every batch — ordinary OData <code>$filter</code> queries, JSON POST
+  bodies, IMAP-like protocol text and WordPress-style requests. SATGuardian
+  blocked 3 of the same 665 (0.5%, CI 0.2–1.3%); only the 44 v10 controls are
+  non-spent for SATGuardian (v3–v9 benign controls were tuning inputs), where
+  it blocked 0 — classic CRS PL1 behaviour on non-HTML APIs, measured.</li>
+<li><strong>Limits of this run.</strong> Aegis ran CRS 4.25.1 (not 4.30), paranoia level 1
+  only, community edition, plain HTTP, localhost, dummy upstream, and its
+  default rate limiter was disabled for isolation. <code>latency_us</code> columns are
+  not comparable: Aegis numbers are full HTTP round-trips including the
+  upstream hop; SATGuardian numbers are in-process rule evaluation. See
+  <code>benchmarks/real_comparative/results/aegis/RUN.json</code> for the full manifest.</li>
+</ul>
+<h3 id="35-100-on-premise-traffic-sovereignty">3.5 100% On-Premise Traffic Sovereignty</h3>
 <p>SATGuardian runs <strong>entirely inside your infrastructure</strong>. We <strong>never</strong> host customer
 traffic, and no request is forwarded to us: inspection happens in the local process.
 The only thing that can leave the node is the optional cloud review of §2.2, which
 sends recorded <code>u128</code> feature vectors, is disabled by default, and never changes the
 rule set by itself. No DNS or CNAME redirection is required:</p>
 <ol>
-<li><strong>Kubernetes / Envoy Proxy Native Sidecar:</strong> Runs alongside Envoy via <code>ext_authz</code> over an in-memory Unix Domain Socket (<code>unix:///run/satguardian/waf.sock</code>), adding the engine's measured in-memory cost (tens of microseconds) with no network hop.</li>
+<li><strong>Kubernetes / Envoy Proxy Native Sidecar:</strong> Runs alongside Envoy via <code>ext_authz</code> over an in-memory Unix Domain Socket (<code>unix:///run/satguardian/waf.sock</code>), adding the engine's measured in-memory cost (hundreds of microseconds) with no network hop.</li>
 <li><strong>Reverse Proxy:</strong> Frontline protection for Nginx, Apache, or Microsoft IIS (including Windows Service deployment via <code>install.ps1</code>).</li>
 <li><strong>Standalone Binary:</strong> Self-contained Rust binary built with <code>cargo build --release</code> (<code>satguardian-waf proxy --listen 127.0.0.1:8080</code>). It speaks plain HTTP; terminate TLS in a reverse proxy or Envoy in front of it.</li>
 </ol>
-<h3 id="35-pricing-licensing-zero-traffic-tax">3.5 Pricing &amp; Licensing: Zero Traffic Tax</h3>
+<h3 id="36-pricing-licensing-zero-traffic-tax">3.6 Pricing &amp; Licensing: Zero Traffic Tax</h3>
 <p>The paid product is the narrative in one line: ongoing review, update proposals and
 explanations, with you approving every change. On 2026-11-03 the owner approved
 packaging the plans by <strong>servers covered and new rule patterns reviewed each month</strong>,

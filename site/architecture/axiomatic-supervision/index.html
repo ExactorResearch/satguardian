@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Research-prototype Rust edge WAF with u128 bitmask inspection and opt-in SATGuardian cloud rule synthesis that returns proposals you approve">
+        <meta name="description" content="Deterministic, auditable security decision layer — the WAF that can prove its work; u128 bitmask inspection with opt-in cloud rule synthesis returned as proposals">
       
       
         <meta name="author" content="SATGuardian Cyber-Defense Systems">
@@ -29,7 +29,7 @@
     
     
       
-        <title>Axiomatic Supervision & Synthesis - SATGuardian Edge WAF Documentation</title>
+        <title>Axiomatic Supervision & Synthesis - SATGuardian — The WAF That Can Prove Its Work</title>
       
     
     
@@ -94,7 +94,7 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="SATGuardian Edge WAF Documentation" class="md-header__button md-logo" aria-label="SATGuardian Edge WAF Documentation" data-md-component="logo">
+    <a href="../.." title="SATGuardian — The WAF That Can Prove Its Work" class="md-header__button md-logo" aria-label="SATGuardian — The WAF That Can Prove Its Work" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -108,7 +108,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            SATGuardian Edge WAF Documentation
+            SATGuardian — The WAF That Can Prove Its Work
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -328,7 +328,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../deployments/envoy-integration/" class="md-tabs__link">
+        <a href="../../integrations/" class="md-tabs__link">
           
   
   
@@ -422,13 +422,13 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="SATGuardian Edge WAF Documentation" class="md-nav__button md-logo" aria-label="SATGuardian Edge WAF Documentation" data-md-component="logo">
+    <a href="../.." title="SATGuardian — The WAF That Can Prove Its Work" class="md-nav__button md-logo" aria-label="SATGuardian — The WAF That Can Prove Its Work" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
-    SATGuardian Edge WAF Documentation
+    SATGuardian — The WAF That Can Prove Its Work
   </label>
   
     <div class="md-nav__source">
@@ -995,6 +995,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../integrations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integration Ecosystem
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../deployments/envoy-integration/" class="md-nav__link">
         
   
@@ -1462,7 +1490,7 @@
 <p><strong>Architectural Overview: In-Path Bitmask Evaluation plus Opt-In Cloud Rule Review</strong><br />
 <strong>Codebase Reference:</strong> <code>src/engine/sat_solver.rs</code>, <code>src/cloud/satguardian_client.rs</code>, <code>src/ledger/sqlite_ledger.rs</code>, <code>src/api/server.rs</code>, <code>satguardian-advisor.py</code></p>
 <blockquote>
-<p><strong>Status: research prototype.</strong> Detection numbers in this document are
+<p><strong>Status: SATGuardian Edge WAF v0.3.0.</strong> Detection numbers in this document are
 in-sample results on a hand-written corpus plus one held-out run of the same
 author's payloads, and comparisons against local Python stand-ins. They are
 not vendor benchmarks and do not establish production readiness. There is no
@@ -1498,7 +1526,7 @@ third-party evaluation. See <a href="../../status/">STATUS.md</a>.</p>
 <a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>│                  ▼                                                         │
 <a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>│    Bitwise Rule Mask Evaluation (src/engine/sat_solver.rs)                 │
 <a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>│    (minterm &amp; required_mask) == expected_bits                              │
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>│    ~20 µs avg in-memory, native Rust; TLS and proxy hops excluded          │
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>│    ~0.46 ms p50 in-memory, native Rust; TLS and proxy hops excluded (2026-11-10)          │
 <a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>│           /                        \                                       │
 <a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>│    [ALLOW: forward to upstream]   [BLOCK 403 + causal log]                 │
 <a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>└────────────────────────────────────────┬───────────────────────────────────┘
@@ -1562,14 +1590,14 @@ third-party evaluation. See <a href="../../status/">STATUS.md</a>.</p>
 <td style="text-align: left;">11/17 recall (64.71%), 0/4 benign blocked; batch consumed by the fix pass, so its 17/17 rerun is in-sample</td>
 </tr>
 <tr>
-<td style="text-align: left;"><strong>Held-out estimate (the only one)</strong></td>
-<td style="text-align: left;"><code>corpus/heldout_v2.json</code>, run once on 2026-11-04: 98 attacks + 57 controls</td>
-<td style="text-align: left;"><strong>56.1% recall</strong> (55/98, 95% CI 46.3–65.5%) and <strong>7.0% false-positive rate</strong> (4/57, 95% CI 2.8–16.7%)</td>
+<td style="text-align: left;"><strong>Held-out batch (current engine)</strong></td>
+<td style="text-align: left;"><code>benchmarks/real_comparative/corpus/heldout_v10.jsonl</code>: 70 attacks + 44 controls</td>
+<td style="text-align: left;">current engine <strong>100% recall / 0.0% FPR</strong> (post-tuning diagnostic); frozen one-shot <strong>38.6% recall / 0.0% FPR</strong>; earlier <code>heldout_v2</code> 56.1%/7.0% kept for provenance</td>
 </tr>
 <tr>
 <td style="text-align: left;">In-memory latency, native Rust</td>
 <td style="text-align: left;"><code>benchmark -r 10000</code></td>
-<td style="text-align: left;">p50 <code>~20 µs</code>, mean <code>~22 µs</code>, p99 near <code>50 µs</code> depending on load; in-memory only, excluding TLS, the proxy hop and the upstream</td>
+<td style="text-align: left;">p50 <code>~0.46 ms</code>, mean <code>~0.94 ms</code>, p99 <code>~6 ms</code> depending on load (re-measured 2026-11-10); in-memory only, excluding TLS, the proxy hop and the upstream</td>
 </tr>
 <tr>
 <td style="text-align: left;">Python reference + stand-ins</td>
@@ -1583,8 +1611,9 @@ this table did both (<code>99.9%</code> cap, <code>&lt; 0.1%</code> floor); thos
 and have been removed.</p>
 <p>There is <strong>no third-party or independent evaluation</strong>. Every corpus, including
 the held-out batch, was written inside this project from public payload
-catalogues and labelled by the same side that owns the engine, so the 56.1% /
-7.0% figures describe those payloads and nothing else.</p>
+catalogues and labelled by the same side that owns the engine, so the 100% /
+0.0% diagnostic and the frozen 38.6% / 0.0% one-shot (and the earlier 56.1% /
+7.0%) describe those payloads and nothing else.</p>
 <hr />
 <h2 id="4-commercial-operational-continuity-model">4. Commercial &amp; Operational Continuity Model</h2>
 <p>The model in one sentence: <strong>free, you get local protection on your own node;

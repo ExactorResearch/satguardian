@@ -174,11 +174,7 @@ async fn handle_envoy_authz_check(
 
         warn!(
             "🛑 [ENVOY-SAT-BLOCK] [{}] IP: {} Category: {} Rule: {} ({:.1} µs)",
-            payload.id,
-            client_ip,
-            proof.category,
-            rule_id,
-            eval_us
+            payload.id, client_ip, proof.category, rule_id, eval_us
         );
 
         if state.stealth_mode {
@@ -187,10 +183,8 @@ async fn handle_envoy_authz_check(
                 "content-type",
                 HeaderValue::from_static("text/plain; charset=utf-8"),
             );
-            res.headers_mut().insert(
-                "x-envoy-waf-blocked",
-                HeaderValue::from_static("true"),
-            );
+            res.headers_mut()
+                .insert("x-envoy-waf-blocked", HeaderValue::from_static("true"));
             return res;
         }
 
@@ -219,7 +213,8 @@ async fn handle_envoy_authz_check(
         headers.insert("x-envoy-waf-blocked", HeaderValue::from_static("true"));
         headers.insert(
             "x-envoy-waf-category",
-            HeaderValue::from_str(proof.category.as_str()).unwrap_or(HeaderValue::from_static("unknown")),
+            HeaderValue::from_str(proof.category.as_str())
+                .unwrap_or(HeaderValue::from_static("unknown")),
         );
         headers.insert(
             "x-envoy-waf-rule",
@@ -239,7 +234,8 @@ async fn handle_envoy_authz_check(
         headers.insert("x-satguardian-blocked", HeaderValue::from_static("true"));
         headers.insert(
             "x-satguardian-category",
-            HeaderValue::from_str(proof.category.as_str()).unwrap_or(HeaderValue::from_static("unknown")),
+            HeaderValue::from_str(proof.category.as_str())
+                .unwrap_or(HeaderValue::from_static("unknown")),
         );
         headers.insert(
             "x-satguardian-rule",
@@ -259,7 +255,8 @@ async fn handle_envoy_authz_check(
         headers.insert("x-exactor-blocked", HeaderValue::from_static("true"));
         headers.insert(
             "x-exactor-category",
-            HeaderValue::from_str(proof.category.as_str()).unwrap_or(HeaderValue::from_static("unknown")),
+            HeaderValue::from_str(proof.category.as_str())
+                .unwrap_or(HeaderValue::from_static("unknown")),
         );
         headers.insert(
             "x-exactor-rule",
@@ -284,10 +281,8 @@ async fn handle_envoy_authz_check(
 
         if state.stealth_mode {
             let mut res = (StatusCode::OK, "").into_response();
-            res.headers_mut().insert(
-                "x-envoy-waf-verified",
-                HeaderValue::from_static("true"),
-            );
+            res.headers_mut()
+                .insert("x-envoy-waf-verified", HeaderValue::from_static("true"));
             return res;
         }
 
@@ -351,4 +346,3 @@ pub async fn serve_uds(
         });
     }
 }
-

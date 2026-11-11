@@ -3,7 +3,6 @@ use crate::engine::DynamicCompiledClause;
 use crate::types::{AttackCategory, ProofChain};
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use sqlx::{Pool, Sqlite};
-use std::str::FromStr;
 use std::sync::Arc;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
 use tracing::info;
@@ -25,8 +24,19 @@ pub struct SqliteLedger {
 }
 
 impl SqliteLedger {
-    pub async fn init(database_path: &str) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
-        let opts = SqliteConnectOptions::from_str(&format!("sqlite://{}?mode=rwc", database_path))?
+    pub async fn init(
+        database_path: &str,
+    ) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
+        let db_path = std::path::Path::new(database_path);
+        if let Some(parent) = db_path.parent() {
+            if !parent.as_os_str().is_empty() {
+                std::fs::create_dir_all(parent)?;
+            }
+        }
+
+        let opts = SqliteConnectOptions::new()
+            .filename(db_path)
+            .create_if_missing(true)
             .journal_mode(sqlx::sqlite::SqliteJournalMode::Wal)
             .synchronous(sqlx::sqlite::SqliteSynchronous::Normal)
             .busy_timeout(std::time::Duration::from_millis(5000));
@@ -34,7 +44,13 @@ impl SqliteLedger {
         let pool = SqlitePoolOptions::new()
             .max_connections(5)
             .connect_with(opts)
-            .await?;
+            .await
+            .map_err(|e| {
+                format!(
+                    "cannot open SQLite ledger at '{}': {} (check that the directory exists and is writable)",
+                    database_path, e
+                )
+            })?;
 
         // Create Tables
         sqlx::query(
@@ -96,6 +112,18 @@ impl SqliteLedger {
         )
         .execute(&pool)
         .await?;
+
+        // Migrate ledgers created before rule_match_details existed:
+        // CREATE TABLE IF NOT EXISTS does not alter existing tables.
+        let cols: Vec<(String,)> =
+            sqlx::query_as("SELECT name FROM pragma_table_info('audit_log')")
+                .fetch_all(&pool)
+                .await?;
+        if !cols.iter().any(|(n,)| n == "rule_match_details") {
+            sqlx::query("ALTER TABLE audit_log ADD COLUMN rule_match_details TEXT")
+                .execute(&pool)
+                .await?;
+        }
 
         // Ledgers written before the approval gate have no `applied` column. Every clause they
         // hold was already enforcing, so the default keeps those nodes protected after the update.
@@ -356,7 +384,9 @@ impl SqliteLedger {
     }
 
     /// Proposals waiting for a decision, newest last.
-    pub async fn load_pending_clauses(&self) -> Result<Vec<(DynamicCompiledClause, String)>, sqlx::Error> {
+    pub async fn load_pending_clauses(
+        &self,
+    ) -> Result<Vec<(DynamicCompiledClause, String)>, sqlx::Error> {
         let rows = sqlx::query_as::<_, (String, String, String, String, String, String)>(
             "SELECT clause_id, description, required_mask, expected_bits, category, \
              CAST(created_at AS TEXT) FROM dynamic_clauses WHERE applied = 0 ORDER BY created_at ASC",
@@ -422,10 +452,11 @@ impl SqliteLedger {
     }
 
     pub async fn count_pending_anomalies(&self) -> usize {
-        let count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM novel_anomalies WHERE status = 'PENDING'")
-            .fetch_one(&self.pool)
-            .await
-            .unwrap_or((0,));
+        let count: (i64,) =
+            sqlx::query_as("SELECT COUNT(*) FROM novel_anomalies WHERE status = 'PENDING'")
+                .fetch_one(&self.pool)
+                .await
+                .unwrap_or((0,));
         count.0 as usize
     }
 }

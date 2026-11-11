@@ -45,7 +45,12 @@ pub struct WafConfig {
     pub satguardian_api_url: String,
 
     /// SATGuardian Cloud API Token or Bearer Token.
-    #[serde(alias = "satguardian_api_key", alias = "api_key", alias = "exactor_api_token", alias = "exactor_api_key")]
+    #[serde(
+        alias = "satguardian_api_key",
+        alias = "api_key",
+        alias = "exactor_api_token",
+        alias = "exactor_api_key"
+    )]
     pub satguardian_api_token: Option<String>,
 
     /// Local SQLite WAL Ledger database file path.
@@ -292,7 +297,9 @@ impl WafConfig {
         let disable_admin = cfg
             .admin_listen_addr
             .as_deref()
-            .map(|v| v.is_empty() || v.eq_ignore_ascii_case("off") || v.eq_ignore_ascii_case("none"))
+            .map(|v| {
+                v.is_empty() || v.eq_ignore_ascii_case("off") || v.eq_ignore_ascii_case("none")
+            })
             .unwrap_or(false);
         if disable_admin {
             cfg.admin_listen_addr = None;
@@ -324,8 +331,8 @@ impl WafConfig {
                 Some(v)
             };
         }
-        if let Ok(v) = std::env::var("SATGUARDIAN_ADMIN_TOKEN")
-            .or_else(|_| std::env::var("WAF_ADMIN_TOKEN"))
+        if let Ok(v) =
+            std::env::var("SATGUARDIAN_ADMIN_TOKEN").or_else(|_| std::env::var("WAF_ADMIN_TOKEN"))
         {
             cfg.admin_token = if v.trim().is_empty() { None } else { Some(v) };
         }
@@ -341,7 +348,9 @@ impl WafConfig {
                 .filter(|s| !s.is_empty())
                 .collect();
         }
-        if let Ok(v) = std::env::var("SATGUARDIAN_API_URL").or_else(|_| std::env::var("EXACTOR_API_URL")) {
+        if let Ok(v) =
+            std::env::var("SATGUARDIAN_API_URL").or_else(|_| std::env::var("EXACTOR_API_URL"))
+        {
             cfg.satguardian_api_url = v;
         }
         if let Ok(v) = std::env::var("SATGUARDIAN_API_KEY")
@@ -384,4 +393,3 @@ impl WafConfig {
         }
     }
 }
-

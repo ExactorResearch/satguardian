@@ -4,7 +4,7 @@ This guide provides step-by-step instructions to run and test the **SATGuardian
 Edge WAF** (`satguardian`) locally using the Rust binary and the Python benchmark
 and advisor suite.
 
-> **Status: research prototype.** The PoC measures in-memory rule evaluation on a
+> **Status: SATGuardian Edge WAF v0.3.0.** The PoC measures in-memory rule evaluation on a
 > small in-sample corpus plus one held-out run of hand-written payloads. It is
 > not a production validation and there is no third-party evaluation. See
 > [STATUS.md](../status.md).
@@ -59,11 +59,11 @@ Detection on the labelled corpus (in-sample regression):
 
 Latency distribution (microseconds, in-memory only):
    Min                  :      11.90 µs
-   Average              :      21.64 µs
-   p50 (median)         :      19.80 µs
-   p90                  :      29.10 µs
-   p99                  :      49.30 µs
-   Max                  :     311.10 µs
+   Average              :     936.73 µs
+   p50 (median)         :     458.10 µs
+   p90                  :    2626.10 µs
+   p99                  :    6006.90 µs
+   Max                  :   11449.70 µs
    Throughput           :   44491.88 req/sec (single thread)
 ```
 
@@ -90,16 +90,19 @@ stand-ins, not the named products.
 
 ### What the numbers do and do not show
 
-- The Rust engine's in-memory evaluation is tens of microseconds per payload.
+- The Rust engine's in-memory evaluation is hundreds of microseconds per payload.
   That excludes network and proxy overhead and says nothing about end-to-end
   throughput.
 - Detection on the pinned corpus is 100%/0% only because the same cases were
   used to drive the fixes; those rows are in-sample regression floors.
   First-run baselines were 80.95% recall / 18.75% FPR (`independent_v1`) and
   64.71% recall / 0% FPR (`heldout_v1`). The only out-of-sample run is
-  `corpus/heldout_v2.json`, executed once on 2026-11-04: **56.1% recall** on 98
-  attacks (95% CI 46.3–65.5%) and a **7.0% false-positive rate** on 57 controls
-  (95% CI 2.8–16.7%). See [corpus/README.md](../corpus.md).
+  `benchmarks/real_comparative/corpus/heldout_v10.jsonl`, executed once on
+  2026-11-08: the frozen one-shot estimate is **38.6% recall** on 70 attacks
+  (95% CI 28.0–50.3%) and **0.0% false-positive rate** on 44 controls (95% CI
+  0.0–8.0%); the current engine measures **100%/0.0%** on the same batch as a
+  post-tuning diagnostic. The earlier `corpus/heldout_v2.json` figure
+  (56.1%/7.0%) remains for provenance. See [corpus/README.md](../corpus.md).
 - The harness does not show that SATGuardian is faster or more accurate than a
   real vendor WAF. That comparison has not been run, and no part of this PoC has
   been evaluated by a third party.

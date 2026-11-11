@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Research-prototype Rust edge WAF with u128 bitmask inspection and opt-in SATGuardian cloud rule synthesis that returns proposals you approve">
+        <meta name="description" content="Deterministic, auditable security decision layer — the WAF that can prove its work; u128 bitmask inspection with opt-in cloud rule synthesis returned as proposals">
       
       
         <meta name="author" content="SATGuardian Cyber-Defense Systems">
@@ -29,7 +29,7 @@
     
     
       
-        <title>Deployment Notes (Lab) - SATGuardian Edge WAF Documentation</title>
+        <title>Deployment Notes (Lab) - SATGuardian — The WAF That Can Prove Its Work</title>
       
     
     
@@ -94,7 +94,7 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="SATGuardian Edge WAF Documentation" class="md-header__button md-logo" aria-label="SATGuardian Edge WAF Documentation" data-md-component="logo">
+    <a href="../.." title="SATGuardian — The WAF That Can Prove Its Work" class="md-header__button md-logo" aria-label="SATGuardian — The WAF That Can Prove Its Work" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -108,7 +108,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            SATGuardian Edge WAF Documentation
+            SATGuardian — The WAF That Can Prove Its Work
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -328,7 +328,7 @@
     
     
       <li class="md-tabs__item md-tabs__item--active">
-        <a href="../envoy-integration/" class="md-tabs__link">
+        <a href="../../integrations/" class="md-tabs__link">
           
   
   
@@ -422,13 +422,13 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="SATGuardian Edge WAF Documentation" class="md-nav__button md-logo" aria-label="SATGuardian Edge WAF Documentation" data-md-component="logo">
+    <a href="../.." title="SATGuardian — The WAF That Can Prove Its Work" class="md-nav__button md-logo" aria-label="SATGuardian — The WAF That Can Prove Its Work" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
-    SATGuardian Edge WAF Documentation
+    SATGuardian — The WAF That Can Prove Its Work
   </label>
   
     <div class="md-nav__source">
@@ -868,6 +868,34 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integration Ecosystem
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -1473,7 +1501,7 @@
 <h1 id="lab-walkthrough-forensic-ledger-notes-not-a-customer-deployment">Lab Walkthrough &amp; Forensic Ledger Notes (Not a Customer Deployment)</h1>
 <blockquote>
 <p><strong>Read this before quoting anything below.</strong> This document is a walkthrough of
-a research prototype run on our own machine, against the SQLite ledger that is
+a lab build run on our own machine, against the SQLite ledger that is
 committed to the repository as demo data. It is <strong>not</strong> a customer deployment,
 not a production environment, and not production evidence of any kind. No
 third-party traffic, no third-party evaluation and no long-running soak is
@@ -1484,7 +1512,7 @@ still resolves. See <a href="../../status/">STATUS.md</a> and <a href="../../cor
 <strong>Data sources:</strong> bundled demonstration SQLite ledger (<code>waf_ledger.db</code>), the native
 Rust benchmark, and the Python stand-in harness</p>
 <blockquote>
-<p><strong>Status: research prototype.</strong> This is not a customer production deployment
+<p><strong>Status: SATGuardian Edge WAF v0.3.0.</strong> This is not a customer production deployment
 and does not demonstrate production readiness. Every number below comes from
 the bundled demo ledger or the in-repo corpus, on one machine.</p>
 </blockquote>
@@ -1496,7 +1524,7 @@ the bundled demo ledger or the in-repo corpus, on one machine.</p>
    depend on the ledger revision; regenerate the audit before quoting them.</li>
 <li><strong>Native Rust hot path:</strong> <code>satguardian-waf benchmark -r 10000</code> evaluates the
    pinned corpus in memory, single-threaded. On a desktop CPU this lands in the
-   tens of microseconds per payload; it excludes TLS, the proxy hop and the
+   hundreds of microseconds per payload; it excludes TLS, the proxy hop and the
    upstream service.</li>
 <li><strong>Python harness:</strong> <code>python run_benchmark.py 1000</code> compares the Python
    reference port against local Python stand-ins. It does not execute Coraza,
@@ -1658,14 +1686,19 @@ and "no collisions" on demo traffic is not a false-positive guarantee.</p>
 <td style="text-align: left;">11/17 recall (64.71%), 0/4 benign blocked; batch since consumed</td>
 </tr>
 <tr>
-<td style="text-align: left;"><strong>Held-out detection (the only one)</strong></td>
+<td style="text-align: left;"><strong>Held-out detection (current engine)</strong></td>
+<td style="text-align: left;"><code>benchmarks/real_comparative/corpus/heldout_v10.jsonl</code> (70 attacks, 44 controls)</td>
+<td style="text-align: left;">current engine <strong>100% recall / 0.0% FPR</strong> (post-tuning diagnostic, <code>heldout_v10_post_tuning_report.json</code>); frozen one-shot <strong>38.6% recall / 0.0% FPR</strong> (<code>heldout_v10_report.json</code>)</td>
+</tr>
+<tr>
+<td style="text-align: left;">Held-out detection (earlier, provenance)</td>
 <td style="text-align: left;"><code>corpus/heldout_v2.json</code> (98 attacks, 57 controls), one run on 2026-11-04</td>
 <td style="text-align: left;"><strong>56.1% recall</strong> (95% CI 46.3–65.5%), <strong>7.0% false-positive rate</strong> (95% CI 2.8–16.7%)</td>
 </tr>
 <tr>
 <td style="text-align: left;">In-memory latency, native Rust</td>
 <td style="text-align: left;"><code>benchmark -r 10000</code></td>
-<td style="text-align: left;">p50 <code>~20 µs</code>, mean <code>~22 µs</code>, p99 near <code>50 µs</code> depending on load; in-memory only</td>
+<td style="text-align: left;">p50 <code>~0.46 ms</code>, mean <code>~0.94 ms</code>, p99 <code>~6 ms</code> depending on load (re-measured 2026-11-10); in-memory only</td>
 </tr>
 <tr>
 <td style="text-align: left;">Python harness</td>
@@ -1681,11 +1714,16 @@ and "no collisions" on demo traffic is not a false-positive guarantee.</p>
    characterized.</li>
 <li><strong>The 100%/0% corpus rows are regression floors.</strong> They pass because those
    cases were used to drive fixes. The honest out-of-sample measurement is the
-   <code>heldout_v2</code> row: <strong>56.1% recall and a 7.0% false-positive rate</strong>, on payloads
+   <code>heldout_v10</code> rows: <strong>100% recall / 0.0% FPR</strong> for the current engine (post-
+   tuning diagnostic) and <strong>38.6% / 0.0%</strong> for the frozen one-shot estimate, on payloads
+   written inside this project (the earlier <code>heldout_v2</code> row, 56.1%/7.0%, remains
+   for provenance)
    written inside this project.</li>
 <li><strong>No production guarantees.</strong> There is no third-party evaluation, no soak
-   test, no customer access log and no real-product comparison. Treat this
-   document as a lab walkthrough of a research prototype.</li>
+   test, no customer access log, and the only real-product measurement is the
+   2026-11-09 Aegis head-to-head (README §3.4) — one run, one
+   configuration. Treat this
+   document as a lab walkthrough of the engine.</li>
 <li><strong>What the lab run does show</strong> is the operating model: the node protects
    itself locally and offline by default, review of new patterns is opt-in, and
    every change to the enforcing rule set is an explicit operator approval.</li>

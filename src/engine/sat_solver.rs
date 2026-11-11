@@ -72,7 +72,10 @@ impl SatguardianSatEngine {
         Self::with_config(IslandsConfig::default(), BusinessRulesConfig::default())
     }
 
-    pub fn with_config(islands_config: IslandsConfig, business_rules_config: BusinessRulesConfig) -> Self {
+    pub fn with_config(
+        islands_config: IslandsConfig,
+        business_rules_config: BusinessRulesConfig,
+    ) -> Self {
         let mut islands = HashMap::new();
         islands.insert(
             "ISLAND-SQLI".to_string(),
@@ -411,8 +414,12 @@ impl SatguardianSatEngine {
                 island_id: "ISLAND-XSS".to_string(),
                 category: AttackCategory::Xss,
                 name: "Pseudo-Protocol & SVG Injection".to_string(),
-                description: "Detects javascript: pseudo-protocol or embedded vector SVG execution contexts.".to_string(),
-                invariant_formula: r"Token(\text{JAVASCRIPT\_URI} \lor (\text{SVG\_TAG} \land \text{ONLOAD}))".to_string(),
+                description:
+                    "Detects javascript: pseudo-protocol or embedded vector SVG execution contexts."
+                        .to_string(),
+                invariant_formula:
+                    r"Token(\text{JAVASCRIPT\_URI} \lor (\text{SVG\_TAG} \land \text{ONLOAD}))"
+                        .to_string(),
                 confidence: 1.0,
             },
         );
@@ -797,8 +804,8 @@ impl SatguardianSatEngine {
                 island_id: "ISLAND-HEADER-INJECTION".to_string(),
                 category: AttackCategory::HostHeaderInjection,
                 name: "Host / Forwarded Header Manipulation Invariant".to_string(),
-                description: "Detects IP literals in the Host header or forwarding headers (X-Forwarded-Host, Forwarded) that disagree with it.".to_string(),
-                invariant_formula: r"Token(\text{HOST}=\text{IP\_LITERAL}) \lor Token(\text{XFH} \neq \text{HOST})".to_string(),
+                description: "Detects userinfo/CR-LF in the Host header, or forwarding headers (X-Forwarded-Host, Forwarded) carrying IP literals, internal names or values that disagree with Host.".to_string(),
+                invariant_formula: r"Token(\text{HOST\_CREDENTIALS\_OR\_CRLF}) \lor Token(\text{XFH} \neq \text{HOST}) \lor Token(\text{XFH\_SUSPICIOUS\_VALUE})".to_string(),
                 confidence: 1.0,
             },
         );
@@ -956,7 +963,7 @@ impl SatguardianSatEngine {
                 island_id: "ISLAND-PROTOCOL-SEMANTICS".to_string(),
                 category: AttackCategory::ProtocolSemantics,
                 name: "HTTP Desync / WebDAV / Cache Deception Invariant".to_string(),
-                description: "Framing-header contradictions (CL+TE, malformed/duplicated lengths), non-REST WebDAV verbs, or account paths served as static assets.".to_string(),
+                description: "Framing-header contradictions (CL+TE, malformed/duplicated lengths), non-REST WebDAV verbs, account paths served as static assets, unkeyed cache-poisoning inputs, param-level absolute-path traversal, or CMS plugin-probe actions.".to_string(),
                 invariant_formula: r"Token(\text{DESYNC} \lor \text{WEBDAV} \lor \text{DECEPTION})".to_string(),
                 confidence: 1.0,
             },
@@ -968,7 +975,7 @@ impl SatguardianSatEngine {
                 island_id: "ISLAND-PROTOCOL-SEMANTICS".to_string(),
                 category: AttackCategory::ProtocolSemantics,
                 name: "Identity Protocol Abuse Invariant".to_string(),
-                description: "OAuth redirect_uri userinfo/protocol-relative/scheme abuse, SAML assertion messages, or IDN homograph/punycode hosts.".to_string(),
+                description: "OAuth redirect_uri userinfo/protocol-relative/scheme abuse or flow anomalies (missing state, redirect_uri on token endpoint), SAML assertion messages, or IDN homograph/punycode hosts.".to_string(),
                 invariant_formula: r"Token(\text{OAUTH\_ABUSE} \lor \text{SAML} \lor \text{HOMOGRAPH})".to_string(),
                 confidence: 1.0,
             },
@@ -980,7 +987,7 @@ impl SatguardianSatEngine {
                 island_id: "ISLAND-BUSINESS-RULES".to_string(),
                 category: AttackCategory::BusinessRuleViolation,
                 name: "Privileged Field / Numeric Anomaly / CSV Formula Invariant".to_string(),
-                description: "Mass-assignment privileged keys with grant values, impossible numeric fields (negative qty/price, discount>100), or spreadsheet formula cells.".to_string(),
+                description: "Mass-assignment privileged keys with grant values, impossible numeric fields (negative qty/price, discount>100), cross-parameter numeric anomalies (benefit >> ceiling), or spreadsheet formula cells.".to_string(),
                 invariant_formula: r"Token(\text{PRIVILEGED\_FIELD} \lor \text{NUMERIC\_ANOMALY} \lor \text{CSV\_FORMULA})".to_string(),
                 confidence: 0.9,
             },
@@ -992,7 +999,7 @@ impl SatguardianSatEngine {
                 island_id: "ISLAND-CONTENT-OBFUSCATION".to_string(),
                 category: AttackCategory::ContentObfuscation,
                 name: "ANSI Escape / Log Forgery / Nested Quantifier Invariant".to_string(),
-                description: "Terminal escape sequences, forged timestamped log lines, or catastrophic-backtracking regex shapes in parameters.".to_string(),
+                description: "Terminal escape sequences, forged timestamped log lines, nested-quantifier regex shapes, invisible/bidi characters, homoglyph keyword smuggling, or mixed-script evasion tokens in parameters.".to_string(),
                 invariant_formula: r"Token(\text{ANSI} \lor \text{LOG\_FORGE} \lor \text{NESTED\_QUANT})".to_string(),
                 confidence: 0.95,
             },
@@ -1018,6 +1025,18 @@ impl SatguardianSatEngine {
                 name: "XSLT / XQuery Expression Invariant".to_string(),
                 description: "Server-side stylesheet or query language expressions (xsl:, doc(), collection(), declare variable) reaching file/network sinks.".to_string(),
                 invariant_formula: r"Token(\text{XSLT} \lor \text{XQUERY})".to_string(),
+                confidence: 0.9,
+            },
+        );
+        rules.insert(
+            "SAT-XSS-04".to_string(),
+            DeductionRule {
+                rule_id: "SAT-XSS-04".to_string(),
+                island_id: "ISLAND-XSS".to_string(),
+                category: AttackCategory::Xss,
+                name: "Diagram DSL Injection Invariant".to_string(),
+                description: "Mermaid %%{init:...}%% directives or diagram click/href javascript: bindings smuggling script execution or markup through the renderer.".to_string(),
+                invariant_formula: r"Token(\text{MERMAID\_INIT} \lor \text{DIAGRAM\_SCRIPT\_BIND})".to_string(),
                 confidence: 0.9,
             },
         );
@@ -1126,9 +1145,14 @@ impl SatguardianSatEngine {
                 matched_rules: Vec::new(),
                 active_islands: vec!["ISLAND-BUSINESS-RULES".to_string()],
                 active_tokens: vec!["PAYLOAD_EXCEEDS_MAX_SAFE_DEPTH".to_string()],
-                deduction_steps: vec!["[EARLY-EXIT] Payload length exceeded the 1 MB safety threshold.".to_string()],
-                decision_reason: r"\text{Length}(req) > 1\text{MB} \implies \mathbf{BLOCK}".to_string(),
-                rule_match_details: "PayloadSize <= MAX_SAFE_DEPTH breached => ACTION_BLOCK [EARLY_EXIT]".to_string(),
+                deduction_steps: vec![
+                    "[EARLY-EXIT] Payload length exceeded the 1 MB safety threshold.".to_string(),
+                ],
+                decision_reason: r"\text{Length}(req) > 1\text{MB} \implies \mathbf{BLOCK}"
+                    .to_string(),
+                rule_match_details:
+                    "PayloadSize <= MAX_SAFE_DEPTH breached => ACTION_BLOCK [EARLY_EXIT]"
+                        .to_string(),
                 execution_time_us: (elapsed.as_secs_f64() * 1_000_000.0 * 100.0).round() / 100.0,
             };
         }
@@ -1137,11 +1161,15 @@ impl SatguardianSatEngine {
         if let Some(sv) = stateful {
             if sv.is_rate_limit {
                 tokens.has_stateful_rate_limit = true;
-                tokens.active_token_names.push("STATEFUL_BURST_RATE_LIMIT_EXCEEDED".to_string());
+                tokens
+                    .active_token_names
+                    .push("STATEFUL_BURST_RATE_LIMIT_EXCEEDED".to_string());
             }
             if sv.is_credential_stuffing {
                 tokens.has_stateful_credential_stuffing = true;
-                tokens.active_token_names.push("STATEFUL_CREDENTIAL_STUFFING_BURST".to_string());
+                tokens
+                    .active_token_names
+                    .push("STATEFUL_CREDENTIAL_STUFFING_BURST".to_string());
             }
         }
 
@@ -1183,7 +1211,7 @@ impl SatguardianSatEngine {
         }
 
         // 2. ISLAND-XSS evaluation
-        if tokens.has_script_tag {
+        if tokens.has_script_tag || tokens.has_xss_extended_signal {
             if let Some(r) = self.rules.get("SAT-XSS-01") {
                 matched_rules.push(r.clone());
                 active_islands.push("ISLAND-XSS".to_string());
@@ -1201,12 +1229,25 @@ impl SatguardianSatEngine {
             if let Some(r) = self.rules.get("SAT-XSS-03") {
                 matched_rules.push(r.clone());
                 active_islands.push("ISLAND-XSS".to_string());
-                deduction_steps.push("[ISLAND-XSS] Detected executable JavaScript pseudo-protocol URI scheme.".to_string());
+                deduction_steps.push(
+                    "[ISLAND-XSS] Detected executable JavaScript pseudo-protocol URI scheme."
+                        .to_string(),
+                );
+            }
+        }
+        if tokens.has_mermaid_injection {
+            if let Some(r) = self.rules.get("SAT-XSS-04") {
+                matched_rules.push(r.clone());
+                active_islands.push("ISLAND-XSS".to_string());
+                deduction_steps.push(
+                    "[ISLAND-XSS] Mermaid init directive or diagram script binding reaches the renderer."
+                        .to_string(),
+                );
             }
         }
 
         // 3. ISLAND-RCE evaluation
-        if tokens.has_shell_chain {
+        if tokens.has_shell_chain || tokens.has_rce_extended_signal {
             if let Some(r) = self.rules.get("SAT-RCE-01") {
                 matched_rules.push(r.clone());
                 active_islands.push("ISLAND-RCE".to_string());
@@ -1220,7 +1261,11 @@ impl SatguardianSatEngine {
                 deduction_steps.push("[ISLAND-RCE] Dynamic command substitution subshell context `$()` or backtick sequence detected.".to_string());
             }
         }
-        if tokens.has_dynamic_eval {
+        if tokens.has_dynamic_eval
+            || tokens.has_php_injection_signal
+            || tokens.has_nodejs_injection_signal
+            || tokens.has_java_runtime_sink
+        {
             if let Some(r) = self.rules.get("SAT-RCE-03") {
                 matched_rules.push(r.clone());
                 active_islands.push("ISLAND-RCE".to_string());
@@ -1229,7 +1274,7 @@ impl SatguardianSatEngine {
         }
 
         // 4. ISLAND-LFI evaluation
-        if tokens.has_path_traversal {
+        if tokens.has_path_traversal || tokens.has_lfi_extended_signal {
             if let Some(r) = self.rules.get("SAT-PATH-01") {
                 matched_rules.push(r.clone());
                 active_islands.push("ISLAND-LFI".to_string());
@@ -1351,7 +1396,10 @@ impl SatguardianSatEngine {
         let islands_cfg = self.islands_config.read().unwrap().clone();
         let full_inspectable = req.full_inspectable_string();
         if islands_cfg.wordpress_shield && tokens.has_wordpress_probe {
-            if full_inspectable.contains("wp-admin") || full_inspectable.contains("wp-login.php") || full_inspectable.contains("xmlrpc.php") {
+            if full_inspectable.contains("wp-admin")
+                || full_inspectable.contains("wp-login.php")
+                || full_inspectable.contains("xmlrpc.php")
+            {
                 if let Some(r) = self.rules.get("SAT-WP-01") {
                     matched_rules.push(r.clone());
                     active_islands.push("ISLAND-WORDPRESS".to_string());
@@ -1368,7 +1416,11 @@ impl SatguardianSatEngine {
 
         // 12. ISLAND-EXPOSURE evaluation
         if islands_cfg.exposure_shield && tokens.has_sensitive_file_probe {
-            if full_inspectable.contains(".env") || full_inspectable.contains(".git") || full_inspectable.contains("id_rsa") || full_inspectable.contains(".aws") {
+            if full_inspectable.contains(".env")
+                || full_inspectable.contains(".git")
+                || full_inspectable.contains("id_rsa")
+                || full_inspectable.contains(".aws")
+            {
                 if let Some(r) = self.rules.get("SAT-EXP-01") {
                     matched_rules.push(r.clone());
                     active_islands.push("ISLAND-EXPOSURE".to_string());
@@ -1418,7 +1470,10 @@ impl SatguardianSatEngine {
                     if blocked.iter().any(|m| m.eq_ignore_ascii_case(&req.method)) {
                         if let Some(r) = self.rules.get("SAT-BIZ-01") {
                             let mut customized = r.clone();
-                            customized.description = format!("Method '{}' is blocked on route '{}' by rule '{}'", req.method, prefix_str, rule.name);
+                            customized.description = format!(
+                                "Method '{}' is blocked on route '{}' by rule '{}'",
+                                req.method, prefix_str, rule.name
+                            );
                             matched_rules.push(customized);
                             active_islands.push("ISLAND-BUSINESS-RULES".to_string());
                             deduction_steps.push(format!("[ISLAND-BUSINESS-RULES] Method '{}' explicitly prohibited by rule '{}'.", req.method, rule.name));
@@ -1429,13 +1484,21 @@ impl SatguardianSatEngine {
 
                 // Check allowed methods (if specified)
                 if let Some(ref allowed) = rule.allowed_methods {
-                    if !allowed.is_empty() && !allowed.iter().any(|m| m.eq_ignore_ascii_case(&req.method)) {
+                    if !allowed.is_empty()
+                        && !allowed.iter().any(|m| m.eq_ignore_ascii_case(&req.method))
+                    {
                         if let Some(r) = self.rules.get("SAT-BIZ-01") {
                             let mut customized = r.clone();
-                            customized.description = format!("Method '{}' is not in allowed list {:?} for route '{}'", req.method, allowed, prefix_str);
+                            customized.description = format!(
+                                "Method '{}' is not in allowed list {:?} for route '{}'",
+                                req.method, allowed, prefix_str
+                            );
                             matched_rules.push(customized);
                             active_islands.push("ISLAND-BUSINESS-RULES".to_string());
-                            deduction_steps.push(format!("[ISLAND-BUSINESS-RULES] Method '{}' not allowed by rule '{}'.", req.method, rule.name));
+                            deduction_steps.push(format!(
+                                "[ISLAND-BUSINESS-RULES] Method '{}' not allowed by rule '{}'.",
+                                req.method, rule.name
+                            ));
                         }
                         break;
                     }
@@ -1443,10 +1506,14 @@ impl SatguardianSatEngine {
 
                 // Check blocked IPs
                 if let Some(ref blocked_ips) = rule.blocked_ips {
-                    if !client_ip_str.is_empty() && blocked_ips.iter().any(|ip| ip == client_ip_str) {
+                    if !client_ip_str.is_empty() && blocked_ips.iter().any(|ip| ip == client_ip_str)
+                    {
                         if let Some(r) = self.rules.get("SAT-BIZ-02") {
                             let mut customized = r.clone();
-                            customized.description = format!("Client IP '{}' is blacklisted by rule '{}'", client_ip_str, rule.name);
+                            customized.description = format!(
+                                "Client IP '{}' is blacklisted by rule '{}'",
+                                client_ip_str, rule.name
+                            );
                             matched_rules.push(customized);
                             active_islands.push("ISLAND-BUSINESS-RULES".to_string());
                             deduction_steps.push(format!("[ISLAND-BUSINESS-RULES] Client IP '{}' matched blacklist in rule '{}'.", client_ip_str, rule.name));
@@ -1457,10 +1524,16 @@ impl SatguardianSatEngine {
 
                 // Check allowed IPs (if specified, acts as whitelist)
                 if let Some(ref allowed_ips) = rule.allowed_ips {
-                    if !client_ip_str.is_empty() && !allowed_ips.is_empty() && !allowed_ips.iter().any(|ip| ip == client_ip_str) {
+                    if !client_ip_str.is_empty()
+                        && !allowed_ips.is_empty()
+                        && !allowed_ips.iter().any(|ip| ip == client_ip_str)
+                    {
                         if let Some(r) = self.rules.get("SAT-BIZ-02") {
                             let mut customized = r.clone();
-                            customized.description = format!("Client IP '{}' not in allowed whitelist {:?} for rule '{}'", client_ip_str, allowed_ips, rule.name);
+                            customized.description = format!(
+                                "Client IP '{}' not in allowed whitelist {:?} for rule '{}'",
+                                client_ip_str, allowed_ips, rule.name
+                            );
                             matched_rules.push(customized);
                             active_islands.push("ISLAND-BUSINESS-RULES".to_string());
                             deduction_steps.push(format!("[ISLAND-BUSINESS-RULES] Client IP '{}' denied by whitelist in rule '{}'.", client_ip_str, rule.name));
@@ -1471,13 +1544,16 @@ impl SatguardianSatEngine {
 
                 // Check required headers
                 if let Some(ref req_headers) = rule.required_headers {
-                    let missing_header = req_headers.iter().find(|h| {
-                        !req.headers.keys().any(|k| k.eq_ignore_ascii_case(h))
-                    });
+                    let missing_header = req_headers
+                        .iter()
+                        .find(|h| !req.headers.keys().any(|k| k.eq_ignore_ascii_case(h)));
                     if let Some(missing) = missing_header {
                         if let Some(r) = self.rules.get("SAT-BIZ-03") {
                             let mut customized = r.clone();
-                            customized.description = format!("Mandatory header '{}' missing for route '{}' under rule '{}'", missing, prefix_str, rule.name);
+                            customized.description = format!(
+                                "Mandatory header '{}' missing for route '{}' under rule '{}'",
+                                missing, prefix_str, rule.name
+                            );
                             matched_rules.push(customized);
                             active_islands.push("ISLAND-BUSINESS-RULES".to_string());
                             deduction_steps.push(format!("[ISLAND-BUSINESS-RULES] Missing required header '{}' specified by rule '{}'.", missing, rule.name));
@@ -1503,7 +1579,7 @@ impl SatguardianSatEngine {
         }
 
         // 14a-bis. ISLAND-SQLI extended coverage (error-based / blind functions)
-        if tokens.has_sqli_danger_func {
+        if tokens.has_sqli_danger_func || tokens.has_sqli_extended_signal {
             if let Some(r) = self.rules.get("SAT-SQLI-05") {
                 matched_rules.push(r.clone());
                 active_islands.push("ISLAND-SQLI".to_string());
@@ -1591,7 +1667,11 @@ impl SatguardianSatEngine {
         }
 
         // 14j. ISLAND-SSRF extended coverage (userinfo trick / scheme-relative)
-        if tokens.has_ssrf_userinfo || tokens.has_ssrf_scheme_rel {
+        if tokens.has_ssrf_userinfo
+            || tokens.has_ssrf_scheme_rel
+            || tokens.has_webhook_ssrf_signal
+            || tokens.has_rfi_scheme_signal
+        {
             if let Some(r) = self.rules.get("SAT-SSRF-02") {
                 matched_rules.push(r.clone());
                 active_islands.push("ISLAND-SSRF".to_string());
@@ -1609,7 +1689,7 @@ impl SatguardianSatEngine {
         }
 
         // 14l. ISLAND-DESERIALIZATION evaluation
-        if tokens.has_deserialization {
+        if tokens.has_deserialization || tokens.has_java_deserialization_signal {
             if let Some(r) = self.rules.get("SAT-DESER-01") {
                 matched_rules.push(r.clone());
                 active_islands.push("ISLAND-DESERIALIZATION".to_string());
@@ -1627,15 +1707,38 @@ impl SatguardianSatEngine {
         }
 
         // 14n. ISLAND-PROTOCOL-SEMANTICS / CONTENT-OBFUSCATION (v6 layer)
-        if tokens.has_smuggling_desync || tokens.has_webdav_method || tokens.has_cache_deception {
+        if tokens.has_smuggling_desync
+            || tokens.has_webdav_method
+            || tokens.has_cache_deception
+            || tokens.has_cache_poisoning_signal
+            || tokens.has_path_traversal_signal
+            || tokens.has_cms_wordpress_probe_signal
+            || tokens.has_parameter_pollution_signal
+            || tokens.has_connect_tunnel_signal
+            || tokens.has_http2_pseudo_header
+            || tokens.has_protocol_injection_signal
+            || tokens.has_content_type_confusion_signal
+            || tokens.has_websocket_abuse_signal
+            || tokens.has_spring4shell_signal
+            || tokens.has_open_redirect_signal
+            || tokens.has_management_endpoint_signal
+            || tokens.has_protocol_enforcement_signal
+            || tokens.has_session_token_url_signal
+            || tokens.has_client_ip_spoof
+            || tokens.has_query_dsl_injection
+            || tokens.has_admin_orchestrator_path
+        {
             if let Some(r) = self.rules.get("SAT-SEM-01") {
                 matched_rules.push(r.clone());
                 active_islands.push("ISLAND-PROTOCOL-SEMANTICS".to_string());
                 deduction_steps.push("[ISLAND-PROTOCOL-SEMANTICS] Framing desync, WebDAV verb on REST endpoint, or cache-deception asset path detected.".to_string());
             }
         }
-        if tokens.has_oauth_redirect_abuse || tokens.has_saml_protocol || tokens.has_punycode_host
+        if tokens.has_oauth_redirect_abuse
+            || tokens.has_saml_protocol
+            || tokens.has_punycode_host
             || tokens.has_soap_action_abuse
+            || tokens.has_oauth_oidc_signal
         {
             if let Some(r) = self.rules.get("SAT-SEM-02") {
                 matched_rules.push(r.clone());
@@ -1643,15 +1746,25 @@ impl SatguardianSatEngine {
                 deduction_steps.push("[ISLAND-PROTOCOL-SEMANTICS] OAuth redirect_uri abuse, SAML message, or IDN homograph host detected.".to_string());
             }
         }
-        if tokens.has_privileged_field || tokens.has_numeric_anomaly || tokens.has_csv_formula {
+        if tokens.has_privileged_field
+            || tokens.has_numeric_anomaly
+            || tokens.has_csv_formula
+            || tokens.has_business_logic_signal
+            || tokens.has_type_juggling_signal
+            || tokens.has_integer_overflow_signal
+        {
             if let Some(r) = self.rules.get("SAT-SEM-03") {
                 matched_rules.push(r.clone());
                 active_islands.push("ISLAND-BUSINESS-RULES".to_string());
                 deduction_steps.push("[ISLAND-BUSINESS-RULES] Privileged-field assignment, impossible numeric value, or spreadsheet formula cell detected.".to_string());
             }
         }
-        if tokens.has_ansi_escape || tokens.has_log_forgery || tokens.has_nested_quantifier
-            || tokens.has_hidden_chars || tokens.has_keyword_smuggling
+        if tokens.has_ansi_escape
+            || tokens.has_log_forgery
+            || tokens.has_nested_quantifier
+            || tokens.has_hidden_chars
+            || tokens.has_keyword_smuggling
+            || tokens.has_unicode_normalization_signal
         {
             if let Some(r) = self.rules.get("SAT-SEM-04") {
                 matched_rules.push(r.clone());
@@ -1659,7 +1772,11 @@ impl SatguardianSatEngine {
                 deduction_steps.push("[ISLAND-CONTENT-OBFUSCATION] ANSI escape sequence, forged log line, or nested-quantifier ReDoS shape detected.".to_string());
             }
         }
-        if tokens.has_smtp_command || tokens.has_jsonrpc_exec || tokens.has_absolute_upload_path {
+        if tokens.has_smtp_command
+            || tokens.has_jsonrpc_exec
+            || tokens.has_absolute_upload_path
+            || tokens.has_protocol_body_injection
+        {
             if let Some(r) = self.rules.get("SAT-SEM-05") {
                 matched_rules.push(r.clone());
                 active_islands.push("ISLAND-CONTENT-OBFUSCATION".to_string());
@@ -1687,11 +1804,17 @@ impl SatguardianSatEngine {
                         category: clause.category,
                         name: "SATGuardian Cloud Minimized Invariant".to_string(),
                         description: clause.description.clone(),
-                        invariant_formula: format!("Mask({:#x}) == {:#x}", clause.required_mask, clause.expected_bits),
+                        invariant_formula: format!(
+                            "Mask({:#x}) == {:#x}",
+                            clause.required_mask, clause.expected_bits
+                        ),
                         confidence: 1.0,
                     });
                     active_islands.push("ISLAND-DYNAMIC-SIMPLIFIED".to_string());
-                    deduction_steps.push(format!("[HOT-COMPILED] Triggered dynamic exact Boolean clause {}", clause.clause_id));
+                    deduction_steps.push(format!(
+                        "[HOT-COMPILED] Triggered dynamic exact Boolean clause {}",
+                        clause.clause_id
+                    ));
                 }
             }
         }
@@ -1762,7 +1885,11 @@ impl SatguardianSatEngine {
         };
 
         let rule_match_details = if is_violation {
-            let rule_ids = matched_rules.iter().map(|r| r.rule_id.as_str()).collect::<Vec<_>>().join(" | ");
+            let rule_ids = matched_rules
+                .iter()
+                .map(|r| r.rule_id.as_str())
+                .collect::<Vec<_>>()
+                .join(" | ");
             let tok_ids = active_tokens.join(" AND ");
             format!("({tok_ids}) violates [{rule_ids}] -> ACTION_BLOCK [{category}]")
         } else {

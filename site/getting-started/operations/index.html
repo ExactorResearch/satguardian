@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Research-prototype Rust edge WAF with u128 bitmask inspection and opt-in SATGuardian cloud rule synthesis that returns proposals you approve">
+        <meta name="description" content="Deterministic, auditable security decision layer — the WAF that can prove its work; u128 bitmask inspection with opt-in cloud rule synthesis returned as proposals">
       
       
         <meta name="author" content="SATGuardian Cyber-Defense Systems">
@@ -29,7 +29,7 @@
     
     
       
-        <title>Operations & Tooling Guide - SATGuardian Edge WAF Documentation</title>
+        <title>Operations & Tooling Guide - SATGuardian — The WAF That Can Prove Its Work</title>
       
     
     
@@ -94,7 +94,7 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="SATGuardian Edge WAF Documentation" class="md-header__button md-logo" aria-label="SATGuardian Edge WAF Documentation" data-md-component="logo">
+    <a href="../.." title="SATGuardian — The WAF That Can Prove Its Work" class="md-header__button md-logo" aria-label="SATGuardian — The WAF That Can Prove Its Work" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -108,7 +108,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            SATGuardian Edge WAF Documentation
+            SATGuardian — The WAF That Can Prove Its Work
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -328,7 +328,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../deployments/envoy-integration/" class="md-tabs__link">
+        <a href="../../integrations/" class="md-tabs__link">
           
   
   
@@ -422,13 +422,13 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="SATGuardian Edge WAF Documentation" class="md-nav__button md-logo" aria-label="SATGuardian Edge WAF Documentation" data-md-component="logo">
+    <a href="../.." title="SATGuardian — The WAF That Can Prove Its Work" class="md-nav__button md-logo" aria-label="SATGuardian — The WAF That Can Prove Its Work" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
-    SATGuardian Edge WAF Documentation
+    SATGuardian — The WAF That Can Prove Its Work
   </label>
   
     <div class="md-nav__source">
@@ -1379,6 +1379,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../integrations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integration Ecosystem
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../deployments/envoy-integration/" class="md-nav__link">
         
   
@@ -2230,12 +2258,15 @@
 <p>This guide documents <strong>how to configure</strong> and <strong>operate</strong> the <strong>SATGuardian Edge WAF</strong> client, and how to use the CLI subcommands and Python tools shipped in this repository.</p>
 <p><strong>What the tiers mean:</strong> free, you get local protection on your own node. Paying, you get continuous review of new patterns, update proposals and explanations — without ever giving up control of your WAF. Inspection and enforcement always run locally; the cloud is only consulted when you opt in, and what it returns is a proposal you approve or discard.</p>
 <blockquote>
-<p><strong>Status: research prototype.</strong> Detection has been measured on small, hand-written,
+<p><strong>Status: SATGuardian Edge WAF v0.3.0.</strong> Detection has been measured on small, hand-written,
 same-author corpora only. The in-sample rows (100% recall / 0% false positives) are
 regression floors from <code>corpus/independent_v1.json</code>, not generalization estimates. The
-one held-out measurement that exists (<code>corpus/heldout_v2.json</code>, run once on 2026-11-04,
-before any fix) is <strong>56.1% recall on 98 attacks (95% CI 46.3–65.5%)</strong> and <strong>7.0% false
-positives on 57 controls (95% CI 2.8–16.7%)</strong>. No third-party evaluation exists. The
+current held-out estimate (<code>benchmarks/real_comparative/corpus/heldout_v10.jsonl</code>,
+run once on 2026-11-08, before any fix) froze the one-shot estimate at <strong>38.6%
+recall on 70 attacks (95% CI 28.0–50.3%)</strong> and <strong>0.0% false positives on 44
+controls (95% CI 0.0–8.0%)</strong>; the current engine measures 100%/0.0% on the same
+batch as a post-tuning diagnostic, and the earlier <code>heldout_v2</code> figure
+(56.1%/7.0%) remains for provenance. No third-party evaluation exists. The
 benchmark harness compares local Python stand-ins, not vendor products. See
 <a href="../../status/">STATUS.md</a> and <a href="../../corpus/">corpus/README.md</a>.</p>
 </blockquote>
@@ -2519,7 +2550,7 @@ review timer only if <code>auto_sync_enabled = true</code>.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>./satguardian-waf<span class="w"> </span>benchmark<span class="w"> </span>--requests<span class="w"> </span><span class="m">10000</span>
 </code></pre></div>
 Reference point: the pinned in-memory run over <code>corpus/independent_v1.json</code> at 10,000
-requests measured about <code>~20 µs</code> p50 and <code>~22–25 µs</code> mean, with p99 load dependent.
+requests measured about <code>~0.46 ms</code> p50 and <code>~0.9–1.0 ms</code> mean, with p99 <code>~6 ms</code> (re-measured 2026-11-10).
 In-memory figures only — quote them as such.</p>
 <h4 id="c-standalone-inspection-mode-cli-payload-test">C. Standalone Inspection Mode (CLI Payload Test)</h4>
 <p>Inspects a single request and prints its 128-bit <code>FeatureVector</code> (<code>u128</code>) and the decision

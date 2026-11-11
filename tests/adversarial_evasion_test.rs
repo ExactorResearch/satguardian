@@ -10,7 +10,10 @@ fn test_unicode_homoglyph_path_traversal() {
     let payload = HttpRequestPayload::new("GET", "/images/..／..／etc／passwd", "", "");
     let proof = engine.evaluate_payload(&payload);
 
-    assert!(proof.is_violation, "Homoglyph path traversal must be detected as violation");
+    assert!(
+        proof.is_violation,
+        "Homoglyph path traversal must be detected as violation"
+    );
     assert_eq!(proof.action, AttackDecision::Block);
     assert_eq!(proof.category, AttackCategory::PathTraversal);
 }
@@ -28,7 +31,10 @@ fn test_unicode_escape_sqli() {
     );
     let proof = engine.evaluate_payload(&payload);
 
-    assert!(proof.is_violation, "Unicode escaped SQLi quote must be unmasked and blocked");
+    assert!(
+        proof.is_violation,
+        "Unicode escaped SQLi quote must be unmasked and blocked"
+    );
     assert_eq!(proof.action, AttackDecision::Block);
     assert_eq!(proof.category, AttackCategory::SqlInjection);
 }
@@ -38,10 +44,18 @@ fn test_double_url_encoded_traversal() {
     let engine = SatguardianSatEngine::new();
 
     // %252e%252e%252f -> %2e%2e%2f -> ../
-    let payload = HttpRequestPayload::new("GET", "/download?file=%252e%252e%252f%252e%252e%252fetc%252fpasswd", "", "");
+    let payload = HttpRequestPayload::new(
+        "GET",
+        "/download?file=%252e%252e%252f%252e%252e%252fetc%252fpasswd",
+        "",
+        "",
+    );
     let proof = engine.evaluate_payload(&payload);
 
-    assert!(proof.is_violation, "Double URL encoded path traversal must be unmasked");
+    assert!(
+        proof.is_violation,
+        "Double URL encoded path traversal must be unmasked"
+    );
     assert_eq!(proof.action, AttackDecision::Block);
     assert_eq!(proof.category, AttackCategory::PathTraversal);
 }
@@ -59,9 +73,15 @@ fn test_polyglot_payload_blocked() {
     );
     let proof = engine.evaluate_payload(&payload);
 
-    assert!(proof.is_violation, "Adversarial polyglot payload must be blocked");
+    assert!(
+        proof.is_violation,
+        "Adversarial polyglot payload must be blocked"
+    );
     assert_eq!(proof.action, AttackDecision::Block);
-    assert!(!proof.matched_rules.is_empty(), "Must match one or more formal invariant rules");
+    assert!(
+        !proof.matched_rules.is_empty(),
+        "Must match one or more formal invariant rules"
+    );
 }
 
 #[test]
@@ -117,21 +137,31 @@ fn test_ssrf_docker_gateway_and_decimal_and_ipv6() {
     let engine = SatguardianSatEngine::new();
 
     // 1. Docker host gateway (172.17.0.1 - RFC1918 Class B)
-    let p_docker = HttpRequestPayload::new("GET", "/fetch?url=http://172.17.0.1:8080/internal", "", "");
+    let p_docker =
+        HttpRequestPayload::new("GET", "/fetch?url=http://172.17.0.1:8080/internal", "", "");
     let proof_docker = engine.evaluate_payload(&p_docker);
-    assert!(proof_docker.is_violation, "SSRF targeting Docker gateway 172.17.0.1 must be blocked");
+    assert!(
+        proof_docker.is_violation,
+        "SSRF targeting Docker gateway 172.17.0.1 must be blocked"
+    );
     assert_eq!(proof_docker.category, AttackCategory::Ssrf);
 
     // 2. Decimal IP notation (2130706433 == 127.0.0.1)
     let p_dec = HttpRequestPayload::new("GET", "/proxy?target=http://2130706433/", "", "");
     let proof_dec = engine.evaluate_payload(&p_dec);
-    assert!(proof_dec.is_violation, "SSRF with decimal IP 2130706433 must be blocked");
+    assert!(
+        proof_dec.is_violation,
+        "SSRF with decimal IP 2130706433 must be blocked"
+    );
     assert_eq!(proof_dec.category, AttackCategory::Ssrf);
 
     // 3. IPv6 loopback [::1]
     let p_ipv6 = HttpRequestPayload::new("GET", "/proxy?target=http://[::1]/metrics", "", "");
     let proof_ipv6 = engine.evaluate_payload(&p_ipv6);
-    assert!(proof_ipv6.is_violation, "SSRF with IPv6 loopback must be blocked");
+    assert!(
+        proof_ipv6.is_violation,
+        "SSRF with IPv6 loopback must be blocked"
+    );
     assert_eq!(proof_ipv6.category, AttackCategory::Ssrf);
 }
 
@@ -143,7 +173,10 @@ fn test_rce_newline_separator() {
     let payload = HttpRequestPayload::new("POST", "/api/ping", "", "target=127.0.0.1%0awhoami");
     let proof = engine.evaluate_payload(&payload);
 
-    assert!(proof.is_violation, "RCE using newline %0A delimiter must be blocked");
+    assert!(
+        proof.is_violation,
+        "RCE using newline %0A delimiter must be blocked"
+    );
     assert_eq!(proof.action, AttackDecision::Block);
     assert_eq!(proof.category, AttackCategory::CommandInjection);
 }
@@ -153,15 +186,26 @@ fn test_sqli_parenthesis_union_and_tautology() {
     let engine = SatguardianSatEngine::new();
 
     // 1. UNION without whitespace using parentheses: UNION(SELECT...)
-    let p_union = HttpRequestPayload::new("GET", "/items", "cat=1' UNION(SELECT 1,username,password FROM users)--", "");
+    let p_union = HttpRequestPayload::new(
+        "GET",
+        "/items",
+        "cat=1' UNION(SELECT 1,username,password FROM users)--",
+        "",
+    );
     let proof_union = engine.evaluate_payload(&p_union);
-    assert!(proof_union.is_violation, "SQLi UNION(SELECT...) without whitespace must be blocked");
+    assert!(
+        proof_union.is_violation,
+        "SQLi UNION(SELECT...) without whitespace must be blocked"
+    );
     assert_eq!(proof_union.category, AttackCategory::SqlInjection);
 
     // 2. Tautology without whitespace: OR(1=1)
     let p_taut = HttpRequestPayload::new("GET", "/items", "id=1' OR(1=1)--", "");
     let proof_taut = engine.evaluate_payload(&p_taut);
-    assert!(proof_taut.is_violation, "SQLi OR(1=1) without whitespace must be blocked");
+    assert!(
+        proof_taut.is_violation,
+        "SQLi OR(1=1) without whitespace must be blocked"
+    );
     assert_eq!(proof_taut.category, AttackCategory::SqlInjection);
 }
 
@@ -177,7 +221,10 @@ fn test_uppercase_unicode_and_hex_dot_decode() {
         "",
     );
     let proof = engine.evaluate_payload(&payload);
-    assert!(proof.is_violation, "Uppercase Unicode escaped dot-dot-slash must be unmasked");
+    assert!(
+        proof.is_violation,
+        "Uppercase Unicode escaped dot-dot-slash must be unmasked"
+    );
     assert_eq!(proof.category, AttackCategory::PathTraversal);
 }
 
@@ -188,7 +235,10 @@ fn test_prototype_pollution_in_query_params() {
     // Prototype pollution in query parameter instead of root JSON body
     let payload = HttpRequestPayload::new("GET", "/api/users", "__proto__[role]=admin", "");
     let proof = engine.evaluate_payload(&payload);
-    assert!(proof.is_violation, "Prototype pollution in query parameter must be blocked");
+    assert!(
+        proof.is_violation,
+        "Prototype pollution in query parameter must be blocked"
+    );
     assert_eq!(proof.category, AttackCategory::PrototypePollution);
 }
 
@@ -205,7 +255,15 @@ fn test_legitimate_index_php_allowed_with_wordpress_shield() {
     let engine = SatguardianSatEngine::with_config(islands, BusinessRulesConfig::default());
 
     // Legitimate framework request to index.php with controller parameters
-    let payload = HttpRequestPayload::new("GET", "/index.php", "controller=catalog&action=detail&id=42", "");
+    let payload = HttpRequestPayload::new(
+        "GET",
+        "/index.php",
+        "controller=catalog&action=detail&id=42",
+        "",
+    );
     let proof = engine.evaluate_payload(&payload);
-    assert!(!proof.is_violation, "Legitimate PHP index.php route must NOT be blocked when wordpress_shield is false");
+    assert!(
+        !proof.is_violation,
+        "Legitimate PHP index.php route must NOT be blocked when wordpress_shield is false"
+    );
 }

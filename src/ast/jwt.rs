@@ -23,12 +23,19 @@ impl JwtTamperingAnalyzer {
         for (k, v) in headers {
             let kl = k.to_ascii_lowercase();
             if kl == "authorization" {
-                if let Some(bearer) = v.strip_prefix("Bearer ").or_else(|| v.strip_prefix("bearer ")) {
+                if let Some(bearer) = v
+                    .strip_prefix("Bearer ")
+                    .or_else(|| v.strip_prefix("bearer "))
+                {
                     potential_tokens.push(bearer.trim());
                 } else {
                     potential_tokens.push(v.trim());
                 }
-            } else if kl == "cookie" || kl.contains("token") || kl.contains("jwt") || kl.contains("auth") {
+            } else if kl == "cookie"
+                || kl.contains("token")
+                || kl.contains("jwt")
+                || kl.contains("auth")
+            {
                 // Check if cookie or header contains eyJ...
                 for part in v.split([';', ' ', ',']) {
                     let p = part.trim();
@@ -83,7 +90,9 @@ impl JwtTamperingAnalyzer {
         // hides a second JWT in the extra slot.
         if parts_len == 4 || parts_len > 5 {
             tokens.has_header_injection = true;
-            tokens.active_tokens.push("JWT_ANOMALOUS_SEGMENT_COUNT".to_string());
+            tokens
+                .active_tokens
+                .push("JWT_ANOMALOUS_SEGMENT_COUNT".to_string());
         }
 
         let header_b64 = parts[0];
@@ -102,7 +111,9 @@ impl JwtTamperingAnalyzer {
                         let trimmed_alg = alg.trim();
                         if trimmed_alg.is_empty() || trimmed_alg.eq_ignore_ascii_case("none") {
                             tokens.has_alg_none = true;
-                            tokens.active_tokens.push("JWT_ALG_NONE_VULNERABILITY".to_string());
+                            tokens
+                                .active_tokens
+                                .push("JWT_ALG_NONE_VULNERABILITY".to_string());
                         }
                         // alg:"dir" = JWE direct key agreement: payload integrity
                         // collapses to the CEK itself — a known key-management
@@ -112,13 +123,17 @@ impl JwtTamperingAnalyzer {
                             && (parts.len() == 5 || header_json.get("enc").is_some())
                         {
                             tokens.has_header_injection = true;
-                            tokens.active_tokens.push("JWT_ALG_DIR_KEY_CONFUSION".to_string());
+                            tokens
+                                .active_tokens
+                                .push("JWT_ALG_DIR_KEY_CONFUSION".to_string());
                         }
                     }
                     None if alg_val.is_none() => {
                         // Missing alg attribute
                         tokens.has_alg_none = true;
-                        tokens.active_tokens.push("JWT_MISSING_ALG_FIELD".to_string());
+                        tokens
+                            .active_tokens
+                            .push("JWT_MISSING_ALG_FIELD".to_string());
                     }
                     _ => {}
                 }
@@ -126,25 +141,49 @@ impl JwtTamperingAnalyzer {
                 // 2. Check Missing Signature
                 if sig_part.trim().is_empty() {
                     tokens.has_missing_signature = true;
-                    tokens.active_tokens.push("JWT_MISSING_SIGNATURE_PART".to_string());
+                    tokens
+                        .active_tokens
+                        .push("JWT_MISSING_SIGNATURE_PART".to_string());
                 }
 
                 // 3. Check Header Parameter Injection: jku, jwk, x5u, kid
                 if header_json.get("jwk").is_some() {
                     tokens.has_header_injection = true;
-                    tokens.active_tokens.push("JWT_EMBEDDED_JWK_KEY_SPOOFING".to_string());
+                    tokens
+                        .active_tokens
+                        .push("JWT_EMBEDDED_JWK_KEY_SPOOFING".to_string());
                 }
                 // RFC 7515 crit extension: verifiers may skip checks for listed
                 // header params; attacker-controlled crit is a known downgrade vector.
                 if header_json.get("crit").is_some() {
                     tokens.has_header_injection = true;
-                    tokens.active_tokens.push("JWT_CRIT_HEADER_EXTENSION".to_string());
+                    tokens
+                        .active_tokens
+                        .push("JWT_CRIT_HEADER_EXTENSION".to_string());
                 }
                 if let Some(jku) = header_json.get("jku").and_then(|j| j.as_str()) {
                     // Remote JWK URL probe / SSRF. Cleartext http and internal
                     // targets are always hostile; arbitrary https domains are
                     // allowed pending an operator-managed key-server allowlist.
+                    // RFC 2606 reserved-TLD hosts (.example/.test/.invalid)
+                    // can never be a legitimate key server.
                     let jl = jku.to_ascii_lowercase();
+                    let jku_host = jl
+                        .split("://")
+                        .nth(1)
+                        .unwrap_or("")
+                        .split(['/', '?', '#'])
+                        .next()
+                        .unwrap_or("")
+                        .split(':')
+                        .next()
+                        .unwrap_or("");
+                    let jku_reserved_tld = jku_host == "example"
+                        || jku_host == "test"
+                        || jku_host == "invalid"
+                        || jku_host.ends_with(".example")
+                        || jku_host.ends_with(".test")
+                        || jku_host.ends_with(".invalid");
                     if jl.contains("169.254")
                         || jl.contains("localhost")
                         || jl.contains("127.")
@@ -159,13 +198,32 @@ impl JwtTamperingAnalyzer {
                         || jl.starts_with("expect:")
                         || jl.starts_with("glob:")
                         || jl.starts_with("phar:")
+                        || jku_reserved_tld
                     {
                         tokens.has_header_injection = true;
-                        tokens.active_tokens.push("JWT_JKU_REMOTE_KEY_SSRF".to_string());
+                        tokens
+                            .active_tokens
+                            .push("JWT_JKU_REMOTE_KEY_SSRF".to_string());
                     }
                 }
                 if let Some(x5u) = header_json.get("x5u").and_then(|j| j.as_str()) {
                     let xl = x5u.to_ascii_lowercase();
+                    let x5u_host = xl
+                        .split("://")
+                        .nth(1)
+                        .unwrap_or("")
+                        .split(['/', '?', '#'])
+                        .next()
+                        .unwrap_or("")
+                        .split(':')
+                        .next()
+                        .unwrap_or("");
+                    let x5u_reserved_tld = x5u_host == "example"
+                        || x5u_host == "test"
+                        || x5u_host == "invalid"
+                        || x5u_host.ends_with(".example")
+                        || x5u_host.ends_with(".test")
+                        || x5u_host.ends_with(".invalid");
                     if xl.contains("169.254")
                         || xl.contains("localhost")
                         || xl.contains("127.")
@@ -173,21 +231,36 @@ impl JwtTamperingAnalyzer {
                         || xl.starts_with("file:")
                         || xl.starts_with("data:")
                         || xl.starts_with("php:")
+                        || x5u_reserved_tld
                     {
                         tokens.has_header_injection = true;
-                        tokens.active_tokens.push("JWT_X5U_REMOTE_KEY_SSRF".to_string());
+                        tokens
+                            .active_tokens
+                            .push("JWT_X5U_REMOTE_KEY_SSRF".to_string());
                     }
                 }
                 if let Some(kid) = header_json.get("kid").and_then(|k| k.as_str()) {
                     // Check for Directory Traversal or SQLi in kid (normalized)
-                    let (kid_norm, _) = AstLexer::normalize_string(kid);
+                    let (kid_norm, ..) = AstLexer::normalize_string(kid);
                     let kid_lower = kid_norm.to_ascii_lowercase();
-                    if kid_lower.contains("../") || kid_lower.contains("..\\") || kid_lower.contains("/dev/null") {
+                    if kid_lower.contains("../")
+                        || kid_lower.contains("..\\")
+                        || kid_lower.contains("/dev/null")
+                    {
                         tokens.has_header_injection = true;
-                        tokens.active_tokens.push("JWT_KID_PATH_TRAVERSAL_INJECTION".to_string());
-                    } else if kid_lower.contains("union") || kid_norm.contains('\'') || kid_norm.contains('"') || kid_norm.contains('|') || kid_lower.contains("waitfor") {
+                        tokens
+                            .active_tokens
+                            .push("JWT_KID_PATH_TRAVERSAL_INJECTION".to_string());
+                    } else if kid_lower.contains("union")
+                        || kid_norm.contains('\'')
+                        || kid_norm.contains('"')
+                        || kid_norm.contains('|')
+                        || kid_lower.contains("waitfor")
+                    {
                         tokens.has_header_injection = true;
-                        tokens.active_tokens.push("JWT_KID_SQLI_COMMAND_INJECTION".to_string());
+                        tokens
+                            .active_tokens
+                            .push("JWT_KID_SQLI_COMMAND_INJECTION".to_string());
                     }
                 }
 
@@ -195,7 +268,9 @@ impl JwtTamperingAnalyzer {
                 // content past signature verification expectations.
                 if header_json.get("b64").and_then(|b| b.as_bool()) == Some(false) {
                     tokens.has_header_injection = true;
-                    tokens.active_tokens.push("JWT_B64_FALSE_UNENCODED_PAYLOAD".to_string());
+                    tokens
+                        .active_tokens
+                        .push("JWT_B64_FALSE_UNENCODED_PAYLOAD".to_string());
                 }
 
                 // Nested JWT: the payload segment decodes to a JSON string that
@@ -207,11 +282,15 @@ impl JwtTamperingAnalyzer {
                             let seg = &pb[i..pb.len().min(i + 4096)];
                             if let Some(d1) = seg.iter().position(|&c| c == b'.') {
                                 if d1 > 10 && d1 < 2000 {
-                                    if let Some(d2rel) = seg[d1 + 1..].iter().position(|&c| c == b'.') {
+                                    if let Some(d2rel) =
+                                        seg[d1 + 1..].iter().position(|&c| c == b'.')
+                                    {
                                         let d2 = d1 + 1 + d2rel;
                                         if d2 > d1 + 10 && d2 < 3000 {
                                             tokens.has_header_injection = true;
-                                            tokens.active_tokens.push("JWT_NESTED_TOKEN".to_string());
+                                            tokens
+                                                .active_tokens
+                                                .push("JWT_NESTED_TOKEN".to_string());
                                             break 'outer;
                                         }
                                     }
@@ -250,8 +329,16 @@ impl JwtTamperingAnalyzer {
         while i < bytes.len() {
             let b0 = decode_char(bytes[i])?;
             let b1 = decode_char(bytes[i + 1])?;
-            let b2 = if bytes[i + 2] == b'=' { None } else { Some(decode_char(bytes[i + 2])?) };
-            let b3 = if bytes[i + 3] == b'=' { None } else { Some(decode_char(bytes[i + 3])?) };
+            let b2 = if bytes[i + 2] == b'=' {
+                None
+            } else {
+                Some(decode_char(bytes[i + 2])?)
+            };
+            let b3 = if bytes[i + 3] == b'=' {
+                None
+            } else {
+                Some(decode_char(bytes[i + 3])?)
+            };
 
             out.push((b0 << 2) | (b1 >> 4));
             if let Some(c2) = b2 {

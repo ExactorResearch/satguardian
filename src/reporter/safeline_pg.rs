@@ -32,34 +32,34 @@ impl SafeLinePgReporter {
     /// Maps SATGuardian's formal AttackCategory to SafeLine's native integer AttackType.
     pub fn map_attack_category(category: &AttackCategory) -> i32 {
         match category {
-            AttackCategory::SqlInjection => 0,       // SQL 注入
-            AttackCategory::Xss => 1,                // XSS
-            AttackCategory::Ssrf => 3,               // SSRF
-            AttackCategory::RateLimitDdos => 4,      // 拒绝服务 (DDoS / Rate Limit)
-            AttackCategory::CommandInjection => 9,   // 命令注入 (RCE)
-            AttackCategory::PathTraversal => 20,     // 目录穿越 (Path Traversal / LFI)
-            AttackCategory::CredentialStuffing => 15,// 未授权访问 (Credential Stuffing)
-            AttackCategory::GraphqlAbuse => 35,      // HTTP 协议违规 (Protocol Anomaly)
-            AttackCategory::PrototypePollution => 35,// HTTP 协议违规
-            AttackCategory::GrpcSmuggling => 35,     // HTTP 协议违规
-            AttackCategory::JwtTampering => 35,      // HTTP 协议违规
+            AttackCategory::SqlInjection => 0,            // SQL 注入
+            AttackCategory::Xss => 1,                     // XSS
+            AttackCategory::Ssrf => 3,                    // SSRF
+            AttackCategory::RateLimitDdos => 4,           // 拒绝服务 (DDoS / Rate Limit)
+            AttackCategory::CommandInjection => 9,        // 命令注入 (RCE)
+            AttackCategory::PathTraversal => 20,          // 目录穿越 (Path Traversal / LFI)
+            AttackCategory::CredentialStuffing => 15,     // 未授权访问 (Credential Stuffing)
+            AttackCategory::GraphqlAbuse => 35,           // HTTP 协议违规 (Protocol Anomaly)
+            AttackCategory::PrototypePollution => 35,     // HTTP 协议违规
+            AttackCategory::GrpcSmuggling => 35,          // HTTP 协议违规
+            AttackCategory::JwtTampering => 35,           // HTTP 协议违规
             AttackCategory::CmsWordpressProbe => 26, // Web 后门 / CMS 扫描 (Web Shell / Scanner)
             AttackCategory::SensitiveExposureProbe => 22, // 信息泄露 (Information Disclosure)
-            AttackCategory::FrameworkExploitProbe => 9,  // 命令注入 (RCE / Framework Exploit)
-            AttackCategory::Ssti => 9,                   // 命令注入 (SSTI -> RCE)
-            AttackCategory::NoSqlInjection => 0,          // SQL 注入 (NoSQL operator injection)
-            AttackCategory::HttpResponseSplitting => 35,  // HTTP 协议违规 (CRLF injection)
-            AttackCategory::HostHeaderInjection => 35,    // HTTP 协议违规 (header manipulation)
-            AttackCategory::MaliciousUpload => 26,        // Web 后门 / 恶意文件上传 (Web Shell / Upload)
-            AttackCategory::Xxe => 35,                    // HTTP 协议违规 (XXE injection)
+            AttackCategory::FrameworkExploitProbe => 9, // 命令注入 (RCE / Framework Exploit)
+            AttackCategory::Ssti => 9,               // 命令注入 (SSTI -> RCE)
+            AttackCategory::NoSqlInjection => 0,     // SQL 注入 (NoSQL operator injection)
+            AttackCategory::HttpResponseSplitting => 35, // HTTP 协议违规 (CRLF injection)
+            AttackCategory::HostHeaderInjection => 35, // HTTP 协议违规 (header manipulation)
+            AttackCategory::MaliciousUpload => 26,   // Web 后门 / 恶意文件上传 (Web Shell / Upload)
+            AttackCategory::Xxe => 35,               // HTTP 协议违规 (XXE injection)
             AttackCategory::BusinessRuleViolation => 35, // HTTP 协议违规 / 自定义规则 (Policy Violation)
-            AttackCategory::LdapInjection => 9,         // 命令注入 (LDAP injection -> auth bypass)
-            AttackCategory::Deserialization => 9,      // 命令注入 (deserialization -> RCE gadget)
-            AttackCategory::XpathInjection => 1,       // SQL 注入 (XPath -> auth/data bypass)
-            AttackCategory::Benign => -1,            // 非攻击
-            AttackCategory::ProtocolSemantics => 35, // HTTP 协议违规 (desync/WebDAV/OAuth/SAML)
-            AttackCategory::ContentObfuscation => 62,// 内容混淆/伪造 (ANSI/log forgery/ReDoS)
-            AttackCategory::Unknown => 62,           // 未知
+            AttackCategory::LdapInjection => 9,          // 命令注入 (LDAP injection -> auth bypass)
+            AttackCategory::Deserialization => 9,        // 命令注入 (deserialization -> RCE gadget)
+            AttackCategory::XpathInjection => 1,         // SQL 注入 (XPath -> auth/data bypass)
+            AttackCategory::Benign => -1,                // 非攻击
+            AttackCategory::ProtocolSemantics => 35,     // HTTP 协议违规 (desync/WebDAV/OAuth/SAML)
+            AttackCategory::ContentObfuscation => 62,    // 内容混淆/伪造 (ANSI/log forgery/ReDoS)
+            AttackCategory::Unknown => 62,               // 未知
         }
     }
 
@@ -111,7 +111,11 @@ impl SafeLinePgReporter {
                 Backend Security: ZERO-HALLUCINATION PROVABLE DEFENSE",
                 proof.category.display_name(),
                 rule_id,
-                proof.matched_rules.first().map(|r| r.invariant_formula.as_str()).unwrap_or("N/A"),
+                proof
+                    .matched_rules
+                    .first()
+                    .map(|r| r.invariant_formula.as_str())
+                    .unwrap_or("N/A"),
                 proof.rule_match_details,
                 proof.active_tokens.join(", "),
                 proof.decision_reason,
@@ -124,7 +128,7 @@ impl SafeLinePgReporter {
                     event_id, site_uuid, src_ip, socket_ip, protocol, host, url_path, dst_port,
                     country, province, city, attack_type, risk_level, action, rule_id, timestamp
                 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
-                ON CONFLICT (event_id) DO NOTHING"
+                ON CONFLICT (event_id) DO NOTHING",
             )
             .bind(&event_id)
             .bind(&site_uuid)
@@ -155,7 +159,7 @@ impl SafeLinePgReporter {
                     event_id, src_port, dst_ip, method, query_string, status_code,
                     req_header, req_body, rsp_header, rsp_body, payload, location, decode_path
                 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-                ON CONFLICT (event_id) DO NOTHING"
+                ON CONFLICT (event_id) DO NOTHING",
             )
             .bind(&event_id)
             .bind(0i32)
@@ -166,7 +170,9 @@ impl SafeLinePgReporter {
             .bind(&req_headers_formatted)
             .bind(&payload.body)
             .bind("HTTP/1.1 403 Forbidden\r\nContent-Type: application/json\r\n")
-            .bind("{\"code\":403,\"success\":false,\"message\":\"Blocked by SATGuardian Edge WAF\"}")
+            .bind(
+                "{\"code\":403,\"success\":false,\"message\":\"Blocked by SATGuardian Edge WAF\"}",
+            )
             .bind(&rich_payload_report)
             .bind("satguardian_sat_solver")
             .bind("")
@@ -180,7 +186,7 @@ impl SafeLinePgReporter {
             // 3. Update system_statistics for SafeLine live dashboard QPS & totals
             let _ = sqlx::query(
                 "INSERT INTO system_statistics (type, value, created_at, website)
-                VALUES ('total-denied', 1, NOW(), $1)"
+                VALUES ('total-denied', 1, NOW(), $1)",
             )
             .bind(&host)
             .execute(&pool)
@@ -196,7 +202,7 @@ impl SafeLinePgReporter {
         tokio::spawn(async move {
             let _ = sqlx::query(
                 "INSERT INTO system_statistics (type, value, created_at, website)
-                VALUES ('total-req', 1, NOW(), $1)"
+                VALUES ('total-req', 1, NOW(), $1)",
             )
             .bind(&host)
             .execute(&pool)

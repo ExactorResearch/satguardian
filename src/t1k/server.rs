@@ -11,8 +11,8 @@ use crate::metrics::LatencyHistogram;
 use crate::reporter::SafeLinePgReporter;
 use crate::stateful::StatefulRateLimiter;
 use crate::t1k::codec::{
-    read_packet, send_blocked_verdict, send_passed_verdict, write_packet,
-    TAG_BODY, TAG_EXTRA, TAG_HEAD,
+    read_packet, send_blocked_verdict, send_passed_verdict, write_packet, TAG_BODY, TAG_EXTRA,
+    TAG_HEAD,
 };
 use crate::t1k::parser::parse_t1k_request;
 use crate::types::{AttackDecision, WafMetricsSnapshot};
@@ -243,14 +243,18 @@ async fn handle_t1k_connection(
             // Record to SafeLine PostgreSQL shared reporter
             if let Some(ref reporter) = state.safeline_reporter {
                 let site_uuid = extra_meta.uuid.as_deref().unwrap_or("default");
-                reporter.record_blocked_event(&proof, &payload, site_uuid, &client_ip).await;
+                reporter
+                    .record_blocked_event(&proof, &payload, site_uuid, &client_ip)
+                    .await;
             }
         } else {
             state.allowed_requests.fetch_add(1, Ordering::Relaxed);
 
             // Record telemetry stats to SafeLine PostgreSQL
             if let Some(ref reporter) = state.safeline_reporter {
-                reporter.record_allowed_stat(&payload.headers.get("host").cloned().unwrap_or_default()).await;
+                reporter
+                    .record_allowed_stat(&payload.headers.get("host").cloned().unwrap_or_default())
+                    .await;
             }
 
             // Downstream forwarding if snserver is present

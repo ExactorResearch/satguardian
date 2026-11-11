@@ -3,7 +3,7 @@
 **Technical Architecture Specification**  
 **Codebase Reference:** `src/ast/lexer.rs`, `src/ast/features.rs`, `src/engine/sat_solver.rs`, `src/cloud/satguardian_client.rs`, `src/ledger/sqlite_ledger.rs`, `src/api/server.rs`
 
-> **Status: research prototype.** Detection evidence is limited to a small
+> **Status: SATGuardian Edge WAF v0.3.0.** Detection evidence is limited to a small
 > in-sample corpus plus one held-out run of hand-written payloads, and there is
 > no third-party evaluation; see [STATUS.md](../status.md).
 
@@ -17,7 +17,7 @@ A core engineering principle of **SATGuardian Edge WAF** is the strict separatio
 | :--- | :--- | :--- | :--- | :--- |
 | **Lexical Decoder & Tokenizer** | In-Path (Edge WAF) | Iterative URL/HTML decoding + comment stripping + token scan (`src/ast/lexer.rs`) | $O(L)$ where $L$ is payload byte length | `~6–10 µs` (Rust, in-memory) |
 | **Bitmask Rule Evaluator** | In-Path (Edge WAF) | 128-bit `FeatureVector` bitwise comparison (`src/engine/sat_solver.rs`) | $O(R)$ bitwise operations ($R \le 64$ rules) | `~4–6 µs` (Rust, in-memory) |
-| **Total Edge Hot Path** | **In-Path (Edge WAF)** | **Combined Lexer + Bitmask Evaluator** | **Linear in payload size, constant per rule** | **`~20 µs` p50 / `~22 µs` avg (in-memory)** |
+| **Total Edge Hot Path** | **In-Path (Edge WAF)** | **Combined Lexer + Bitmask Evaluator** | **Linear in payload size, constant per rule** | **`~0.46 ms` p50 / `~0.94 ms` avg (in-memory, re-measured 2026-11-10)** |
 | **SATGuardian cloud synthesis** | **Outside this repository** (the service at `satguardian.tech`) | Boolean minimization over the `{AND, OR, NOT, XOR}` basis | Not characterized here; the client does not ship or run a minimizer | Not measured in this repository |
 | **Clause compiler (client side)** | Out-of-Band (`src/cloud/satguardian_client.rs`) | `compile_equation_to_clauses()` parses the returned equation into `(required_mask, expected_bits)` pairs | Linear in the number of literals | Not measured in this repository |
 | **Digital Twin Verifier** | Out-of-Band (`satguardian-advisor.py`) | Historical replay over benign SQLite ledger (`waf_ledger.db`) | $O(N_{\text{benign}})$ | `~50 ms` for `1,663` benign logs in the bundled demo ledger |
@@ -58,7 +58,7 @@ for clause in dyn_rules.iter() {
 ```
 
 ### Why SATGuardian Uses Bitmask Conjunctions
-1. **Structural Context vs. Substring Matching:** A benign user comment containing the words `"script"` and `"character"` activates isolated keyword flags, which causes the local token-weight stand-in to produce false positives (`24.6%` on the in-repo stream). In SATGuardian, rule `SAT-XSS-01` requires the simultaneous presence of `TAG_OPEN` $\land$ `SCRIPT_ELEMENT` $\land$ `DOM_EXEC`; the pinned corpus records no benign collision for it, which is an in-sample regression observation. The one held-out batch (`corpus/heldout_v2.json`, run once on 2026-11-04) still measured **56.1% recall on 98 attacks** (95% CI 46.3–65.5%) and a **7.0% false-positive rate on 57 controls** (95% CI 2.8–16.7%), and no third-party evaluation exists.
+1. **Structural Context vs. Substring Matching:** A benign user comment containing the words `"script"` and `"character"` activates isolated keyword flags, which causes the local token-weight stand-in to produce false positives (`24.6%` on the in-repo stream). In SATGuardian, rule `SAT-XSS-01` requires the simultaneous presence of `TAG_OPEN` $\land$ `SCRIPT_ELEMENT` $\land$ `DOM_EXEC`; the pinned corpus records no benign collision for it, which is an in-sample regression observation. The current held-out batch (`benchmarks/real_comparative/corpus/heldout_v10.jsonl`) was run once on 2026-11-08 before any fix: the frozen one-shot estimate is **38.6% recall on 70 attacks** (95% CI 28.0–50.3%) and **0.0% false-positive rate on 44 controls** (95% CI 0.0–8.0%), and the current engine measures **100%/0.0%** on the same batch as a post-tuning diagnostic. The earlier `heldout_v2` figure (56.1%/7.0%) remains for provenance, and no third-party evaluation exists.
 2. **Predictable CPU Execution:** Bitwise operations on a `u128` register execute in a few CPU clock cycles without backtracking, which is why the hot path has no ReDoS-style blow-up on the corpus payloads.
 3. **Human-Auditable Causal Traces:** Every blocked request records the exact rule ID, active token set, and boolean clause in `waf_ledger.db` (e.g., `(SELECT_PROJECTION AND UNION_CLAUSE) violates [SAT-SQLI-02] -> ACTION_BLOCK [sql_injection]`).
 

@@ -22,7 +22,7 @@ impl Default for StatefulConfig {
         Self {
             enabled: true,
             window_secs: 60,
-            num_buckets: 12, // 5 seconds per bucket
+            num_buckets: 12,              // 5 seconds per bucket
             global_limit_per_window: 300, // 5 req/sec avg
             auth_limit_per_window: 15,    // Credential stuffing limit on /login
             ban_duration_secs: 180,       // 3-minute temporary jail
@@ -114,7 +114,8 @@ impl StatefulRateLimiter {
                 let mut w = self.clients.write().unwrap();
                 if w.len() >= self.config.max_tracked_clients {
                     // Prune stale records where last_seen_epoch is older than window_secs + ban_duration_secs
-                    let cutoff = now_secs.saturating_sub(self.config.window_secs + self.config.ban_duration_secs);
+                    let cutoff = now_secs
+                        .saturating_sub(self.config.window_secs + self.config.ban_duration_secs);
                     w.retain(|_, rec| rec.last_seen_epoch.load(Ordering::Relaxed) > cutoff);
 
                     // If still at capacity under adversarial IP flooding, evict oldest 10%
@@ -131,7 +132,12 @@ impl StatefulRateLimiter {
                     }
                 }
                 w.entry(client_ip.clone())
-                    .or_insert_with(|| Arc::new(ClientRecord::new(self.config.window_secs, self.config.num_buckets)))
+                    .or_insert_with(|| {
+                        Arc::new(ClientRecord::new(
+                            self.config.window_secs,
+                            self.config.num_buckets,
+                        ))
+                    })
                     .clone()
             }
         };
@@ -149,7 +155,10 @@ impl StatefulRateLimiter {
                 is_banned: true,
                 global_count: record.global_counter.get_window_count(now_secs),
                 auth_count: record.auth_counter.get_window_count(now_secs),
-                reason: format!("Client IP [{}] is temporarily quarantined in stateful jail ({}s remaining)", client_ip, remaining),
+                reason: format!(
+                    "Client IP [{}] is temporarily quarantined in stateful jail ({}s remaining)",
+                    client_ip, remaining
+                ),
             };
         }
 
@@ -157,7 +166,9 @@ impl StatefulRateLimiter {
         let global_count = record.global_counter.record_hit(now_secs);
         if global_count > self.config.global_limit_per_window {
             let ban_until = now_secs + self.config.ban_duration_secs;
-            record.banned_until_epoch.store(ban_until, Ordering::Release);
+            record
+                .banned_until_epoch
+                .store(ban_until, Ordering::Release);
             return StatefulVerdict {
                 is_violation: true,
                 is_rate_limit: true,
@@ -180,7 +191,9 @@ impl StatefulRateLimiter {
             let auth_count = record.auth_counter.record_hit(now_secs);
             if auth_count > self.config.auth_limit_per_window {
                 let ban_until = now_secs + self.config.ban_duration_secs;
-                record.banned_until_epoch.store(ban_until, Ordering::Release);
+                record
+                    .banned_until_epoch
+                    .store(ban_until, Ordering::Release);
                 return StatefulVerdict {
                     is_violation: true,
                     is_rate_limit: false,

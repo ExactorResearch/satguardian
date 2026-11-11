@@ -19,9 +19,8 @@ fn init_json_regexes() {
     let _ = RE_PROTO_POLLUTION.get_or_init(|| {
         Regex::new(r#"(?i)"(?:__proto__|__defineGetter__|__defineSetter__|__lookupGetter__|__lookupSetter__)"\s*:"#).unwrap()
     });
-    let _ = RE_CONSTRUCTOR_PROTO.get_or_init(|| {
-        Regex::new(r#"(?i)"constructor"\s*:\s*\{[^}]*"prototype"\s*:"#).unwrap()
-    });
+    let _ = RE_CONSTRUCTOR_PROTO
+        .get_or_init(|| Regex::new(r#"(?i)"constructor"\s*:\s*\{[^}]*"prototype"\s*:"#).unwrap());
     let _ = RE_UNICODE_PROTO.get_or_init(|| {
         // The old `\\u002e\\u002e` alternative flagged every escaped `..` as prototype
         // pollution, misclassifying path traversal payloads.
@@ -47,19 +46,25 @@ impl JsonStrictAnalyzer {
         if let Some(re) = RE_PROTO_POLLUTION.get() {
             if re.is_match(body) {
                 tokens.has_proto_pollution = true;
-                tokens.active_tokens.push("JSON_PROTOTYPE_POLLUTION_ATTR".to_string());
+                tokens
+                    .active_tokens
+                    .push("JSON_PROTOTYPE_POLLUTION_ATTR".to_string());
             }
         }
         if let Some(re) = RE_CONSTRUCTOR_PROTO.get() {
             if re.is_match(body) {
                 tokens.has_proto_pollution = true;
-                tokens.active_tokens.push("JSON_CONSTRUCTOR_PROTOTYPE_INJECTION".to_string());
+                tokens
+                    .active_tokens
+                    .push("JSON_CONSTRUCTOR_PROTOTYPE_INJECTION".to_string());
             }
         }
         if let Some(re) = RE_UNICODE_PROTO.get() {
             if re.is_match(body) {
                 tokens.has_proto_pollution = true;
-                tokens.active_tokens.push("JSON_UNICODE_OBFUSCATED_PROTO_POLLUTION".to_string());
+                tokens
+                    .active_tokens
+                    .push("JSON_UNICODE_OBFUSCATED_PROTO_POLLUTION".to_string());
             }
         }
 
@@ -70,7 +75,9 @@ impl JsonStrictAnalyzer {
                 || (body_lower.contains("constructor") && body_lower.contains("prototype"))
             {
                 tokens.has_proto_pollution = true;
-                tokens.active_tokens.push("JSON_PROTOTYPE_POLLUTION_ATTR".to_string());
+                tokens
+                    .active_tokens
+                    .push("JSON_PROTOTYPE_POLLUTION_ATTR".to_string());
             }
         }
 
@@ -80,7 +87,9 @@ impl JsonStrictAnalyzer {
             tokens.max_depth = max_depth;
             if max_depth > 20 {
                 tokens.has_deep_nesting = true;
-                tokens.active_tokens.push("JSON_RECURSIVE_SCHEMA_EXHAUSTION_BOMB".to_string());
+                tokens
+                    .active_tokens
+                    .push("JSON_RECURSIVE_SCHEMA_EXHAUSTION_BOMB".to_string());
             }
         }
 

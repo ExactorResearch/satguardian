@@ -1,5 +1,5 @@
-site_name: SATGuardian Edge WAF Documentation
-site_description: Research-prototype Rust edge WAF with u128 bitmask inspection and opt-in SATGuardian cloud rule synthesis that returns proposals you approve
+site_name: SATGuardian — The WAF That Can Prove Its Work
+site_description: Deterministic, auditable security decision layer — the WAF that can prove its work; u128 bitmask inspection with opt-in cloud rule synthesis returned as proposals
 site_author: SATGuardian Cyber-Defense Systems
 site_url: https://ExactorResearch.github.io/satguardian/
 
@@ -75,6 +75,7 @@ nav:
       - Axiomatic Supervision & Synthesis: architecture/axiomatic-supervision.md
       - SAT Guardian Methodology: architecture/satguardian-methodology.md
   - Deployments & Integration:
+      - Integration Ecosystem: integrations/index.md
       - Envoy Proxy Integration: deployments/envoy-integration.md
       - Deployment Notes (Lab): deployments/case-study.md
   - Benchmarks & Analysis:

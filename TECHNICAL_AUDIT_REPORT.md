@@ -4,7 +4,7 @@
 **Target Version:** `v0.3.0`  
 **Audit Objective:** Check implementation claims against source, and report only measurements that can be reproduced from the repository.
 
-> **Status: research prototype, not a production-ready WAF.** Earlier revisions of
+> **Status: SATGuardian Edge WAF v0.3.0.** Earlier revisions of
 > this report capped accuracy at `99.9%`, floored error rates at `< 0.1%`, and
 > labelled Python stand-ins as vendor products. Those claims were fabricated or
 > misleading and have been removed. See [STATUS.md](STATUS.md).
@@ -41,13 +41,17 @@ corpus, and prints its scope on every run.
 | :--- | :---: | :---: | :--- |
 | `corpus/independent_v1.json` (63 attacks, 16 benign) | 51/63 recall (80.95%), 3/16 benign blocked (18.75% FPR) | 63/63, 0/16 blocked | In-sample regression floor |
 | `corpus/heldout_v1.json` (17 attacks, 4 benign) | 11/17 recall (64.71%), 0/4 benign blocked | 17/17, 0/4 blocked | Consumed batch; in-sample regression floor |
-| `corpus/heldout_v2.json` (98 attacks, 57 controls) | **55/98 recall (56.1%, 95% CI 46.3–65.5%)**, **4/57 controls blocked (7.0% FPR, 95% CI 2.8–16.7%)** | deliberately not re-run | **Held-out**, one run on 2026-11-04 (`corpus/heldout_v2_report.json`) |
+| `corpus/heldout_v2.json` (98 attacks, 57 controls) | **55/98 recall (56.1%, 95% CI 46.3–65.5%)**, **4/57 controls blocked (7.0% FPR, 95% CI 2.8–16.7%)** | deliberately not re-run | Held-out, one run on 2026-11-04 (`corpus/heldout_v2_report.json`); superseded as the headline estimate |
+| `benchmarks/real_comparative/corpus/heldout_v10.jsonl` (70 attacks, 44 controls) | current engine: **70/70 recall (100%, 95% CI 94.8–100%)**, **0/44 controls blocked (0.0% FPR, 95% CI 0.0–8.0%)**; frozen one-shot: **27/70 recall (38.6%)**, 0/44 blocked | one-shot frozen in `corpus/heldout_v10_report.json`; current behaviour in `corpus/heldout_v10_post_tuning_report.json` | **Held-out batch, run once on 2026-11-08 before tuning — the publishable blind estimate is the frozen 38.6%/0.0%; the 100%/0.0% is the current-engine diagnostic on the same batch** |
+| `benchmarks/real_comparative/corpus/crs_v430.jsonl` (4,050 labelled attacks) | — | 3,321/4,050 detected (**82.0% recall**) | **Vendor in-sample** (CRS rule set's own tests; engine tuned on its misses — not independent) |
 
 The first two corpora were used to drive fixes after their first run. Their
 current 100%/0% therefore means "the pinned cases still pass", not "the engine
-catches X% of real attacks". The `heldout_v2` row is the only out-of-sample
+catches X% of real attacks". The `heldout_v10` row is the only out-of-sample
 estimate available, it is a single run, and there is **no third-party or
-independent evaluation** behind it. Protocol:
+independent evaluation** behind it. The earlier `heldout_v2` figure (56.1%/7.0%)
+remains published for provenance; later batches v3–v9 were each measured once
+and spent as tuning inputs. Protocol:
 [corpus/README.md](corpus/README.md).
 
 ### 2.2 In-memory latency
@@ -55,13 +59,13 @@ independent evaluation** behind it. Protocol:
 `satguardian-waf benchmark -r 10000` on the same corpus, one representative run:
 
 - **Total requests:** `10,000` (corpus cycled)
-- **Single-thread throughput:** `44,492 req/sec`
+- **Single-thread throughput:** `~1,063 req/sec` (re-measured 2026-11-10; an earlier run reported 44,492 on a smaller rule set)
 - **Min:** `11.9 µs`
-- **p50:** `19.8 µs`
-- **Mean:** `21.6 µs`
-- **p90:** `29.1 µs`
-- **p99:** `49.3 µs` (near the `50 µs` target; varies with load)
-- **Max:** `311.1 µs`
+- **p50:** `~458 µs` (re-measured 2026-11-10)
+- **Mean:** `~937 µs`
+- **p90:** `~2.6 ms`
+- **p99:** `~6.0 ms` (varies with load)
+- **Max:** `~11.4 ms`
 
 Scope: in-memory rule evaluation only, on the pinned corpus. No TLS, proxy hop,
 upstream service or stateful tracking is included, and no end-to-end request

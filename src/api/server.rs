@@ -1,5 +1,5 @@
 use crate::ast::features::FeatureBinarizer;
-use crate::cloud::SimplifyRequest;
+use crate::cloud::{SimplifyRequest, CLOUD_SYNC_VARIABLE_COUNT};
 use crate::config::{CustomBusinessRule, IslandsConfig};
 use crate::proxy::ProxyState;
 use crate::types::{HttpRequestPayload, ProofChain, WafMetricsSnapshot};
@@ -56,10 +56,7 @@ pub fn create_api_router(state: Arc<ProxyState>) -> Router {
         .route("/api/waf/rules/customer/:id", delete(delete_customer_rule))
         .route("/api/waf/sync-simplify", post(trigger_sync_simplify))
         .route("/api/waf/clauses/pending", get(get_pending_clauses))
-        .route(
-            "/api/waf/clauses/:id/apply",
-            post(apply_pending_clause),
-        )
+        .route("/api/waf/clauses/:id/apply", post(apply_pending_clause))
         .route("/api/waf/clauses/:id", delete(reject_pending_clause))
         .route_layer(middleware::from_fn_with_state(
             state.clone(),
@@ -270,7 +267,11 @@ async fn trigger_sync_simplify(State(state): State<Arc<ProxyState>>) -> Response
         Ok(m) => m,
         Err(e) => {
             error!(target: "satguardian::sync", "Failed to fetch pending anomalies: {}", e);
-            return (StatusCode::INTERNAL_SERVER_ERROR, format!("DB error: {}", e)).into_response();
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("DB error: {}", e),
+            )
+                .into_response();
         }
     };
 
@@ -282,7 +283,7 @@ async fn trigger_sync_simplify(State(state): State<Arc<ProxyState>>) -> Response
         .into_response();
     }
 
-    let variables = FeatureBinarizer::get_variable_catalog(40);
+    let variables = FeatureBinarizer::get_variable_catalog(CLOUD_SYNC_VARIABLE_COUNT);
     let req = SimplifyRequest {
         variables: variables.clone(),
         minterms: pending_minterms.clone(),
@@ -391,7 +392,10 @@ async fn trigger_sync_simplify(State(state): State<Arc<ProxyState>>) -> Response
             error!(target: "satguardian::sync", "SATGuardian Cloud simplification error: {}", err);
             (
                 StatusCode::BAD_GATEWAY,
-                format!("Failed to reach SATGuardian Cloud at https://satguardian.tech: {}", err),
+                format!(
+                    "Failed to reach SATGuardian Cloud at https://satguardian.tech: {}",
+                    err
+                ),
             )
                 .into_response()
         }
@@ -418,7 +422,11 @@ async fn get_pending_clauses(State(state): State<Arc<ProxyState>>) -> Response {
         .into_response(),
         Err(e) => {
             error!(target: "satguardian::ledger", "Failed to read pending clauses: {}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, format!("DB error: {}", e)).into_response()
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("DB error: {}", e),
+            )
+                .into_response()
         }
     }
 }
@@ -461,7 +469,11 @@ async fn apply_pending_clause(
             .into_response(),
         Err(e) => {
             error!(target: "satguardian::ledger", "Failed to approve clause {}: {}", id, e);
-            (StatusCode::INTERNAL_SERVER_ERROR, format!("DB error: {}", e)).into_response()
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("DB error: {}", e),
+            )
+                .into_response()
         }
     }
 }

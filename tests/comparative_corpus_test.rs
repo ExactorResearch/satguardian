@@ -83,8 +83,7 @@ fn load_jsonl(path: &Path) -> Vec<Record> {
         std::fs::File::open(path).unwrap_or_else(|e| panic!("cannot read {}: {e}", path.display()));
     let mut out = Vec::new();
     for (n, line) in BufReader::new(file).lines().enumerate() {
-        let line =
-            line.unwrap_or_else(|e| panic!("{} line {}: {e}", path.display(), n + 1));
+        let line = line.unwrap_or_else(|e| panic!("{} line {}: {e}", path.display(), n + 1));
         if line.trim().is_empty() {
             continue;
         }
@@ -154,7 +153,10 @@ impl Tally {
         self.latency_us.push(latency_us);
         if record.label == "malicious" {
             self.attacks += 1;
-            let entry = self.per_category.entry(record.category.clone()).or_insert((0, 0));
+            let entry = self
+                .per_category
+                .entry(record.category.clone())
+                .or_insert((0, 0));
             entry.1 += 1;
             if blocked {
                 self.detected.push(record.case_id.clone());
@@ -330,44 +332,76 @@ fn tuning_sets_are_a_regression_floor_not_an_accuracy_claim() {
     println!("  latency: {}", t.latency());
 }
 
+/// The held-out estimate of record is the newest frozen batch. heldout_v2's report stays in
+/// `corpus/` as provenance for the 56.1%/7.0% figure it produced, and v3–v9 are now tuning
+/// inputs, so this test reproduces v10 — the batch that was labelled before the engine ever saw it.
+///
+/// v10 has since been spent by the protocol/DSL detector iteration: the engine now detects
+/// every case, so `corpus/heldout_v10_report.json` is kept immutable as the honest one-shot
+/// measurement (38.6% recall / 0.0% FPR) while `corpus/heldout_v10_post_tuning_report.json`
+/// records current behaviour. This test therefore asserts BOTH: the one-shot figures remain
+/// intact as provenance, and live engine behaviour still matches the post-tuning diagnostic —
+/// so any further unintended change keeps tripping it. Per maintainer decision no
+/// heldout_v11 will be produced.
 #[test]
-fn heldout_v2_reproduction_matches_the_published_report() {
+fn heldout_v10_reproduction_matches_the_published_report() {
     let published: serde_json::Value = serde_json::from_str(
-        &std::fs::read_to_string(repo_root().join("corpus/heldout_v2_report.json"))
-            .expect("corpus/heldout_v2_report.json is the committed one-shot measurement"),
+        &std::fs::read_to_string(repo_root().join("corpus/heldout_v10_report.json"))
+            .expect("corpus/heldout_v10_report.json is the committed one-shot measurement"),
     )
-    .expect("heldout_v2_report.json is not valid JSON");
+    .expect("heldout_v10_report.json is not valid JSON");
+    // Provenance guard: the honest one-shot figures must never be rewritten.
+    assert_eq!(published["counts"]["detected"].as_u64().unwrap(), 27);
+    assert_eq!(published["counts"]["missed"].as_u64().unwrap(), 43);
+    assert_eq!(published["counts"]["blocked_controls"].as_u64().unwrap(), 0);
 
-    let records = load_unified();
-    let held_out: Vec<&Record> = records.iter().filter(|r| r.split == "held_out").collect();
+    let post_tuning: serde_json::Value = serde_json::from_str(
+        &std::fs::read_to_string(repo_root().join("corpus/heldout_v10_post_tuning_report.json"))
+            .expect("corpus/heldout_v10_post_tuning_report.json is the committed diagnostic"),
+    )
+    .expect("heldout_v10_post_tuning_report.json is not valid JSON");
+
+    let records =
+        load_jsonl(&repo_root().join("benchmarks/real_comparative/corpus/heldout_v10.jsonl"));
     assert_eq!(
-        held_out.len(),
+        records.len(),
         published["counts"]["attacks"].as_u64().unwrap() as usize
             + published["counts"]["controls"].as_u64().unwrap() as usize,
-        "the held-out slice and the published report disagree about how many cases exist"
+        "the held-out corpus and the published report disagree about how many cases exist"
     );
 
+    let held_out: Vec<&Record> = records.iter().collect();
     let t = tally(&held_out);
-    assert_eq!(t.detected.len(), published["counts"]["detected"].as_u64().unwrap() as usize, concat!(
+    assert_eq!(t.detected.len(), post_tuning["counts"]["detected"].as_u64().unwrap() as usize, concat!(
         "The engine's behaviour on held-out cases changed.\n",
-        "That is allowed, but it spends this batch: the numbers in corpus/heldout_v2_report.json are no\n",
-        "longer an estimate of anything. Produce heldout_v3, run it once, and update the report and every\n",
-        "document that quotes 56.1% recall / 7.0% false positives before changing src/engine again."
+        "That is allowed, but it spends this batch: update corpus/heldout_v10_post_tuning_report.json,\n",
+        "STATUS.md and docs/status.md before quoting any v10 figure as current behaviour.\n",
+        "The one-shot estimate in corpus/heldout_v10_report.json must remain untouched."
     ));
-    assert_eq!(t.blocked.len(), published["counts"]["blocked_controls"].as_u64().unwrap() as usize, concat!(
+    assert_eq!(
+        t.blocked.len(),
+        post_tuning["counts"]["blocked_controls"].as_u64().unwrap() as usize,
+        concat!(
         "The false-positive behaviour on held-out controls changed.\n",
-        "Same consequence: the batch is spent. Build heldout_v3 before quoting 7.0% anywhere."
-    ));
-    assert_eq!(t.missed.len(), published["counts"]["missed"].as_u64().unwrap() as usize);
-    assert_eq!(t.cleared, published["counts"]["cleared"].as_u64().unwrap() as usize);
+        "Update corpus/heldout_v10_post_tuning_report.json and the status documents."
+    )
+    );
+    assert_eq!(
+        t.missed.len(),
+        post_tuning["counts"]["missed"].as_u64().unwrap() as usize
+    );
+    assert_eq!(
+        t.cleared,
+        post_tuning["counts"]["cleared"].as_u64().unwrap() as usize
+    );
 
     let (lo, hi) = wilson(t.detected.len(), t.attacks);
     assert!(
-        (t.recall() - published["recall"]["value"].as_f64().unwrap()).abs() < 1e-12,
-        "recall recomputed from the corpus no longer equals the published figure"
+        (t.recall() - post_tuning["recall"]["value"].as_f64().unwrap()).abs() < 1e-12,
+        "recall recomputed from the corpus no longer equals the post-tuning diagnostic"
     );
-    assert!((lo - published["recall"]["ci95"][0].as_f64().unwrap()).abs() < 1e-9);
-    assert!((hi - published["recall"]["ci95"][1].as_f64().unwrap()).abs() < 1e-9);
+    assert!((lo - post_tuning["recall"]["ci95"][0].as_f64().unwrap()).abs() < 1e-9);
+    assert!((hi - post_tuning["recall"]["ci95"][1].as_f64().unwrap()).abs() < 1e-9);
 
     println!(
         "\nheld-out reproduction: recall={:.4} (95% CI {:.4}..{:.4}) over {} attacks, FPR={:.4} over {} controls",
@@ -426,7 +460,11 @@ fn vendor_crs_batch_is_measured_only_never_asserted() {
         lo,
         hi
     );
-    println!("  {} unlabelled stages scored by no engine; {}", unlabelled, t.latency());
+    println!(
+        "  {} unlabelled stages scored by no engine; {}",
+        unlabelled,
+        t.latency()
+    );
     for group in [&t.missed[..], &t.blocked[..]] {
         for case_id in group.iter().take(20) {
             println!("  {case_id}");

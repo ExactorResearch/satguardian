@@ -32,3 +32,4 @@ target/
 *.db-shm
 graphify-out/
 
+benchmarks/real_comparative/features/

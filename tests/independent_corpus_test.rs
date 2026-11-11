@@ -60,7 +60,9 @@ impl Report {
 }
 
 fn load_corpus(file: &str) -> Corpus {
-    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("corpus").join(file);
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("corpus")
+        .join(file);
     let raw = std::fs::read_to_string(&path)
         .unwrap_or_else(|e| panic!("cannot read corpus {}: {e}", path.display()));
     serde_json::from_str(&raw).unwrap_or_else(|e| panic!("invalid corpus JSON: {e}"))
@@ -92,7 +94,10 @@ fn run_corpus(corpus: &Corpus) -> Report {
         let proof = engine.evaluate_payload(&req);
 
         if case.label == "malicious" {
-            let entry = report.per_category.entry(case.category.clone()).or_insert((0, 0));
+            let entry = report
+                .per_category
+                .entry(case.category.clone())
+                .or_insert((0, 0));
             entry.1 += 1;
             if proof.is_violation {
                 report.true_positives += 1;
@@ -175,21 +180,37 @@ fn assert_clean(label: &str, report: &Report) {
         "{label} category attribution errors: {}",
         report.category_mismatches.join(" | ")
     );
-    assert!(report.recall() >= 0.99, "{label} recall regression: {:.4}", report.recall());
-    assert!(report.fpr() <= 0.01, "{label} FPR regression: {:.4}", report.fpr());
+    assert!(
+        report.recall() >= 0.99,
+        "{label} recall regression: {:.4}",
+        report.recall()
+    );
+    assert!(
+        report.fpr() <= 0.01,
+        "{label} FPR regression: {:.4}",
+        report.fpr()
+    );
 }
 
 fn validate_corpus(corpus: &Corpus) {
     let mut seen = std::collections::HashSet::new();
     for case in &corpus.cases {
-        assert!(seen.insert(case.id.clone()), "duplicate corpus id: {}", case.id);
+        assert!(
+            seen.insert(case.id.clone()),
+            "duplicate corpus id: {}",
+            case.id
+        );
         assert!(
             case.label == "malicious" || case.label == "benign",
             "{}: invalid label '{}'",
             case.id,
             case.label
         );
-        assert!(!case.note.trim().is_empty(), "{}: missing provenance note", case.id);
+        assert!(
+            !case.note.trim().is_empty(),
+            "{}: missing provenance note",
+            case.id
+        );
     }
 }
 
@@ -244,5 +265,8 @@ fn corpus_has_cross_category_coverage() {
             "corpus lost coverage for {required}"
         );
     }
-    assert!(benign >= 15, "corpus must keep a meaningful benign control set");
+    assert!(
+        benign >= 15,
+        "corpus must keep a meaningful benign control set"
+    );
 }

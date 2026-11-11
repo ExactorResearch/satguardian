@@ -4,7 +4,7 @@
 **Version:** `v0.3.0`  
 **Scope:** Implementation architecture (Rust hot path & Python control plane)
 
-> **Status: research prototype, not a production-ready WAF.** Metrics in this
+> **Status: SATGuardian Edge WAF v0.3.0.** Metrics in this
 > document are in-sample measurements on a hand-written corpus, plus one
 > held-out run on the same author's payloads. The Python comparison harness runs
 > local stand-ins, not real vendor products, and no third-party evaluation
@@ -16,7 +16,7 @@
 
 `satguardian` is a hybrid Web Application Firewall (WAF) divided into two strictly decoupled execution planes:
 
-1. **In-Path Edge Data Plane (Native Rust — `src/`):** Evaluates HTTP requests in memory (tens of microseconds per payload; no network hop included) using multi-pass lexical normalization, a 128-bit feature bitmask (`FeatureVector { bits: u128 }`, 40 named variables in the current catalogue), and bitwise rule comparisons (`(minterm & required_mask) == expected_bits`). This plane is self-contained: it enforces the rules already in the process and needs no network access to do so.
+1. **In-Path Edge Data Plane (Native Rust — `src/`):** Evaluates HTTP requests in memory (hundreds of microseconds per payload; no network hop included) using multi-pass lexical normalization, a 128-bit feature bitmask (`FeatureVector { bits: u128 }`, 40 named variables in the current catalogue), and bitwise rule comparisons (`(minterm & required_mask) == expected_bits`). This plane is self-contained: it enforces the rules already in the process and needs no network access to do so.
 2. **Out-of-Band Control & Cloud Review Plane (Rust & Python — `src/cloud/satguardian_client.rs`, `src/ledger/sqlite_ledger.rs`, `satguardian-advisor.py`):** Reads the SQLite forensic audit ledger (`waf_ledger.db`) and, **only when the operator turns cloud review on** (`auto_sync_enabled`, `false` by default in `src/config.rs` and `waf_config.toml`), sends collected `u128` anomaly minterms to the **SATGuardian cloud synthesis** service at `satguardian.tech`. Boolean minimization runs on that service, not in this repository: the client receives a reduced equation, compiles it into bitmask clauses, and stores them as **proposals** (`dynamic_clauses.applied = 0`). Proposals do not enter the running engine and are not loaded at startup. A separate explicit action — `satguardian-waf clauses apply <id>` or `POST /api/waf/clauses/{id}/apply` — registers one clause in the engine.
 
 ```mermaid
@@ -123,11 +123,12 @@ including failures.
 | :--- | :---: | :---: | :--- |
 | `corpus/independent_v1.json` (63 attacks, 16 benign) | 51/63 recall (80.95%), 3/16 benign blocked (18.75% FPR) | 63/63, 0/16 blocked | In-sample regression floor |
 | `corpus/heldout_v1.json` (17 attacks, 4 benign) | 11/17 recall (64.71%), 0/4 benign blocked | 17/17, 0/4 blocked | Batch consumed by the fix pass; in-sample regression floor |
-| `corpus/heldout_v2.json` (98 attacks, 57 controls) | 55/98 detected (**56.1% recall**, 95% CI 46.3–65.5%), 4/57 controls blocked (**7.0% FPR**, 95% CI 2.8–16.7%) | — | The only held-out measurement, run once on 2026-11-04 |
+| `corpus/heldout_v2.json` (98 attacks, 57 controls) | 55/98 detected (**56.1% recall**, 95% CI 46.3–65.5%), 4/57 controls blocked (**7.0% FPR**, 95% CI 2.8–16.7%) | — | Held-out, one run on 2026-11-04; superseded |
+| `benchmarks/real_comparative/corpus/heldout_v10.jsonl` (70 attacks, 44 controls) | current engine: **70/70 detected (100% recall)**, 0/44 controls blocked (**0.0% FPR**); frozen one-shot: **27/70 (38.6% recall)**, 0/44 blocked | one-shot frozen in `corpus/heldout_v10_report.json`; current in `corpus/heldout_v10_post_tuning_report.json` | **Held-out batch, measured once on 2026-11-08 before tuning** — publishable blind estimate is the frozen 38.6%/0.0% |
 
 Every case in the first two corpora was used to drive the fixes, so their
 100%/0% rows are regression floors, not quality estimates. The held-out row is
-the honest number to quote, and it is still a single run over payloads written
+a superseded honest number; the current held-out row above freezes its one-shot estimate at 38.6%/0.0% while the current engine measures 100%/0.0%, and both remain single runs over payloads written
 inside this project from public catalogues, with imagined benign controls:
 **there is no third-party or independent evaluation.** The protocol and rules
 for adding cases are in [corpus/README.md](../corpus.md);
@@ -136,8 +137,8 @@ for adding cases are in [corpus/README.md](../corpus.md);
 ### 4.2 Latency
 
 `cargo run --release -- benchmark -r 10000` measures in-memory rule evaluation
-over the pinned corpus: roughly `20 µs` p50 and `22 µs` mean on a desktop CPU,
-with p99 fluctuating around the `50 µs` target depending on machine load. It
+over the pinned corpus: roughly `0.46 ms` p50 and `0.94 ms` mean on this machine (re-measured 2026-11-10; an earlier run reported ~20 µs),
+with p99 around `6 ms` on this machine (re-measured 2026-11-10; an earlier run on a smaller rule set reported ~50 µs). It
 excludes TLS, the proxy hop, the upstream service and stateful tracking.
 
 The Python harness (`python run_benchmark.py 1000`) compares the Python reference

@@ -4,12 +4,7 @@ use satguardian_waf::types::{AttackCategory, AttackDecision, HttpRequestPayload}
 #[test]
 fn test_sqli_detection() {
     let engine = SatguardianSatEngine::new();
-    let payload = HttpRequestPayload::new(
-        "GET",
-        "/items",
-        "id=1' OR '1'='1",
-        "",
-    );
+    let payload = HttpRequestPayload::new("GET", "/items", "id=1' OR '1'='1", "");
 
     // Warmup cold regex singletons
     let _ = engine.evaluate_payload(&payload);
@@ -17,12 +12,24 @@ fn test_sqli_detection() {
     assert!(proof.is_violation);
     assert_eq!(proof.action, AttackDecision::Block);
     assert_eq!(proof.category, AttackCategory::SqlInjection);
-    assert!(proof.matched_rules.iter().any(|r| r.rule_id == "SAT-SQLI-01"));
+    assert!(proof
+        .matched_rules
+        .iter()
+        .any(|r| r.rule_id == "SAT-SQLI-01"));
     assert!(proof.decision_reason.contains("SAT-SQLI-01"));
     assert!(proof.decision_reason.contains("BLOCK"));
     assert!(proof.rule_match_details.contains("ACTION_BLOCK"));
-    let max_allowed_us = if cfg!(debug_assertions) { 5000.0 } else { 1000.0 };
-    assert!(proof.execution_time_us < max_allowed_us, "Latency SLA violated: was {:.2} µs (threshold: {:.2} µs)", proof.execution_time_us, max_allowed_us);
+    let max_allowed_us = if cfg!(debug_assertions) {
+        5000.0
+    } else {
+        1000.0
+    };
+    assert!(
+        proof.execution_time_us < max_allowed_us,
+        "Latency SLA violated: was {:.2} µs (threshold: {:.2} µs)",
+        proof.execution_time_us,
+        max_allowed_us
+    );
 }
 
 #[test]
@@ -39,7 +46,10 @@ fn test_sqli_union_select() {
     assert!(proof.is_violation);
     assert_eq!(proof.action, AttackDecision::Block);
     assert_eq!(proof.category, AttackCategory::SqlInjection);
-    assert!(proof.matched_rules.iter().any(|r| r.rule_id == "SAT-SQLI-02"));
+    assert!(proof
+        .matched_rules
+        .iter()
+        .any(|r| r.rule_id == "SAT-SQLI-02"));
     assert!(proof.rule_match_details.contains("ACTION_BLOCK"));
 }
 
@@ -57,7 +67,10 @@ fn test_xss_detection() {
     assert!(proof.is_violation);
     assert_eq!(proof.action, AttackDecision::Block);
     assert_eq!(proof.category, AttackCategory::Xss);
-    assert!(proof.matched_rules.iter().any(|r| r.rule_id == "SAT-XSS-01"));
+    assert!(proof
+        .matched_rules
+        .iter()
+        .any(|r| r.rule_id == "SAT-XSS-01"));
     assert!(proof.decision_reason.contains("BLOCK"));
     assert!(proof.rule_match_details.contains("ACTION_BLOCK"));
 }
@@ -65,36 +78,32 @@ fn test_xss_detection() {
 #[test]
 fn test_xss_event_handler() {
     let engine = SatguardianSatEngine::new();
-    let payload = HttpRequestPayload::new(
-        "GET",
-        "/search",
-        "q=<img src=x onerror=alert(1)>",
-        "",
-    );
+    let payload = HttpRequestPayload::new("GET", "/search", "q=<img src=x onerror=alert(1)>", "");
 
     let proof = engine.evaluate_payload(&payload);
     assert!(proof.is_violation);
     assert_eq!(proof.action, AttackDecision::Block);
     assert_eq!(proof.category, AttackCategory::Xss);
-    assert!(proof.matched_rules.iter().any(|r| r.rule_id == "SAT-XSS-02"));
+    assert!(proof
+        .matched_rules
+        .iter()
+        .any(|r| r.rule_id == "SAT-XSS-02"));
     assert!(proof.rule_match_details.contains("ACTION_BLOCK"));
 }
 
 #[test]
 fn test_rce_detection() {
     let engine = SatguardianSatEngine::new();
-    let payload = HttpRequestPayload::new(
-        "POST",
-        "/api/ping",
-        "",
-        "ip=127.0.0.1; cat /etc/passwd",
-    );
+    let payload = HttpRequestPayload::new("POST", "/api/ping", "", "ip=127.0.0.1; cat /etc/passwd");
 
     let proof = engine.evaluate_payload(&payload);
     assert!(proof.is_violation);
     assert_eq!(proof.action, AttackDecision::Block);
     assert_eq!(proof.category, AttackCategory::CommandInjection);
-    assert!(proof.matched_rules.iter().any(|r| r.rule_id == "SAT-RCE-01"));
+    assert!(proof
+        .matched_rules
+        .iter()
+        .any(|r| r.rule_id == "SAT-RCE-01"));
     assert!(proof.decision_reason.contains("BLOCK"));
     assert!(proof.rule_match_details.contains("ACTION_BLOCK"));
 }
@@ -102,18 +111,16 @@ fn test_rce_detection() {
 #[test]
 fn test_path_traversal_detection() {
     let engine = SatguardianSatEngine::new();
-    let payload = HttpRequestPayload::new(
-        "GET",
-        "/download",
-        "file=../../../../etc/passwd",
-        "",
-    );
+    let payload = HttpRequestPayload::new("GET", "/download", "file=../../../../etc/passwd", "");
 
     let proof = engine.evaluate_payload(&payload);
     assert!(proof.is_violation);
     assert_eq!(proof.action, AttackDecision::Block);
     assert_eq!(proof.category, AttackCategory::PathTraversal);
-    assert!(proof.matched_rules.iter().any(|r| r.rule_id == "SAT-PATH-01"));
+    assert!(proof
+        .matched_rules
+        .iter()
+        .any(|r| r.rule_id == "SAT-PATH-01"));
     assert!(proof.decision_reason.contains("BLOCK"));
     assert!(proof.rule_match_details.contains("ACTION_BLOCK"));
 }
@@ -132,7 +139,10 @@ fn test_ssrf_detection() {
     assert!(proof.is_violation);
     assert_eq!(proof.action, AttackDecision::Block);
     assert_eq!(proof.category, AttackCategory::Ssrf);
-    assert!(proof.matched_rules.iter().any(|r| r.rule_id == "SAT-SSRF-01"));
+    assert!(proof
+        .matched_rules
+        .iter()
+        .any(|r| r.rule_id == "SAT-SSRF-01"));
     assert!(proof.decision_reason.contains("BLOCK"));
     assert!(proof.rule_match_details.contains("ACTION_BLOCK"));
 }
@@ -170,7 +180,10 @@ fn test_graphql_introspection_blocked() {
     assert!(proof.is_violation);
     assert_eq!(proof.action, AttackDecision::Block);
     assert_eq!(proof.category, AttackCategory::GraphqlAbuse);
-    assert!(proof.matched_rules.iter().any(|r| r.rule_id == "SAT-GQL-01"));
+    assert!(proof
+        .matched_rules
+        .iter()
+        .any(|r| r.rule_id == "SAT-GQL-01"));
     assert!(proof.active_islands.contains(&"ISLAND-GRAPHQL".to_string()));
     assert!(proof.rule_match_details.contains("ACTION_BLOCK"));
 }
@@ -180,37 +193,34 @@ fn test_graphql_deep_nesting_dos_blocked() {
     let engine = SatguardianSatEngine::new();
     // 8 levels of nested curly braces
     let nested_query = r#"{"query": "{ user { posts { comments { author { posts { comments { author { id } } } } } } } }"}"#;
-    let payload = HttpRequestPayload::new(
-        "POST",
-        "/graphql",
-        "",
-        nested_query,
-    );
+    let payload = HttpRequestPayload::new("POST", "/graphql", "", nested_query);
 
     let proof = engine.evaluate_payload(&payload);
     assert!(proof.is_violation);
     assert_eq!(proof.action, AttackDecision::Block);
     assert_eq!(proof.category, AttackCategory::GraphqlAbuse);
-    assert!(proof.matched_rules.iter().any(|r| r.rule_id == "SAT-GQL-02"));
+    assert!(proof
+        .matched_rules
+        .iter()
+        .any(|r| r.rule_id == "SAT-GQL-02"));
     assert!(proof.active_islands.contains(&"ISLAND-GRAPHQL".to_string()));
 }
 
 #[test]
 fn test_graphql_batch_array_blocked() {
     let engine = SatguardianSatEngine::new();
-    let batch_query = r#"[{"query": "{ user(id: 1) { name } }"}, {"query": "{ user(id: 2) { name } }"}]"#;
-    let payload = HttpRequestPayload::new(
-        "POST",
-        "/api/gql",
-        "",
-        batch_query,
-    );
+    let batch_query =
+        r#"[{"query": "{ user(id: 1) { name } }"}, {"query": "{ user(id: 2) { name } }"}]"#;
+    let payload = HttpRequestPayload::new("POST", "/api/gql", "", batch_query);
 
     let proof = engine.evaluate_payload(&payload);
     assert!(proof.is_violation);
     assert_eq!(proof.action, AttackDecision::Block);
     assert_eq!(proof.category, AttackCategory::GraphqlAbuse);
-    assert!(proof.matched_rules.iter().any(|r| r.rule_id == "SAT-GQL-03"));
+    assert!(proof
+        .matched_rules
+        .iter()
+        .any(|r| r.rule_id == "SAT-GQL-03"));
 }
 
 #[test]
@@ -227,8 +237,13 @@ fn test_prototype_pollution_blocked() {
     assert!(proof.is_violation);
     assert_eq!(proof.action, AttackDecision::Block);
     assert_eq!(proof.category, AttackCategory::PrototypePollution);
-    assert!(proof.matched_rules.iter().any(|r| r.rule_id == "SAT-JSON-01"));
-    assert!(proof.active_islands.contains(&"ISLAND-JSON-PROTO".to_string()));
+    assert!(proof
+        .matched_rules
+        .iter()
+        .any(|r| r.rule_id == "SAT-JSON-01"));
+    assert!(proof
+        .active_islands
+        .contains(&"ISLAND-JSON-PROTO".to_string()));
 }
 
 #[test]
@@ -244,37 +259,37 @@ fn test_json_schema_nesting_bomb_blocked() {
         bomb.push('}');
     }
 
-    let payload = HttpRequestPayload::new(
-        "POST",
-        "/api/v1/data",
-        "",
-        bomb,
-    );
+    let payload = HttpRequestPayload::new("POST", "/api/v1/data", "", bomb);
 
     let proof = engine.evaluate_payload(&payload);
     assert!(proof.is_violation);
     assert_eq!(proof.action, AttackDecision::Block);
     assert_eq!(proof.category, AttackCategory::PrototypePollution);
-    assert!(proof.matched_rules.iter().any(|r| r.rule_id == "SAT-JSON-02"));
+    assert!(proof
+        .matched_rules
+        .iter()
+        .any(|r| r.rule_id == "SAT-JSON-02"));
 }
 
 #[test]
 fn test_grpc_status_injection_blocked() {
     let engine = SatguardianSatEngine::new();
-    let mut payload = HttpRequestPayload::new(
-        "POST",
-        "/grpc.BankService/Transfer",
-        "",
-        "",
-    );
-    payload.headers.insert("content-type".to_string(), "application/grpc".to_string());
-    payload.headers.insert("grpc-status".to_string(), "0".to_string()); // Injected status trailer
+    let mut payload = HttpRequestPayload::new("POST", "/grpc.BankService/Transfer", "", "");
+    payload
+        .headers
+        .insert("content-type".to_string(), "application/grpc".to_string());
+    payload
+        .headers
+        .insert("grpc-status".to_string(), "0".to_string()); // Injected status trailer
 
     let proof = engine.evaluate_payload(&payload);
     assert!(proof.is_violation);
     assert_eq!(proof.action, AttackDecision::Block);
     assert_eq!(proof.category, AttackCategory::GrpcSmuggling);
-    assert!(proof.matched_rules.iter().any(|r| r.rule_id == "SAT-GRPC-01"));
+    assert!(proof
+        .matched_rules
+        .iter()
+        .any(|r| r.rule_id == "SAT-GRPC-01"));
     assert!(proof.active_islands.contains(&"ISLAND-GRPC".to_string()));
 }
 
@@ -284,19 +299,19 @@ fn test_jwt_alg_none_blocked() {
     // Header {"alg": "none", "typ": "JWT"} -> Base64URL: eyJhbGciOiAibm9uZSIgfQ
     // Payload {"user": "admin"} -> Base64URL: eyJ1c2VyIjogImFkbWluIn0
     let jwt_token = "eyJhbGciOiAibm9uZSIgfQ.eyJ1c2VyIjogImFkbWluIn0.";
-    let mut payload = HttpRequestPayload::new(
-        "GET",
-        "/api/v1/protected",
-        "",
-        "",
-    );
-    payload.headers.insert("authorization".to_string(), format!("Bearer {}", jwt_token));
+    let mut payload = HttpRequestPayload::new("GET", "/api/v1/protected", "", "");
+    payload
+        .headers
+        .insert("authorization".to_string(), format!("Bearer {}", jwt_token));
 
     let proof = engine.evaluate_payload(&payload);
     assert!(proof.is_violation);
     assert_eq!(proof.action, AttackDecision::Block);
     assert_eq!(proof.category, AttackCategory::JwtTampering);
-    assert!(proof.matched_rules.iter().any(|r| r.rule_id == "SAT-JWT-01"));
+    assert!(proof
+        .matched_rules
+        .iter()
+        .any(|r| r.rule_id == "SAT-JWT-01"));
     assert!(proof.active_islands.contains(&"ISLAND-JWT".to_string()));
 }
 
@@ -306,19 +321,19 @@ fn test_jwt_kid_traversal_blocked() {
     // Header {"alg": "HS256", "kid": "../../../../dev/null"} -> Base64URL: eyJhbGciOiAiSFMyNTYiLCAia2lkIjogIi4uLy4uLy4uL2Rldi9udWxsIn0
     // Payload {"user": "admin"} -> Base64URL: eyJ1c2VyIjogImFkbWluIn0
     let jwt_token = "eyJhbGciOiAiSFMyNTYiLCAia2lkIjogIi4uLy4uLy4uL2Rldi9udWxsIn0.eyJ1c2VyIjogImFkbWluIn0.signature";
-    let mut payload = HttpRequestPayload::new(
-        "GET",
-        "/api/v1/protected",
-        "",
-        "",
-    );
-    payload.headers.insert("authorization".to_string(), format!("Bearer {}", jwt_token));
+    let mut payload = HttpRequestPayload::new("GET", "/api/v1/protected", "", "");
+    payload
+        .headers
+        .insert("authorization".to_string(), format!("Bearer {}", jwt_token));
 
     let proof = engine.evaluate_payload(&payload);
     assert!(proof.is_violation);
     assert_eq!(proof.action, AttackDecision::Block);
     assert_eq!(proof.category, AttackCategory::JwtTampering);
-    assert!(proof.matched_rules.iter().any(|r| r.rule_id == "SAT-JWT-02"));
+    assert!(proof
+        .matched_rules
+        .iter()
+        .any(|r| r.rule_id == "SAT-JWT-02"));
     assert!(proof.active_islands.contains(&"ISLAND-JWT".to_string()));
 }
 
@@ -366,8 +381,13 @@ fn test_stateful_sliding_window_rate_limiting() {
     assert!(proof.is_violation);
     assert_eq!(proof.action, AttackDecision::Block);
     assert_eq!(proof.category, AttackCategory::RateLimitDdos);
-    assert!(proof.matched_rules.iter().any(|r| r.rule_id == "SAT-STATE-01"));
-    assert!(proof.active_islands.contains(&"ISLAND-STATEFUL".to_string()));
+    assert!(proof
+        .matched_rules
+        .iter()
+        .any(|r| r.rule_id == "SAT-STATE-01"));
+    assert!(proof
+        .active_islands
+        .contains(&"ISLAND-STATEFUL".to_string()));
     assert!(proof.rule_match_details.contains("ACTION_BLOCK"));
 }
 
@@ -412,8 +432,13 @@ fn test_stateful_credential_stuffing_detection() {
     assert!(proof.is_violation);
     assert_eq!(proof.action, AttackDecision::Block);
     assert_eq!(proof.category, AttackCategory::CredentialStuffing);
-    assert!(proof.matched_rules.iter().any(|r| r.rule_id == "SAT-STATE-02"));
-    assert!(proof.active_islands.contains(&"ISLAND-STATEFUL".to_string()));
+    assert!(proof
+        .matched_rules
+        .iter()
+        .any(|r| r.rule_id == "SAT-STATE-02"));
+    assert!(proof
+        .active_islands
+        .contains(&"ISLAND-STATEFUL".to_string()));
 }
 
 #[test]
@@ -428,14 +453,23 @@ fn test_wordpress_shield_toggle() {
     assert!(proof_blocked.is_violation);
     assert_eq!(proof_blocked.action, AttackDecision::Block);
     assert_eq!(proof_blocked.category, AttackCategory::CmsWordpressProbe);
-    assert!(proof_blocked.matched_rules.iter().any(|r| r.rule_id == "SAT-WP-01"));
-    assert!(proof_blocked.active_islands.contains(&"ISLAND-WORDPRESS".to_string()));
+    assert!(proof_blocked
+        .matched_rules
+        .iter()
+        .any(|r| r.rule_id == "SAT-WP-01"));
+    assert!(proof_blocked
+        .active_islands
+        .contains(&"ISLAND-WORDPRESS".to_string()));
 
     // A bare /index.php is a generic PHP entry point, not a WordPress probe: blocking it
     // would break Laravel/Symfony front controllers even on non-WordPress sites.
-    let index_php_probe = HttpRequestPayload::new("GET", "/index.php", "controller=catalog&action=detail", "");
+    let index_php_probe =
+        HttpRequestPayload::new("GET", "/index.php", "controller=catalog&action=detail", "");
     let proof_index = engine_shield_on.evaluate_payload(&index_php_probe);
-    assert!(!proof_index.is_violation, "Generic /index.php must not be classified as WordPress reconnaissance");
+    assert!(
+        !proof_index.is_violation,
+        "Generic /index.php must not be classified as WordPress reconnaissance"
+    );
 
     // Verify an unambiguous WordPress administration file is blocked under the shield.
     let wp_admin_probe = HttpRequestPayload::new("GET", "/wp-admin/setup-config.php", "", "");
@@ -443,7 +477,10 @@ fn test_wordpress_shield_toggle() {
     assert!(proof_admin.is_violation);
     assert_eq!(proof_admin.action, AttackDecision::Block);
     assert_eq!(proof_admin.category, AttackCategory::CmsWordpressProbe);
-    assert!(proof_admin.matched_rules.iter().any(|r| r.rule_id == "SAT-WP-01"));
+    assert!(proof_admin
+        .matched_rules
+        .iter()
+        .any(|r| r.rule_id == "SAT-WP-01"));
 
     // 2. When WordPress shield is DISABLED (for legitimate WordPress installations)
     let islands_off = IslandsConfig {
@@ -451,7 +488,8 @@ fn test_wordpress_shield_toggle() {
         exposure_shield: true,
         framework_shield: true,
     };
-    let engine_shield_off = SatguardianSatEngine::with_config(islands_off, BusinessRulesConfig::default());
+    let engine_shield_off =
+        SatguardianSatEngine::with_config(islands_off, BusinessRulesConfig::default());
     let proof_allowed = engine_shield_off.evaluate_payload(&wp_probe);
 
     assert!(!proof_allowed.is_violation);
@@ -472,14 +510,20 @@ fn test_sensitive_exposure_shield() {
     let proof_env = engine.evaluate_payload(&env_probe);
     assert!(proof_env.is_violation);
     assert_eq!(proof_env.category, AttackCategory::SensitiveExposureProbe);
-    assert!(proof_env.matched_rules.iter().any(|r| r.rule_id == "SAT-EXP-01"));
+    assert!(proof_env
+        .matched_rules
+        .iter()
+        .any(|r| r.rule_id == "SAT-EXP-01"));
 
     // Probing for phpMyAdmin
     let pma_probe = HttpRequestPayload::new("GET", "/phpmyadmin/index.php", "", "");
     let proof_pma = engine.evaluate_payload(&pma_probe);
     assert!(proof_pma.is_violation);
     assert_eq!(proof_pma.category, AttackCategory::SensitiveExposureProbe);
-    assert!(proof_pma.matched_rules.iter().any(|r| r.rule_id == "SAT-EXP-02"));
+    assert!(proof_pma
+        .matched_rules
+        .iter()
+        .any(|r| r.rule_id == "SAT-EXP-02"));
 }
 
 #[test]
@@ -550,7 +594,10 @@ fn test_customer_business_rules_enforcement() {
     let proof_del = engine.evaluate_payload(&del_req);
     assert!(proof_del.is_violation);
     assert_eq!(proof_del.category, AttackCategory::BusinessRuleViolation);
-    assert!(proof_del.matched_rules.iter().any(|r| r.rule_id == "SAT-BIZ-01"));
+    assert!(proof_del
+        .matched_rules
+        .iter()
+        .any(|r| r.rule_id == "SAT-BIZ-01"));
 
     // 2. GET /admin/dashboard with unauthorized IP -> Violates Rule 2
     let mut admin_req = HttpRequestPayload::new("GET", "/admin/dashboard", "", "");
@@ -558,7 +605,10 @@ fn test_customer_business_rules_enforcement() {
     let proof_admin = engine.evaluate_payload(&admin_req);
     assert!(proof_admin.is_violation);
     assert_eq!(proof_admin.category, AttackCategory::BusinessRuleViolation);
-    assert!(proof_admin.matched_rules.iter().any(|r| r.rule_id == "SAT-BIZ-02"));
+    assert!(proof_admin
+        .matched_rules
+        .iter()
+        .any(|r| r.rule_id == "SAT-BIZ-02"));
 
     // 3. GET /admin/dashboard with whitelisted IP -> Allowed
     admin_req.client_ip = Some("10.0.0.1".to_string());
@@ -569,14 +619,20 @@ fn test_customer_business_rules_enforcement() {
     let checkout_req = HttpRequestPayload::new("POST", "/checkout/order", "", "items=1");
     let proof_checkout = engine.evaluate_payload(&checkout_req);
     assert!(proof_checkout.is_violation);
-    assert_eq!(proof_checkout.category, AttackCategory::BusinessRuleViolation);
-    assert!(proof_checkout.matched_rules.iter().any(|r| r.rule_id == "SAT-BIZ-03"));
+    assert_eq!(
+        proof_checkout.category,
+        AttackCategory::BusinessRuleViolation
+    );
+    assert!(proof_checkout
+        .matched_rules
+        .iter()
+        .any(|r| r.rule_id == "SAT-BIZ-03"));
 
     // 5. POST /checkout/order with X-Tenant-ID -> Allowed
     let mut checkout_ok = HttpRequestPayload::new("POST", "/checkout/order", "", "items=1");
-    checkout_ok.headers.insert("X-Tenant-ID".to_string(), "tenant_12345".to_string());
+    checkout_ok
+        .headers
+        .insert("X-Tenant-ID".to_string(), "tenant_12345".to_string());
     let proof_checkout_ok = engine.evaluate_payload(&checkout_ok);
     assert!(!proof_checkout_ok.is_violation);
 }
-
-

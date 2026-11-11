@@ -1,9 +1,11 @@
 # Adaptadores de motores externos
 
-Ningún adaptador existe todavía. Este fichario fija lo que cada uno tiene que
-cumplir antes de que su salida entre en `results/`. La razón de escribirlo antes
-que el código: el comparativo solo vale si los tres motores miden lo mismo, y eso
-se decide aquí, no después de tener números.
+Uno existe ya: `aegis_replay.py` (Aegis Community v1.1.0 sobre HTTP real;
+resultados en `../results/aegis/`). Los demás pendientes se rigen por este
+fichario, que fija lo que cada uno tiene que cumplir antes de que su salida
+entre en `results/`. La razón de escribirlo antes que el código: el comparativo
+solo vale si los motores miden lo mismo, y eso se decide aquí, no después de
+tener números.
 
 Cada adaptador hace exactamente tres cosas:
 
@@ -36,6 +38,7 @@ Reglas que no se pueden romper:
 
 | motor | cómo se obtiene real | qué falta |
 | :--- | :--- | :--- |
+| Aegis Community v1.1.0 | release oficial Windows/Linux, `aegis.exe run -c config.yaml` + PostgreSQL local | **hecho** — `aegis_replay.py`, resultados en `results/aegis/` (Fase 3: HTTP real, latencia no comparable con satbench) |
 | ModSecurity v3 + CRS v4.30 | `libmodsecurity-dev` 3.0.4 (apt) y un programa C con `msc_init` / `msc_load_configuration_string` / `msc_new_transaction` / `msc_process_uri` / `msc_process_request_headers` / `msc_process_body` / `msc_is_interrupted` | sudo para apt; luego compilar con `gcc` contra los headers |
 | Coraza v3.8.1 + CRS v4.30 | imagen oficial `coraza-crsproxy` (digest pineable), o binario Go propio | Go >= 1.25 en `~/.local` si se compila; Docker arrancado si se usa la imagen |
 | SafeLine | imagen oficial de la appliance | Docker arrancado; además es un producto completo, así que su número no es comparable a un motor de reglas suelto y hay que decirlo |
