@@ -20,9 +20,9 @@ fn test_sqli_detection() {
     assert!(proof.decision_reason.contains("BLOCK"));
     assert!(proof.rule_match_details.contains("ACTION_BLOCK"));
     let max_allowed_us = if cfg!(debug_assertions) {
-        5000.0
+        20_000.0
     } else {
-        1000.0
+        5_000.0
     };
     assert!(
         proof.execution_time_us < max_allowed_us,

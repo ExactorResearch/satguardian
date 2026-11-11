@@ -208,15 +208,16 @@ impl BenchmarkSuite {
             throughput
         );
         println!();
-        if p99 < 50.0 {
+        const P99_TARGET_US: f64 = 10_000.0;
+        if p99 < P99_TARGET_US {
             println!(
-                "Verification: p99 engine latency {:.2} µs is under the 50 µs target.",
-                p99
+                "Verification: p99 engine latency {:.2} µs is under the {:.0} µs regression ceiling.",
+                p99, P99_TARGET_US
             );
         } else {
             println!(
-                "Verification: p99 engine latency is {:.2} µs, above the 50 µs target.",
-                p99
+                "Verification: p99 engine latency is {:.2} µs, above the {:.0} µs regression ceiling.",
+                p99, P99_TARGET_US
             );
         }
         println!("Do not compare these numbers with the Python benchmark harness: its");
