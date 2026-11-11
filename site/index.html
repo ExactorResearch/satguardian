@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Rust edge WAF with u128 bitmask inspection and opt-in SATGuardian cloud rule synthesis that returns proposals you approve">
+        <meta name="description" content="Deterministic, auditable security decision layer — the WAF that can prove its work; u128 bitmask inspection with opt-in cloud rule synthesis returned as proposals">
       
       
         <meta name="author" content="SATGuardian Cyber-Defense Systems">
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#satguardian-edge-waf-satguardian" class="md-skip">
+        <a href="#satguardian-the-waf-that-can-prove-its-work" class="md-skip">
           Skip to content
         </a>
       
@@ -1861,8 +1861,11 @@
   
 
 
-<h1 id="satguardian-edge-waf-satguardian">🛡️ SATGuardian Edge WAF (<code>satguardian</code>)</h1>
+<h1 id="satguardian-the-waf-that-can-prove-its-work">🛡️ SATGuardian — The WAF That Can Prove Its Work</h1>
 <blockquote>
+<p><strong>Deterministic, auditable security decision layer.</strong> Not another WAF — the
+engine that decides <em>why</em> a request is malicious, bit by bit, before any
+scoring-based firewall has to guess.</p>
 <p><strong>Status: SATGuardian Edge WAF v0.3.0.</strong>
 Detection has only been measured on a small, hand-written, in-sample corpus.
 The Python comparison harness runs local stand-ins, not real Coraza, SafeLine
@@ -1874,12 +1877,14 @@ for the evidence and its limits.</p>
 <a href="#3-decision-what-has-been-measured"><img alt="Performance" src="https://img.shields.io/badge/Hot_Path-In--Memory_p50_~0.46_ms-brightgreen.svg" /></a>
 <a href="#22-opt-in-cloud-synthesis-srccloudsatguardian_clientrs"><img alt="Synthesis" src="https://img.shields.io/badge/Rule_Synthesis-Opt--in_Cloud%2C_Approved_locally-orange.svg" /></a>
 <a href="#35-pricing-licensing-zero-traffic-tax"><img alt="License" src="https://img.shields.io/badge/Edge_WAF-100%25_Free_&amp;_Unlimited_Traffic-success.svg" /></a></p>
-<p><strong>SATGuardian Edge WAF</strong> is a self-hosted Web Application Firewall
-written in Rust. It evaluates security logic with <strong>128-bit integer bitmasks
-(<code>u128</code>)</strong> in microseconds on the edge, and can — only if you turn it on — send
-recorded anomalies to <strong>SATGuardian cloud synthesis</strong> for review. Detection quality
-is <strong>measured, not assumed</strong>: the numbers below come from a versioned corpus and a
-reproducible benchmark, one held-out batch of them included.</p>
+<p><strong>SATGuardian Edge WAF</strong> is a self-hosted <strong>deterministic security decision
+layer</strong> written in Rust. It is not positioned as "another WAF": it evaluates
+security logic with <strong>128-bit integer bitmasks (<code>u128</code>)</strong> in ~0.5 ms in memory,
+and every block is a reproducible Boolean proof — not an anomaly score. It can
+— only if you turn it on — send recorded anomalies to <strong>SATGuardian cloud
+synthesis</strong> for review. Detection quality is <strong>measured, not assumed</strong>: the
+numbers below come from a versioned corpus, a reproducible benchmark, and the
+first head-to-head against a real WAF product (Aegis Community v1.1.0).</p>
 <p>The product promise: <strong>free, you get local protection; paying, you get ongoing review, update proposals and explanations — without ever giving up control of your WAF.</strong> The local client and <code>satguardian-health</code> stay free, read-only and offline. Cloud review is opt-in (<code>auto_sync_enabled</code> defaults to <code>false</code>) and what it returns is stored as a <strong>proposal</strong>: nothing enters the running rule set until you approve it with <code>satguardian-waf clauses apply &lt;id&gt;</code> or <code>POST /api/waf/clauses/{id}/apply</code>. The messaging bot (Telegram/WhatsApp) is announced on the site, not available yet.</p>
 <h3 id="why-install-satguardian">🎯 Why install SATGuardian</h3>
 <p>SATGuardian is not positioned as "another WAF". It is a <strong>deterministic decision layer</strong> that does what signature- and scoring-based firewalls structurally cannot:</p>

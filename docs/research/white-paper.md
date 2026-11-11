@@ -1,4 +1,10 @@
-# SATGuardian Edge WAF: Tens-of-Microseconds Lexical Normalization, 128-Bit Boolean Mask Evaluation, and Opt-In Out-of-Band Cloud Rule Review
+# SATGuardian — The WAF That Can Prove Its Work: Tens-of-Microseconds Lexical Normalization, 128-Bit Boolean Mask Evaluation, and Opt-In Out-of-Band Cloud Rule Review
+
+> **Positioning:** SATGuardian is a deterministic, auditable security decision
+> layer — not "another WAF". It runs in front of or instead of
+> signature/scoring firewalls, proves every block as a Boolean cube, and was
+> measured head-to-head against a real product (Aegis Community v1.1.0) in
+> §2.5.
 
 **Technical White Paper — Version 3.0**  
 **Implementation Reference:** `satguardian` (`src/` in Rust, `satguardian_waf/` in Python). The Boolean minimizer is a service at `satguardian.tech`; only its client lives in this repository.
