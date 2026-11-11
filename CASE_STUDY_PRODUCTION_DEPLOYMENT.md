@@ -25,7 +25,7 @@ Rust benchmark, and the Python stand-in harness
    depend on the ledger revision; regenerate the audit before quoting them.
 2. **Native Rust hot path:** `satguardian-waf benchmark -r 10000` evaluates the
    pinned corpus in memory, single-threaded. On a desktop CPU this lands in the
-   tens of microseconds per payload; it excludes TLS, the proxy hop and the
+   hundreds of microseconds per payload; it excludes TLS, the proxy hop and the
    upstream service.
 3. **Python harness:** `python run_benchmark.py 1000` compares the Python
    reference port against local Python stand-ins. It does not execute Coraza,
@@ -95,7 +95,7 @@ and "no collisions" on demo traffic is not a false-positive guarantee.
 | Detection, second batch first run | `corpus/heldout_v1.json` (17 attacks, 4 benign) | 11/17 recall (64.71%), 0/4 benign blocked; batch since consumed |
 | **Held-out detection (current engine)** | `benchmarks/real_comparative/corpus/heldout_v10.jsonl` (70 attacks, 44 controls) | current engine **100% recall / 0.0% FPR** (post-tuning diagnostic, `heldout_v10_post_tuning_report.json`); frozen one-shot **38.6% recall / 0.0% FPR** (`heldout_v10_report.json`) |
 | Held-out detection (earlier, provenance) | `corpus/heldout_v2.json` (98 attacks, 57 controls), one run on 2026-11-04 | **56.1% recall** (95% CI 46.3–65.5%), **7.0% false-positive rate** (95% CI 2.8–16.7%) |
-| In-memory latency, native Rust | `benchmark -r 10000` | p50 `~20 µs`, mean `~22 µs`, p99 near `50 µs` depending on load; in-memory only |
+| In-memory latency, native Rust | `benchmark -r 10000` | p50 `~0.46 ms`, mean `~0.94 ms`, p99 `~6 ms` depending on load (re-measured 2026-11-10); in-memory only |
 | Python harness | `run_benchmark.py 1000` | Printed with provenance; local stand-ins only |
 
 ### Operational conclusions

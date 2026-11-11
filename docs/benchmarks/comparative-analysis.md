@@ -66,13 +66,13 @@ proxy hop or upstream):
 | Corpus | `corpus/independent_v1.json` (63 attacks, 16 benign) |
 | Detection | 63/63 attacks, 0/16 benign blocked (**in-sample regression floor**) |
 | First run before fixes | 51/63 recall (80.95%), 3/16 benign blocked (18.75% FPR) |
-| Min latency | `11.9 µs` |
-| p50 | `19.8 µs` |
-| Mean | `21.6 µs` |
-| p90 | `29.1 µs` |
-| p99 | `49.3 µs` (near the 50 µs target; varies with load) |
-| Max | `311.1 µs` |
-| Single-thread throughput | `44,492 req/sec` |
+| Min latency | `70.0 µs` |
+| p50 | `~458 µs` |
+| Mean | `~937 µs` |
+| p90 | `~2.6 ms` |
+| p99 | `~6.0 ms` |
+| Max | `~11.4 ms` |
+| Single-thread throughput | `~1,063 req/sec` |
 
 All of those latencies are **in-memory only**: they exclude TLS, the proxy hop,
 the upstream service and SQLite ledger writes, and they were taken on this
@@ -112,7 +112,7 @@ stand-ins. Artifacts: `benchmarks/real_comparative/results/aegis/`
 
 | Corpus | SATGuardian | Aegis + CRS 4.25.1 PL1 |
 | :--- | :---: | :---: |
-| `crs_v430.jsonl` attacks | **82.0%** (3,322/4,050) | **80.7%** (3,268/4,050) |
+| `crs_v430.jsonl` attacks | **82.0%** (3,321/4,050) | **80.7%** (3,268/4,050) |
 | `heldout_v10.jsonl` attacks | 100% post-tuning diagnostic; frozen one-shot **38.6%** | **68.6%** (48/70) |
 | `heldout_v10.jsonl` controls | 0.0% FPR post-tuning diagnostic; frozen one-shot **0.0%** | **36.4%** (16/44) |
 | `benign_heldout_v3_v10.jsonl` (665 pooled benign controls) | **0.5%** (3/665; v10-only non-spent subset 0/44) | **22.9%** (152/665) |

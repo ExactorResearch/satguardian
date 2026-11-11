@@ -9,7 +9,7 @@
 **📚 Official Documentation:** [https://exactorresearch.github.io/satguardian/](https://exactorresearch.github.io/satguardian/)
 
 [![Architecture](https://img.shields.io/badge/Architecture-Lexical_&_Bitmask_WAF-blue.svg)](#2-consideration-the-solution-satguardian-architecture)
-[![Performance](https://img.shields.io/badge/Hot_Path-In--Memory_p50_~20_µs-brightgreen.svg)](#3-decision-what-has-been-measured)
+[![Performance](https://img.shields.io/badge/Hot_Path-In--Memory_p50_~0.46_ms-brightgreen.svg)](#3-decision-what-has-been-measured)
 [![Synthesis](https://img.shields.io/badge/Rule_Synthesis-Opt--in_Cloud%2C_Approved_locally-orange.svg)](#22-opt-in-cloud-synthesis-srccloudsatguardian_clientrs)
 [![License](https://img.shields.io/badge/Edge_WAF-100%25_Free_&_Unlimited_Traffic-success.svg)](#35-pricing-licensing-zero-traffic-tax)
 
@@ -58,12 +58,15 @@ cargo build --release
 Spin up SATGuardian as a standalone frontline proxy and test attack blocking with `curl`:
 
 ```bash
+# Terminal 0: Start any upstream app on port 3000 — e.g. a static file server:
+#   python -m http.server 3000
+
 # Terminal A: Start standalone WAF proxy on port 8080 forwarding to your application (port 3000)
 # Linux/macOS: ./target/release/satguardian-waf   Windows: .\target\release\satguardian-waf.exe
 ./target/release/satguardian-waf proxy --listen 127.0.0.1:8080 --upstream http://127.0.0.1:3000
 
-# Terminal B: Test a benign request (Allowed -> HTTP 200 OK)
-curl -i http://localhost:8080/api/users?search=john_doe
+# Terminal B: Test a benign request (Allowed -> proxied to upstream; HTTP 200 if it serves the path, never 403)
+curl -i http://localhost:8080/
 
 # Terminal B: Test a SQLi + XSS multi-vector attack (Blocked -> HTTP 403 Forbidden)
 curl -i "http://localhost:8080/api/users?search=1%27%20UNION%20SELECT%20*%20FROM%20users--%20%3Cscript%3Ealert(1)%3C/script%3E"
@@ -136,7 +139,7 @@ SATGuardian resolves this dilemma by decoupling **in-path edge inspection** from
 │                                                 ▼                          │
 │                                 Bitwise Rule Mask Evaluation               │
 │                                 (minterm & mask) == expected               │
-│                                 (~20 µs p50 in-memory, native Rust)        │
+│                                 (~0.46 ms p50 in-memory, native Rust)        │
 │                                        /               \                   │
 │                                   [ALLOW]             [BLOCK + Causal Log] │
 └─────────────────────────────────────────────────────────┬──────────────────┘
@@ -162,7 +165,7 @@ SATGuardian resolves this dilemma by decoupling **in-path edge inspection** from
 
 * **Multi-Pass Lexical Normalization (`src/ast/lexer.rs`):** Applies percent-decoding, unwraps MySQL executable comments, strips inline comments, decodes HTML entities and Unicode/overlong escapes, and expands Log4j lookups before token extraction. Entity-encoded payloads are covered by `corpus/independent_v1.json`; that is a regression check, not proof of complete coverage.
 * **128-Bit Feature Vector (`src/ast/features.rs`):** Packs HTTP attributes, Shannon character entropy, and structural tokens across 5 domains (`SQLi`, `XSS`, `RCE`, `LFI`, `SSRF`) into a single `u128` integer.
-* **Bitmask Conjunction Evaluation (`src/engine/sat_solver.rs`):** Compares request minterms against compiled rule masks via bitwise `AND` operations (`(minterm & required_mask) == expected_bits`). On the pinned corpus at 10,000 requests the native engine measured roughly `20 µs` p50 and `22–25 µs` mean in-memory; p99 is load dependent and has measured `50–60 µs`.
+* **Bitmask Conjunction Evaluation (`src/engine/sat_solver.rs`):** Compares request minterms against compiled rule masks via bitwise `AND` operations (`(minterm & required_mask) == expected_bits`). On the pinned corpus at 10,000 requests the native engine measured roughly `0.46 ms` p50 and `0.94 ms` mean in-memory on this machine (re-measured 2026-11-10; an earlier run on a smaller rule set reported ~20 µs); p99 is load dependent and measured `~6 ms`.
 * **Structural token conjunctions:** Rules require combinations such as `TAG_OPEN` $\land$ `SCRIPT_ELEMENT` $\land$ `DOM_EXEC` instead of single keywords. False positives are counted on the pinned corpus; the engine does not claim zero FPs.
 
 ### 2.2 Opt-in Cloud Synthesis (`src/cloud/satguardian_client.rs`)
@@ -210,7 +213,7 @@ named product.
 
 | Engine | Reproduced from | Latency (in-memory) | Corpus result |
 | :--- | :--- | :---: | :---: |
-| Native Rust v0.3.0 | `corpus/independent_v1.json`, 10,000 requests (representative run) | p50 `~20 µs`, mean `~22–25 µs`, p99 `~50–60 µs` | 63/63 attacks, 0/16 benign blocked |
+| Native Rust v0.3.0 | `corpus/independent_v1.json`, 10,000 requests (representative run) | p50 `~0.46 ms`, mean `~0.94 ms`, p99 `~6 ms` (re-measured 2026-11-10) | 63/63 attacks, 0/16 benign blocked |
 
 * **Speed is in-memory only.** No TLS, proxy hop, upstream or stateful tracking
   is included. The Python reference port ran at `58.6 µs` versus `235.0 µs` for
@@ -270,7 +273,7 @@ per-case verdicts live in `benchmarks/real_comparative/results/aegis/`.
 
 | Corpus | SATGuardian | Aegis + CRS 4.25.1 PL1 |
 | :--- | :---: | :---: |
-| `crs_v430.jsonl` (4,050 vendor-authored attacks) | **82.0% recall** (3,322) | **80.7% recall** (3,268) |
+| `crs_v430.jsonl` (4,050 vendor-authored attacks) | **82.0% recall** (3,321) | **80.7% recall** (3,268) |
 | `heldout_v10.jsonl` (70 attacks) | 100% — post-tuning diagnostic; frozen one-shot **38.6%** | **68.6% recall** (48/70) |
 | `heldout_v10.jsonl` (44 benign controls) | 0.0% FPR — post-tuning diagnostic; frozen one-shot **0.0%** | **36.4% FPR** (16/44 blocked) |
 | `benign_heldout_v3_v10.jsonl` (665 pooled benign controls) | **0.5% FPR** (3/665; v10-only non-spent subset 0/44) | **22.9% FPR** (152/665 blocked) |
@@ -310,7 +313,7 @@ The only thing that can leave the node is the optional cloud review of §2.2, wh
 sends recorded `u128` feature vectors, is disabled by default, and never changes the
 rule set by itself. No DNS or CNAME redirection is required:
 
-1. **Kubernetes / Envoy Proxy Native Sidecar:** Runs alongside Envoy via `ext_authz` over an in-memory Unix Domain Socket (`unix:///run/satguardian/waf.sock`), adding the engine's measured in-memory cost (tens of microseconds) with no network hop.
+1. **Kubernetes / Envoy Proxy Native Sidecar:** Runs alongside Envoy via `ext_authz` over an in-memory Unix Domain Socket (`unix:///run/satguardian/waf.sock`), adding the engine's measured in-memory cost (hundreds of microseconds) with no network hop.
 2. **Reverse Proxy:** Frontline protection for Nginx, Apache, or Microsoft IIS (including Windows Service deployment via `install.ps1`).
 3. **Standalone Binary:** Self-contained Rust binary built with `cargo build --release` (`satguardian-waf proxy --listen 127.0.0.1:8080`). It speaks plain HTTP; terminate TLS in a reverse proxy or Envoy in front of it.
 

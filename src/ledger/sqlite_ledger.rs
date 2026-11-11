@@ -113,6 +113,18 @@ impl SqliteLedger {
         .execute(&pool)
         .await?;
 
+        // Migrate ledgers created before rule_match_details existed:
+        // CREATE TABLE IF NOT EXISTS does not alter existing tables.
+        let cols: Vec<(String,)> =
+            sqlx::query_as("SELECT name FROM pragma_table_info('audit_log')")
+                .fetch_all(&pool)
+                .await?;
+        if !cols.iter().any(|(n,)| n == "rule_match_details") {
+            sqlx::query("ALTER TABLE audit_log ADD COLUMN rule_match_details TEXT")
+                .execute(&pool)
+                .await?;
+        }
+
         // Ledgers written before the approval gate have no `applied` column. Every clause they
         // hold was already enforcing, so the default keeps those nodes protected after the update.
         let _ = sqlx::query(

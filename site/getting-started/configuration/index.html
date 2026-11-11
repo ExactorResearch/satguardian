@@ -1767,7 +1767,7 @@ filter.</p>
 <code>x-envoy-original-path</code> and answers the check itself. The gRPC <code>ext_authz</code> protocol is not
 implemented in this build, and a Unix socket alternative is available via
 <code>satguardian-waf envoy-authz --socket /var/run/waf.sock</code>.</p>
-<p>The check itself costs tens of microseconds in memory; the end-to-end latency your clients
+<p>The check itself costs hundreds of microseconds in memory; the end-to-end latency your clients
 see still includes TLS, Envoy and your upstream, which this project does not measure.</p>
 <hr />
 <h2 id="7-modular-certainty-islands-islands">🏝️ 7. Modular Certainty Islands (<code>[islands]</code>)</h2>

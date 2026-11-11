@@ -59,13 +59,13 @@ and spent as tuning inputs. Protocol:
 `satguardian-waf benchmark -r 10000` on the same corpus, one representative run:
 
 - **Total requests:** `10,000` (corpus cycled)
-- **Single-thread throughput:** `44,492 req/sec`
+- **Single-thread throughput:** `~1,063 req/sec` (re-measured 2026-11-10; an earlier run reported 44,492 on a smaller rule set)
 - **Min:** `11.9 µs`
-- **p50:** `19.8 µs`
-- **Mean:** `21.6 µs`
-- **p90:** `29.1 µs`
-- **p99:** `49.3 µs` (near the `50 µs` target; varies with load)
-- **Max:** `311.1 µs`
+- **p50:** `~458 µs` (re-measured 2026-11-10)
+- **Mean:** `~937 µs`
+- **p90:** `~2.6 ms`
+- **p99:** `~6.0 ms` (varies with load)
+- **Max:** `~11.4 ms`
 
 Scope: in-memory rule evaluation only, on the pinned corpus. No TLS, proxy hop,
 upstream service or stateful tracking is included, and no end-to-end request

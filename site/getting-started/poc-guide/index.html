@@ -1600,11 +1600,11 @@ not a production validation and there is no third-party evaluation. See
 <a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>
 <a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>Latency distribution (microseconds, in-memory only):
 <a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>   Min                  :      11.90 µs
-<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>   Average              :      21.64 µs
-<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>   p50 (median)         :      19.80 µs
-<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>   p90                  :      29.10 µs
-<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>   p99                  :      49.30 µs
-<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>   Max                  :     311.10 µs
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>   Average              :     936.73 µs
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>   p50 (median)         :     458.10 µs
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>   p90                  :    2626.10 µs
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>   p99                  :    6006.90 µs
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>   Max                  :   11449.70 µs
 <a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>   Throughput           :   44491.88 req/sec (single thread)
 </code></pre></div>
 <hr />
@@ -1670,7 +1670,7 @@ stand-ins, not the named products.</p>
 </table>
 <h3 id="what-the-numbers-do-and-do-not-show">What the numbers do and do not show</h3>
 <ul>
-<li>The Rust engine's in-memory evaluation is tens of microseconds per payload.
+<li>The Rust engine's in-memory evaluation is hundreds of microseconds per payload.
   That excludes network and proxy overhead and says nothing about end-to-end
   throughput.</li>
 <li>Detection on the pinned corpus is 100%/0% only because the same cases were

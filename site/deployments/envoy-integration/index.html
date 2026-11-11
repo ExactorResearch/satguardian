@@ -1451,7 +1451,7 @@ production evidence. See <a href="../../status/">STATUS.md</a>.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>                      ┌─────────────────────────── Kubernetes Pod ───────────────────────────┐
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>                      │                                                                      │
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>Incoming Traffic ────►│  [ Envoy Proxy ] ──(ext_authz UDS)──► [ SATGuardian Rust Sidecar ]   │
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>  (Ingress/Mesh)      │         │                               (~20 µs avg in-memory eval)  │
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>  (Ingress/Mesh)      │         │                               (~0.46 ms p50 in-memory eval, 2026-11-10)  │
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>                      │         │ (HTTP 200 OK / Allow)                     │                │
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>                      │         ▼                                           ▼                │
 <a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>                      │  [ Upstream App Container ]              [ Local waf_ledger.db ]     │
@@ -1460,8 +1460,8 @@ production evidence. See <a href="../../status/">STATUS.md</a>.</p>
 <h3 id="why-the-sidecar-shape-is-interesting">Why the Sidecar Shape Is Interesting</h3>
 <ol>
 <li><strong>Microsecond-scale engine evaluation (in memory only):</strong> <code>satguardian-waf benchmark -r 10000</code>
-   measures in-memory lexical and bitmask evaluation at roughly <code>20 µs</code> p50 and
-   <code>22 µs</code> mean, with p99 fluctuating around <code>50 µs</code> depending on load. These
+   measures in-memory lexical and bitmask evaluation at roughly <code>0.46 ms</code> p50 and
+   <code>0.94 ms</code> mean, with p99 around <code>6 ms</code> depending on load (re-measured 2026-11-10). These
    numbers exclude the UDS hop, Envoy itself and the upstream service; end-to-end
    sidecar latency has not been characterized.</li>
 <li><strong>Traffic stays inside your cluster, and the edge costs nothing per request:</strong> all HTTP payloads are inspected locally, with no external DNS CNAME routing and no per-request fee. With the shipped defaults (<code>auto_sync_enabled = false</code> in <code>waf_config.toml</code>) the sidecar makes no outbound call at all.</li>
@@ -1581,7 +1581,7 @@ production evidence. See <a href="../../status/">STATUS.md</a>.</p>
 <tr>
 <td style="text-align: left;">In-memory rule latency</td>
 <td style="text-align: left;"><code>benchmark -r 10000</code></td>
-<td style="text-align: left;">p50 <code>~20 µs</code>, mean <code>~22 µs</code>, p99 near <code>50 µs</code> depending on load; in-memory only</td>
+<td style="text-align: left;">p50 <code>~0.46 ms</code>, mean <code>~0.94 ms</code>, p99 <code>~6 ms</code> depending on load (re-measured 2026-11-10); in-memory only</td>
 </tr>
 <tr>
 <td style="text-align: left;">Detection, pinned corpus</td>

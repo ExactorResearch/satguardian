@@ -1445,8 +1445,8 @@ document contradicts it, this file wins and the other document is stale.</p>
 </tr>
 <tr>
 <td>In-memory latency over the corpus</td>
-<td><code>satguardian-waf benchmark -r 10000</code>: tens of microseconds per payload, single-threaded, excluding network, TLS, proxy and upstream</td>
-<td>2026-11-01</td>
+<td><code>satguardian-waf benchmark -r 10000</code>: p50 <code>~0.46 ms</code>, mean <code>~0.94 ms</code>, p99 <code>~6 ms</code>, single-threaded, excluding network, TLS, proxy and upstream (re-measured 2026-11-10; an earlier run on a smaller rule set reported ~20 µs p50)</td>
+<td>2026-11-10</td>
 </tr>
 <tr>
 <td>First-run baseline before the fix pass</td>
@@ -1465,7 +1465,7 @@ document contradicts it, this file wins and the other document is stale.</p>
 </tr>
 <tr>
 <td>Coverage against the OWASP CRS v4.30 attack suite (vendor-authored, in-sample for CRS)</td>
-<td><code>benchmarks/real_comparative/corpus/crs_v430.jsonl</code>: 3,322/4,050 labelled attacks detected (<strong>82.0% recall</strong>); <code>satbench</code> in-process, p50 2.7–5.0 ms across 2026-11-09 runs on this machine (payload-size and load dependent; an earlier note recorded ~0.7 ms and is not reproducible here), excluding network/TLS/proxy</td>
+<td><code>benchmarks/real_comparative/corpus/crs_v430.jsonl</code>: 3,321/4,050 labelled attacks detected (<strong>82.0% recall</strong>); <code>satbench</code> in-process, p50 2.7–5.0 ms across 2026-11-09 runs on this machine (payload-size and load dependent; an earlier note recorded ~0.7 ms and is not reproducible here), excluding network/TLS/proxy</td>
 <td>2026-11-08 → 2026-11-09</td>
 </tr>
 <tr>
@@ -1475,7 +1475,7 @@ document contradicts it, this file wins and the other document is stale.</p>
 </tr>
 <tr>
 <td><strong>First head-to-head vs a real WAF product</strong></td>
-<td>Aegis Community Edition v1.1.0 (Coraza engine + bundled OWASP CRS 4.25.1 LTS, paranoia level 1, blocking mode) replayed over real HTTP on localhost, 2026-11-09. On <code>crs_v430.jsonl</code>: <strong>Aegis 3,268/4,050 (80.7% recall) vs SATGuardian 3,322/4,050 (82.0%)</strong>; union of both engines 3,764/4,050 (<strong>92.9%</strong>), intersection 2,826 (<strong>69.8%</strong>) — coverage is strongly complementary. On <code>heldout_v10.jsonl</code>: Aegis 48/70 recall (<strong>68.6%</strong>) and 16/44 benign blocked (<strong>36.4% FPR</strong>); SATGuardian current engine 70/70 and 0/44 (post-tuning diagnostic — the frozen one-shot estimate stays 38.6%/0.0%). Verdicts and run manifest: <code>benchmarks/real_comparative/results/aegis/</code> (<code>RUN.json</code>, <code>aegis_v10.jsonl</code>, <code>aegis_crs.jsonl</code>); replay adapter <code>tmp/aegis_replay.py</code> pending promotion to <code>adapters/</code>. Caveats: Aegis ran CRS 4.25.1 not 4.30, paranoia level 1 only, community edition, plain HTTP, traffic-control rate limit disabled for isolation, dummy upstream; latency columns are not comparable (Aegis = full HTTP round-trip, SATGuardian = in-process)</td>
+<td>Aegis Community Edition v1.1.0 (Coraza engine + bundled OWASP CRS 4.25.1 LTS, paranoia level 1, blocking mode) replayed over real HTTP on localhost, 2026-11-09. On <code>crs_v430.jsonl</code>: <strong>Aegis 3,268/4,050 (80.7% recall) vs SATGuardian 3,321/4,050 (82.0%)</strong>; union of both engines 3,762/4,050 (<strong>92.9%</strong>), intersection 2,826 (<strong>69.8%</strong>) — coverage is strongly complementary. On <code>heldout_v10.jsonl</code>: Aegis 48/70 recall (<strong>68.6%</strong>) and 16/44 benign blocked (<strong>36.4% FPR</strong>); SATGuardian current engine 70/70 and 0/44 (post-tuning diagnostic — the frozen one-shot estimate stays 38.6%/0.0%). Verdicts and run manifest: <code>benchmarks/real_comparative/results/aegis/</code> (<code>RUN.json</code>, <code>aegis_v10.jsonl</code>, <code>aegis_crs.jsonl</code>); replay adapter adapter <code>benchmarks/real_comparative/adapters/aegis_replay.py</code>. Caveats: Aegis ran CRS 4.25.1 not 4.30, paranoia level 1 only, community edition, plain HTTP, traffic-control rate limit disabled for isolation, dummy upstream; latency columns are not comparable (Aegis = full HTTP round-trip, SATGuardian = in-process)</td>
 <td>2026-11-09</td>
 </tr>
 <tr>

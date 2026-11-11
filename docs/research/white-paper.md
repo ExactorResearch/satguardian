@@ -15,7 +15,7 @@
 Modern Web Application Firewalls (WAFs) face a fundamental engineering tension between **inspection latency**, **evasion resistance**, and **false positive rates**. Unnormalized regular expression engines are cheap per request but miss nested encodings and inline comments. Anomaly-scoring rule sets transform several request targets and evaluate many rules. Token-weight classifiers can fire on benign technical prose. Those statements are design-level; this repository does not benchmark the real products, only local Python stand-ins.
 
 This paper presents the implemented architecture and the measurements available for **SATGuardian Edge WAF** (`satguardian`). SATGuardian decouples **in-path request evaluation** from **out-of-band rule review**, and puts an operator decision between the two:
-1. **In-Path Hot Plane (Native Rust):** Applies bounded multi-pass lexical normalization (`src/ast/lexer.rs`), packs structural tokens and request attributes into a 128-bit integer (`FeatureVector { bits: u128 }` in `src/ast/features.rs`), and evaluates compiled rule cubes via bitwise operations (`(fv.bits & required_mask) == expected_bits` in `src/engine/sat_solver.rs`). On the pinned corpus at 10,000 requests, a representative run measured p50 `~20 µs`, mean `~22 µs`, and p99 near `50 µs`, single-threaded, in memory only.
+1. **In-Path Hot Plane (Native Rust):** Applies bounded multi-pass lexical normalization (`src/ast/lexer.rs`), packs structural tokens and request attributes into a 128-bit integer (`FeatureVector { bits: u128 }` in `src/ast/features.rs`), and evaluates compiled rule cubes via bitwise operations (`(fv.bits & required_mask) == expected_bits` in `src/engine/sat_solver.rs`). On the pinned corpus at 10,000 requests, a representative run measured p50 `~0.46 ms`, mean `~0.94 ms`, and p99 `~6 ms`, single-threaded, in memory only (re-measured 2026-11-10; an earlier run on a smaller rule set reported ~20 µs).
 2. **Out-of-Band Review Plane (Rust & Python, opt-in):** Logs anomalous `u128` minterms to a local SQLite ledger (`waf_ledger.db`). Only if the operator turns cloud review on (`auto_sync_enabled`, `false` by default) are those minterms sent to **SATGuardian cloud synthesis** at `satguardian.tech`, which minimizes them over the `{AND, OR, NOT, XOR}` basis server-side. The client compiles the returned equation into bitmask clauses and stores them as **proposals** (`dynamic_clauses.applied = 0`). Nothing is enforced until the operator approves a proposal; approved clauses then register in the running engine without a restart.
 
 ---
@@ -100,7 +100,7 @@ real access log. Rules for adding cases and the full miss list live in
 
 `satguardian-waf benchmark -r 10000` cycles the corpus and measures rule
 evaluation only. A representative run on the development machine reported p50
-near `20 µs`, mean near `22 µs` and p99 near `50 µs`, single-threaded. The
+near `0.46 ms`, mean near `0.94 ms` and p99 near `6 ms`, single-threaded (re-measured 2026-11-10). The
 figures move with machine load and should be re-measured on the target host.
 Excluded from the measurement: network, TLS, reverse-proxy hops, upstream
 calls, and SQLite ledger writes. The runner prints these exclusions and the
@@ -166,7 +166,7 @@ Run manifest and per-case verdicts:
 
 | Corpus | SATGuardian | Aegis + CRS 4.25.1 PL1 |
 | :--- | :---: | :---: |
-| `crs_v430.jsonl` (4,050 vendor-authored attacks) | **82.0% recall** (3,322) | **80.7% recall** (3,268) |
+| `crs_v430.jsonl` (4,050 vendor-authored attacks) | **82.0% recall** (3,321) | **80.7% recall** (3,268) |
 | `heldout_v10.jsonl` (70 attacks) | 100% post-tuning diagnostic; frozen one-shot **38.6%** | **68.6% recall** (48/70) |
 | `heldout_v10.jsonl` (44 controls) | 0.0% FPR post-tuning diagnostic; frozen one-shot **0.0%** | **36.4% FPR** (16/44) |
 | `benign_heldout_v3_v10.jsonl` (665 pooled benign controls) | **0.5% FPR** (3/665; v10-only non-spent subset 0/44) | **22.9% FPR** (152/665) |

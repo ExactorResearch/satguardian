@@ -1498,7 +1498,7 @@ third-party evaluation. See <a href="../../status/">STATUS.md</a>.</p>
 <a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>│                  ▼                                                         │
 <a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>│    Bitwise Rule Mask Evaluation (src/engine/sat_solver.rs)                 │
 <a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>│    (minterm &amp; required_mask) == expected_bits                              │
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>│    ~20 µs avg in-memory, native Rust; TLS and proxy hops excluded          │
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>│    ~0.46 ms p50 in-memory, native Rust; TLS and proxy hops excluded (2026-11-10)          │
 <a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>│           /                        \                                       │
 <a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>│    [ALLOW: forward to upstream]   [BLOCK 403 + causal log]                 │
 <a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>└────────────────────────────────────────┬───────────────────────────────────┘
@@ -1569,7 +1569,7 @@ third-party evaluation. See <a href="../../status/">STATUS.md</a>.</p>
 <tr>
 <td style="text-align: left;">In-memory latency, native Rust</td>
 <td style="text-align: left;"><code>benchmark -r 10000</code></td>
-<td style="text-align: left;">p50 <code>~20 µs</code>, mean <code>~22 µs</code>, p99 near <code>50 µs</code> depending on load; in-memory only, excluding TLS, the proxy hop and the upstream</td>
+<td style="text-align: left;">p50 <code>~0.46 ms</code>, mean <code>~0.94 ms</code>, p99 <code>~6 ms</code> depending on load (re-measured 2026-11-10); in-memory only, excluding TLS, the proxy hop and the upstream</td>
 </tr>
 <tr>
 <td style="text-align: left;">Python reference + stand-ins</td>

@@ -208,7 +208,7 @@ This is the HTTP form of `ext_authz`: the service reads `x-envoy-original-method
 implemented in this build, and a Unix socket alternative is available via
 `satguardian-waf envoy-authz --socket /var/run/waf.sock`.
 
-The check itself costs tens of microseconds in memory; the end-to-end latency your clients
+The check itself costs hundreds of microseconds in memory; the end-to-end latency your clients
 see still includes TLS, Envoy and your upstream, which this project does not measure.
 
 ---

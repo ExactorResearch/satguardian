@@ -330,7 +330,7 @@ Measures **in-memory** evaluation latency and CPU throughput over N synthetic re
 ./satguardian-waf benchmark --requests 10000
 ```
 Reference point: the pinned in-memory run over `corpus/independent_v1.json` at 10,000
-requests measured about `~20 µs` p50 and `~22–25 µs` mean, with p99 load dependent.
+requests measured about `~0.46 ms` p50 and `~0.9–1.0 ms` mean, with p99 `~6 ms` (re-measured 2026-11-10).
 In-memory figures only — quote them as such.
 
 #### C. Standalone Inspection Mode (CLI Payload Test)

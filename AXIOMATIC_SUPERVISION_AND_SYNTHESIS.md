@@ -45,7 +45,7 @@ SATGuardian resolves this trade-off by decoupling **real-time edge inspection** 
 │                  ▼                                                         │
 │    Bitwise Rule Mask Evaluation (src/engine/sat_solver.rs)                 │
 │    (minterm & required_mask) == expected_bits                              │
-│    ~20 µs avg in-memory, native Rust; TLS and proxy hops excluded          │
+│    ~0.46 ms p50 in-memory, native Rust; TLS and proxy hops excluded (2026-11-10)          │
 │           /                        \                                       │
 │    [ALLOW: forward to upstream]   [BLOCK 403 + causal log]                 │
 └────────────────────────────────────────┬───────────────────────────────────┘
@@ -91,7 +91,7 @@ SATGuardian resolves this trade-off by decoupling **real-time edge inspection** 
 | First-run baseline before fixes | same corpus | 51/63 recall (80.95%), 3/16 benign blocked (18.75% FPR) |
 | Second batch, first run | `corpus/heldout_v1.json`, 17 attacks + 4 benign | 11/17 recall (64.71%), 0/4 benign blocked; batch consumed by the fix pass, so its 17/17 rerun is in-sample |
 | **Held-out batch (current engine)** | `benchmarks/real_comparative/corpus/heldout_v10.jsonl`: 70 attacks + 44 controls | current engine **100% recall / 0.0% FPR** (post-tuning diagnostic); frozen one-shot **38.6% recall / 0.0% FPR**; earlier `heldout_v2` 56.1%/7.0% kept for provenance |
-| In-memory latency, native Rust | `benchmark -r 10000` | p50 `~20 µs`, mean `~22 µs`, p99 near `50 µs` depending on load; in-memory only, excluding TLS, the proxy hop and the upstream |
+| In-memory latency, native Rust | `benchmark -r 10000` | p50 `~0.46 ms`, mean `~0.94 ms`, p99 `~6 ms` depending on load (re-measured 2026-11-10); in-memory only, excluding TLS, the proxy hop and the upstream |
 | Python reference + stand-ins | `run_benchmark.py 1000` | Reported by the harness with provenance; not a vendor comparison |
 
 No accuracy value is capped and no error rate is floored. Earlier versions of

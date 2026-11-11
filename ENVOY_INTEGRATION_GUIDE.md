@@ -19,7 +19,7 @@ Envoy delegates incoming HTTP request authorization to the local SATGuardian dae
                       ┌─────────────────────────── Kubernetes Pod ───────────────────────────┐
                       │                                                                      │
 Incoming Traffic ────►│  [ Envoy Proxy ] ──(ext_authz UDS)──► [ SATGuardian Rust Sidecar ]   │
-  (Ingress/Mesh)      │         │                               (~20 µs avg in-memory eval)  │
+  (Ingress/Mesh)      │         │                               (~0.46 ms p50 in-memory eval, 2026-11-10)  │
                       │         │ (HTTP 200 OK / Allow)                     │                │
                       │         ▼                                           ▼                │
                       │  [ Upstream App Container ]              [ Local waf_ledger.db ]     │
@@ -28,8 +28,8 @@ Incoming Traffic ────►│  [ Envoy Proxy ] ──(ext_authz UDS)──
 
 ### Why the Sidecar Shape Is Interesting
 1. **Microsecond-scale engine evaluation (in memory only):** `satguardian-waf benchmark -r 10000`
-   measures in-memory lexical and bitmask evaluation at roughly `20 µs` p50 and
-   `22 µs` mean, with p99 fluctuating around `50 µs` depending on load. These
+   measures in-memory lexical and bitmask evaluation at roughly `0.46 ms` p50 and
+   `0.94 ms` mean, with p99 around `6 ms` depending on load (re-measured 2026-11-10). These
    numbers exclude the UDS hop, Envoy itself and the upstream service; end-to-end
    sidecar latency has not been characterized.
 2. **Traffic stays inside your cluster, and the edge costs nothing per request:** all HTTP payloads are inspected locally, with no external DNS CNAME routing and no per-request fee. With the shipped defaults (`auto_sync_enabled = false` in `waf_config.toml`) the sidecar makes no outbound call at all.
@@ -150,7 +150,7 @@ Two operational notes, both read straight off `src/main.rs`:
 
 | Measurement | Source | Result |
 | :--- | :--- | :--- |
-| In-memory rule latency | `benchmark -r 10000` | p50 `~20 µs`, mean `~22 µs`, p99 near `50 µs` depending on load; in-memory only |
+| In-memory rule latency | `benchmark -r 10000` | p50 `~0.46 ms`, mean `~0.94 ms`, p99 `~6 ms` depending on load (re-measured 2026-11-10); in-memory only |
 | Detection, pinned corpus | `corpus/independent_v1.json` | 63/63 attacks, 0/16 benign blocked (**in-sample regression floor**) |
 | Detection, first run before fixes | same corpus | 51/63 recall (80.95%), 3/16 benign blocked (18.75% FPR) |
 | **Held-out detection (current engine)** | `benchmarks/real_comparative/corpus/heldout_v10.jsonl` | current engine **100% recall / 0.0% FPR** (post-tuning diagnostic); frozen one-shot **38.6% recall / 0.0% FPR**; earlier `heldout_v2` 56.1%/7.0% kept for provenance |

@@ -16,7 +16,7 @@
 
 `satguardian` is a hybrid Web Application Firewall (WAF) divided into two strictly decoupled execution planes:
 
-1. **In-Path Edge Data Plane (Native Rust — `src/`):** Evaluates HTTP requests in memory (tens of microseconds per payload; no network hop included) using multi-pass lexical normalization, a 128-bit feature bitmask (`FeatureVector { bits: u128 }`, 40 named variables in the current catalogue), and bitwise rule comparisons (`(minterm & required_mask) == expected_bits`). This plane is self-contained: it enforces the rules already in the process and needs no network access to do so.
+1. **In-Path Edge Data Plane (Native Rust — `src/`):** Evaluates HTTP requests in memory (hundreds of microseconds per payload; no network hop included) using multi-pass lexical normalization, a 128-bit feature bitmask (`FeatureVector { bits: u128 }`, 40 named variables in the current catalogue), and bitwise rule comparisons (`(minterm & required_mask) == expected_bits`). This plane is self-contained: it enforces the rules already in the process and needs no network access to do so.
 2. **Out-of-Band Control & Cloud Review Plane (Rust & Python — `src/cloud/satguardian_client.rs`, `src/ledger/sqlite_ledger.rs`, `satguardian-advisor.py`):** Reads the SQLite forensic audit ledger (`waf_ledger.db`) and, **only when the operator turns cloud review on** (`auto_sync_enabled`, `false` by default in `src/config.rs` and `waf_config.toml`), sends collected `u128` anomaly minterms to the **SATGuardian cloud synthesis** service at `satguardian.tech`. Boolean minimization runs on that service, not in this repository: the client receives a reduced equation, compiles it into bitmask clauses, and stores them as **proposals** (`dynamic_clauses.applied = 0`). Proposals do not enter the running engine and are not loaded at startup. A separate explicit action — `satguardian-waf clauses apply <id>` or `POST /api/waf/clauses/{id}/apply` — registers one clause in the engine.
 
 ```mermaid
@@ -137,8 +137,8 @@ for adding cases are in [corpus/README.md](corpus/README.md);
 ### 4.2 Latency
 
 `cargo run --release -- benchmark -r 10000` measures in-memory rule evaluation
-over the pinned corpus: roughly `20 µs` p50 and `22 µs` mean on a desktop CPU,
-with p99 fluctuating around the `50 µs` target depending on machine load. It
+over the pinned corpus: roughly `0.46 ms` p50 and `0.94 ms` mean on this machine (re-measured 2026-11-10; an earlier run reported ~20 µs),
+with p99 around `6 ms` on this machine (re-measured 2026-11-10; an earlier run on a smaller rule set reported ~50 µs). It
 excludes TLS, the proxy hop, the upstream service and stateful tracking.
 
 The Python harness (`python run_benchmark.py 1000`) compares the Python reference

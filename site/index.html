@@ -1871,7 +1871,7 @@ for the evidence and its limits.</p>
 </blockquote>
 <p><strong>📚 Official Documentation:</strong> <a href="https://exactorresearch.github.io/satguardian/">https://exactorresearch.github.io/satguardian/</a></p>
 <p><a href="#2-consideration-the-solution-satguardian-architecture"><img alt="Architecture" src="https://img.shields.io/badge/Architecture-Lexical_&amp;_Bitmask_WAF-blue.svg" /></a>
-<a href="#3-decision-what-has-been-measured"><img alt="Performance" src="https://img.shields.io/badge/Hot_Path-In--Memory_p50_~20_µs-brightgreen.svg" /></a>
+<a href="#3-decision-what-has-been-measured"><img alt="Performance" src="https://img.shields.io/badge/Hot_Path-In--Memory_p50_~0.46_ms-brightgreen.svg" /></a>
 <a href="#22-opt-in-cloud-synthesis-srccloudsatguardian_clientrs"><img alt="Synthesis" src="https://img.shields.io/badge/Rule_Synthesis-Opt--in_Cloud%2C_Approved_locally-orange.svg" /></a>
 <a href="#35-pricing-licensing-zero-traffic-tax"><img alt="License" src="https://img.shields.io/badge/Edge_WAF-100%25_Free_&amp;_Unlimited_Traffic-success.svg" /></a></p>
 <p><strong>SATGuardian Edge WAF</strong> is a self-hosted Web Application Firewall
@@ -1907,15 +1907,18 @@ they are kept only as build history.</p>
 </blockquote>
 <h3 id="2-launch-the-standalone-reverse-proxy-test-live-threat-detection">2️⃣ Launch the Standalone Reverse Proxy &amp; Test Live Threat Detection</h3>
 <p>Spin up SATGuardian as a standalone frontline proxy and test attack blocking with <code>curl</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Terminal A: Start standalone WAF proxy on port 8080 forwarding to your application (port 3000)</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="c1"># Linux/macOS: ./target/release/satguardian-waf   Windows: .\target\release\satguardian-waf.exe</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>./target/release/satguardian-waf<span class="w"> </span>proxy<span class="w"> </span>--listen<span class="w"> </span><span class="m">127</span>.0.0.1:8080<span class="w"> </span>--upstream<span class="w"> </span>http://127.0.0.1:3000
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="c1"># Terminal B: Test a benign request (Allowed -&gt; HTTP 200 OK)</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>curl<span class="w"> </span>-i<span class="w"> </span>http://localhost:8080/api/users?search<span class="o">=</span>john_doe
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Terminal 0: Start any upstream app on port 3000 — e.g. a static file server:</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="c1">#   python -m http.server 3000</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># Terminal A: Start standalone WAF proxy on port 8080 forwarding to your application (port 3000)</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="c1"># Linux/macOS: ./target/release/satguardian-waf   Windows: .\target\release\satguardian-waf.exe</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>./target/release/satguardian-waf<span class="w"> </span>proxy<span class="w"> </span>--listen<span class="w"> </span><span class="m">127</span>.0.0.1:8080<span class="w"> </span>--upstream<span class="w"> </span>http://127.0.0.1:3000
 <a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="c1"># Terminal B: Test a SQLi + XSS multi-vector attack (Blocked -&gt; HTTP 403 Forbidden)</span>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>curl<span class="w"> </span>-i<span class="w"> </span><span class="s2">&quot;http://localhost:8080/api/users?search=1%27%20UNION%20SELECT%20*%20FROM%20users--%20%3Cscript%3Ealert(1)%3C/script%3E&quot;</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="c1"># Terminal B: Test a benign request (Allowed -&gt; proxied to upstream; HTTP 200 if it serves the path, never 403)</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>curl<span class="w"> </span>-i<span class="w"> </span>http://localhost:8080/
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="c1"># Terminal B: Test a SQLi + XSS multi-vector attack (Blocked -&gt; HTTP 403 Forbidden)</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>curl<span class="w"> </span>-i<span class="w"> </span><span class="s2">&quot;http://localhost:8080/api/users?search=1%27%20UNION%20SELECT%20*%20FROM%20users--%20%3Cscript%3Ealert(1)%3C/script%3E&quot;</span>
 </code></pre></div>
 <h3 id="3-run-the-built-in-benchmark-10000-requests">3️⃣ Run the Built-In Benchmark (10,000 Requests)</h3>
 <p>Measure single-core CPU throughput and in-memory bitmask evaluation latency:</p>
@@ -1971,7 +1974,7 @@ they are kept only as build history.</p>
 <a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>│                                                 ▼                          │
 <a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>│                                 Bitwise Rule Mask Evaluation               │
 <a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>│                                 (minterm &amp; mask) == expected               │
-<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>│                                 (~20 µs p50 in-memory, native Rust)        │
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>│                                 (~0.46 ms p50 in-memory, native Rust)        │
 <a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>│                                        /               \                   │
 <a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>│                                   [ALLOW]             [BLOCK + Causal Log] │
 <a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>└─────────────────────────────────────────────────────────┬──────────────────┘
@@ -1996,7 +1999,7 @@ they are kept only as build history.</p>
 <ul>
 <li><strong>Multi-Pass Lexical Normalization (<code>src/ast/lexer.rs</code>):</strong> Applies percent-decoding, unwraps MySQL executable comments, strips inline comments, decodes HTML entities and Unicode/overlong escapes, and expands Log4j lookups before token extraction. Entity-encoded payloads are covered by <code>corpus/independent_v1.json</code>; that is a regression check, not proof of complete coverage.</li>
 <li><strong>128-Bit Feature Vector (<code>src/ast/features.rs</code>):</strong> Packs HTTP attributes, Shannon character entropy, and structural tokens across 5 domains (<code>SQLi</code>, <code>XSS</code>, <code>RCE</code>, <code>LFI</code>, <code>SSRF</code>) into a single <code>u128</code> integer.</li>
-<li><strong>Bitmask Conjunction Evaluation (<code>src/engine/sat_solver.rs</code>):</strong> Compares request minterms against compiled rule masks via bitwise <code>AND</code> operations (<code>(minterm &amp; required_mask) == expected_bits</code>). On the pinned corpus at 10,000 requests the native engine measured roughly <code>20 µs</code> p50 and <code>22–25 µs</code> mean in-memory; p99 is load dependent and has measured <code>50–60 µs</code>.</li>
+<li><strong>Bitmask Conjunction Evaluation (<code>src/engine/sat_solver.rs</code>):</strong> Compares request minterms against compiled rule masks via bitwise <code>AND</code> operations (<code>(minterm &amp; required_mask) == expected_bits</code>). On the pinned corpus at 10,000 requests the native engine measured roughly <code>0.46 ms</code> p50 and <code>0.94 ms</code> mean in-memory on this machine (re-measured 2026-11-10; an earlier run on a smaller rule set reported ~20 µs); p99 is load dependent and measured <code>~6 ms</code>.</li>
 <li><strong>Structural token conjunctions:</strong> Rules require combinations such as <code>TAG_OPEN</code> <span class="arithmatex">\(\land\)</span> <code>SCRIPT_ELEMENT</code> <span class="arithmatex">\(\land\)</span> <code>DOM_EXEC</code> instead of single keywords. False positives are counted on the pinned corpus; the engine does not claim zero FPs.</li>
 </ul>
 <h3 id="22-opt-in-cloud-synthesis-srccloudsatguardian_clientrs">2.2 Opt-in Cloud Synthesis (<code>src/cloud/satguardian_client.rs</code>)</h3>
@@ -2094,7 +2097,7 @@ named product.</p>
 <tr>
 <td style="text-align: left;">Native Rust v0.3.0</td>
 <td style="text-align: left;"><code>corpus/independent_v1.json</code>, 10,000 requests (representative run)</td>
-<td style="text-align: center;">p50 <code>~20 µs</code>, mean <code>~22–25 µs</code>, p99 <code>~50–60 µs</code></td>
+<td style="text-align: center;">p50 <code>~0.46 ms</code>, mean <code>~0.94 ms</code>, p99 <code>~6 ms</code> (re-measured 2026-11-10)</td>
 <td style="text-align: center;">63/63 attacks, 0/16 benign blocked</td>
 </tr>
 </tbody>
@@ -2182,7 +2185,7 @@ per-case verdicts live in <code>benchmarks/real_comparative/results/aegis/</code
 <tbody>
 <tr>
 <td style="text-align: left;"><code>crs_v430.jsonl</code> (4,050 vendor-authored attacks)</td>
-<td style="text-align: center;"><strong>82.0% recall</strong> (3,322)</td>
+<td style="text-align: center;"><strong>82.0% recall</strong> (3,321)</td>
 <td style="text-align: center;"><strong>80.7% recall</strong> (3,268)</td>
 </tr>
 <tr>
@@ -2237,7 +2240,7 @@ The only thing that can leave the node is the optional cloud review of §2.2, wh
 sends recorded <code>u128</code> feature vectors, is disabled by default, and never changes the
 rule set by itself. No DNS or CNAME redirection is required:</p>
 <ol>
-<li><strong>Kubernetes / Envoy Proxy Native Sidecar:</strong> Runs alongside Envoy via <code>ext_authz</code> over an in-memory Unix Domain Socket (<code>unix:///run/satguardian/waf.sock</code>), adding the engine's measured in-memory cost (tens of microseconds) with no network hop.</li>
+<li><strong>Kubernetes / Envoy Proxy Native Sidecar:</strong> Runs alongside Envoy via <code>ext_authz</code> over an in-memory Unix Domain Socket (<code>unix:///run/satguardian/waf.sock</code>), adding the engine's measured in-memory cost (hundreds of microseconds) with no network hop.</li>
 <li><strong>Reverse Proxy:</strong> Frontline protection for Nginx, Apache, or Microsoft IIS (including Windows Service deployment via <code>install.ps1</code>).</li>
 <li><strong>Standalone Binary:</strong> Self-contained Rust binary built with <code>cargo build --release</code> (<code>satguardian-waf proxy --listen 127.0.0.1:8080</code>). It speaks plain HTTP; terminate TLS in a reverse proxy or Envoy in front of it.</li>
 </ol>

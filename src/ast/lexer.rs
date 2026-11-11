@@ -2409,8 +2409,13 @@ impl AstLexer {
                 break;
             }
         }
-        let host_is_ip = Self::is_ip_literal(host_value) || Self::is_internal_hostname(host_value);
-        if host_is_ip {
+        // A bare internal name or IP literal in Host is normal traffic for a WAF
+        // deployed inside the perimeter (sidecar, reverse proxy, intranet):
+        // Host: api.internal or Host: 10.0.0.5 must not block. Host is only
+        // hostile on its own when it carries userinfo or CR/LF; internal names
+        // and IP literals stay suspicious in *forwarding* headers below, where
+        // they can disagree with an explicit Host.
+        if host_value.contains('@') || host_value.contains('\r') || host_value.contains('\n') {
             return true;
         }
         for (k, v) in headers {

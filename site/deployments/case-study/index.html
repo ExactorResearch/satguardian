@@ -1496,7 +1496,7 @@ the bundled demo ledger or the in-repo corpus, on one machine.</p>
    depend on the ledger revision; regenerate the audit before quoting them.</li>
 <li><strong>Native Rust hot path:</strong> <code>satguardian-waf benchmark -r 10000</code> evaluates the
    pinned corpus in memory, single-threaded. On a desktop CPU this lands in the
-   tens of microseconds per payload; it excludes TLS, the proxy hop and the
+   hundreds of microseconds per payload; it excludes TLS, the proxy hop and the
    upstream service.</li>
 <li><strong>Python harness:</strong> <code>python run_benchmark.py 1000</code> compares the Python
    reference port against local Python stand-ins. It does not execute Coraza,
@@ -1670,7 +1670,7 @@ and "no collisions" on demo traffic is not a false-positive guarantee.</p>
 <tr>
 <td style="text-align: left;">In-memory latency, native Rust</td>
 <td style="text-align: left;"><code>benchmark -r 10000</code></td>
-<td style="text-align: left;">p50 <code>~20 µs</code>, mean <code>~22 µs</code>, p99 near <code>50 µs</code> depending on load; in-memory only</td>
+<td style="text-align: left;">p50 <code>~0.46 ms</code>, mean <code>~0.94 ms</code>, p99 <code>~6 ms</code> depending on load (re-measured 2026-11-10); in-memory only</td>
 </tr>
 <tr>
 <td style="text-align: left;">Python harness</td>

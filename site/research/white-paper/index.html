@@ -1635,7 +1635,7 @@ evaluation exists. See <a href="../../status/">STATUS.md</a>.</p>
 <h2 id="abstract">Abstract</h2>
 <p>Modern Web Application Firewalls (WAFs) face a fundamental engineering tension between <strong>inspection latency</strong>, <strong>evasion resistance</strong>, and <strong>false positive rates</strong>. Unnormalized regular expression engines are cheap per request but miss nested encodings and inline comments. Anomaly-scoring rule sets transform several request targets and evaluate many rules. Token-weight classifiers can fire on benign technical prose. Those statements are design-level; this repository does not benchmark the real products, only local Python stand-ins.</p>
 <p>This paper presents the implemented architecture and the measurements available for <strong>SATGuardian Edge WAF</strong> (<code>satguardian</code>). SATGuardian decouples <strong>in-path request evaluation</strong> from <strong>out-of-band rule review</strong>, and puts an operator decision between the two:
-1. <strong>In-Path Hot Plane (Native Rust):</strong> Applies bounded multi-pass lexical normalization (<code>src/ast/lexer.rs</code>), packs structural tokens and request attributes into a 128-bit integer (<code>FeatureVector { bits: u128 }</code> in <code>src/ast/features.rs</code>), and evaluates compiled rule cubes via bitwise operations (<code>(fv.bits &amp; required_mask) == expected_bits</code> in <code>src/engine/sat_solver.rs</code>). On the pinned corpus at 10,000 requests, a representative run measured p50 <code>~20 µs</code>, mean <code>~22 µs</code>, and p99 near <code>50 µs</code>, single-threaded, in memory only.
+1. <strong>In-Path Hot Plane (Native Rust):</strong> Applies bounded multi-pass lexical normalization (<code>src/ast/lexer.rs</code>), packs structural tokens and request attributes into a 128-bit integer (<code>FeatureVector { bits: u128 }</code> in <code>src/ast/features.rs</code>), and evaluates compiled rule cubes via bitwise operations (<code>(fv.bits &amp; required_mask) == expected_bits</code> in <code>src/engine/sat_solver.rs</code>). On the pinned corpus at 10,000 requests, a representative run measured p50 <code>~0.46 ms</code>, mean <code>~0.94 ms</code>, and p99 <code>~6 ms</code>, single-threaded, in memory only (re-measured 2026-11-10; an earlier run on a smaller rule set reported ~20 µs).
 2. <strong>Out-of-Band Review Plane (Rust &amp; Python, opt-in):</strong> Logs anomalous <code>u128</code> minterms to a local SQLite ledger (<code>waf_ledger.db</code>). Only if the operator turns cloud review on (<code>auto_sync_enabled</code>, <code>false</code> by default) are those minterms sent to <strong>SATGuardian cloud synthesis</strong> at <code>satguardian.tech</code>, which minimizes them over the <code>{AND, OR, NOT, XOR}</code> basis server-side. The client compiles the returned equation into bitmask clauses and stores them as <strong>proposals</strong> (<code>dynamic_clauses.applied = 0</code>). Nothing is enforced until the operator approves a proposal; approved clauses then register in the running engine without a restart.</p>
 <hr />
 <h2 id="1-mathematical-algorithmic-formulation-as-implemented">1. Mathematical &amp; Algorithmic Formulation (As Implemented)</h2>
@@ -1733,7 +1733,7 @@ real access log. Rules for adding cases and the full miss list live in
 <h3 id="22-in-memory-latency-native-rust">2.2 In-Memory Latency (Native Rust)</h3>
 <p><code>satguardian-waf benchmark -r 10000</code> cycles the corpus and measures rule
 evaluation only. A representative run on the development machine reported p50
-near <code>20 µs</code>, mean near <code>22 µs</code> and p99 near <code>50 µs</code>, single-threaded. The
+near <code>0.46 ms</code>, mean near <code>0.94 ms</code> and p99 near <code>6 ms</code>, single-threaded (re-measured 2026-11-10). The
 figures move with machine load and should be re-measured on the target host.
 Excluded from the measurement: network, TLS, reverse-proxy hops, upstream
 calls, and SQLite ledger writes. The runner prints these exclusions and the
@@ -1842,7 +1842,7 @@ Run manifest and per-case verdicts:
 <tbody>
 <tr>
 <td style="text-align: left;"><code>crs_v430.jsonl</code> (4,050 vendor-authored attacks)</td>
-<td style="text-align: center;"><strong>82.0% recall</strong> (3,322)</td>
+<td style="text-align: center;"><strong>82.0% recall</strong> (3,321)</td>
 <td style="text-align: center;"><strong>80.7% recall</strong> (3,268)</td>
 </tr>
 <tr>

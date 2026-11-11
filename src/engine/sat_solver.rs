@@ -804,8 +804,8 @@ impl SatguardianSatEngine {
                 island_id: "ISLAND-HEADER-INJECTION".to_string(),
                 category: AttackCategory::HostHeaderInjection,
                 name: "Host / Forwarded Header Manipulation Invariant".to_string(),
-                description: "Detects IP literals in the Host header or forwarding headers (X-Forwarded-Host, Forwarded) that disagree with it.".to_string(),
-                invariant_formula: r"Token(\text{HOST}=\text{IP\_LITERAL}) \lor Token(\text{XFH} \neq \text{HOST})".to_string(),
+                description: "Detects userinfo/CR-LF in the Host header, or forwarding headers (X-Forwarded-Host, Forwarded) carrying IP literals, internal names or values that disagree with Host.".to_string(),
+                invariant_formula: r"Token(\text{HOST\_CREDENTIALS\_OR\_CRLF}) \lor Token(\text{XFH} \neq \text{HOST}) \lor Token(\text{XFH\_SUSPICIOUS\_VALUE})".to_string(),
                 confidence: 1.0,
             },
         );
