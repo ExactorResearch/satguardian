@@ -1,5 +1,9 @@
 # Run outputs are regenerable and full of payload bytes; only RESULTS.json,
 # RUN.json and provenance are worth a commit.
-results/
+results/*
+!results/*/
+results/*/*
+!results/*/RUN.json
+!results/*/RESULTS.json
 corpus/crs_*.jsonl
 corpus/*_verdicts.jsonl
