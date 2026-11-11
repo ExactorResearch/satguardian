@@ -1,4 +1,8 @@
-# 🛡️ SATGuardian Edge WAF (`satguardian`)
+# 🛡️ SATGuardian — The WAF That Can Prove Its Work
+
+> **Deterministic, auditable security decision layer.** Not another WAF — the
+> engine that decides *why* a request is malicious, bit by bit, before any
+> scoring-based firewall has to guess.
 
 > **Status: SATGuardian Edge WAF v0.3.0.**
 > Detection has only been measured on a small, hand-written, in-sample corpus.
@@ -13,12 +17,14 @@
 [![Synthesis](https://img.shields.io/badge/Rule_Synthesis-Opt--in_Cloud%2C_Approved_locally-orange.svg)](#22-opt-in-cloud-synthesis-srccloudsatguardian_clientrs)
 [![License](https://img.shields.io/badge/Edge_WAF-100%25_Free_&_Unlimited_Traffic-success.svg)](#35-pricing-licensing-zero-traffic-tax)
 
-**SATGuardian Edge WAF** is a self-hosted Web Application Firewall
-written in Rust. It evaluates security logic with **128-bit integer bitmasks
-(`u128`)** in microseconds on the edge, and can — only if you turn it on — send
-recorded anomalies to **SATGuardian cloud synthesis** for review. Detection quality
-is **measured, not assumed**: the numbers below come from a versioned corpus and a
-reproducible benchmark, one held-out batch of them included.
+**SATGuardian Edge WAF** is a self-hosted **deterministic security decision
+layer** written in Rust. It is not positioned as "another WAF": it evaluates
+security logic with **128-bit integer bitmasks (`u128`)** in ~0.5 ms in memory,
+and every block is a reproducible Boolean proof — not an anomaly score. It can
+— only if you turn it on — send recorded anomalies to **SATGuardian cloud
+synthesis** for review. Detection quality is **measured, not assumed**: the
+numbers below come from a versioned corpus, a reproducible benchmark, and the
+first head-to-head against a real WAF product (Aegis Community v1.1.0).
 
 The product promise: **free, you get local protection; paying, you get ongoing review, update proposals and explanations — without ever giving up control of your WAF.** The local client and `satguardian-health` stay free, read-only and offline. Cloud review is opt-in (`auto_sync_enabled` defaults to `false`) and what it returns is stored as a **proposal**: nothing enters the running rule set until you approve it with `satguardian-waf clauses apply <id>` or `POST /api/waf/clauses/{id}/apply`. The messaging bot (Telegram/WhatsApp) is announced on the site, not available yet.
 

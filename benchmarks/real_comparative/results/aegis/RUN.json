@@ -1,0 +1,30 @@
+{
+  "engine": "aegis-community",
+  "version": "1.1.0",
+  "build_tier": "community",
+  "build_date": "2026-11-06T16:21:30Z",
+  "binary": "aegis-windows-amd64.exe from GitHub release v1.1.0 (divinelabio/Aegis)",
+  "ruleset": "OWASP CRS 4.25.1 LTS (crs-manifest.json bundled in release; rule_files=27, unique_rule_ids=628)",
+  "waf_mode": "blocking",
+  "paranoia_level": 1,
+  "anomaly_threshold": 5,
+  "traffic_control": "disabled for this run (default 60 req/min per-IP rate limit would have confounded detection measurement)",
+  "tls": "disabled (plain HTTP on localhost)",
+  "upstream": "python3 -m http.server 127.0.0.1:9999 (dummy origin; allowed requests proxied, blocked requests answered at edge)",
+  "host": "Windows 10.0.19045, localhost only",
+  "date": "2026-11-09",
+  "adapter": "benchmarks/real_comparative/adapters/aegis_replay.py (Phase-3: full HTTP round-trip incl. upstream; latency not comparable to satbench in-memory)",
+  "blocked_rule": "HTTP response carried X-Aegis-Waf: blocked (403) or transport error; upstream-originated statuses (incl. 501 from the dummy origin) count as allowed",
+  "notes": [
+    "latency_us is full HTTP round-trip through the Aegis proxy including upstream hop; NOT comparable to satguardian in-memory figures",
+    "heldout_v10.jsonl is a batch authored inside the satguardian repository; CRS/aegis never saw it during tuning",
+    "crs_v430.jsonl is the vendor-authored OWASP CRS v4.30 test suite; aegis runs CRS 4.25.1, not 4.30",
+    "no TLS, no geoip db, no rate limiting, community edition; results describe this configuration only"
+  ],
+  "files": {
+    "verdicts_heldout_v10": "aegis_v10.jsonl",
+    "verdicts_crs_v430": "aegis_crs.jsonl",
+    "verdicts_benign_pooled": "aegis_benign.jsonl"
+  },
+  "benign_pooled": "benign_heldout_v3_v10.jsonl: all label=benign cases from heldout_v3..v10 (665 cases); aegis blocked 152 (22.9% FPR, 95% CI 19.8-26.2%)"
+}

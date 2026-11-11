@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Rust edge WAF with u128 bitmask inspection and opt-in SATGuardian cloud rule synthesis that returns proposals you approve">
+        <meta name="description" content="Deterministic, auditable security decision layer — the WAF that can prove its work; u128 bitmask inspection with opt-in cloud rule synthesis returned as proposals">
       
       
         <meta name="author" content="SATGuardian Cyber-Defense Systems">
@@ -27,7 +27,7 @@
     
     
       
-        <title>Technical White Paper - SATGuardian Edge WAF Documentation</title>
+        <title>Technical White Paper - SATGuardian — The WAF That Can Prove Its Work</title>
       
     
     
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#satguardian-edge-waf-tens-of-microseconds-lexical-normalization-128-bit-boolean-mask-evaluation-and-opt-in-out-of-band-cloud-rule-review" class="md-skip">
+        <a href="#satguardian-the-waf-that-can-prove-its-work-tens-of-microseconds-lexical-normalization-128-bit-boolean-mask-evaluation-and-opt-in-out-of-band-cloud-rule-review" class="md-skip">
           Skip to content
         </a>
       
@@ -92,7 +92,7 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="SATGuardian Edge WAF Documentation" class="md-header__button md-logo" aria-label="SATGuardian Edge WAF Documentation" data-md-component="logo">
+    <a href="../.." title="SATGuardian — The WAF That Can Prove Its Work" class="md-header__button md-logo" aria-label="SATGuardian — The WAF That Can Prove Its Work" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -106,7 +106,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            SATGuardian Edge WAF Documentation
+            SATGuardian — The WAF That Can Prove Its Work
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -420,13 +420,13 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="SATGuardian Edge WAF Documentation" class="md-nav__button md-logo" aria-label="SATGuardian Edge WAF Documentation" data-md-component="logo">
+    <a href="../.." title="SATGuardian — The WAF That Can Prove Its Work" class="md-nav__button md-logo" aria-label="SATGuardian — The WAF That Can Prove Its Work" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
-    SATGuardian Edge WAF Documentation
+    SATGuardian — The WAF That Can Prove Its Work
   </label>
   
     <div class="md-nav__source">
@@ -1622,7 +1622,14 @@
   
 
 
-<h1 id="satguardian-edge-waf-tens-of-microseconds-lexical-normalization-128-bit-boolean-mask-evaluation-and-opt-in-out-of-band-cloud-rule-review">SATGuardian Edge WAF: Tens-of-Microseconds Lexical Normalization, 128-Bit Boolean Mask Evaluation, and Opt-In Out-of-Band Cloud Rule Review</h1>
+<h1 id="satguardian-the-waf-that-can-prove-its-work-tens-of-microseconds-lexical-normalization-128-bit-boolean-mask-evaluation-and-opt-in-out-of-band-cloud-rule-review">SATGuardian — The WAF That Can Prove Its Work: Tens-of-Microseconds Lexical Normalization, 128-Bit Boolean Mask Evaluation, and Opt-In Out-of-Band Cloud Rule Review</h1>
+<blockquote>
+<p><strong>Positioning:</strong> SATGuardian is a deterministic, auditable security decision
+layer — not "another WAF". It runs in front of or instead of
+signature/scoring firewalls, proves every block as a Boolean cube, and was
+measured head-to-head against a real product (Aegis Community v1.1.0) in
+§2.5.</p>
+</blockquote>
 <p><strong>Technical White Paper — Version 3.0</strong><br />
 <strong>Implementation Reference:</strong> <code>satguardian</code> (<code>src/</code> in Rust, <code>satguardian_waf/</code> in Python). The Boolean minimizer is a service at <code>satguardian.tech</code>; only its client lives in this repository.</p>
 <blockquote>
