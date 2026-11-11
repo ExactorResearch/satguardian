@@ -1,0 +1,1719 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Deterministic, auditable security decision layer — the WAF that can prove its work; u128 bitmask inspection with opt-in cloud rule synthesis returned as proposals">
+      
+      
+        <meta name="author" content="SATGuardian Cyber-Defense Systems">
+      
+      
+        <link rel="canonical" href="https://ExactorResearch.github.io/satguardian/status/">
+      
+      
+        <link rel="prev" href="..">
+      
+      
+        <link rel="next" href="../corpus/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+    
+    
+      
+        <title>Project Status - SATGuardian — The WAF That Can Prove Its Work</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="cyan">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#project-status-and-evidence" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="SATGuardian — The WAF That Can Prove Its Work" class="md-header__button md-logo" aria-label="SATGuardian — The WAF That Can Prove Its Work" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            SATGuardian — The WAF That Can Prove Its Work
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Project Status
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="cyan"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="cyan"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/ExactorResearch/satguardian" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ExactorResearch/satguardian
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Project Status
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../corpus/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Detection Corpus
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../getting-started/configuration/" class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../architecture/system-architecture/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../integrations/" class="md-tabs__link">
+          
+  
+  
+  Deployments & Integration
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../benchmarks/comparative-analysis/" class="md-tabs__link">
+          
+  
+  
+  Benchmarks & Analysis
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../reports/technical-audit/" class="md-tabs__link">
+          
+  
+  
+  Audit & Reports
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../research/white-paper/" class="md-tabs__link">
+          
+  
+  
+  Research & Theory
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="SATGuardian — The WAF That Can Prove Its Work" class="md-nav__button md-logo" aria-label="SATGuardian — The WAF That Can Prove Its Work" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    SATGuardian — The WAF That Can Prove Its Work
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/ExactorResearch/satguardian" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ExactorResearch/satguardian
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Project Status
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Project Status
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-is-measured" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What is measured
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-is-not-measured" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What is not measured
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-to-reproduce" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How to reproduce
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#control-boundary-what-the-paid-tier-actually-does" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Control boundary (what the paid tier actually does)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-this-file-exists" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why this file exists
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../corpus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Detection Corpus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operations & Tooling Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/poc-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Proof of Concept Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/system-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/axiomatic-supervision/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Axiomatic Supervision & Synthesis
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/satguardian-methodology/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SAT Guardian Methodology
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deployments & Integration
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Deployments & Integration
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integration Ecosystem
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deployments/envoy-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Envoy Proxy Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deployments/case-study/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deployment Notes (Lab)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmarks & Analysis
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Benchmarks & Analysis
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../benchmarks/comparative-analysis/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multi-WAF Comparative Analysis
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Audit & Reports
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Audit & Reports
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reports/technical-audit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Technical Audit Report
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reports/audit-report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Forensic Audit Ledger
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Research & Theory
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Research & Theory
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research/white-paper/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Technical White Paper
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-is-measured" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What is measured
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-is-not-measured" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What is not measured
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-to-reproduce" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How to reproduce
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#control-boundary-what-the-paid-tier-actually-does" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Control boundary (what the paid tier actually does)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-this-file-exists" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why this file exists
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="project-status-and-evidence">Project status and evidence</h1>
+<p><strong>Status: SATGuardian Edge WAF v0.3.0.</strong></p>
+<p>This file is the single source of truth for what has been measured. If another
+document contradicts it, this file wins and the other document is stale.</p>
+<h2 id="what-is-measured">What is measured</h2>
+<table>
+<thead>
+<tr>
+<th>Claim</th>
+<th>Evidence</th>
+<th>Date</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Rule-engine detections on the pinned regression corpus</td>
+<td><code>corpus/independent_v1.json</code>: 63/63 attacks, 0/16 benign blocked, 0 category mismatches</td>
+<td>2026-11-01</td>
+</tr>
+<tr>
+<td>Same, on a second batch built to vary the first</td>
+<td><code>corpus/heldout_v1.json</code>: 17/17 attacks, 0/4 benign blocked after fixes; the <strong>first</strong> run before fixes was 11/17 (64.71% recall)</td>
+<td>2026-11-01</td>
+</tr>
+<tr>
+<td>In-memory latency over the corpus</td>
+<td><code>satguardian-waf benchmark -r 10000</code>: p50 <code>~0.46 ms</code>, mean <code>~0.94 ms</code>, p99 <code>~6 ms</code>, single-threaded, excluding network, TLS, proxy and upstream (re-measured 2026-11-10; an earlier run on a smaller rule set reported ~20 µs p50)</td>
+<td>2026-11-10</td>
+</tr>
+<tr>
+<td>First-run baseline before the fix pass</td>
+<td><code>independent_v1</code>: 51/63 recall (80.95%), 3/16 benign blocked (18.75% FPR)</td>
+<td>2026-11-01</td>
+</tr>
+<tr>
+<td><strong>Current engine on the held-out batch</strong></td>
+<td><code>benchmarks/real_comparative/corpus/heldout_v10.jsonl</code>, measured today: <strong>70/70 attacks detected (100% recall, 95% CI 94.8–100%)</strong>, 0/44 controls blocked (<strong>0.0% FPR</strong>, 95% CI 0.0–8.0%). Report: <code>corpus/heldout_v10_post_tuning_report.json</code> — post-tuning diagnostic, not an estimate</td>
+<td>2026-11-08</td>
+</tr>
+<tr>
+<td><strong>Frozen one-shot estimate</strong></td>
+<td>Same batch, run once before any fix against it: 27/70 attacks detected — frozen one-shot result, 0/44 controls blocked (<strong>0.0% FPR</strong>, 95% CI 0.0–8.0%). Report: <code>corpus/heldout_v10_report.json</code> — frozen, never rewritten</td>
+<td>2026-11-08</td>
+</tr>
+<tr>
+<td>Coverage against the OWASP CRS v4.30 attack suite (vendor-authored, in-sample for CRS)</td>
+<td><code>benchmarks/real_comparative/corpus/crs_v430.jsonl</code>: 3,321/4,050 labelled attacks detected (<strong>82.0% recall</strong>); <code>satbench</code> in-process, p50 2.7–5.0 ms across 2026-11-09 runs on this machine (payload-size and load dependent; an earlier note recorded ~0.7 ms and is not reproducible here), excluding network/TLS/proxy</td>
+<td>2026-11-08 → 2026-11-09</td>
+</tr>
+<tr>
+<td><strong>Benign-traffic false-positive measurement (665 pooled controls)</strong></td>
+<td><code>benchmarks/real_comparative/corpus/benign_heldout_v3_v10.jsonl</code> — all <code>label: benign</code> cases from held-out batches v3–v10, run 2026-11-09 through both engines. <strong>SATGuardian: 3/665 blocked = 0.5% FPR</strong> (95% CI 0.2–1.3%; v10-only non-spent subset 0/44 — v3–v9 benign controls were tuning inputs, so the pooled figure is partly in-sample). <strong>Aegis + CRS 4.25.1 PL1: 152/665 blocked = 22.9% FPR</strong> (95% CI 19.8–26.2%, consistent across every batch: 8–32 blocks per ~50–164 controls). Verdicts: <code>results/aegis/aegis_benign.jsonl</code>, <code>results/satguardian/sat_benign.jsonl</code></td>
+<td>2026-11-09</td>
+</tr>
+<tr>
+<td><strong>First head-to-head vs a real WAF product</strong></td>
+<td>Aegis Community Edition v1.1.0 (Coraza engine + bundled OWASP CRS 4.25.1 LTS, paranoia level 1, blocking mode) replayed over real HTTP on localhost, 2026-11-09. On <code>crs_v430.jsonl</code>: <strong>Aegis 3,268/4,050 (80.7% recall) vs SATGuardian 3,321/4,050 (82.0%)</strong>; union of both engines 3,762/4,050 (<strong>92.9%</strong>), intersection 2,826 (<strong>69.8%</strong>) — coverage is strongly complementary. On <code>heldout_v10.jsonl</code>: Aegis 48/70 recall (<strong>68.6%</strong>) and 16/44 benign blocked (<strong>36.4% FPR</strong>); SATGuardian current engine 70/70 and 0/44 (post-tuning diagnostic — the frozen one-shot estimate stays in <code>heldout_v10_report.json</code>). Verdicts and run manifest: <code>benchmarks/real_comparative/results/aegis/</code> (<code>RUN.json</code>, <code>aegis_v10.jsonl</code>, <code>aegis_crs.jsonl</code>); replay adapter adapter <code>benchmarks/real_comparative/adapters/aegis_replay.py</code>. Caveats: Aegis ran CRS 4.25.1 not 4.30, paranoia level 1 only, community edition, plain HTTP, traffic-control rate limit disabled for isolation, dummy upstream; latency columns are not comparable (Aegis = full HTTP round-trip, SATGuardian = in-process)</td>
+<td>2026-11-09</td>
+</tr>
+<tr>
+<td>Superseded held-out batches</td>
+<td><code>heldout_v2</code> (56.1%/7.0%), <code>heldout_v3</code>–<code>heldout_v9</code> were each measured once and are now tuning inputs; their reports remain for provenance. <code>heldout_v8</code> measured 77.5%/4.2% and <code>heldout_v9</code> 50.0%/6.4% before being spent. <code>heldout_v10</code> was measured once — frozen in <code>heldout_v10_report.json</code>, then spent by the protocol/DSL tuning pass — its one-shot report stays frozen and <code>heldout_v10_post_tuning_report.json</code> records current behaviour (100%/0.0% diagnostic, not an estimate). Post-repair diagnostics on the spent batches (not estimates): v6 99.0%/0.0%, v7 92.1%/0.0%, v8 100%/0.0%, v9 97.7%/4.3% (two historical <code>union select</code>-in-prose FPs), v10 100%/0.0%</td>
+<td>2026-11-01 → 2026-11-08</td>
+</tr>
+</tbody>
+</table>
+<p><code>corpus/README.md</code> records how each batch was assembled, why the first two are
+now in-sample, and the rules for adding cases.</p>
+<h2 id="what-is-not-measured">What is not measured</h2>
+<ul>
+<li><strong>No independent or third-party evaluation.</strong> Every batch, including the
+  held-out one, is hand-written in this repository by the same author as the
+  engine. <code>heldout_v10</code> was a real out-of-sample estimate of <em>those</em> payloads;
+  its one-shot recall / 0.0% FPR is frozen in <code>heldout_v10_report.json</code>,
+  while the current engine measures 100%/0.0% on the same batch
+  and the in-sample 100%/0% rows above are not. Neither number says anything
+  about traffic that was not imagined: no customer access log has ever been
+  measured against this engine.</li>
+<li><strong>No comparison against real WAF products.</strong> The Python harness
+  (<code>run_benchmark.py</code>) runs local stand-ins written for this repository. Rows
+  named Coraza, SafeLine, ModSecurity or "probabilistic NLP" are reimplementations,
+  not those products. They must never be cited as vendor benchmarks.</li>
+<li><strong>No production soak.</strong> No staged rollout, no traffic replay at scale, no
+  long-running memory or rule-update testing.</li>
+<li><strong>No TLS or WebSocket handling in the standalone proxy.</strong> TLS terminates in
+  front of it; WebSocket upgrades are rejected.</li>
+<li><strong>Prebuilt artifacts under <code>dist/</code> and <code>releases/</code> are stale.</strong> They were built
+  before the claims were corrected and still contain the old banner text. Rebuild
+  or delete them before publishing; do not ship them as current.</li>
+</ul>
+<h2 id="how-to-reproduce">How to reproduce</h2>
+<p>Two different numbers get quoted in these documents and they come from two
+different corpora. Do not expect one command to print the other one:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">what you run</th>
+<th style="text-align: left;">corpus</th>
+<th style="text-align: center;">benign controls</th>
+<th style="text-align: left;">what it prints</th>
+<th style="text-align: left;">status of that corpus</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>cargo run --release -- benchmark -r 10000</code></td>
+<td style="text-align: left;"><code>corpus/independent_v1.json</code></td>
+<td style="text-align: center;">16</td>
+<td style="text-align: left;">100% recall, <strong>0.0% FPR</strong></td>
+<td style="text-align: left;">in-sample regression floor: every miss in it was used to fix the engine</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>../target/release/satbench.exe --corpus benchmarks/real_comparative/corpus/heldout_v10.jsonl</code></td>
+<td style="text-align: left;"><code>heldout_v10.jsonl</code> (70 attacks, 44 benign)</td>
+<td style="text-align: center;">44</td>
+<td style="text-align: left;">one-shot: <strong>frozen result, 0.0% FPR</strong> (<code>corpus/heldout_v10_report.json</code>); current engine: <strong>100%/0.0%</strong> post-tuning diagnostic (<code>corpus/heldout_v10_post_tuning_report.json</code>)</td>
+<td style="text-align: left;">current behaviour is the post-tuning diagnostic; the frozen one-shot estimate stays in <code>heldout_v10_report.json</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>cargo run --release --bin satbench -- --corpus benchmarks/real_comparative/corpus/unified_v1.jsonl</code></td>
+<td style="text-align: left;"><code>unified_v1.jsonl</code> floors</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: left;">100% recall, 0.0% FPR on in-sample splits</td>
+<td style="text-align: left;">regression floor, not an estimate</td>
+</tr>
+</tbody>
+</table>
+<p>So the <strong>0.0% false-positive rate on 44 controls</strong> above is the held-out
+measurement. <code>tests/comparative_corpus_test.rs::heldout_v10_reproduction_matches_the_published_report</code>
+re-derives it in-process. Batch v10 has since been spent by the protocol/DSL
+detector iteration: the engine now clears all 70 attacks, so the test asserts
+the one-shot figures remain intact as provenance <em>and</em> that live behaviour
+still matches <code>corpus/heldout_v10_post_tuning_report.json</code> — if the engine
+ever blocks a different set of v10 cases, the test fails. Per maintainer
+decision no <code>heldout_v11</code> will be produced; the the frozen one-shot result one-shot remains
+the only publishable held-out estimate. <code>tests/heldout_v2_measurement_test.rs</code>
+is gated behind an environment variable and now documents a spent batch.</p>
+<p><code>tests/comparative_corpus_test.rs</code> calls the engine in-process — no HTTP, no
+proxy, no deployed host — and pins all three numbers as unit tests. Its held-out
+test asserts the <em>reproduction</em>, not the quality: if the engine ever blocks a
+different set of held-out cases, the test fails and says the batch is spent,
+which is the only way a held-out estimate can stay trustworthy.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># The frozen one-shot estimate lives in corpus/heldout_v10_report.json</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="c1"># (frozen one-shot result). Re-running the corpus now prints the current</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="c1"># engine behaviour (100%/0.0%) recorded in</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># corpus/heldout_v10_post_tuning_report.json.</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>../target/release/satbench.exe<span class="w"> </span>--corpus<span class="w"> </span>benchmarks/real_comparative/corpus/heldout_v10.jsonl<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">    </span>--out<span class="w"> </span>benchmarks/real_comparative/results/satguardian/verdicts_heldout_v10_post_tuning.jsonl
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="c1"># Detection regression (both in-sample corpora)</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>cargo<span class="w"> </span><span class="nb">test</span><span class="w"> </span>--test<span class="w"> </span>independent_corpus_test<span class="w"> </span>--<span class="w"> </span>--nocapture
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="c1"># The same measurements as in-process unit tests: no HTTP, no proxy, no deployed host</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>cargo<span class="w"> </span><span class="nb">test</span><span class="w"> </span>--test<span class="w"> </span>comparative_corpus_test<span class="w"> </span>--<span class="w"> </span>--nocapture
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="c1"># Full Rust suite</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>cargo<span class="w"> </span><span class="nb">test</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="c1"># In-memory benchmark over the in-sample corpus</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>cargo<span class="w"> </span>run<span class="w"> </span>--release<span class="w"> </span>--<span class="w"> </span>benchmark<span class="w"> </span>-r<span class="w"> </span><span class="m">10000</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="c1"># Python reference harness (local stand-ins, in-sample)</span>
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>python<span class="w"> </span>run_benchmark.py<span class="w"> </span><span class="m">1000</span>
+</code></pre></div>
+<h2 id="control-boundary-what-the-paid-tier-actually-does">Control boundary (what the paid tier actually does)</h2>
+<p>The product promise is: free, local protection; paid, ongoing review, update
+proposals and explanations — without giving up control of the WAF. As of
+2026-11-04 the code matches that:</p>
+<ul>
+<li><code>auto_sync_enabled</code> defaults to <code>false</code> (<code>src/config.rs</code>), and the shipped
+  <code>waf_config.toml</code> leaves it off. Cloud review runs only if you turn it on or
+  invoke <code>satguardian-waf sync-simplify</code> / <code>POST /api/waf/sync-simplify</code>.</li>
+<li>A review uploads recorded <code>u128</code> feature vectors, not raw requests, and what
+  comes back is stored in <code>dynamic_clauses</code> with <code>applied = 0</code>. Startup loads
+  <code>applied = 1</code> rows only.</li>
+<li>A clause enters the engine after an explicit approval
+  (<code>satguardian-waf clauses apply &lt;id&gt;</code>, or <code>POST /api/waf/clauses/{id}/apply</code>
+  behind the admin token). <code>reject</code> deletes only unapplied proposals. Approved
+  clauses are registered in an <code>RwLock</code>-guarded table capped at 4,096; there is
+  no lock-free swap and no automatic apply anywhere in the client.</li>
+<li>The Boolean minimizer (<code>exactor-core-v128</code>) is not a dependency of this crate
+  and is not in any client artefact; minimization happens on the service side.</li>
+<li><code>satguardian-advisor.py</code> has no batch-approval option. Every proposal is
+  decided one at a time by the operator running it.</li>
+</ul>
+<p><code>tests/docs_claims_test.rs::cloud_review_stays_opt_in_and_never_applies_by_itself</code>
+and <code>tests/clause_approval_test.rs</code> fail if any of that regresses.</p>
+<h2 id="why-this-file-exists">Why this file exists</h2>
+<p>Earlier versions of this repository published a benchmark that:</p>
+<ul>
+<li>capped perfect accuracy at 99.9% and floored zero error rates at 0.1%;</li>
+<li>labelled Python regex stand-ins as "Coraza WAF (OWASP CRS v4)" and
+  "SafeLine WAF (Chaitin T1K)";</li>
+<li>derived "3.38x faster", "15.0x faster" and "reduced false negatives by N
+  percentage points" headlines from those stand-ins;</li>
+<li>presented the numbers as production evidence.</li>
+</ul>
+<p>Those claims were fabricated or misleading. The cap/floor logic is gone, the
+stand-ins are labelled, and the Rust benchmark now refuses to run without the
+versioned corpus. The guardrail tests in <code>tests/docs_claims_test.rs</code> fail the
+build if the banned claims or unlabelled comparisons return.</p>
+<p>Treat a green test suite as "no known regressions on pinned inputs", not as
+"safe for production".</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.top", "search.suggest", "search.highlight", "content.code.copy", "content.code.annotate"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.a5f9d56c.min.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

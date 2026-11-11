@@ -1,0 +1,2796 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Deterministic, auditable security decision layer — the WAF that can prove its work; u128 bitmask inspection with opt-in cloud rule synthesis returned as proposals">
+      
+      
+        <meta name="author" content="SATGuardian Cyber-Defense Systems">
+      
+      
+        <link rel="canonical" href="https://ExactorResearch.github.io/satguardian/getting-started/operations/">
+      
+      
+        <link rel="prev" href="../configuration/">
+      
+      
+        <link rel="next" href="../poc-guide/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+    
+    
+      
+        <title>Operations & Tooling Guide - SATGuardian — The WAF That Can Prove Its Work</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="cyan">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#satguardian-edge-waf-operations-configuration-tooling-manual" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="SATGuardian — The WAF That Can Prove Its Work" class="md-header__button md-logo" aria-label="SATGuardian — The WAF That Can Prove Its Work" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            SATGuardian — The WAF That Can Prove Its Work
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Operations & Tooling Guide
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="cyan"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="cyan"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/ExactorResearch/satguardian" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ExactorResearch/satguardian
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../status/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Project Status
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../corpus/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Detection Corpus
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../configuration/" class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../architecture/system-architecture/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../integrations/" class="md-tabs__link">
+          
+  
+  
+  Deployments & Integration
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../benchmarks/comparative-analysis/" class="md-tabs__link">
+          
+  
+  
+  Benchmarks & Analysis
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../reports/technical-audit/" class="md-tabs__link">
+          
+  
+  
+  Audit & Reports
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../research/white-paper/" class="md-tabs__link">
+          
+  
+  
+  Research & Theory
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="SATGuardian — The WAF That Can Prove Its Work" class="md-nav__button md-logo" aria-label="SATGuardian — The WAF That Can Prove Its Work" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    SATGuardian — The WAF That Can Prove Its Work
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/ExactorResearch/satguardian" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ExactorResearch/satguardian
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../status/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Project Status
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../corpus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Detection Corpus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operations & Tooling Guide
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operations & Tooling Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#table-of-contents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📋 Table of Contents
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-waf-configuration-waf_configtoml-environment-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. ⚙️ WAF Configuration (waf_config.toml &amp; Environment Variables)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. ⚙️ WAF Configuration (waf_config.toml &amp; Environment Variables)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-core-network-defense-mode-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 Core Network &amp; Defense Mode Settings
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-anti-reconnaissance-protection-stealth-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 Anti-Reconnaissance Protection (Stealth Mode)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-management-api-request-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 Management API &amp; Request Limits
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#14-cloud-review-service-security-units-su-sqlite-ledger" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.4 Cloud Review Service (Security Units - SU) &amp; SQLite Ledger
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#15-layer-7-stateful-behavioral-defense-rate-limiting-anti-brute-force" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.5 Layer-7 Stateful &amp; Behavioral Defense (Rate Limiting &amp; Anti-Brute Force)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#16-envoy-proxy-ext_authz-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.6 Envoy Proxy Ext_Authz Integration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#17-modular-certainty-islands-islands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.7 Modular Certainty Islands ([islands])
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#18-environment-variables-supported" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.8 Environment Variables Supported
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-the-update-loop-opt-in-cloud-review-proposals-approval" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. 🔁 The Update Loop: Opt-In Cloud Review, Proposals &amp; Approval
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-customization-business-rules-guide" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. 🛠️ Customization &amp; Business Rules Guide
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. 🛠️ Customization &amp; Business Rules Guide">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-declarative-business-access-rules-in-waf_configtoml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Declarative Business Access Rules in waf_config.toml
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-digital-twin-rule-verification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Digital Twin Rule Verification
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-suite-applications-tooling-guide" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. 🧰 Suite Applications &amp; Tooling Guide
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. 🧰 Suite Applications &amp; Tooling Guide">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-main-engine-binary-satguardian-waf-rust-engine-cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Main Engine Binary: satguardian-waf (Rust Engine &amp; CLI)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Main Engine Binary: satguardian-waf (Rust Engine &amp; CLI)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#a-standalone-reverse-proxy-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A. Standalone Reverse Proxy Mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#b-native-benchmark-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        B. Native Benchmark Mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#c-standalone-inspection-mode-cli-payload-test" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        C. Standalone Inspection Mode (CLI Payload Test)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d-cloud-review-one-batch-at-a-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D. Cloud Review, One Batch at a Time
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#e-approve-or-discard-proposals" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        E. Approve or Discard Proposals
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#f-envoy-ext_authz-service-and-safeline-t1k-co-processor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        F. Envoy ext_authz Service and SafeLine T1K Co-Processor
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#g-cloud-account-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        G. Cloud Account Status
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-forensic-advisor-digital-twin-satguardian-advisorpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Forensic Advisor &amp; Digital Twin: satguardian-advisor.py
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Forensic Advisor &amp; Digital Twin: satguardian-advisor.py">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage:
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-business-rules-islands-manager-satguardian-rulespy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Business Rules &amp; Islands Manager: satguardian-rules.py
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Business Rules &amp; Islands Manager: satguardian-rules.py">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#usage_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage:
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-real-time-terminal-dashboard-satguardian-toppy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Real-Time Terminal Dashboard: satguardian-top.py
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Real-Time Terminal Dashboard: satguardian-top.py">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#usage_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage:
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-interactive-web-dashboard-run_webpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Interactive Web Dashboard: run_web.py
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Interactive Web Dashboard: run_web.py">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#usage_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage:
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-multi-waf-comparative-benchmark-suite-run_benchmarkpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Multi-WAF Comparative Benchmark Suite: run_benchmark.py
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Multi-WAF Comparative Benchmark Suite: run_benchmark.py">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#usage_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage:
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-rule-set-health-report-satguardian-healthpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Rule-Set Health Report: satguardian-health.py
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Rule-Set Health Report: satguardian-health.py">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#usage_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage:
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-command-cheat-sheet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🎯 Quick Command Cheat Sheet
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../poc-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Proof of Concept Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/system-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/axiomatic-supervision/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Axiomatic Supervision & Synthesis
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/satguardian-methodology/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SAT Guardian Methodology
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deployments & Integration
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Deployments & Integration
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integration Ecosystem
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../deployments/envoy-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Envoy Proxy Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../deployments/case-study/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deployment Notes (Lab)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmarks & Analysis
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Benchmarks & Analysis
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benchmarks/comparative-analysis/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multi-WAF Comparative Analysis
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Audit & Reports
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Audit & Reports
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reports/technical-audit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Technical Audit Report
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reports/audit-report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Forensic Audit Ledger
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Research & Theory
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Research & Theory
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../research/white-paper/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Technical White Paper
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#table-of-contents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📋 Table of Contents
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-waf-configuration-waf_configtoml-environment-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. ⚙️ WAF Configuration (waf_config.toml &amp; Environment Variables)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. ⚙️ WAF Configuration (waf_config.toml &amp; Environment Variables)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-core-network-defense-mode-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 Core Network &amp; Defense Mode Settings
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-anti-reconnaissance-protection-stealth-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 Anti-Reconnaissance Protection (Stealth Mode)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-management-api-request-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 Management API &amp; Request Limits
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#14-cloud-review-service-security-units-su-sqlite-ledger" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.4 Cloud Review Service (Security Units - SU) &amp; SQLite Ledger
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#15-layer-7-stateful-behavioral-defense-rate-limiting-anti-brute-force" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.5 Layer-7 Stateful &amp; Behavioral Defense (Rate Limiting &amp; Anti-Brute Force)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#16-envoy-proxy-ext_authz-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.6 Envoy Proxy Ext_Authz Integration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#17-modular-certainty-islands-islands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.7 Modular Certainty Islands ([islands])
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#18-environment-variables-supported" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.8 Environment Variables Supported
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-the-update-loop-opt-in-cloud-review-proposals-approval" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. 🔁 The Update Loop: Opt-In Cloud Review, Proposals &amp; Approval
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-customization-business-rules-guide" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. 🛠️ Customization &amp; Business Rules Guide
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. 🛠️ Customization &amp; Business Rules Guide">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-declarative-business-access-rules-in-waf_configtoml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Declarative Business Access Rules in waf_config.toml
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-digital-twin-rule-verification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Digital Twin Rule Verification
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-suite-applications-tooling-guide" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. 🧰 Suite Applications &amp; Tooling Guide
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. 🧰 Suite Applications &amp; Tooling Guide">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-main-engine-binary-satguardian-waf-rust-engine-cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Main Engine Binary: satguardian-waf (Rust Engine &amp; CLI)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Main Engine Binary: satguardian-waf (Rust Engine &amp; CLI)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#a-standalone-reverse-proxy-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A. Standalone Reverse Proxy Mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#b-native-benchmark-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        B. Native Benchmark Mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#c-standalone-inspection-mode-cli-payload-test" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        C. Standalone Inspection Mode (CLI Payload Test)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d-cloud-review-one-batch-at-a-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D. Cloud Review, One Batch at a Time
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#e-approve-or-discard-proposals" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        E. Approve or Discard Proposals
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#f-envoy-ext_authz-service-and-safeline-t1k-co-processor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        F. Envoy ext_authz Service and SafeLine T1K Co-Processor
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#g-cloud-account-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        G. Cloud Account Status
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-forensic-advisor-digital-twin-satguardian-advisorpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Forensic Advisor &amp; Digital Twin: satguardian-advisor.py
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Forensic Advisor &amp; Digital Twin: satguardian-advisor.py">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage:
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-business-rules-islands-manager-satguardian-rulespy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Business Rules &amp; Islands Manager: satguardian-rules.py
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Business Rules &amp; Islands Manager: satguardian-rules.py">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#usage_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage:
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-real-time-terminal-dashboard-satguardian-toppy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Real-Time Terminal Dashboard: satguardian-top.py
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Real-Time Terminal Dashboard: satguardian-top.py">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#usage_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage:
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-interactive-web-dashboard-run_webpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Interactive Web Dashboard: run_web.py
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Interactive Web Dashboard: run_web.py">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#usage_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage:
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-multi-waf-comparative-benchmark-suite-run_benchmarkpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Multi-WAF Comparative Benchmark Suite: run_benchmark.py
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Multi-WAF Comparative Benchmark Suite: run_benchmark.py">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#usage_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage:
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-rule-set-health-report-satguardian-healthpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Rule-Set Health Report: satguardian-health.py
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Rule-Set Health Report: satguardian-health.py">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#usage_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage:
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-command-cheat-sheet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🎯 Quick Command Cheat Sheet
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="satguardian-edge-waf-operations-configuration-tooling-manual">📖 SATGuardian Edge WAF — Operations, Configuration &amp; Tooling Manual</h1>
+<p>This guide documents <strong>how to configure</strong> and <strong>operate</strong> the <strong>SATGuardian Edge WAF</strong> client, and how to use the CLI subcommands and Python tools shipped in this repository.</p>
+<p><strong>What the tiers mean:</strong> free, you get local protection on your own node. Paying, you get continuous review of new patterns, update proposals and explanations — without ever giving up control of your WAF. Inspection and enforcement always run locally; the cloud is only consulted when you opt in, and what it returns is a proposal you approve or discard.</p>
+<blockquote>
+<p><strong>Status: SATGuardian Edge WAF v0.3.0.</strong> Detection has been measured on small, hand-written,
+same-author corpora only. The in-sample rows (100% recall / 0% false positives) are
+regression floors from <code>corpus/independent_v1.json</code>, not generalization estimates. The
+current held-out estimate (<code>benchmarks/real_comparative/corpus/heldout_v10.jsonl</code>,
+run once on 2026-11-08, before any fix) froze the one-shot estimate in
+<code>heldout_v10_report.json</code> — recall on 70 attacks and <strong>0.0% false positives on 44
+controls (95% CI 0.0–8.0%)</strong>; the current engine measures 100%/0.0% on the same
+batch as a post-tuning diagnostic, and the earlier <code>heldout_v2</code> figure
+(56.1%/7.0%) remains for provenance. No third-party evaluation exists. The
+benchmark harness compares local Python stand-ins, not vendor products. See
+<a href="../../status/">STATUS.md</a> and <a href="../../corpus/">corpus/README.md</a>.</p>
+</blockquote>
+<hr />
+<h2 id="table-of-contents">📋 Table of Contents</h2>
+<ol>
+<li><a href="#1-⚙️-waf-configuration-waf_configtoml--environment-variables">⚙️ WAF Configuration (<code>waf_config.toml</code> &amp; Environment Variables)</a></li>
+<li><a href="#2-🔁-the-update-loop-opt-in-cloud-review-proposals--approval">🔁 The Update Loop: Opt-In Cloud Review, Proposals &amp; Approval</a></li>
+<li><a href="#3-🛠️-customization--business-rules-guide">🛠️ Customization &amp; Business Rules Guide</a></li>
+<li><a href="#4-🧰-suite-applications--tooling-guide">🧰 Suite Applications &amp; Tooling Guide</a></li>
+<li><a href="#1-main-engine-binary-satguardian-waf-rust-engine--cli">1. Main Engine Binary: <code>satguardian-waf</code> (Rust Engine &amp; CLI)</a></li>
+<li><a href="#2-forensic-advisor--digital-twin-satguardian-advisorpy">2. Forensic Advisor &amp; Digital Twin: <code>satguardian-advisor.py</code></a></li>
+<li><a href="#3-business-rules--islands-manager-satguardian-rulespy">3. Business Rules &amp; Islands Manager: <code>satguardian-rules.py</code></a></li>
+<li><a href="#4-real-time-terminal-dashboard-satguardian-topy">4. Real-Time Terminal Dashboard: <code>satguardian-top.py</code></a></li>
+<li><a href="#5-interactive-web-dashboard-run_webpy">5. Interactive Web Dashboard: <code>run_web.py</code></a></li>
+<li><a href="#6-multi-waf-comparative-benchmark-suite-run_benchmarkpy">6. Multi-WAF Comparative Benchmark Suite: <code>run_benchmark.py</code></a></li>
+<li><a href="#7-rule-set-health-report-satguardian-healthpy">7. Rule-Set Health Report: <code>satguardian-health.py</code></a></li>
+</ol>
+<hr />
+<h2 id="1-waf-configuration-waf_configtoml-environment-variables">1. ⚙️ WAF Configuration (<code>waf_config.toml</code> &amp; Environment Variables)</h2>
+<p>All local Edge WAF inspection settings are managed declaratively via <code>waf_config.toml</code> in the executable's working directory (or the path given by <code>--config</code> / <code>SATGUARDIAN_CONFIG</code>).</p>
+<h3 id="11-core-network-defense-mode-settings">1.1 Core Network &amp; Defense Mode Settings</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Inbound HTTP listener address for protected traffic</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">listen_addr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"0.0.0.0:8080"</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># Target upstream backend application (Nginx, Node, Python, Go, Java, PHP, etc.)</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">upstream_url</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"http://127.0.0.1:3000"</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="c1"># Defense mode:</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="c1">#   "block"   - Detected requests are rejected with HTTP 403.</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="c1">#   "monitor" - Dry-run mode: violations are logged to the ledger and traffic passes.</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="n">mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"block"</span>
+</code></pre></div>
+<p><strong>Transport reality:</strong> the data-plane listener speaks <strong>plain HTTP</strong>. This build does not
+terminate TLS and does not support WebSocket; put nginx, Envoy or your existing load
+balancer in front for TLS termination and keep the WAF on a private hop. <code>upstream_url</code>
+may be <code>http://</code> or <code>https://</code> (the scheme is validated at startup) and calls to the
+SATGuardian cloud endpoint go out over HTTPS — but nothing in this build serves HTTPS to
+clients. Upstream responses are streamed rather than buffered, so SSE feeds and large
+downloads pass through without being held in memory; WebSocket upgrades are not
+supported yet.</p>
+<h3 id="12-anti-reconnaissance-protection-stealth-mode">1.2 Anti-Reconnaissance Protection (Stealth Mode)</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># true  -&gt; Emits a clean web-standard 403 Forbidden without leaking rules, proof, or technology stacks.</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="c1"># false -&gt; Emits verbose diagnostic JSON containing the causal trace (debug mode).</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">stealth_mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="c1"># Optional custom HTML or text response body when stealth_mode = true</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="c1"># stealth_block_body = "&lt;html&gt;&lt;head&gt;&lt;title&gt;403 Forbidden&lt;/title&gt;&lt;/head&gt;&lt;body&gt;&lt;h1&gt;403 Forbidden&lt;/h1&gt;&lt;/body&gt;&lt;/html&gt;"</span>
+</code></pre></div>
+<p>Blocked responses are generic in stealth mode. Per request you can override the behaviour
+from the command line: <code>satguardian-waf proxy --verbose</code> emits the diagnostic JSON,
+<code>--stealth</code> forces the generic response.</p>
+<h3 id="13-management-api-request-limits">1.3 Management API &amp; Request Limits</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Dedicated listener for /api/waf/*. It is never mounted on the public data-plane port.</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="c1"># Set to "off" to disable the management API entirely.</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">admin_listen_addr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"127.0.0.1:10001"</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="c1"># Bearer token required by every management route. Prefer SATGUARDIAN_ADMIN_TOKEN</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="c1"># in the environment over storing it here.</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="c1"># admin_token = "change-me"</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="c1"># Maximum accepted inbound request body (2 MiB).</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="n">max_body_bytes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2097152</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="c1"># IPs or CIDR ranges of upstream proxies allowed to supply X-Forwarded-For /</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="c1"># X-Real-IP / CF-Connecting-IP / True-Client-IP. Loopback is always trusted.</span>
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="n">trusted_proxies</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[]</span>
+</code></pre></div>
+<ul>
+<li>Every <code>/api/waf/*</code> route requires the admin token; with no token set the routes answer
+  <code>503 management_api_disabled</code> instead of running unauthenticated. <code>/health</code> and <code>/livez</code>
+  stay open on that listener.</li>
+<li>Request bodies are capped at <code>max_body_bytes</code> (2 MiB by default).</li>
+<li>The listener is loopback by default. If you must reach it from another host, put a
+  TLS-terminating reverse proxy with its own authentication in front — the management API
+  itself is plain HTTP.</li>
+</ul>
+<h3 id="14-cloud-review-service-security-units-su-sqlite-ledger">1.4 Cloud Review Service (Security Units - SU) &amp; SQLite Ledger</h3>
+<p>Boolean minimization is <strong>server-side</strong>. This repository ships the edge client only: it
+normalizes a request into a 128-bit <code>FeatureVector</code> (<code>u128</code>), evaluates compiled clauses
+locally, and — when you opt in — posts minterms to the SATGuardian cloud synthesis
+endpoint and stores the returned equation as proposals. No minimizer lives in this code
+base or in the client binary.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># SATGuardian cloud endpoint for Boolean rule synthesis.</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">satguardian_api_url</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"https://satguardian.tech/api/simplify"</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># Cloud API key (or set SATGUARDIAN_API_KEY in the environment).</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="c1"># satguardian_api_key = "ek_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxx"</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="c1"># SQLite WAL ledger: audit log plus the table that holds update proposals.</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="n">database_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"waf_ledger.db"</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="c1"># Seconds between background cloud review runs. Only used when auto_sync_enabled is on.</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="n">autonomous_sync_interval_secs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">300</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="c1"># Send anomalies to the cloud on that timer. Off by default. Turning it on does not</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="c1"># change the WAF: results are stored as proposals and have to be approved with</span>
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="c1"># `satguardian-waf clauses apply` or POST /api/waf/clauses/{id}/apply.</span>
+<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="n">auto_sync_enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
+</code></pre></div>
+<p><strong>What leaves the node, and only if you opt in:</strong> the <code>u128</code> feature vectors recorded as
+novel anomalies (patterns awaiting analysis). Raw traffic, headers, bodies and client IPs
+are not uploaded. Everything else — inspection, blocking, rate limiting, the ledger —
+stays on your node.</p>
+<p><strong>Quota behavior:</strong> cloud synthesis is metered in Security Units (SU). If the balance is
+exhausted the cloud call fails and the Edge WAF keeps enforcing the last rule matrix you
+approved; local inspection is unaffected.</p>
+<h3 id="15-layer-7-stateful-behavioral-defense-rate-limiting-anti-brute-force">1.5 Layer-7 Stateful &amp; Behavioral Defense (Rate Limiting &amp; Anti-Brute Force)</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Enable temporal sliding window ring buffer analysis</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">stateful_enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="c1"># Max total requests permitted in sliding window per IP across all endpoints</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="n">stateful_global_limit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">300</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="c1"># Max attempts permitted on sensitive authentication endpoints (/login, /auth, etc.)</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="n">stateful_auth_limit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">20</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="c1"># Sliding temporal window duration in seconds (default: 60s ring buffer)</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="n">stateful_window_secs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">60</span>
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="c1"># Temporary isolation quarantine / jail duration in seconds for offenders (180s)</span>
+<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="n">stateful_ban_secs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">180</span>
+<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>
+<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="c1"># Optional Redis connection URL for distributed cluster state synchronization</span>
+<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="c1"># redis_url = "redis://127.0.0.1:6379"</span>
+</code></pre></div>
+<h3 id="16-envoy-proxy-ext_authz-integration">1.6 Envoy Proxy Ext_Authz Integration</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Inbound HTTP listener for Envoy's envoy.filters.http.ext_authz filter</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">envoy_ext_authz_addr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"0.0.0.0:9002"</span>
+</code></pre></div>
+<p>The check service speaks the HTTP form of <code>ext_authz</code> (it reads <code>x-envoy-original-method</code>
+and <code>x-envoy-original-path</code>); the gRPC <code>ext_authz</code> protocol is not implemented in this
+build. See <code>ENVOY_INTEGRATION_GUIDE.md</code>.</p>
+<h3 id="17-modular-certainty-islands-islands">1.7 Modular Certainty Islands (<code>[islands]</code>)</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">[islands]</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="c1"># WordPress Reconnaissance &amp; Exploit Shield:</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="c1"># Drops scanner probes targeting /wp-admin, /wp-login.php, xmlrpc.php, etc.</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="n">wordpress_shield</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="c1"># Sensitive Files &amp; Backdoors Shield:</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="c1"># Blocks discovery probes targeting /.env, /.git, phpMyAdmin, actuator, backup dumps.</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="n">exposure_shield</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="c1"># Modern Framework Exploits Shield:</span>
+<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="c1"># Blocks Log4j/JNDI injection, Spring Cloud SpEL, Laravel Ignition, ThinkPHP probes.</span>
+<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="n">framework_shield</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+</code></pre></div>
+<h3 id="18-environment-variables-supported">1.8 Environment Variables Supported</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Variable</th>
+<th style="text-align: left;">Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>SATGUARDIAN_CONFIG</code></td>
+<td style="text-align: left;">Path to the configuration TOML file.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>SATGUARDIAN_API_KEY</code></td>
+<td style="text-align: left;">Cloud API key for SATGuardian cloud synthesis (SU metering).</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>SATGUARDIAN_ADMIN_TOKEN</code> (or <code>WAF_ADMIN_TOKEN</code>)</td>
+<td style="text-align: left;">Bearer token for every management API route. Without it the routes answer <code>503</code>.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>RUST_LOG</code></td>
+<td style="text-align: left;">Tracing verbosity (e.g. <code>RUST_LOG=info</code> or <code>RUST_LOG=satguardian_waf=debug</code>).</td>
+</tr>
+</tbody>
+</table>
+<p>A <code>WAF_*</code> environment override exists for most TOML fields (<code>WAF_LISTEN_ADDR</code>,
+<code>WAF_UPSTREAM_URL</code>, <code>WAF_MODE</code>, <code>WAF_STEALTH_MODE</code>, <code>WAF_ADMIN_LISTEN_ADDR</code>,
+<code>WAF_MAX_BODY_BYTES</code>, <code>WAF_TRUSTED_PROXIES</code>, <code>WAF_DATABASE_PATH</code>, <code>ENVOY_EXT_AUTHZ_ADDR</code>,
+<code>SATGUARDIAN_API_URL</code>); environment values win over the file.</p>
+<hr />
+<h2 id="2-the-update-loop-opt-in-cloud-review-proposals-approval">2. 🔁 The Update Loop: Opt-In Cloud Review, Proposals &amp; Approval</h2>
+<p>Nothing is uploaded and nothing changes in the running WAF unless you say so, twice.</p>
+<ol>
+<li><strong>Local enforcement (free, always local).</strong> Requests are normalized and evaluated
+   against the compiled clauses on your node. Novel anomalies are recorded in
+   <code>waf_ledger.db</code> as patterns awaiting analysis; recording them uploads nothing.</li>
+<li><strong>Opt-in upload.</strong> Set <code>auto_sync_enabled = true</code> to let a background timer send the
+   recorded minterms to SATGuardian cloud synthesis every <code>autonomous_sync_interval_secs</code>
+   seconds, or trigger one batch yourself:
+   <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>./satguardian-waf<span class="w"> </span>sync-simplify<span class="w"> </span>--limit<span class="w"> </span><span class="m">100</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="c1"># or, on the admin listener:</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="nv">$SATGUARDIAN_ADMIN_TOKEN</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">  </span>http://127.0.0.1:10001/api/waf/sync-simplify
+</code></pre></div></li>
+<li><strong>Results land as proposals.</strong> A cloud review run stores what comes back with
+   <code>dynamic_clauses.applied = 0</code>. Proposals do <strong>not</strong> enter the running engine, are not
+   loaded at boot, and change nothing until you approve them.</li>
+<li><strong>You decide.</strong> Review each proposal and approve or discard it:
+   <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>./satguardian-waf<span class="w"> </span>clauses<span class="w"> </span>list
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>./satguardian-waf<span class="w"> </span>clauses<span class="w"> </span>apply<span class="w"> </span>&lt;clause_id&gt;
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>./satguardian-waf<span class="w"> </span>clauses<span class="w"> </span>reject<span class="w"> </span>&lt;clause_id&gt;
+</code></pre></div>
+   Or over the admin API (<code>GET /api/waf/clauses/pending</code>, <code>POST /api/waf/clauses/{id}/apply</code>,
+   <code>DELETE /api/waf/clauses/{id}</code>), all behind the admin token.</li>
+<li><strong>Approval is what makes a clause live.</strong> Approving registers the clause in the running
+   engine's in-memory dynamic-clause table, so new requests are evaluated against it
+   immediately with no restart and no dropped TCP connections. If the proxy is stopped,
+   approved clauses are the only proposals loaded at startup; pending ones stay pending. A
+   clause that duplicates a mask already active, or exceeds the engine's dynamic-clause
+   cap, is saved but will report that it enforces on restart instead of now. The hot list
+   is a <code>RwLock</code>-protected clause table in <code>src/engine/sat_solver.rs</code>; there is no
+   lock-free <code>ArcSwap</code> swap in this code base.</li>
+<li><strong>Rejecting discards a proposal only.</strong> It never deletes a rule that is already
+   enforcing; enforced clauses are not touched by the reject path.</li>
+</ol>
+<p>The same shape applies to the advisor: <code>satguardian-advisor.py</code> analyses the ledger and
+proposes; applying anything is a separate, explicit operator action.</p>
+<hr />
+<h2 id="3-customization-business-rules-guide">3. 🛠️ Customization &amp; Business Rules Guide</h2>
+<p>SATGuardian allows fine-grained customization through two primary mechanisms: <strong>Declarative Business Rules</strong> and <strong>Digital Twin Verification</strong>.</p>
+<h3 id="31-declarative-business-access-rules-in-waf_configtoml">3.1 Declarative Business Access Rules in <code>waf_config.toml</code></h3>
+<p>Define granular access policies per path prefix, HTTP method, client IP whitelist/blacklist, and mandatory headers under <code>[business_rules]</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="k">[business_rules]</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="c1"># Example Rule 1: Strict API Method Restrictions</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="k">[[business_rules.rules]]</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"biz-api-methods"</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Strict API Method Whitelist"</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="n">path_prefix</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"/api/v1/"</span>
+<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="n">allowed_methods</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"GET"</span><span class="p">,</span><span class="w"> </span><span class="s2">"POST"</span><span class="p">,</span><span class="w"> </span><span class="s2">"PUT"</span><span class="p">,</span><span class="w"> </span><span class="s2">"DELETE"</span><span class="p">,</span><span class="w"> </span><span class="s2">"OPTIONS"</span><span class="p">]</span>
+<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="n">blocked_methods</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"TRACE"</span><span class="p">,</span><span class="w"> </span><span class="s2">"CONNECT"</span><span class="p">,</span><span class="w"> </span><span class="s2">"PATCH"</span><span class="p">]</span>
+<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="n">allowed_ips</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[]</span>
+<a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a><span class="n">blocked_ips</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[]</span>
+<a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a><span class="n">required_headers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[]</span>
+<a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a><span class="n">max_body_bytes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">10485760</span><span class="w"> </span><span class="c1"># 10 MB payload ceiling</span>
+<a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a><span class="n">enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+<a id="__codelineno-9-16" name="__codelineno-9-16" href="#__codelineno-9-16"></a>
+<a id="__codelineno-9-17" name="__codelineno-9-17" href="#__codelineno-9-17"></a><span class="c1"># Example Rule 2: IP-Whitelisted Administrative Gateway</span>
+<a id="__codelineno-9-18" name="__codelineno-9-18" href="#__codelineno-9-18"></a><span class="k">[[business_rules.rules]]</span>
+<a id="__codelineno-9-19" name="__codelineno-9-19" href="#__codelineno-9-19"></a><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"biz-admin-gateway"</span>
+<a id="__codelineno-9-20" name="__codelineno-9-20" href="#__codelineno-9-20"></a><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Admin Portal IP Restricted Access"</span>
+<a id="__codelineno-9-21" name="__codelineno-9-21" href="#__codelineno-9-21"></a><span class="n">path_prefix</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"/internal/admin/"</span>
+<a id="__codelineno-9-22" name="__codelineno-9-22" href="#__codelineno-9-22"></a><span class="n">allowed_methods</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"GET"</span><span class="p">,</span><span class="w"> </span><span class="s2">"POST"</span><span class="p">]</span>
+<a id="__codelineno-9-23" name="__codelineno-9-23" href="#__codelineno-9-23"></a><span class="n">blocked_methods</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[]</span>
+<a id="__codelineno-9-24" name="__codelineno-9-24" href="#__codelineno-9-24"></a><span class="n">allowed_ips</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"127.0.0.1"</span><span class="p">,</span><span class="w"> </span><span class="s2">"10.0.0.1"</span><span class="p">,</span><span class="w"> </span><span class="s2">"192.168.1.100"</span><span class="p">]</span>
+<a id="__codelineno-9-25" name="__codelineno-9-25" href="#__codelineno-9-25"></a><span class="n">blocked_ips</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[]</span>
+<a id="__codelineno-9-26" name="__codelineno-9-26" href="#__codelineno-9-26"></a><span class="n">required_headers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"X-Admin-Token"</span><span class="p">]</span>
+<a id="__codelineno-9-27" name="__codelineno-9-27" href="#__codelineno-9-27"></a><span class="n">max_body_bytes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1048576</span><span class="w"> </span><span class="c1"># 1 MB</span>
+<a id="__codelineno-9-28" name="__codelineno-9-28" href="#__codelineno-9-28"></a><span class="n">enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+</code></pre></div>
+<h3 id="32-digital-twin-rule-verification">3.2 Digital Twin Rule Verification</h3>
+<p>Before you approve a rule, <code>satguardian-advisor.py</code> can replay it against recorded history
+(a <strong>Digital Twin replay</strong>):
+1. Reads the benign HTTP transactions recorded in <code>waf_ledger.db</code>.
+2. Evaluates candidate rules against that historical traffic and reports any collisions.
+   Replay quality depends on the ledger contents; there is no fixed FPR floor.
+3. Only after you approve does a clause reach active memory: it is registered in the
+   engine's in-memory clause table and starts evaluating new requests, with no restart and
+   no dropped TCP connections. Traffic is never hot-reloaded from the cloud by itself.</p>
+<hr />
+<h2 id="4-suite-applications-tooling-guide">4. 🧰 Suite Applications &amp; Tooling Guide</h2>
+<p>The repository ships one native Rust binary plus a set of Python CLI utilities for
+analysis, administration, monitoring and benchmarking.</p>
+<h3 id="1-main-engine-binary-satguardian-waf-rust-engine-cli">1. Main Engine Binary: <code>satguardian-waf</code> (Rust Engine &amp; CLI)</h3>
+<p>Subcommands as implemented (<code>satguardian-waf --help</code> is authoritative). <code>--config</code> is a
+global flag accepted by every subcommand.</p>
+<h4 id="a-standalone-reverse-proxy-mode">A. Standalone Reverse Proxy Mode</h4>
+<p><div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1"># Launch the proxy using a configuration file</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>./satguardian-waf<span class="w"> </span>proxy<span class="w"> </span>--config<span class="w"> </span>waf_config.toml
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="c1"># Or override the listener and upstream on the command line</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>./satguardian-waf<span class="w"> </span>proxy<span class="w"> </span>--listen<span class="w"> </span><span class="m">0</span>.0.0.0:8080<span class="w"> </span>--upstream<span class="w"> </span>http://127.0.0.1:3000
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="c1"># Mode and response verbosity</span>
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>./satguardian-waf<span class="w"> </span>proxy<span class="w"> </span>--mode<span class="w"> </span>monitor<span class="w"> </span>--verbose
+</code></pre></div>
+<code>proxy</code> also serves the management API on <code>admin_listen_addr</code> (<code>127.0.0.1:10001</code> by
+default, <code>503</code> until <code>SATGUARDIAN_ADMIN_TOKEN</code> is set) and starts the background cloud
+review timer only if <code>auto_sync_enabled = true</code>.</p>
+<h4 id="b-native-benchmark-mode">B. Native Benchmark Mode</h4>
+<p>Measures <strong>in-memory</strong> evaluation latency and CPU throughput over N synthetic requests
+(default 10,000). It exercises the engine only: no TLS, no proxy hop, no upstream.
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>./satguardian-waf<span class="w"> </span>benchmark<span class="w"> </span>--requests<span class="w"> </span><span class="m">10000</span>
+</code></pre></div>
+Reference point: the pinned in-memory run over <code>corpus/independent_v1.json</code> at 10,000
+requests measured about <code>~0.46 ms</code> p50 and <code>~0.9–1.0 ms</code> mean, with p99 <code>~6 ms</code> (re-measured 2026-11-10).
+In-memory figures only — quote them as such.</p>
+<h4 id="c-standalone-inspection-mode-cli-payload-test">C. Standalone Inspection Mode (CLI Payload Test)</h4>
+<p>Inspects a single request and prints its 128-bit <code>FeatureVector</code> (<code>u128</code>) and the decision
+trace:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>./satguardian-waf<span class="w"> </span>inspect<span class="w"> </span>--method<span class="w"> </span>POST<span class="w"> </span>--path<span class="w"> </span>/api/search<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">  </span>--query<span class="w"> </span><span class="s2">"id=1' UNION SELECT * FROM users--"</span>
+</code></pre></div></p>
+<h4 id="d-cloud-review-one-batch-at-a-time">D. Cloud Review, One Batch at a Time</h4>
+<p>Sends the pending anomaly minterms to SATGuardian cloud synthesis and stores the result as
+proposals. The running rule set is not changed by this command.
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>./satguardian-waf<span class="w"> </span>sync-simplify<span class="w"> </span>--limit<span class="w"> </span><span class="m">100</span>
+</code></pre></div></p>
+<h4 id="e-approve-or-discard-proposals">E. Approve or Discard Proposals</h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>./satguardian-waf<span class="w"> </span>clauses<span class="w"> </span>list<span class="w">            </span><span class="c1"># what is waiting for a decision</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>./satguardian-waf<span class="w"> </span>clauses<span class="w"> </span>apply<span class="w"> </span>&lt;id&gt;<span class="w">      </span><span class="c1"># make it enforce</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>./satguardian-waf<span class="w"> </span>clauses<span class="w"> </span>reject<span class="w"> </span>&lt;id&gt;<span class="w">     </span><span class="c1"># discard the proposal (never removes an active rule)</span>
+</code></pre></div>
+<h4 id="f-envoy-ext_authz-service-and-safeline-t1k-co-processor">F. Envoy ext_authz Service and SafeLine T1K Co-Processor</h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>./satguardian-waf<span class="w"> </span>envoy-authz<span class="w"> </span>--listen<span class="w"> </span><span class="m">0</span>.0.0.0:9002
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>./satguardian-waf<span class="w"> </span>envoy-authz<span class="w"> </span>--socket<span class="w"> </span>/var/run/waf.sock
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>./satguardian-waf<span class="w"> </span>t1k-server<span class="w"> </span>--listen<span class="w"> </span><span class="m">0</span>.0.0.0:8000<span class="w">   </span><span class="c1"># SafeLine T1K protocol</span>
+</code></pre></div>
+<h4 id="g-cloud-account-status">G. Cloud Account Status</h4>
+<p>Checks the SU balance and the edge entitlement reported by the cloud:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>./satguardian-waf<span class="w"> </span>entitlement
+</code></pre></div></p>
+<blockquote>
+<p>There is no separate <code>api</code> subcommand: the management API runs inside <code>proxy</code> on the
+loopback admin listener described in §1.3.</p>
+</blockquote>
+<hr />
+<h3 id="2-forensic-advisor-digital-twin-satguardian-advisorpy">2. Forensic Advisor &amp; Digital Twin: <code>satguardian-advisor.py</code></h3>
+<p>Analyses recorded transactions in <code>waf_ledger.db</code>, clusters novel patterns (patterns
+awaiting analysis), replays candidate rules against the ledger, and produces
+<strong>evidence-backed audit reports</strong>. It analyses and proposes — applying anything stays an
+explicit operator action.</p>
+<h4 id="usage">Usage:</h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="c1"># Evidence-backed audit report in interactive HTML format</span>
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>python<span class="w"> </span>satguardian-advisor.py<span class="w"> </span>--report<span class="w"> </span>audit_report.html
+<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>
+<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="c1"># Same report in Markdown</span>
+<a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>python<span class="w"> </span>satguardian-advisor.py<span class="w"> </span>--report-md<span class="w"> </span>audit_report.md
+<a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>
+<a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a><span class="c1"># Custom SQLite ledger path</span>
+<a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a>python<span class="w"> </span>satguardian-advisor.py<span class="w"> </span>--db<span class="w"> </span>/path/to/custom_ledger.db<span class="w"> </span>--report<span class="w"> </span>custom_report.html
+<a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a>
+<a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a><span class="c1"># Analyse and list suggestions without prompting to apply anything</span>
+<a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a>python<span class="w"> </span>satguardian-advisor.py<span class="w"> </span>--dry-run
+</code></pre></div>
+<hr />
+<h3 id="3-business-rules-islands-manager-satguardian-rulespy">3. Business Rules &amp; Islands Manager: <code>satguardian-rules.py</code></h3>
+<p>Interactive manager for <code>[business_rules]</code> and <code>[islands]</code>: list, add, toggle and delete
+customer rules, flip islands, run a live inspection through the management API, and drive
+the advisor. It writes changes into <code>waf_config.toml</code> as well.</p>
+<h4 id="usage_1">Usage:</h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>python<span class="w"> </span>satguardian-rules.py<span class="w">            </span><span class="c1"># curses TUI (Linux/macOS, or windows-curses)</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>python<span class="w"> </span>satguardian-rules.py<span class="w"> </span>--cli<span class="w">      </span><span class="c1"># ANSI console menu when curses is unavailable</span>
+</code></pre></div>
+<p>Two limits worth knowing:
+* The tool has no subcommands — <code>satguardian-rules.py list</code> does not exist; the menu is
+  interactive.
+* It calls the management API but does not send the admin token, and its default <code>--api</code>
+  value is <code>http://127.0.0.1:10000</code> while the WAF binds <code>127.0.0.1:10001</code>. Point it at the
+  admin listener with <code>--api http://127.0.0.1:10001</code>; API-backed actions only work once the
+  management API is enabled with <code>SATGUARDIAN_ADMIN_TOKEN</code>, and the tool has no way to pass
+  that token, so editing <code>waf_config.toml</code> through the tool (option 8) is the path that
+  works against a token-protected listener.</p>
+<hr />
+<h3 id="4-real-time-terminal-dashboard-satguardian-toppy">4. Real-Time Terminal Dashboard: <code>satguardian-top.py</code></h3>
+<p><code>htop</code>-style terminal monitor that reads <code>waf_ledger.db</code> directly: throughput (req/sec),
+recorded evaluation latencies (µs), and the blocked-attack distribution by category and
+source IP. It is local and read-only — it opens no socket and uploads nothing.</p>
+<p>The latencies shown are the in-memory evaluation times recorded per request by the engine;
+they exclude TLS, proxy hops and upstream time.</p>
+<h4 id="usage_2">Usage:</h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>python<span class="w"> </span>satguardian-top.py<span class="w">                     </span><span class="c1"># auto-discovers the ledger</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>python<span class="w"> </span>satguardian-top.py<span class="w"> </span>--db<span class="w"> </span>/var/lib/satguardian/waf_ledger.db<span class="w"> </span>--rate<span class="w"> </span><span class="m">0</span>.5<span class="w"> </span>--blocks-only
+</code></pre></div>
+<hr />
+<h3 id="5-interactive-web-dashboard-run_webpy">5. Interactive Web Dashboard: <code>run_web.py</code></h3>
+<p>Serves the PoC dashboard and duel simulator from <code>satguardian_waf/web</code> with FastAPI/uvicorn
+(not Streamlit, and there is no <code>app.py</code>): visual telemetry over the Python reference
+engine, attack trend charting and rule inspection.</p>
+<h4 id="usage_3">Usage:</h4>
+<p><div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>python<span class="w"> </span>run_web.py<span class="w"> </span><span class="m">8002</span>
+</code></pre></div>
+Open <code>http://localhost:8002</code>. The dashboard exercises the Python reference implementation,
+not the Rust engine.</p>
+<hr />
+<h3 id="6-multi-waf-comparative-benchmark-suite-run_benchmarkpy">6. Multi-WAF Comparative Benchmark Suite: <code>run_benchmark.py</code></h3>
+<p>Runs the Python reference harness against local Python stand-ins for CRS-style,
+semantic-token, raw-regex and probabilistic techniques. <strong>It does not execute
+Coraza, SafeLine, ModSecurity or a trained NLP model.</strong> The dataset is the small
+in-repo payload list, and the report prints provenance and a disclaimer.</p>
+<h4 id="usage_4">Usage:</h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="c1"># Run comparative benchmark across 1,000 requests</span>
+<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>python<span class="w"> </span>run_benchmark.py<span class="w"> </span><span class="m">1000</span>
+</code></pre></div>
+<hr />
+<h3 id="7-rule-set-health-report-satguardian-healthpy">7. Rule-Set Health Report: <code>satguardian-health.py</code></h3>
+<p>Local, read-only audit of the rule set you wrote: inventory of business rules and islands
+(enabled vs disabled), structural findings (duplicate ids, a rule that both allows and
+blocks the same method, duplicate bodies, contradicting overlapping path prefixes) and a
+summary of what the ledger recorded. It reads <code>waf_config.toml</code> and <code>waf_ledger.db</code>, opens
+no socket and uploads nothing — it is part of the free tier and works with no cloud account.</p>
+<h4 id="usage_5">Usage:</h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>python<span class="w"> </span>satguardian-health.py<span class="w">                       </span><span class="c1"># text report from the current directory</span>
+<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>python<span class="w"> </span>satguardian-health.py<span class="w"> </span>--json<span class="w">                 </span><span class="c1"># machine-readable</span>
+<a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>python<span class="w"> </span>satguardian-health.py<span class="w"> </span>--config<span class="w"> </span>/etc/satguardian/waf_config.toml<span class="w"> </span>--db<span class="w"> </span>/var/lib/satguardian/waf_ledger.db
+<a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a>python<span class="w"> </span>satguardian-health.py<span class="w"> </span>--strict<span class="w"> </span>--top<span class="w"> </span><span class="m">10</span><span class="w">      </span><span class="c1"># exit 1 if any WARN finding is present</span>
+</code></pre></div>
+<hr />
+<h2 id="quick-command-cheat-sheet">🎯 Quick Command Cheat Sheet</h2>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Task / Objective</th>
+<th style="text-align: left;">Command</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Standalone Proxy</strong></td>
+<td style="text-align: left;"><code>./satguardian-waf proxy --listen 0.0.0.0:8080 --upstream http://127.0.0.1:3000</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Native Rust Benchmark (in-memory)</strong></td>
+<td style="text-align: left;"><code>./satguardian-waf benchmark --requests 10000</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Payload CLI Inspection</strong></td>
+<td style="text-align: left;"><code>./satguardian-waf inspect --query "search=union select"</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Cloud review (one batch → proposals)</strong></td>
+<td style="text-align: left;"><code>./satguardian-waf sync-simplify --limit 100</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>List / approve / reject proposals</strong></td>
+<td style="text-align: left;"><code>./satguardian-waf clauses list</code> · <code>clauses apply &lt;id&gt;</code> · <code>clauses reject &lt;id&gt;</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Check SU balance</strong></td>
+<td style="text-align: left;"><code>./satguardian-waf entitlement</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Evidence-backed audit report</strong></td>
+<td style="text-align: left;"><code>python satguardian-advisor.py --report audit_report.html</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Business Rules &amp; Islands Manager</strong></td>
+<td style="text-align: left;"><code>python satguardian-rules.py --cli</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Read-Only Terminal TUI</strong></td>
+<td style="text-align: left;"><code>python satguardian-top.py</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Web Dashboard (FastAPI)</strong></td>
+<td style="text-align: left;"><code>python run_web.py 8002</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Multi-WAF Benchmark Suite</strong></td>
+<td style="text-align: left;"><code>python run_benchmark.py 1000</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Local Rule-Set Health Report</strong></td>
+<td style="text-align: left;"><code>python satguardian-health.py</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<p><em>© 2026 SATGuardian Cyber-Defense Systems. Edge enforcement is local and yours; SATGuardian cloud synthesis is opt-in and proposes, you approve.</em></p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.top", "search.suggest", "search.highlight", "content.code.copy", "content.code.annotate"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

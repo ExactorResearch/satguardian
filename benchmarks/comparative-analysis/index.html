@@ -1,0 +1,1958 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Deterministic, auditable security decision layer — the WAF that can prove its work; u128 bitmask inspection with opt-in cloud rule synthesis returned as proposals">
+      
+      
+        <meta name="author" content="SATGuardian Cyber-Defense Systems">
+      
+      
+        <link rel="canonical" href="https://ExactorResearch.github.io/satguardian/benchmarks/comparative-analysis/">
+      
+      
+        <link rel="prev" href="../../deployments/case-study/">
+      
+      
+        <link rel="next" href="../../reports/technical-audit/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+    
+    
+      
+        <title>Multi-WAF Comparative Analysis - SATGuardian — The WAF That Can Prove Its Work</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="cyan">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#comparative-architecture-notes-satguardian-and-local-stand-ins" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="SATGuardian — The WAF That Can Prove Its Work" class="md-header__button md-logo" aria-label="SATGuardian — The WAF That Can Prove Its Work" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            SATGuardian — The WAF That Can Prove Its Work
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Multi-WAF Comparative Analysis
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="cyan"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="cyan"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/ExactorResearch/satguardian" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ExactorResearch/satguardian
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../status/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Project Status
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../corpus/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Detection Corpus
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../getting-started/configuration/" class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../architecture/system-architecture/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../integrations/" class="md-tabs__link">
+          
+  
+  
+  Deployments & Integration
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="./" class="md-tabs__link">
+          
+  
+  
+  Benchmarks & Analysis
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../reports/technical-audit/" class="md-tabs__link">
+          
+  
+  
+  Audit & Reports
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../research/white-paper/" class="md-tabs__link">
+          
+  
+  
+  Research & Theory
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="SATGuardian — The WAF That Can Prove Its Work" class="md-nav__button md-logo" aria-label="SATGuardian — The WAF That Can Prove Its Work" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    SATGuardian — The WAF That Can Prove Its Work
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/ExactorResearch/satguardian" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ExactorResearch/satguardian
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../status/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Project Status
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../corpus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Detection Corpus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operations & Tooling Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/poc-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Proof of Concept Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/system-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/axiomatic-supervision/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Axiomatic Supervision & Synthesis
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/satguardian-methodology/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SAT Guardian Methodology
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deployments & Integration
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Deployments & Integration
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integration Ecosystem
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../deployments/envoy-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Envoy Proxy Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../deployments/case-study/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deployment Notes (Lab)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmarks & Analysis
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Benchmarks & Analysis
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multi-WAF Comparative Analysis
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multi-WAF Comparative Analysis
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-what-is-being-compared" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. What is being compared
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-what-the-harness-measures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. What the harness measures
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. What the harness measures">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-native-rust-engine-on-the-pinned-corpus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Native Rust engine on the pinned corpus
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-the-one-held-out-measurement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 The one held-out measurement
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#25-the-first-real-product-head-to-head-aegis-community-v110" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.5 The first real-product head-to-head (Aegis Community v1.1.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-engineering-observations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Engineering observations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Engineering observations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-anomaly-scoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Anomaly scoring
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-semantic-tokenization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Semantic tokenization
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-probabilistic-token-scoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 Probabilistic token scoring
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#34-unnormalized-regex" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.4 Unnormalized regex
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-demonstration-ledger-waf_ledgerdb" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Demonstration Ledger (waf_ledger.db)
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Audit & Reports
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Audit & Reports
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reports/technical-audit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Technical Audit Report
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reports/audit-report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Forensic Audit Ledger
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Research & Theory
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Research & Theory
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../research/white-paper/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Technical White Paper
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-what-is-being-compared" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. What is being compared
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-what-the-harness-measures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. What the harness measures
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. What the harness measures">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-native-rust-engine-on-the-pinned-corpus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Native Rust engine on the pinned corpus
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-the-one-held-out-measurement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 The one held-out measurement
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#25-the-first-real-product-head-to-head-aegis-community-v110" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.5 The first real-product head-to-head (Aegis Community v1.1.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-engineering-observations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Engineering observations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Engineering observations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-anomaly-scoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Anomaly scoring
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-semantic-tokenization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Semantic tokenization
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-probabilistic-token-scoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 Probabilistic token scoring
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#34-unnormalized-regex" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.4 Unnormalized regex
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-demonstration-ledger-waf_ledgerdb" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Demonstration Ledger (waf_ledger.db)
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="comparative-architecture-notes-satguardian-and-local-stand-ins">Comparative Architecture Notes: SATGuardian and Local Stand-Ins</h1>
+<p><strong>Subject:</strong> how SATGuardian differs from signature, anomaly-scoring, semantic and
+probabilistic WAF designs, and what the repository actually measures<br />
+<strong>Target system:</strong> <code>satguardian</code> v0.3.0</p>
+<blockquote>
+<p><strong>Status: SATGuardian Edge WAF v0.3.0.</strong> The Python
+harness runs local reimplementations of each technique, not Coraza, SafeLine,
+ModSecurity or a trained NLP model. Detection numbers below are in-sample
+regression floors on a hand-written corpus, except the single held-out run
+called out separately. The only real-product measurement is the 2026-11-09
+head-to-head against Aegis Community Edition v1.1.0 in §2.5; there is still
+no third-party evaluation. See
+<a href="../../status/">STATUS.md</a> and <a href="../../corpus/">corpus/README.md</a>.</p>
+</blockquote>
+<hr />
+<h2 id="1-what-is-being-compared">1. What is being compared</h2>
+<ol>
+<li><strong>SATGuardian:</strong> multi-pass lexical normalization (<code>src/ast/lexer.rs</code>), a
+   128-bit feature bitmask (<code>FeatureVector</code>), and bitwise rule evaluation in
+   <code>src/engine/sat_solver.rs</code>. Rule review is a separate, opt-in step: the
+   client can send recorded minterms to the <strong>SATGuardian cloud synthesis</strong>
+   service (<code>satguardian.tech</code>), which minimizes them server-side and returns
+   compiled clauses. The minimizer is not part of this repository and is not
+   distributed to customers; the client stores what comes back as proposals that
+   an operator must approve before anything enforces.</li>
+<li><strong>CRS-style stand-in (not Coraza):</strong> a few hand-written regex rules with a
+   simple anomaly score over decoded request targets. It does not model the real
+   CRS rule count, paranoia levels or exclusions.</li>
+<li><strong>Semantic-token stand-in (not SafeLine):</strong> single-pass decode plus a small
+   pattern list. It is not Chaitin's engine.</li>
+<li><strong>Probabilistic token stand-in (not a trained model):</strong> fixed keyword weights
+   and Shannon entropy. It is not a trained classifier.</li>
+<li><strong>Unnormalized regex stand-in (not ModSecurity):</strong> deliberately naive
+   signatures over raw fields.</li>
+</ol>
+<p>The point of the harness is to regression-test the Python reference port and to
+illustrate design trade-offs. It cannot rank real products.</p>
+<hr />
+<h2 id="2-what-the-harness-measures">2. What the harness measures</h2>
+<p><code>python run_benchmark.py 1000</code> samples the in-repo payload list (1,000 requests,
+50% attacks by default). Only the SATGuardian row is this project's code.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Agent (Python, in-process)</th>
+<th style="text-align: center;">Accuracy (in-sample)</th>
+<th style="text-align: center;">Avg CPU time</th>
+<th style="text-align: center;">P99 CPU time</th>
+<th style="text-align: center;">FPR</th>
+<th style="text-align: center;">FNR</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">SATGuardian reference port</td>
+<td style="text-align: center;">100.0%</td>
+<td style="text-align: center;"><code>0.0586 ms</code></td>
+<td style="text-align: center;"><code>0.2267 ms</code></td>
+<td style="text-align: center;">0.0%</td>
+<td style="text-align: center;">0.0%</td>
+</tr>
+<tr>
+<td style="text-align: left;">CRS-style stand-in (not Coraza)</td>
+<td style="text-align: center;">97.3%</td>
+<td style="text-align: center;"><code>0.2350 ms</code></td>
+<td style="text-align: center;"><code>0.5244 ms</code></td>
+<td style="text-align: center;">0.0%</td>
+<td style="text-align: center;">5.4%</td>
+</tr>
+<tr>
+<td style="text-align: left;">Semantic-token stand-in (not SafeLine)</td>
+<td style="text-align: center;">94.4%</td>
+<td style="text-align: center;"><code>0.0637 ms</code></td>
+<td style="text-align: center;"><code>0.1618 ms</code></td>
+<td style="text-align: center;">0.0%</td>
+<td style="text-align: center;">11.2%</td>
+</tr>
+<tr>
+<td style="text-align: left;">Probabilistic token stand-in (heuristic)</td>
+<td style="text-align: center;">77.3%</td>
+<td style="text-align: center;"><code>0.0726 ms</code></td>
+<td style="text-align: center;"><code>0.1708 ms</code></td>
+<td style="text-align: center;">24.6%</td>
+<td style="text-align: center;">20.8%</td>
+</tr>
+<tr>
+<td style="text-align: left;">Unnormalized regex stand-in (not ModSecurity)</td>
+<td style="text-align: center;">76.5%</td>
+<td style="text-align: center;"><code>0.0383 ms</code></td>
+<td style="text-align: center;"><code>0.0792 ms</code></td>
+<td style="text-align: center;">0.0%</td>
+<td style="text-align: center;">47.0%</td>
+</tr>
+</tbody>
+</table>
+<p>Values are from one run on 2026-11-01 and move slightly between runs. Reproduce
+with <code>python run_benchmark.py 1000</code>.</p>
+<h3 id="21-native-rust-engine-on-the-pinned-corpus">2.1 Native Rust engine on the pinned corpus</h3>
+<p><code>satguardian-waf benchmark -r 10000</code> (in-memory rule evaluation only; no TLS,
+proxy hop or upstream):</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Metric</th>
+<th style="text-align: left;">Representative run</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">Corpus</td>
+<td style="text-align: left;"><code>corpus/independent_v1.json</code> (63 attacks, 16 benign)</td>
+</tr>
+<tr>
+<td style="text-align: left;">Detection</td>
+<td style="text-align: left;">63/63 attacks, 0/16 benign blocked (<strong>in-sample regression floor</strong>)</td>
+</tr>
+<tr>
+<td style="text-align: left;">First run before fixes</td>
+<td style="text-align: left;">51/63 recall (80.95%), 3/16 benign blocked (18.75% FPR)</td>
+</tr>
+<tr>
+<td style="text-align: left;">Min latency</td>
+<td style="text-align: left;"><code>70.0 µs</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">p50</td>
+<td style="text-align: left;"><code>~458 µs</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Mean</td>
+<td style="text-align: left;"><code>~937 µs</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">p90</td>
+<td style="text-align: left;"><code>~2.6 ms</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">p99</td>
+<td style="text-align: left;"><code>~6.0 ms</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Max</td>
+<td style="text-align: left;"><code>~11.4 ms</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Single-thread throughput</td>
+<td style="text-align: left;"><code>~1,063 req/sec</code></td>
+</tr>
+</tbody>
+</table>
+<p>All of those latencies are <strong>in-memory only</strong>: they exclude TLS, the proxy hop,
+the upstream service and SQLite ledger writes, and they were taken on this
+project's own machine.</p>
+<h3 id="22-the-one-held-out-measurement">2.2 The one held-out measurement</h3>
+<p>The 100%/0% rows above describe cases that were used to drive the fixes. The
+current out-of-sample number in this repository comes from
+<code>benchmarks/real_comparative/corpus/heldout_v10.jsonl</code> (70 attacks, 44 benign
+controls), measured once on 2026-11-08 before any fix:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Metric</th>
+<th style="text-align: left;">Held-out result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">Recall on 70 attacks</td>
+<td style="text-align: left;">frozen one-shot (27/70); current engine <strong>100%</strong> (70/70) post-tuning diagnostic</td>
+</tr>
+<tr>
+<td style="text-align: left;">False-positive rate on 44 controls</td>
+<td style="text-align: left;"><strong>0.0%</strong> (0/44), 95% CI 0.0–8.0%</td>
+</tr>
+</tbody>
+</table>
+<p>The earlier <code>corpus/heldout_v2.json</code> measurement (56.1% recall / 7.0% FPR on
+98 attacks and 57 controls, one run on 2026-11-04) remains published for
+provenance; batches v3–v9 were each measured once and spent as tuning inputs.
+The batches are hand-written from public payload catalogues and their benign
+controls are imagined traffic, not a customer access log, so this measures
+those payloads and nothing wider. No third-party evaluation exists, and
+<code>corpus/README.md</code> records that tuning against a batch would invalidate it. The
+OWASP CRS v4.30 suite is measured in-sample at 82.0% recall — a coverage check
+against the rule set's own tests, not an independent benchmark.</p>
+<h3 id="25-the-first-real-product-head-to-head-aegis-community-v110">2.5 The first real-product head-to-head (Aegis Community v1.1.0)</h3>
+<p>On 2026-11-09 SATGuardian was replayed against <strong>Aegis Community Edition
+v1.1.0</strong> — a shipping WAF built on the Coraza engine with the bundled OWASP
+CRS 4.25.1 LTS ruleset at paranoia level 1, blocking mode — over real HTTP on
+localhost, on the same corpus files. This is the first measurement in this
+repository against an actual product; earlier competitor rows remain local
+stand-ins. Artifacts: <code>benchmarks/real_comparative/results/aegis/</code>
+(<code>RUN.json</code>, <code>aegis_v10.jsonl</code>, <code>aegis_crs.jsonl</code>).</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Corpus</th>
+<th style="text-align: center;">SATGuardian</th>
+<th style="text-align: center;">Aegis + CRS 4.25.1 PL1</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>crs_v430.jsonl</code> attacks</td>
+<td style="text-align: center;"><strong>82.0%</strong> (3,321/4,050)</td>
+<td style="text-align: center;"><strong>80.7%</strong> (3,268/4,050)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>heldout_v10.jsonl</code> attacks</td>
+<td style="text-align: center;">100% post-tuning diagnostic; frozen one-shot</td>
+<td style="text-align: center;"><strong>68.6%</strong> (48/70)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>heldout_v10.jsonl</code> controls</td>
+<td style="text-align: center;">0.0% FPR post-tuning diagnostic; frozen one-shot <strong>0.0%</strong></td>
+<td style="text-align: center;"><strong>36.4%</strong> (16/44)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>benign_heldout_v3_v10.jsonl</code> (665 pooled benign controls)</td>
+<td style="text-align: center;"><strong>0.5%</strong> (3/665; v10-only non-spent subset 0/44)</td>
+<td style="text-align: center;"><strong>22.9%</strong> (152/665)</td>
+</tr>
+</tbody>
+</table>
+<p>Union of both engines on <code>crs_v430</code>: <strong>92.9%</strong> recall; intersection: <strong>69.8%</strong>.
+The engines miss different rule families — e.g. SATGuardian detects 44/44 vs
+Aegis 7/44 on CRS rule 934140, while Aegis detects 210/330 vs SATGuardian
+162/330 on rule 944300 — so a cascade is the natural deployment shape.</p>
+<p>Limits: Aegis ran CRS 4.25.1 (the corpus targets 4.30), paranoia level 1,
+community edition, plain HTTP, localhost, dummy upstream, default rate
+limiter disabled. Latency is not comparable across the two rows (full HTTP
+round-trip vs in-process evaluation). One run, one configuration — not a
+product ranking.</p>
+<p>The false-positive gap is the sharpest measured difference: pooled over all
+665 benign controls from batches v3–v10, Aegis blocked 152 (<strong>22.9% FPR</strong>,
+95% CI 19.8–26.2%) while SATGuardian blocked 3 (<strong>0.5%</strong>, CI 0.2–1.3%). For
+SATGuardian only the 44 v10 controls are non-spent (v3–v9 benign controls
+were tuning inputs); for Aegis every control was fresh. The controls are
+imagined traffic authored inside this project, not a customer access log, so
+the absolute rates describe these payloads — but the ~45× gap between engines
+on identical inputs is the measured fact.</p>
+<hr />
+<h2 id="3-engineering-observations">3. Engineering observations</h2>
+<h3 id="31-anomaly-scoring">3.1 Anomaly scoring</h3>
+<p>Anomaly scoring transforms several request targets and evaluates many rules. That
+buys coverage and configurability at a per-request CPU cost. The local stand-in
+implements only a small approximation (<code>20</code> regex rules), so its latency is not a
+measurement of real CRS cost. SATGuardian instead normalizes once and evaluates
+bitmasks; whether that trade-off holds against a real deployment is untested.</p>
+<h3 id="32-semantic-tokenization">3.2 Semantic tokenization</h3>
+<p>Single-pass decoding plus token patterns is cheap, but it can miss nested
+encodings. The stand-in misses <code>11.2%</code> of the in-repo attacks, largely on
+double-encoded traversal. SATGuardian decodes multiple layers; on the pinned
+corpus it catches those cases after the 2026-11-01 fixes. The corpus was used to
+drive those fixes, so this is not held-out evidence.</p>
+<h3 id="33-probabilistic-token-scoring">3.3 Probabilistic token scoring</h3>
+<p>Fixed token weights misfire on benign technical prose. The local heuristic blocks
+<code>24.6%</code> of the benign controls in the in-repo stream. SATGuardian requires
+structural conjunctions, and produced no false positives on the 16 benign corpus
+controls — an in-sample regression floor on sixteen cases. The single held-out
+batch is the relevant comparison: it measured a <strong>7.0% false-positive rate on 57
+controls</strong> (95% CI 2.8–16.7%), which is what the design actually costs on
+payloads that were not used for tuning.</p>
+<h3 id="34-unnormalized-regex">3.4 Unnormalized regex</h3>
+<p>Raw signature scanning is the cheapest row in the harness and the leakiest on
+obfuscated payloads (<code>47.0%</code> FNR in this stream). This illustrates why
+normalization matters; it does not measure ModSecurity.</p>
+<hr />
+<h2 id="4-demonstration-ledger-waf_ledgerdb">4. Demonstration Ledger (<code>waf_ledger.db</code>)</h2>
+<p>The bundled SQLite ledger is demo data used to exercise the advisor pipeline:
+<code>3,799</code> transactions (<code>2,136</code> blocked, <code>1,663</code> allowed). Advisor candidates are
+replayed against the benign rows and collision counts are printed per run. The
+ledger is not independent evidence of detection quality and is not a customer
+tenant. Minterms the engine did not recognize sit in <code>novel_anomalies</code> as
+<strong>patterns awaiting analysis</strong> — they are review candidates, not unprotected
+threats — and cloud review is off unless <code>auto_sync_enabled</code> is turned on.
+Whatever the service returns is stored as a proposal (<code>dynamic_clauses.applied
+= 0</code>) and only enforces after <code>satguardian-waf clauses apply &lt;id&gt;</code>. Regenerate
+the audit with:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>python<span class="w"> </span>satguardian-advisor.py<span class="w"> </span>--report-md<span class="w"> </span>audit_report.md
+</code></pre></div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.top", "search.suggest", "search.highlight", "content.code.copy", "content.code.annotate"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
